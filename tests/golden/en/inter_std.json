@@ -1,0 +1,341 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_inter_std.test.ts",
+  "cases": [
+    {
+      "id": "en/inter_std#1",
+      "text": "Let's finish this before this 2013-2-7.",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-08T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 30,
+          "text": "2013-2-7",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 2,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-02-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/inter_std#2",
+      "text": "1994-11-05T08:15:30-05:30",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-08T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1994-11-05T08:15:30-05:30",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 8,
+              "minute": 15,
+              "month": 11,
+              "second": 30,
+              "timezoneOffset": -330,
+              "year": 1994
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "1994-11-05T13:45:30.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/inter_std#3",
+      "text": "1994-11-05T13:15:30Z",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-08T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1994-11-05T13:15:30Z",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 13,
+              "minute": 15,
+              "month": 11,
+              "second": 30,
+              "timezoneOffset": 0,
+              "year": 1994
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "1994-11-05T13:15:30.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/inter_std#4",
+      "text": "- 1994-11-05T13:15:30Z",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-08T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "1994-11-05T13:15:30Z",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 13,
+              "minute": 15,
+              "month": 11,
+              "second": 30,
+              "timezoneOffset": 0,
+              "year": 1994
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "1994-11-05T13:15:30.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/inter_std#5",
+      "text": "2016-05-07T23:45:00.487+01:00",
+      "config": "en.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-08T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2016-05-07T23:45:00.487+01:00",
+          "start": {
+            "known": {
+              "day": 7,
+              "hour": 23,
+              "millisecond": 487,
+              "minute": 45,
+              "month": 5,
+              "second": 0,
+              "timezoneOffset": 60,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-05-07T22:45:00.487Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/inter_std#6",
+      "text": "1994-11-05T13:15:30",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-08T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1994-11-05T13:15:30",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 13,
+              "minute": 15,
+              "month": 11,
+              "second": 30,
+              "year": 1994
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "1994-11-05T13:15:30.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression with local timezeon"
+    },
+    {
+      "id": "en/inter_std#7",
+      "text": "2015-07-31T12:00:00",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-08T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2015-07-31T12:00:00",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 12,
+              "minute": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2015
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "2015-07-31T12:00:00.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression with local timezeon"
+    }
+  ]
+}

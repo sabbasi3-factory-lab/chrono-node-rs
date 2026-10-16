@@ -1,0 +1,2420 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_weekday.test.ts",
+  "cases": [
+    {
+      "id": "en/weekday#01",
+      "text": "Monday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Monday",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 6,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/weekday#02",
+      "text": "Thursday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Thursday",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 9,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/weekday#03",
+      "text": "Sunday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sunday",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 12,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/weekday#04",
+      "text": "The Deadline is last Friday...",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "last Friday",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 3,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/weekday#05",
+      "text": "The Deadline is past Friday...",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "past Friday",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 3,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/weekday#06",
+      "text": "Let's have a meeting on Friday next week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-04-18T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 21,
+          "text": "on Friday next week",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 24,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2015
+            },
+            "date": "2015-04-24T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/weekday#07",
+      "text": "I plan on taking the day off on Tuesday, next week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-04-18T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 29,
+          "text": "on Tuesday, next week",
+          "start": {
+            "known": {
+              "weekday": 2
+            },
+            "implied": {
+              "day": 21,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2015
+            },
+            "date": "2015-04-21T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/weekday#08",
+      "text": "This Saturday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "This Saturday",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 6,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `This` guessing"
+    },
+    {
+      "id": "en/weekday#09",
+      "text": "This Sunday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "This Sunday",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 7,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `This` guessing"
+    },
+    {
+      "id": "en/weekday#10",
+      "text": "This Wednesday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "This Wednesday",
+          "start": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 3,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `This` guessing"
+    },
+    {
+      "id": "en/weekday#11",
+      "text": "This Saturday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-07T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "This Saturday",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `This` guessing"
+    },
+    {
+      "id": "en/weekday#12",
+      "text": "This Sunday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-07T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "This Sunday",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 7,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `This` guessing"
+    },
+    {
+      "id": "en/weekday#13",
+      "text": "This Wednesday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-07T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "This Wednesday",
+          "start": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `This` guessing"
+    },
+    {
+      "id": "en/weekday#14",
+      "text": "Last Saturday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Last Saturday",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 30,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-07-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Last` guessing"
+    },
+    {
+      "id": "en/weekday#15",
+      "text": "Last Sunday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Last Sunday",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 31,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-07-31T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Last` guessing"
+    },
+    {
+      "id": "en/weekday#16",
+      "text": "Last Wednesday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Last Wednesday",
+          "start": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 27,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-07-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Last` guessing"
+    },
+    {
+      "id": "en/weekday#17",
+      "text": "Next Saturday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Next Saturday",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Next` guessing"
+    },
+    {
+      "id": "en/weekday#18",
+      "text": "Next Sunday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Next Sunday",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 14,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-14T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Next` guessing"
+    },
+    {
+      "id": "en/weekday#19",
+      "text": "Next Wednesday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Next Wednesday",
+          "start": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Next` guessing"
+    },
+    {
+      "id": "en/weekday#20",
+      "text": "Next Saturday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-06T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Next Saturday",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Next` guessing"
+    },
+    {
+      "id": "en/weekday#21",
+      "text": "Next Sunday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-06T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Next Sunday",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 14,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-14T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Next` guessing"
+    },
+    {
+      "id": "en/weekday#22",
+      "text": "Next Wednesday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-06T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Next Wednesday",
+          "start": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Next` guessing"
+    },
+    {
+      "id": "en/weekday#23",
+      "text": "Next Saturday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-07T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Next Saturday",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Next` guessing"
+    },
+    {
+      "id": "en/weekday#24",
+      "text": "Next Sunday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-07T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Next Sunday",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 14,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-14T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Next` guessing"
+    },
+    {
+      "id": "en/weekday#25",
+      "text": "Next Wednesday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-07T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Next Wednesday",
+          "start": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday casual `Next` guessing"
+    },
+    {
+      "id": "en/weekday#26",
+      "text": "last weekend",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-10-18T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last weekend",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-10-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual 'weekend' and 'weekday'"
+    },
+    {
+      "id": "en/weekday#27",
+      "text": "this weekend",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-10-18T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "this weekend",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 19,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-10-19T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual 'weekend' and 'weekday'"
+    },
+    {
+      "id": "en/weekday#28",
+      "text": "next weekend",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-10-18T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next weekend",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 26,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-10-26T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual 'weekend' and 'weekday'"
+    },
+    {
+      "id": "en/weekday#29",
+      "text": "last weekday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-10-18T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last weekday",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 17,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-10-17T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual 'weekday' mentioning"
+    },
+    {
+      "id": "en/weekday#30",
+      "text": "next weekday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-10-18T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next weekday",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 21,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-10-21T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual 'weekday' mentioning"
+    },
+    {
+      "id": "en/weekday#31",
+      "text": "last weekday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-10-19T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last weekday",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 18,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-10-18T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual 'weekday' mentioning"
+    },
+    {
+      "id": "en/weekday#32",
+      "text": "next weekday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-10-19T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next weekday",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 21,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-10-21T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual 'weekday' mentioning"
+    },
+    {
+      "id": "en/weekday#33",
+      "text": "Lets meet on Tuesday morning",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-04-18T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 10,
+          "text": "on Tuesday morning",
+          "start": {
+            "known": {
+              "weekday": 2
+            },
+            "implied": {
+              "day": 21,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2015
+            },
+            "date": "2015-04-21T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday With Casual Time"
+    },
+    {
+      "id": "en/weekday#34",
+      "text": "Sunday, December 7, 2014",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sunday, December 7, 2014",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 12,
+              "weekday": 0,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-12-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Overlap"
+    },
+    {
+      "id": "en/weekday#35",
+      "text": "Sunday 12/7/2014",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sunday 12/7/2014",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 12,
+              "weekday": 0,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-12-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Overlap"
+    },
+    {
+      "id": "en/weekday#36",
+      "text": "Friday to Monday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Friday to Monday",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 7,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-04-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-04-10T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Weekday range"
+    },
+    {
+      "id": "en/weekday#37",
+      "text": "Monday to Friday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Monday to Friday",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-04-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 14,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-04-14T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Weekday range"
+    },
+    {
+      "id": "en/weekday#38",
+      "text": "Tuesday of next week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Tuesday of next week",
+          "start": {
+            "known": {
+              "weekday": 2
+            },
+            "implied": {
+              "day": 9,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-09T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday 'of next/last/this week' connector"
+    },
+    {
+      "id": "en/weekday#39",
+      "text": "Friday of next week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Friday of next week",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 12,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday 'of next/last/this week' connector"
+    },
+    {
+      "id": "en/weekday#40",
+      "text": "Monday of next week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Monday of next week",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 8,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-08T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday 'of next/last/this week' connector"
+    },
+    {
+      "id": "en/weekday#41",
+      "text": "Tuesday of last week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Tuesday of last week",
+          "start": {
+            "known": {
+              "weekday": 2
+            },
+            "implied": {
+              "day": 26,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-07-26T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday 'of next/last/this week' connector"
+    },
+    {
+      "id": "en/weekday#42",
+      "text": "Friday of last week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Friday of last week",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 29,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-07-29T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday 'of next/last/this week' connector"
+    },
+    {
+      "id": "en/weekday#43",
+      "text": "Wednesday of this week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Wednesday of this week",
+          "start": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 3,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday 'of next/last/this week' connector"
+    },
+    {
+      "id": "en/weekday#44",
+      "text": "Tuesday of this week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Tuesday of this week",
+          "start": {
+            "known": {
+              "weekday": 2
+            },
+            "implied": {
+              "day": 2,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-02T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday 'of next/last/this week' connector"
+    },
+    {
+      "id": "en/weekday#45",
+      "text": "Tuesday of next week after 2pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Tuesday of next week after 2pm",
+          "start": {
+            "known": {
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 0,
+              "weekday": 2
+            },
+            "implied": {
+              "day": 9,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-09T14:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday 'of next/last/this week' connector"
+    },
+    {
+      "id": "en/weekday#46",
+      "text": "Friday of next week at 9am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Friday of next week at 9am",
+          "start": {
+            "known": {
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 0,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 12,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-12T09:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday 'of next/last/this week' connector"
+    },
+    {
+      "id": "en/weekday#47",
+      "text": "Let's sync on Tuesday of next week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 11,
+          "text": "on Tuesday of next week",
+          "start": {
+            "known": {
+              "weekday": 2
+            },
+            "implied": {
+              "day": 9,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-08-09T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday 'of next/last/this week' connector"
+    },
+    {
+      "id": "en/weekday#48",
+      "text": "Monday (forward dates only)",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Monday",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    },
+    {
+      "id": "en/weekday#49",
+      "text": "this Friday to this Monday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-08-04T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "this Friday to this Monday",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 5,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-08-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 8,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-08-08T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    },
+    {
+      "id": "en/weekday#50",
+      "text": "sunday morning",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2021-08-15T20:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "sunday morning",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 22,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-08-22T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    },
+    {
+      "id": "en/weekday#51",
+      "text": "vacation monday - friday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2019-06-13T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "monday - friday",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 17,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "year": 2019
+            },
+            "date": "2019-06-17T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 21,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "year": 2019
+            },
+            "date": "2019-06-21T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    },
+    {
+      "id": "en/weekday#52",
+      "text": "timeoff monday 7 to 9am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2019-06-13T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "monday 7 to 9am",
+          "start": {
+            "known": {
+              "hour": 7,
+              "minute": 0,
+              "weekday": 1
+            },
+            "implied": {
+              "day": 17,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 6,
+              "second": 0,
+              "year": 2019
+            },
+            "date": "2019-06-17T07:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 0,
+              "weekday": 1
+            },
+            "implied": {
+              "day": 17,
+              "millisecond": 0,
+              "month": 6,
+              "second": 0,
+              "year": 2019
+            },
+            "date": "2019-06-17T09:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    }
+  ]
+}

@@ -1,0 +1,491 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_year.test.ts",
+  "cases": [
+    {
+      "id": "en/year#1",
+      "text": "10 August 234 BCE",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 August 234 BCE",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": -234
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000234-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with BCE/CE Era label"
+    },
+    {
+      "id": "en/year#2",
+      "text": "10 August 88 CE",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 August 88 CE",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with BCE/CE Era label"
+    },
+    {
+      "id": "en/year#3",
+      "text": "10 August 234 BC",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 August 234 BC",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": -234
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000234-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with BC/AD Era label"
+    },
+    {
+      "id": "en/year#4",
+      "text": "10 August 88 AD",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 August 88 AD",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with BC/AD Era label"
+    },
+    {
+      "id": "en/year#5",
+      "text": "10 August 2555 BE",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 August 2555 BE",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with Buddhist Era label"
+    },
+    {
+      "id": "en/year#6",
+      "text": "Thu Oct 26 11:00:09 2023",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENExtractYearSuffixRefiner",
+          "ENMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Thu Oct 26 11:00:09 2023",
+          "start": {
+            "known": {
+              "day": 26,
+              "hour": 11,
+              "minute": 0,
+              "month": 10,
+              "second": 9,
+              "weekday": 4,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2023-10-26T11:00:09.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year number after date/time expression"
+    },
+    {
+      "id": "en/year#7",
+      "text": "Thu Oct 26 11:00:09 EDT 2023",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENExtractYearSuffixRefiner",
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Thu Oct 26 11:00:09 EDT 2023",
+          "start": {
+            "known": {
+              "day": 26,
+              "hour": 11,
+              "minute": 0,
+              "month": 10,
+              "second": 9,
+              "timezoneOffset": -240,
+              "weekday": 4,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2023-10-26T15:00:09.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year number after date/time expression"
+    },
+    {
+      "id": "en/year#8",
+      "text": "Thu Oct 26 - 28, 11:00:09 2023",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENExtractYearSuffixRefiner",
+          "ENMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Thu Oct 26 - 28, 11:00:09 2023",
+          "start": {
+            "known": {
+              "day": 26,
+              "hour": 11,
+              "minute": 0,
+              "month": 10,
+              "second": 9,
+              "weekday": 4,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2023-10-26T11:00:09.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 28,
+              "hour": 11,
+              "minute": 0,
+              "month": 10,
+              "second": 9,
+              "weekday": 4,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2023-10-28T11:00:09.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Year number after date/time range expression"
+    },
+    {
+      "id": "en/year#9",
+      "text": "Thu Oct 26, 10:00 - 11:00:09 2023",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENExtractYearSuffixRefiner",
+          "ENMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Thu Oct 26, 10:00 - 11:00:09 2023",
+          "start": {
+            "known": {
+              "day": 26,
+              "hour": 10,
+              "minute": 0,
+              "month": 10,
+              "weekday": 4,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2023-10-26T10:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 26,
+              "hour": 11,
+              "minute": 0,
+              "month": 10,
+              "second": 9,
+              "weekday": 4,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2023-10-26T11:00:09.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Year number after date/time range expression"
+    }
+  ]
+}

@@ -1,0 +1,1914 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_month_name_middle_endian.test.ts",
+  "cases": [
+    {
+      "id": "en/month_name_middle_endian#01",
+      "text": "She is getting married soon (July 2017).",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 29,
+          "text": "July 2017",
+          "start": {
+            "known": {
+              "month": 7,
+              "year": 2017
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2017-07-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#02",
+      "text": "She is leaving in August.",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 18,
+          "text": "August",
+          "start": {
+            "known": {
+              "month": 8
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#03",
+      "text": "I am arriving sometime in August, 2012, probably.",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 26,
+          "text": "August, 2012",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#04",
+      "text": "August 10, 2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "August 10, 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#05",
+      "text": "Nov 12, 2011",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Nov 12, 2011",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 11,
+              "year": 2011
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2011-11-12T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#06",
+      "text": "The Deadline is August 10",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "August 10",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#07",
+      "text": "The Deadline is August 10 2555 BE",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "August 10 2555 BE",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#08",
+      "text": "The Deadline is August 10, 345 BC",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "August 10, 345 BC",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": -345
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000345-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#09",
+      "text": "The Deadline is August 10, 8 AD",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "August 10, 8 AD",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0008-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#10",
+      "text": "The Deadline is Tuesday, January 10",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "Tuesday, January 10",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 1,
+              "weekday": 2
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-01-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#11",
+      "text": "Sun, Mar. 6, 2016",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sun, Mar. 6, 2016",
+          "start": {
+            "known": {
+              "day": 6,
+              "month": 3,
+              "weekday": 0,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-03-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#12",
+      "text": "Sun, March 6, 2016",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sun, March 6, 2016",
+          "start": {
+            "known": {
+              "day": 6,
+              "month": 3,
+              "weekday": 0,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-03-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#13",
+      "text": "Sun., March 6, 2016",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sun., March 6, 2016",
+          "start": {
+            "known": {
+              "day": 6,
+              "month": 3,
+              "weekday": 0,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-03-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#14",
+      "text": "Sunday, March 6, 2016",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sunday, March 6, 2016",
+          "start": {
+            "known": {
+              "day": 6,
+              "month": 3,
+              "weekday": 0,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-03-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#15",
+      "text": "Sunday, March, 6th 2016",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sunday, March, 6th 2016",
+          "start": {
+            "known": {
+              "day": 6,
+              "month": 3,
+              "weekday": 0,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-03-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#16",
+      "text": "Wed, Jan 20th, 2016             ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Wed, Jan 20th, 2016",
+          "start": {
+            "known": {
+              "day": 20,
+              "month": 1,
+              "weekday": 3,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-01-20T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#17",
+      "text": "Dec. 21",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Dec. 21",
+          "start": {
+            "known": {
+              "day": 21,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-12-21T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#18",
+      "text": "August-10, 2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "August-10, 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression with separators"
+    },
+    {
+      "id": "en/month_name_middle_endian#19",
+      "text": "August/10, 2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "August/10, 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression with separators"
+    },
+    {
+      "id": "en/month_name_middle_endian#20",
+      "text": "August/10/2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENSlashMonthFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "August/10/2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression with separators"
+    },
+    {
+      "id": "en/month_name_middle_endian#21",
+      "text": "August-10-2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "August-10-2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression with separators"
+    },
+    {
+      "id": "en/month_name_middle_endian#22",
+      "text": "August 10 - 22, 2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "August 10 - 22, 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 22,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-22T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#23",
+      "text": "August 10 to 22, 2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "August 10 to 22, 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 22,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-22T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#24",
+      "text": "August 10 - November 12",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "August 10 - November 12",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 11
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-11-12T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#25",
+      "text": "Aug 10 to Nov 12",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Aug 10 to Nov 12",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 11
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-11-12T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#26",
+      "text": "Aug 10 - Nov 12, 2013",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Aug 10 - Nov 12, 2013",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 11,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-11-12T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#27",
+      "text": "Aug 10 - Nov 12, 2011",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Aug 10 - Nov 12, 2011",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 11,
+              "year": 2011
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2011-11-12T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "en/month_name_middle_endian#28",
+      "text": "May eighth, 2010",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "May eighth, 2010",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 5,
+              "year": 2010
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2010-05-08T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal Words"
+    },
+    {
+      "id": "en/month_name_middle_endian#29",
+      "text": "May twenty-fourth",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "May twenty-fourth",
+          "start": {
+            "known": {
+              "day": 24,
+              "month": 5
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-05-24T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal Words"
+    },
+    {
+      "id": "en/month_name_middle_endian#30",
+      "text": "May eighth - tenth, 2010",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "May eighth - tenth, 2010",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 5,
+              "year": 2010
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2010-05-08T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 10,
+              "month": 5,
+              "year": 2010
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2010-05-10T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Ordinal Words"
+    },
+    {
+      "id": "en/month_name_middle_endian#31",
+      "text": "January 1st",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-02-15T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "January 1st",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 1
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-01-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Forward Option"
+    },
+    {
+      "id": "en/month_name_middle_endian#32",
+      "text": "January 1st",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-02-15T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "January 1st",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 1
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2017
+            },
+            "date": "2017-01-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Forward Option"
+    },
+    {
+      "id": "en/month_name_middle_endian#33",
+      "text": "Aug 9, 96",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Aug 9, 96",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 1996
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1996-08-09T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - year 90's parsing"
+    },
+    {
+      "id": "en/month_name_middle_endian#34",
+      "text": "Aug 9 96",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Aug 9 96",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 1996
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1996-08-09T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - year 90's parsing"
+    },
+    {
+      "id": "en/month_name_middle_endian#35",
+      "text": "Dec. 21",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-01-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Dec. 21",
+          "start": {
+            "known": {
+              "day": 21,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-12-21T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Skip year-like on little-endian configuration"
+    },
+    {
+      "id": "en/month_name_middle_endian#36",
+      "text": "Dec. 21",
+      "config": "en.GB.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-01-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Dec. 21",
+          "start": {
+            "known": {
+              "month": 12,
+              "year": 2021
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2021-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Skip year-like on little-endian configuration"
+    },
+    {
+      "id": "en/month_name_middle_endian#37",
+      "text": "August 32, 2014",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    },
+    {
+      "id": "en/month_name_middle_endian#38",
+      "text": "February 29, 2014",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    },
+    {
+      "id": "en/month_name_middle_endian#39",
+      "text": "August 32",
+      "config": "en.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    },
+    {
+      "id": "en/month_name_middle_endian#40",
+      "text": "February 29",
+      "config": "en.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2014-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    },
+    {
+      "id": "en/month_name_middle_endian#41",
+      "text": "February 151998",
+      "config": "en.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2014-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    }
+  ]
+}

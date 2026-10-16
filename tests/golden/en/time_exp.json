@@ -1,0 +1,2394 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_time_exp.test.ts",
+  "cases": [
+    {
+      "id": "en/time_exp#01",
+      "text": "  11 AM ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "11 AM",
+          "start": {
+            "known": {
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T11:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing text offset"
+    },
+    {
+      "id": "en/time_exp#02",
+      "text": "2020 at  11 AM ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "at  11 AM",
+          "start": {
+            "known": {
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T11:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing text offset"
+    },
+    {
+      "id": "en/time_exp#03",
+      "text": "20:32:13",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "20:32:13",
+          "start": {
+            "known": {
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 32,
+              "second": 13
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "date": "2016-10-01T20:32:13.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression"
+    },
+    {
+      "id": "en/time_exp#04",
+      "text": "1 at night",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 at night",
+          "start": {
+            "known": {
+              "hour": 1,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T01:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression with clues"
+    },
+    {
+      "id": "en/time_exp#05",
+      "text": "1 in the afternoon",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 in the afternoon",
+          "start": {
+            "known": {
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T13:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression with clues"
+    },
+    {
+      "id": "en/time_exp#06",
+      "text": "05/31/2024 14:15",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "05/31/2024 14:15",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 15,
+              "month": 5,
+              "year": 2024
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2024-05-31T14:15:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression after date"
+    },
+    {
+      "id": "en/time_exp#07",
+      "text": "05/31/2024.14:15",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "05/31/2024.14:15",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 15,
+              "month": 5,
+              "year": 2024
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2024-05-31T14:15:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression after date"
+    },
+    {
+      "id": "en/time_exp#08",
+      "text": "05/31/2024:14:15",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "05/31/2024:14:15",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 15,
+              "month": 5,
+              "year": 2024
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2024-05-31T14:15:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression after date"
+    },
+    {
+      "id": "en/time_exp#09",
+      "text": "05/31/2024-14:15",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "05/31/2024-14:15",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 15,
+              "month": 5,
+              "year": 2024
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2024-05-31T14:15:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression after date"
+    },
+    {
+      "id": "en/time_exp#10",
+      "text": "14:15 05/31/2024",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "14:15 05/31/2024",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 15,
+              "month": 5,
+              "year": 2024
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2024-05-31T14:15:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression before date"
+    },
+    {
+      "id": "en/time_exp#11",
+      "text": "8:23 AM, Jul 9",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8:23 AM, Jul 9",
+          "start": {
+            "known": {
+              "day": 9,
+              "hour": 8,
+              "meridiem": 0,
+              "minute": 23,
+              "month": 7
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-07-09T08:23:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression before date"
+    },
+    {
+      "id": "en/time_exp#12",
+      "text": "8:23 AM ∙ Jul 9",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8:23 AM ∙ Jul 9",
+          "start": {
+            "known": {
+              "day": 9,
+              "hour": 8,
+              "meridiem": 0,
+              "minute": 23,
+              "month": 7
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-07-09T08:23:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression before date"
+    },
+    {
+      "id": "en/time_exp#13",
+      "text": "24: July 23, 2026 at 3:30 PM",
+      "config": "en.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2026-07-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "OverlapRemovalRefiner",
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [
+        {
+          "index": 4,
+          "text": "July 23, 2026 at 3:30 PM",
+          "start": {
+            "known": {
+              "day": 23,
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 30,
+              "month": 7,
+              "year": 2026
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2026-07-23T15:30:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - A bare number followed by a colon should not merge backwards over the date that follows"
+    },
+    {
+      "id": "en/time_exp#14",
+      "text": "10:00:00 - 21:45:00",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10:00:00 - 21:45:00",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 0,
+              "second": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "date": "2016-10-01T10:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 21,
+              "meridiem": 1,
+              "minute": 45,
+              "second": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "date": "2016-10-01T21:45:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range expression"
+    },
+    {
+      "id": "en/time_exp#15",
+      "text": "10:00:00 until 21:45:00",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T11:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10:00:00 until 21:45:00",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 0,
+              "second": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "date": "2016-10-01T10:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 21,
+              "meridiem": 1,
+              "minute": 45,
+              "second": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "date": "2016-10-01T21:45:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range expression"
+    },
+    {
+      "id": "en/time_exp#16",
+      "text": "10:00:00 till 21:45:00",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T11:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10:00:00 till 21:45:00",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 0,
+              "second": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "date": "2016-10-01T10:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 21,
+              "meridiem": 1,
+              "minute": 45,
+              "second": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "date": "2016-10-01T21:45:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range expression"
+    },
+    {
+      "id": "en/time_exp#17",
+      "text": "10:00:00 through 21:45:00",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T11:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10:00:00 through 21:45:00",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 0,
+              "second": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "date": "2016-10-01T10:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 21,
+              "meridiem": 1,
+              "minute": 45,
+              "second": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "date": "2016-10-01T21:45:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range expression"
+    },
+    {
+      "id": "en/time_exp#18",
+      "text": "10:00:00 - 15/15",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10:00:00",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 0,
+              "second": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "date": "2016-10-01T10:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time non-range expression"
+    },
+    {
+      "id": "en/time_exp#19",
+      "text": "11 at night",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "11 at night",
+          "start": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T23:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time number expression"
+    },
+    {
+      "id": "en/time_exp#20",
+      "text": "11 tonight",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "11 tonight",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 23,
+              "minute": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2016-10-01T23:00:00.000Z",
+            "tags": [
+              "casualReference/tonight",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time number expression"
+    },
+    {
+      "id": "en/time_exp#21",
+      "text": "6 in the morning",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "6 in the morning",
+          "start": {
+            "known": {
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T06:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time number expression"
+    },
+    {
+      "id": "en/time_exp#22",
+      "text": "6 in the afternoon",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "6 in the afternoon",
+          "start": {
+            "known": {
+              "hour": 18,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T18:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time number expression"
+    },
+    {
+      "id": "en/time_exp#23",
+      "text": "10 - 11 at night",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 - 11 at night",
+          "start": {
+            "known": {
+              "hour": 22,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T22:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "parser/ENCasualTimeParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 23,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T23:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "parser/ENCasualTimeParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range's meridiem handling"
+    },
+    {
+      "id": "en/time_exp#24",
+      "text": "8pm - 11",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8pm - 11",
+          "start": {
+            "known": {
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T20:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T23:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range's meridiem handling"
+    },
+    {
+      "id": "en/time_exp#25",
+      "text": "8 - 11pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8 - 11pm",
+          "start": {
+            "known": {
+              "hour": 20,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T20:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T23:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range's meridiem handling"
+    },
+    {
+      "id": "en/time_exp#26",
+      "text": "7 - 8",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "7 - 8",
+          "start": {
+            "known": {
+              "hour": 7,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T07:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 8,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T08:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range's meridiem handling"
+    },
+    {
+      "id": "en/time_exp#27",
+      "text": "December 31, 2022 10:00 pm - 1:00 am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2017-07-07T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "December 31, 2022 10:00 pm - 1:00 am",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 12,
+              "year": 2022
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2022-12-31T22:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 1,
+              "hour": 1,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2023-01-01T01:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range to the next day"
+    },
+    {
+      "id": "en/time_exp#28",
+      "text": "December 31, 2022 10:00 pm - 12:00 am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2017-07-07T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "December 31, 2022 10:00 pm - 12:00 am",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 12,
+              "year": 2022
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2022-12-31T22:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 1,
+              "hour": 0,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2023-01-01T00:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range to the next day"
+    },
+    {
+      "id": "en/time_exp#29",
+      "text": "10pm to 2am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-01-31T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10pm to 2am",
+          "start": {
+            "known": {
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 31,
+              "millisecond": 0,
+              "month": 1,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-01-31T22:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 2,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 2,
+              "second": 0,
+              "weekday": 4,
+              "year": 2024
+            },
+            "date": "2024-02-01T02:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range to the next day"
+    },
+    {
+      "id": "en/time_exp#30",
+      "text": "11pm - 12am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-12-31T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "11pm - 12am",
+          "start": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 31,
+              "millisecond": 0,
+              "month": 12,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-12-31T23:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 0,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "millisecond": 0,
+              "month": 1,
+              "second": 0,
+              "weekday": 1,
+              "year": 2024
+            },
+            "date": "2024-01-01T00:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range to the next day"
+    },
+    {
+      "id": "en/time_exp#31",
+      "text": "at 1",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "at 1",
+          "start": {
+            "known": {
+              "hour": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T01:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing causal positive cases"
+    },
+    {
+      "id": "en/time_exp#32",
+      "text": "at 12",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "at 12",
+          "start": {
+            "known": {
+              "hour": 12,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing causal positive cases"
+    },
+    {
+      "id": "en/time_exp#33",
+      "text": "at 12.30",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "at 12.30",
+          "start": {
+            "known": {
+              "hour": 12,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:30:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing causal positive cases"
+    },
+    {
+      "id": "en/time_exp#34",
+      "text": "2020",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : [year-like] pattern"
+    },
+    {
+      "id": "en/time_exp#35",
+      "text": "2020  ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : [year-like] pattern"
+    },
+    {
+      "id": "en/time_exp#36",
+      "text": "2019 to 2020",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : [year-like] pattern"
+    },
+    {
+      "id": "en/time_exp#37",
+      "text": "I'm at 101,194 points!",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : 'at [some numbers]'"
+    },
+    {
+      "id": "en/time_exp#38",
+      "text": "I'm at 101 points!",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : 'at [some numbers]'"
+    },
+    {
+      "id": "en/time_exp#39",
+      "text": "I'm at 10.1",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : 'at [some numbers]'"
+    },
+    {
+      "id": "en/time_exp#40",
+      "text": "I'm at 10.1 - 10.12",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : 'at [some numbers] - [some numbers]'"
+    },
+    {
+      "id": "en/time_exp#41",
+      "text": "I'm at 10 - 10.1",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : 'at [some numbers] - [some numbers]'"
+    },
+    {
+      "id": "en/time_exp#42",
+      "text": "I'm at 101,194 points!",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases (Strict)"
+    },
+    {
+      "id": "en/time_exp#43",
+      "text": "I'm at 101 points!",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases (Strict)"
+    },
+    {
+      "id": "en/time_exp#44",
+      "text": "I'm at 10.1",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases (Strict)"
+    },
+    {
+      "id": "en/time_exp#45",
+      "text": "I'm at 10",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases (Strict)"
+    },
+    {
+      "id": "en/time_exp#46",
+      "text": "2020",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases (Strict)"
+    },
+    {
+      "id": "en/time_exp#47",
+      "text": "I'm at 10.1 - 10.12",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : 'at [some numbers] - [some numbers]' (Strict)"
+    },
+    {
+      "id": "en/time_exp#48",
+      "text": "I'm at 10 - 10.1",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : 'at [some numbers] - [some numbers]' (Strict)"
+    },
+    {
+      "id": "en/time_exp#49",
+      "text": "I'm at 10 - 20",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : 'at [some numbers] - [some numbers]' (Strict)"
+    },
+    {
+      "id": "en/time_exp#50",
+      "text": "7-730",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Parsing negative cases : 'at [some numbers] - [some numbers]' (Strict)"
+    },
+    {
+      "id": "en/time_exp#51",
+      "text": "1am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-05-26T01:57:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1am",
+          "start": {
+            "known": {
+              "hour": 1,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 27,
+              "millisecond": 0,
+              "month": 5,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-05-27T01:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Forward time calculation 'forwardDate' flag"
+    },
+    {
+      "id": "en/time_exp#52",
+      "text": "11am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "11am",
+          "start": {
+            "known": {
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 2,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-02T11:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Forward time calculation 'forwardDate' flag"
+    },
+    {
+      "id": "en/time_exp#53",
+      "text": "  11am to 1am  ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "11am to 1am",
+          "start": {
+            "known": {
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 2,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-02T11:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 1,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 3,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "weekday": 0,
+              "year": 2016
+            },
+            "date": "2016-10-03T01:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Forward time calculation 'forwardDate' flag"
+    },
+    {
+      "id": "en/time_exp#54",
+      "text": "  10am to 12pm  ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T11:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "10am to 12pm",
+          "start": {
+            "known": {
+              "hour": 10,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 2,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-02T10:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 2,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-02T12:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Forward time calculation 'forwardDate' flag"
+    },
+    {
+      "id": "en/time_exp#55",
+      "text": "1am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2022-05-26T06:57:00.000Z",
+        "timezone_input": "CDT",
+        "timezone_offset": -300
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1am",
+          "start": {
+            "known": {
+              "hour": 1,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 27,
+              "millisecond": 0,
+              "month": 5,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-05-27T06:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Test - Forward time calculation 'forwardDate' flag in different timezones"
+    }
+  ]
+}

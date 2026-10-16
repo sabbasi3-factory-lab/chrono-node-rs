@@ -1,0 +1,1846 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_casual.test.ts",
+  "cases": [
+    {
+      "id": "en/casual#01",
+      "text": "The Deadline is now",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "now",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 8,
+              "meridiem": 0,
+              "millisecond": 11,
+              "minute": 9,
+              "month": 8,
+              "second": 10,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T08:09:10.011Z",
+            "tags": [
+              "casualReference/now",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#02",
+      "text": "The Deadline is now, without implicit local timezone",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2021-11-23T13:32:23.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "now",
+          "start": {
+            "known": {
+              "day": 23,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 32,
+              "month": 11,
+              "second": 23,
+              "timezoneOffset": 0,
+              "year": 2021
+            },
+            "implied": {},
+            "date": "2021-11-23T13:32:23.000Z",
+            "tags": [
+              "casualReference/now",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#03",
+      "text": "The Deadline is today",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:12:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "today",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 14,
+              "millisecond": 0,
+              "minute": 12,
+              "second": 0
+            },
+            "date": "2012-08-10T14:12:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#04",
+      "text": "The Deadline is Tomorrow",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "Tomorrow",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-11T17:10:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#05",
+      "text": "The Deadline is Tomorrow",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T01:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "Tomorrow",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T01:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#06",
+      "text": "The Deadline was yesterday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 17,
+          "text": "yesterday",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": [
+              "casualReference/yesterday",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#07",
+      "text": "The Deadline was last night ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENCasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 17,
+          "text": "last night",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T00:00:00.000Z",
+            "tags": [
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#08",
+      "text": "The Deadline was this morning ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 17,
+          "text": "this morning",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#09",
+      "text": "The Deadline was this afternoon ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 17,
+          "text": "this afternoon",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#10",
+      "text": "The Deadline was this evening ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 17,
+          "text": "this evening",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#11",
+      "text": "The Deadline is midnight ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "midnight",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 11,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-08-11T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#12",
+      "text": "The Deadline was midnight ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T01:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 17,
+          "text": "midnight",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#13",
+      "text": "The Deadline was midnight ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T01:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 17,
+          "text": "midnight",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 11,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-11T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/casual#14",
+      "text": "The Deadline is today 5PM",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "today 5PM",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T17:00:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "en/casual#15",
+      "text": "Tomorrow at noon",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENCasualTimeParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Tomorrow at noon",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 12,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T12:00:00.000Z",
+            "tags": [
+              "casualReference/noon",
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "en/casual#16",
+      "text": "The event is today - next friday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 13,
+          "text": "today - next friday",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-04T12:00:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual date range"
+    },
+    {
+      "id": "en/casual#17",
+      "text": "The event is today - next friday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 13,
+          "text": "today - next friday",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 17,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-17T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual date range"
+    },
+    {
+      "id": "en/casual#18",
+      "text": "annual leave from today morning to tomorrow",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENCasualTimeParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 18,
+          "text": "today morning to tomorrow",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-04T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "casualReference/today",
+              "parser/ENCasualDateParser",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 5,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-05T12:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual time implication"
+    },
+    {
+      "id": "en/casual#19",
+      "text": "annual leave from today to tomorrow afternoon",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENCasualTimeParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 18,
+          "text": "today to tomorrow afternoon",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-04T12:00:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 5,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-05T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon",
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENCasualTimeParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual time implication"
+    },
+    {
+      "id": "en/casual#20",
+      "text": "tonight",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tonight",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T22:00:00.000Z",
+            "tags": [
+              "casualReference/tonight",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#21",
+      "text": "tonight 8pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tonight 8pm",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T20:00:00.000Z",
+            "tags": [
+              "casualReference/tonight",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#22",
+      "text": "tonight at 8",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tonight at 8",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 20,
+              "minute": 0,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T20:00:00.000Z",
+            "tags": [
+              "casualReference/tonight",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#23",
+      "text": "tomorrow before 4pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tomorrow before 4pm",
+          "start": {
+            "known": {
+              "day": 2,
+              "hour": 16,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-01-02T16:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#24",
+      "text": "tomorrow after 4pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tomorrow after 4pm",
+          "start": {
+            "known": {
+              "day": 2,
+              "hour": 16,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-01-02T16:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#25",
+      "text": "thurs",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "thurs",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 9,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#26",
+      "text": "this evening",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "this evening",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 1,
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#27",
+      "text": "yesterday afternoon",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENCasualTimeParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "yesterday afternoon",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-09-30T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon",
+              "casualReference/yesterday",
+              "parser/ENCasualDateParser",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#28",
+      "text": "tomorrow morning",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENCasualTimeParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tomorrow morning",
+          "start": {
+            "known": {
+              "day": 2,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-10-02T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#29",
+      "text": "this afternoon at 3",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "this afternoon at 3",
+          "start": {
+            "known": {
+              "hour": 15,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon",
+              "parser/ENCasualTimeParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#30",
+      "text": "at midnight on 12th August",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENMonthNameLittleEndianParser",
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "midnight on 12th August",
+          "start": {
+            "known": {
+              "day": 12,
+              "hour": 0,
+              "minute": 0,
+              "month": 8
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-12T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/casual#31",
+      "text": "Jan 1, 2020 Morning UTC",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENMonthNameMiddleEndianParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Jan 1, 2020 Morning UTC",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 1,
+              "timezoneOffset": 0,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2020-01-01T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "parser/ENCasualTimeParser",
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time with timezone"
+    },
+    {
+      "id": "en/casual#32",
+      "text": "Jan 1, 2020 Evening JST",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualTimeParser",
+          "ENMonthNameMiddleEndianParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Jan 1, 2020 Evening JST",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 1,
+              "timezoneOffset": 540,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2020-01-01T11:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "parser/ENCasualTimeParser",
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time with timezone"
+    },
+    {
+      "id": "en/casual#33",
+      "text": "notoday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#34",
+      "text": "tdtmr",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#35",
+      "text": "xyesterday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#36",
+      "text": "nowhere",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#37",
+      "text": "noway",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#38",
+      "text": "knowledge",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#39",
+      "text": "mar",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#40",
+      "text": "jan",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#41",
+      "text": "do I have the money",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#42",
+      "text": "I may by here. May the force be with you. Theresa may become PM soon.",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENUnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#43",
+      "text": "XXX is set to be released in the second half of 2025",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "ENUnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "en/casual#44",
+      "text": "do I have the money",
+      "config": "en.GB.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    }
+  ]
+}

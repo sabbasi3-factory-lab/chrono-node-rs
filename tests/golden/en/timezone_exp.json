@@ -1,0 +1,2430 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_timezone_exp.test.ts",
+  "cases": [
+    {
+      "id": "en/timezone_exp#01",
+      "text": "wednesday, september 16, 2020 at 11 am utc+02:45 ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 11 am utc+02:45",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 9,
+              "timezoneOffset": 165,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T08:15:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with UTC offset"
+    },
+    {
+      "id": "en/timezone_exp#02",
+      "text": "wednesday, september 16, 2020 at 11 am utc+0245 ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 11 am utc+0245",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 9,
+              "timezoneOffset": 165,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T08:15:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with UTC offset"
+    },
+    {
+      "id": "en/timezone_exp#03",
+      "text": "wednesday, september 16, 2020 at 11 am utc+02 ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 11 am utc+02",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 9,
+              "timezoneOffset": 120,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T09:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with UTC offset"
+    },
+    {
+      "id": "en/timezone_exp#04",
+      "text": "wednesday, september 16, 2020 at 23.00+14",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 23.00+14",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 9,
+              "timezoneOffset": 840,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T09:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with numeric offset"
+    },
+    {
+      "id": "en/timezone_exp#05",
+      "text": "wednesday, september 16, 2020 at 23.00+1400",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 23.00+1400",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 9,
+              "timezoneOffset": 840,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T09:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with numeric offset"
+    },
+    {
+      "id": "en/timezone_exp#06",
+      "text": "wednesday, september 16, 2020 at 23.00+15",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner",
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 23.00",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 9,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T23:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with numeric offset"
+    },
+    {
+      "id": "en/timezone_exp#07",
+      "text": "wednesday, september 16, 2020 at 11 am GMT -08:45 ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 11 am GMT -08:45",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 9,
+              "timezoneOffset": -525,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T19:45:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with GMT offset"
+    },
+    {
+      "id": "en/timezone_exp#08",
+      "text": "wednesday, september 16, 2020 at 11 am gmt+02 ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 11 am gmt+02",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 9,
+              "timezoneOffset": 120,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T09:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with GMT offset"
+    },
+    {
+      "id": "en/timezone_exp#09",
+      "text": "published: 10:30 (gmt-2:30).",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneOffsetRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 11,
+          "text": "10:30 (gmt-2:30)",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 30,
+              "timezoneOffset": -150
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with GMT offset"
+    },
+    {
+      "id": "en/timezone_exp#10",
+      "text": "wednesday, september 16, 2020 at 11 am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 11 am",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 9,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T11:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with timezone abbreviation"
+    },
+    {
+      "id": "en/timezone_exp#11",
+      "text": "wednesday, september 16, 2020 at 11 am JST",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 11 am JST",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 9,
+              "timezoneOffset": 540,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T02:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with timezone abbreviation"
+    },
+    {
+      "id": "en/timezone_exp#12",
+      "text": "wednesday, september 16, 2020 at 11 am GMT+0900 (JST)",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "wednesday, september 16, 2020 at 11 am GMT+0900 (JST)",
+          "start": {
+            "known": {
+              "day": 16,
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 9,
+              "timezoneOffset": 540,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T02:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with timezone abbreviation"
+    },
+    {
+      "id": "en/timezone_exp#13",
+      "text": "10:30 pst today",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10:30 pst today",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 10,
+              "minute": 30,
+              "month": 10,
+              "timezoneOffset": -480,
+              "year": 2016
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2016-10-01T18:30:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with timezone abbreviation"
+    },
+    {
+      "id": "en/timezone_exp#14",
+      "text": "10:30 JST today to 10:30 pst tomorrow ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10:30 JST today to 10:30 pst tomorrow",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 10,
+              "minute": 30,
+              "month": 10,
+              "timezoneOffset": 540,
+              "year": 2016
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2016-10-01T01:30:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 2,
+              "hour": 10,
+              "minute": 30,
+              "month": 10,
+              "timezoneOffset": -480,
+              "year": 2016
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2016-10-02T18:30:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Parsing date range with timezone abbreviation"
+    },
+    {
+      "id": "en/timezone_exp#15",
+      "text": "2022-03-12 23:00 ET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2022-03-12 23:00 ET",
+          "start": {
+            "known": {
+              "day": 12,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 3,
+              "timezoneOffset": -300,
+              "year": 2022
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2022-03-13T04:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#16",
+      "text": "2022-03-13 23:00 ET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2022-03-13 23:00 ET",
+          "start": {
+            "known": {
+              "day": 13,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 3,
+              "timezoneOffset": -240,
+              "year": 2022
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2022-03-14T03:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#17",
+      "text": "2021-03-13 23:00 ET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2021-03-13 23:00 ET",
+          "start": {
+            "known": {
+              "day": 13,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 3,
+              "timezoneOffset": -300,
+              "year": 2021
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2021-03-14T04:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#18",
+      "text": "2021-03-14 23:00 ET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2021-03-14 23:00 ET",
+          "start": {
+            "known": {
+              "day": 14,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 3,
+              "timezoneOffset": -240,
+              "year": 2021
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2021-03-15T03:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#19",
+      "text": "2021-11-06 23:00 ET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2021-11-06 23:00 ET",
+          "start": {
+            "known": {
+              "day": 6,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 11,
+              "timezoneOffset": -240,
+              "year": 2021
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2021-11-07T03:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#20",
+      "text": "2021-11-07 23:00 ET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2021-11-07 23:00 ET",
+          "start": {
+            "known": {
+              "day": 7,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 11,
+              "timezoneOffset": -300,
+              "year": 2021
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2021-11-08T04:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#21",
+      "text": "2020-10-31 23:00 ET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2020-10-31 23:00 ET",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 10,
+              "timezoneOffset": -240,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-11-01T03:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#22",
+      "text": "2020-11-01 23:00 ET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2020-11-01 23:00 ET",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 11,
+              "timezoneOffset": -300,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-11-02T04:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#23",
+      "text": "2022-03-26 23:00 CET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2022-03-26 23:00 CET",
+          "start": {
+            "known": {
+              "day": 26,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 3,
+              "timezoneOffset": 60,
+              "year": 2022
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2022-03-26T22:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#24",
+      "text": "2022-03-27 23:00 CET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2022-03-27 23:00 CET",
+          "start": {
+            "known": {
+              "day": 27,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 3,
+              "timezoneOffset": 120,
+              "year": 2022
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2022-03-27T21:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#25",
+      "text": "2021-03-27 23:00 CET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2021-03-27 23:00 CET",
+          "start": {
+            "known": {
+              "day": 27,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 3,
+              "timezoneOffset": 60,
+              "year": 2021
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2021-03-27T22:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#26",
+      "text": "2021-03-28 23:00 CET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2021-03-28 23:00 CET",
+          "start": {
+            "known": {
+              "day": 28,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 3,
+              "timezoneOffset": 120,
+              "year": 2021
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2021-03-28T21:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#27",
+      "text": "2022-10-29 23:00 CET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2022-10-29 23:00 CET",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 10,
+              "timezoneOffset": 120,
+              "year": 2022
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2022-10-29T21:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#28",
+      "text": "2022-10-30 23:00 CET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2022-10-30 23:00 CET",
+          "start": {
+            "known": {
+              "day": 30,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 10,
+              "timezoneOffset": 60,
+              "year": 2022
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2022-10-30T22:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#29",
+      "text": "2021-10-30 23:00 CET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2021-10-30 23:00 CET",
+          "start": {
+            "known": {
+              "day": 30,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 10,
+              "timezoneOffset": 120,
+              "year": 2021
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2021-10-30T21:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#30",
+      "text": "2021-10-31 23:00 CET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2021-10-31 23:00 CET",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 10,
+              "timezoneOffset": 60,
+              "year": 2021
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2021-10-31T22:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date/time with ambiguous timezone abbreviations"
+    },
+    {
+      "id": "en/timezone_exp#31",
+      "text": "Jan 1st 2023 at 10:00 XYZ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Jan 1st 2023 at 10:00",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 10,
+              "minute": 0,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2023-01-01T10:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone parsing overrides"
+    },
+    {
+      "id": "en/timezone_exp#32",
+      "text": "Jan 1st 2023 at 10:00 XYZ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-02-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "timezones": {
+          "XYZ": -180
+        }
+      },
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Jan 1st 2023 at 10:00 XYZ",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 10,
+              "minute": 0,
+              "month": 1,
+              "timezoneOffset": -180,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2023-01-01T13:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone parsing overrides"
+    },
+    {
+      "id": "en/timezone_exp#33",
+      "text": "Wednesday, September 16, 2020, EST",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Wednesday, September 16, 2020, EST",
+          "start": {
+            "known": {
+              "day": 16,
+              "month": 9,
+              "timezoneOffset": -300,
+              "weekday": 3,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2020-09-16T17:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing date with timezone abbreviation"
+    },
+    {
+      "id": "en/timezone_exp#34",
+      "text": "in 1 hour get eggs and milk",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1 hour",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 5,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 24,
+              "month": 11,
+              "second": 13,
+              "timezoneOffset": 0,
+              "year": 2020
+            },
+            "implied": {},
+            "date": "2020-11-29T05:24:13.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Not parsing timezone from relative time"
+    },
+    {
+      "id": "en/timezone_exp#35",
+      "text": "in 1 hour GMT",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1 hour GMT",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 5,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 24,
+              "month": 11,
+              "second": 13,
+              "timezoneOffset": 0,
+              "year": 2020
+            },
+            "implied": {},
+            "date": "2020-11-29T05:24:13.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Not parsing timezone from relative time"
+    },
+    {
+      "id": "en/timezone_exp#36",
+      "text": "in 1 hour GMT",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": "JST",
+        "timezone_offset": 540
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1 hour",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 24,
+              "month": 11,
+              "second": 13,
+              "timezoneOffset": 540,
+              "year": 2020
+            },
+            "implied": {},
+            "date": "2020-11-29T05:24:13.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Not parsing timezone from relative time"
+    },
+    {
+      "id": "en/timezone_exp#37",
+      "text": "in 1 hour GMT",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": "BST",
+        "timezone_offset": 60
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1 hour",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 24,
+              "month": 11,
+              "second": 13,
+              "timezoneOffset": 60,
+              "year": 2020
+            },
+            "implied": {},
+            "date": "2020-11-29T05:24:13.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Not parsing timezone from relative time"
+    },
+    {
+      "id": "en/timezone_exp#38",
+      "text": "now",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2021-11-23T13:32:23.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "now",
+          "start": {
+            "known": {
+              "day": 23,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 32,
+              "month": 11,
+              "second": 23,
+              "timezoneOffset": 0,
+              "year": 2021
+            },
+            "implied": {},
+            "date": "2021-11-23T13:32:23.000Z",
+            "tags": [
+              "casualReference/now",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative time (Now) is not effected by timezone setting"
+    },
+    {
+      "id": "en/timezone_exp#39",
+      "text": "now",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2021-11-23T13:32:23.000Z",
+        "timezone_input": "BST",
+        "timezone_offset": 60
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "now",
+          "start": {
+            "known": {
+              "day": 23,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 32,
+              "month": 11,
+              "second": 23,
+              "timezoneOffset": 60,
+              "year": 2021
+            },
+            "implied": {},
+            "date": "2021-11-23T13:32:23.000Z",
+            "tags": [
+              "casualReference/now",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative time (Now) is not effected by timezone setting"
+    },
+    {
+      "id": "en/timezone_exp#40",
+      "text": "now",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2021-11-23T13:32:23.000Z",
+        "timezone_input": "JST",
+        "timezone_offset": 540
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "now",
+          "start": {
+            "known": {
+              "day": 23,
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 32,
+              "month": 11,
+              "second": 23,
+              "timezoneOffset": 540,
+              "year": 2021
+            },
+            "implied": {},
+            "date": "2021-11-23T13:32:23.000Z",
+            "tags": [
+              "casualReference/now",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative time (Now) is not effected by timezone setting"
+    },
+    {
+      "id": "en/timezone_exp#41",
+      "text": "2 hour later",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2021-11-23T13:32:23.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 hour later",
+          "start": {
+            "known": {
+              "day": 23,
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 32,
+              "month": 11,
+              "second": 23,
+              "timezoneOffset": 0,
+              "year": 2021
+            },
+            "implied": {},
+            "date": "2021-11-23T15:32:23.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative time (2 hour later) is not effected by timezone setting"
+    },
+    {
+      "id": "en/timezone_exp#42",
+      "text": "2 hour later",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2021-11-23T13:32:23.000Z",
+        "timezone_input": "BST",
+        "timezone_offset": 60
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 hour later",
+          "start": {
+            "known": {
+              "day": 23,
+              "hour": 16,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 32,
+              "month": 11,
+              "second": 23,
+              "timezoneOffset": 60,
+              "year": 2021
+            },
+            "implied": {},
+            "date": "2021-11-23T15:32:23.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative time (2 hour later) is not effected by timezone setting"
+    },
+    {
+      "id": "en/timezone_exp#43",
+      "text": "2 hour later",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2021-11-23T13:32:23.000Z",
+        "timezone_input": "JST",
+        "timezone_offset": 540
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 hour later",
+          "start": {
+            "known": {
+              "day": 24,
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 32,
+              "month": 11,
+              "second": 23,
+              "timezoneOffset": 540,
+              "year": 2021
+            },
+            "implied": {},
+            "date": "2021-11-23T15:32:23.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative time (2 hour later) is not effected by timezone setting"
+    },
+    {
+      "id": "en/timezone_exp#44",
+      "text": "in 1 day get eggs and milk",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-14T13:48:22.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1 day",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 11,
+              "weekday": 0,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 48,
+              "second": 22,
+              "timezoneOffset": 0
+            },
+            "date": "2020-11-15T13:48:22.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing timezone from relative date when valid"
+    },
+    {
+      "id": "en/timezone_exp#45",
+      "text": "in 1 day GET",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-14T13:48:22.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1 day GET",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 11,
+              "timezoneOffset": 240,
+              "weekday": 0,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 48,
+              "second": 22
+            },
+            "date": "2020-11-15T09:48:22.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing timezone from relative date when valid"
+    },
+    {
+      "id": "en/timezone_exp#46",
+      "text": "today EST",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "today EST",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "timezoneOffset": -300,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T17:00:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing timezone from relative date when valid"
+    },
+    {
+      "id": "en/timezone_exp#47",
+      "text": "next week EST",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next week EST",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 8,
+              "timezoneOffset": -300,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 5
+            },
+            "date": "2012-08-17T17:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing timezone from relative date when valid"
+    }
+  ]
+}
