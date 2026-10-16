@@ -15,5 +15,6 @@ pub mod timezone;
 pub mod utils {
     //! upstream `src/utils/`.
     pub mod dates;
+    pub mod js;
     pub mod pattern;
 }

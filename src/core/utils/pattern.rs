@@ -33,6 +33,19 @@ pub fn match_any_pattern<'a>(terms: impl IntoIterator<Item = &'a str>) -> String
     format!("(?:{})", terms.join("|").replace('.', r"\."))
 }
 
+/// An upstream `{ [word: string]: V }` dictionary, as `(key, value)` pairs **in upstream key order**.
+pub type Dictionary<V> = [(&'static str, V)];
+
+/// `DICTIONARY[key]` (`None` = `undefined`).
+pub fn dict_get<V: Copy>(dictionary: &Dictionary<V>, key: &str) -> Option<V> {
+    dictionary.iter().find(|(k, _)| *k == key).map(|(_, v)| *v)
+}
+
+/// `Object.keys(DICTIONARY)`.
+pub fn dict_keys<V>(dictionary: &Dictionary<V>) -> impl Iterator<Item = &'static str> + '_ {
+    dictionary.iter().map(|(k, _)| *k)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

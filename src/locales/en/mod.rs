@@ -7,6 +7,7 @@ use std::sync::LazyLock;
 use crate::core::chrono::Chrono;
 
 pub mod configuration;
+pub mod constants;
 
 pub mod parsers {
     //! Auto-registered English parsers.
