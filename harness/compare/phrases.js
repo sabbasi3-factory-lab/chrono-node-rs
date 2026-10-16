@@ -134,7 +134,8 @@ function expression(r) {
 function phrase(r) {
     const [pre, post] = r.pick(FILLERS);
     let body = expression(r);
-    if (r.chance(0.25)) body += r.pick([" and ", ", ", " or ", " then "]) + expression(r);
+    // Range connectors too, so date-range merging (including reversed ranges) is exercised.
+    if (r.chance(0.3)) body += r.pick([" and ", ", ", " or ", " then ", " - ", " to ", " until ", " through ", "-"]) + expression(r);
     if (r.chance(0.1)) body += ` ${r.pick(TIMEZONE_ABBRS)}`;
     return pre + body + post;
 }
