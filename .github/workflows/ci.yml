@@ -1,0 +1,103 @@
+# Gates for every PR and every merge-queue entry (DESIGN §9). At most 2 jobs per PR
+# (factory policies/limits.yaml ci.max_jobs_per_pr). Human tier: changes need the owner's review.
+name: ci
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: harness/package-lock.json
+
+      - name: Install harness dependencies
+        working-directory: harness
+        run: npm ci --no-audit --no-fund
+
+      - name: Gate tests (scope logic)
+        working-directory: harness
+        run: npm run test:gates
+
+      - name: Scope check and contract SHA
+        id: scope
+        working-directory: harness
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node gates/scope-check.js
+
+      - name: Install Rust toolchain (rust-toolchain.toml)
+        run: rustup toolchain install && rustc --version
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: cargo fmt --check
+        run: cargo fmt --all --check
+
+      - name: cargo clippy -D warnings
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: cargo build
+        run: cargo build --all-targets --locked
+
+      - name: Unit tests and configuration order
+        run: cargo test --locked --lib --bins --test configurations
+
+      - name: Whole-crate golden suite (no regressions)
+        run: cargo test --locked --test golden -- --nocapture
+
+      - name: Contract golden cases (every case must pass)
+        if: steps.scope.outputs.golden_areas != ''
+        env:
+          GOLDEN_AREAS: ${{ steps.scope.outputs.golden_areas }}
+          GOLDEN_REQUIRE_ALL: "1"
+        run: cargo test --locked --test golden -- --nocapture
+
+      - name: Doc tests
+        run: cargo test --locked --doc
+
+      - name: Golden data matches upstream/ and harness/
+        working-directory: harness
+        run: npm run golden:check
+
+      - name: Held-out comparison with chrono-node (fresh seed, printed after the run)
+        working-directory: harness
+        run: |
+          npm run build:upstream
+          node compare/compare.js --phrases 2000 --rust ../target/debug/chrono-rs-json
+
+  deny:
+    name: deny
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          command: check
