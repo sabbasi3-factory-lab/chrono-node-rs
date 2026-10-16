@@ -55,5 +55,7 @@ fn main() {
             }
         };
         writeln!(stdout, "{response}").expect("write stdout");
+        // One response per request, immediately: clients may keep stdin open between requests.
+        stdout.flush().expect("flush stdout");
     }
 }

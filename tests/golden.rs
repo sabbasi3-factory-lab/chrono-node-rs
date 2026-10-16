@@ -55,6 +55,13 @@ fn golden_suite() {
         !files.is_empty(),
         "no golden files under tests/golden (run harness/golden/generate.js)"
     );
+    // A misspelled or empty area list must not pass by checking nothing.
+    if let Some(wanted) = &filter {
+        let known: Vec<&str> = files.iter().map(|(a, _)| a.as_str()).collect();
+        assert!(wanted.iter().all(|w| !w.is_empty()), "GOLDEN_AREAS has an empty entry");
+        let unknown: Vec<&String> = wanted.iter().filter(|w| !known.contains(&w.as_str())).collect();
+        assert!(unknown.is_empty(), "unknown GOLDEN_AREAS: {unknown:?}");
+    }
 
     let mut tallies: BTreeMap<String, Tally> = BTreeMap::new();
     let mut failures: Vec<String> = Vec::new();
