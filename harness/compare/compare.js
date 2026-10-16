@@ -7,9 +7,12 @@
 //   node compare/compare.js --phrases 5000 --rust ../target/release/chrono-rs-json --report out.json
 //
 // Only phrases whose required parsers/refiners are all ported in Rust are compared; the rest are
-// counted as "not yet comparable". The seed is printed AFTER the run, as the last line:
+// counted as "not yet comparable". The seed is printed AFTER the run, as the last line. A fresh
+// seed (no --seed) is the held-out check; the controller reads it from the CI log and records it
+// in the audit log:
 //   factory-heldout-seed: <seed>
-// (the controller reads it from the CI log and records it in the audit log).
+// A given seed (the contract's visible one, or a reproduction) prints instead:
+//   factory-comparison-seed: <seed>
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -187,7 +190,7 @@ try {
 } finally {
     // Printed last, after the run (even if it crashed): the held-out seed is never shown before
     // results exist, and every run can be reproduced.
-    console.log(`factory-heldout-seed: ${seed}`);
+    console.log(args.seed === null ? `factory-heldout-seed: ${seed}` : `factory-comparison-seed: ${seed}`);
 }
 // Not process.exit(): let piped stdout (including the seed line) drain before exiting.
 process.exitCode = code;

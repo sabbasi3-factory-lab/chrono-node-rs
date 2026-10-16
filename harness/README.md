@@ -23,5 +23,5 @@ Setup: Node 24 or later, then `npm ci` in this directory. Dependency versions ar
   ```text
   factory-heldout-seed: 1234567890
   ```
-  CI uses a fresh seed on every run. The controller reads that line from the CI log and records it in the audit log. Seeds aren't stored anywhere else.
+  With `--seed` (the contract's visible seed, or a reproduction) the line is `factory-comparison-seed: <n>` instead, so the log holds exactly one held-out seed. CI uses a fresh seed on every run. The controller reads that line from the CI log and records it in the audit log. Seeds aren't stored anywhere else.
 - **Reproduce** a failure with `node compare/compare.js --seed <seed> --phrases <n>`.

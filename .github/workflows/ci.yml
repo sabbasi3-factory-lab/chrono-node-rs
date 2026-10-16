@@ -35,6 +35,40 @@ jobs:
           cache: npm
           cache-dependency-path: harness/package-lock.json
 
+      - name: No internal identifiers in tracked files
+        # Lockfiles must resolve from the public npm registry; no local home paths or private
+        # package-feed hosts anywhere. Extra private patterns (e.g. account aliases) come from the
+        # FACTORY_FORBIDDEN_PATTERNS secret so they are never written into this public file.
+        # Only file names are printed, never the matching text.
+        env:
+          EXTRA_PATTERNS: ${{ secrets.FACTORY_FORBIDDEN_PATTERNS }}
+        run: |
+          fail=0
+          bad=$(git ls-files '*package-lock.json' | while read -r f; do
+            if grep -E '"resolved": "' "$f" | grep -vq '"resolved": "https://registry.npmjs.org/'; then echo "$f"; fi
+          done)
+          if [ -n "$bad" ]; then
+            echo "::error::lockfiles resolve packages outside registry.npmjs.org: $(echo $bad)"
+            fail=1
+          fi
+          generic='/Users/[^/ "]+/|/home/[a-z][a-z0-9_-]*/|pkgs\.visualstudio\.com|pkgs\.dev\.azure\.com|packagefeedproxy'
+          # This file defines the patterns, so it is the one file excluded from the generic scan.
+          files=$(git grep -IlE "$generic" -- . ':!.github/workflows/ci.yml' || true)
+          if [ -n "$files" ]; then
+            echo "::error::local paths or private feed hosts in: $(echo $files)"
+            fail=1
+          fi
+          if [ -n "${EXTRA_PATTERNS}" ]; then
+            files=$(git grep -IilE -e "${EXTRA_PATTERNS}" -- . || true)
+            if [ -n "$files" ]; then
+              echo "::error::private identifiers (FACTORY_FORBIDDEN_PATTERNS) in: $(echo $files)"
+              fail=1
+            fi
+          else
+            echo "FACTORY_FORBIDDEN_PATTERNS is not set; only generic patterns were checked"
+          fi
+          exit $fail
+
       - name: Install harness dependencies
         working-directory: harness
         run: npm ci --no-audit --no-fund
