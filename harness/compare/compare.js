@@ -30,20 +30,29 @@ const REPO = path.resolve(HARNESS, "..");
 
 function parseArgs(argv) {
     const args = { seed: null, phrases: 2000, rust: path.join(REPO, "target/debug/chrono-rs-json"), report: null, show: 20 };
+    const value = (k, v) => {
+        if (v === undefined || v.startsWith("--")) throw new Error(`${k} needs a value`);
+        return v;
+    };
+    const integer = (k, v, min, max) => {
+        const n = Number(value(k, v));
+        if (!Number.isSafeInteger(n) || n < min || n > max) throw new Error(`${k} must be an integer in [${min}, ${max}]`);
+        return n;
+    };
     for (let i = 0; i < argv.length; i++) {
         const [k, v] = [argv[i], argv[i + 1]];
-        if (k === "--seed") (args.seed = Number(v)), i++;
-        else if (k === "--phrases") (args.phrases = Number(v)), i++;
-        else if (k === "--rust") (args.rust = path.resolve(v)), i++;
-        else if (k === "--report") (args.report = path.resolve(v)), i++;
-        else if (k === "--show") (args.show = Number(v)), i++;
+        if (k === "--seed") (args.seed = integer(k, v, 0, 2 ** 32 - 1)), i++;
+        else if (k === "--phrases") (args.phrases = integer(k, v, 1, 1000000)), i++;
+        else if (k === "--rust") (args.rust = path.resolve(value(k, v))), i++;
+        else if (k === "--report") (args.report = path.resolve(value(k, v))), i++;
+        else if (k === "--show") (args.show = integer(k, v, 0, 100000)), i++;
         else throw new Error(`unknown argument ${k}`);
-    }
-    if (args.seed !== null && !(Number.isInteger(args.seed) && args.seed >= 0 && args.seed < 2 ** 32)) {
-        throw new Error("--seed must be an integer in [0, 2^32)");
     }
     return args;
 }
+
+/** POSIX shell single-quoting. */
+const shq = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
 
 function loadUpstream() {
     const built = path.join(HARNESS, ".build/chrono/index.js");
@@ -152,13 +161,23 @@ function main(args, seed) {
     if (args.report) {
         fs.writeFileSync(args.report, JSON.stringify({ seed, summary, mismatches, errors }, null, 2) + "\n");
     }
-    if (mismatches.length > 0 || errors.length > 0) {
-        console.log(`\nreproduce: node harness/compare/compare.js --seed ${seed} --phrases ${args.phrases}`);
+    // If no comparable phrase has a non-empty expected result, nothing real was checked (e.g. the
+    // Rust CLI registers nothing): fail instead of passing vacuously.
+    const vacuous = ![...expected.values()].some((e) => e.results.length > 0);
+    if (vacuous) console.log("ERROR: no comparable phrase with a non-empty result (is the Rust CLI registering steps?)");
+    if (mismatches.length > 0 || errors.length > 0 || vacuous) {
+        console.log(`\nreproduce: cd ${shq(HARNESS)} && node compare/compare.js --seed ${seed} --phrases ${args.phrases} --rust ${shq(args.rust)}`);
     }
-    return mismatches.length > 0 || errors.length > 0 ? 1 : 0;
+    return mismatches.length > 0 || errors.length > 0 || vacuous ? 1 : 0;
 }
 
-const args = parseArgs(process.argv.slice(2));
+let args;
+try {
+    args = parseArgs(process.argv.slice(2));
+} catch (e) {
+    console.error(e.message);
+    process.exit(2);
+}
 const seed = args.seed ?? crypto.randomInt(0, 2 ** 32);
 let code = 1;
 try {
@@ -170,4 +189,5 @@ try {
     // results exist, and every run can be reproduced.
     console.log(`factory-heldout-seed: ${seed}`);
 }
-process.exit(code);
+// Not process.exit(): let piped stdout (including the seed line) drain before exiting.
+process.exitCode = code;

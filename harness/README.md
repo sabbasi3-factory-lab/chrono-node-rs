@@ -18,7 +18,7 @@ Setup: Node 24 or later, then `npm ci` in this directory. Dependency versions ar
 - **Phrases** (`compare/phrases.js`): a seeded PRNG (mulberry32) mixes English date and time expressions with filler text, punctuation, case changes and some non-ASCII text (`café`, `😀`, NBSP), so byte and UTF-16 indexes differ.
 - **Reference dates** come from the same seed. They're random in 2000–2040, biased towards Feb 28/29, month ends, Dec 31 and Jan 1, and some carry a time zone (abbreviation or minutes). Each request carries its reference and time zone explicitly.
 - **What gets compared:** chrono-node runs each phrase step by step (`lib/trace.js`) to find the parsers and refiners it needs. A phrase is compared only if Rust has all of them (`chrono-rs-json --registered`). The rest count as `not_yet_comparable`, a number that shrinks as the port grows.
-- **Exit code** is 1 on any mismatch or error. The summary line reports `comparable`, `matched`, `matched_with_results` and `mismatched`.
+- **Exit code** is 1 on any mismatch or error, or if no comparable phrase has a non-empty result (so the check can never pass vacuously). Bad arguments exit 2. The summary line reports `comparable`, `matched`, `matched_with_results` and `mismatched`.
 - **Held-out seed:** without `--seed`, a fresh seed comes from `crypto.randomInt`. It's printed **after** the run, as the last line, even if the run crashes:
   ```text
   factory-heldout-seed: 1234567890
