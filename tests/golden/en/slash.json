@@ -1,0 +1,2041 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_slash.test.ts",
+  "cases": [
+    {
+      "id": "en/slash#01",
+      "text": "    04/2016   ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 4,
+          "text": "04/2016",
+          "start": {
+            "known": {
+              "month": 4,
+              "year": 2016
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-04-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Parsing Offset Expression"
+    },
+    {
+      "id": "en/slash#02",
+      "text": "8/10/2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8/10/2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (MM/dd/yyyy)"
+    },
+    {
+      "id": "en/slash#03",
+      "text": ": 8/1/2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "8/1/2012",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (MM/dd/yyyy)"
+    },
+    {
+      "id": "en/slash#04",
+      "text": "The Deadline is 8/10/2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "8/10/2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (MM/dd/yyyy)"
+    },
+    {
+      "id": "en/slash#05",
+      "text": "The Deadline is Tuesday 11/3/2015",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-11-03T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "Tuesday 11/3/2015",
+          "start": {
+            "known": {
+              "day": 3,
+              "month": 11,
+              "weekday": 2,
+              "year": 2015
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2015-11-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (MM/dd/yyyy)"
+    },
+    {
+      "id": "en/slash#06",
+      "text": "2/28/2014",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2/28/2014",
+          "start": {
+            "known": {
+              "day": 28,
+              "month": 2,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-02-28T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (MM/dd/yyyy)"
+    },
+    {
+      "id": "en/slash#07",
+      "text": "12-30-16",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12-30-16",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 12,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-12-30T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (MM/dd/yyyy)"
+    },
+    {
+      "id": "en/slash#08",
+      "text": "Friday 12-30-16",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Friday 12-30-16",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 12,
+              "weekday": 5,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-12-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (MM/dd/yyyy)"
+    },
+    {
+      "id": "en/slash#09",
+      "text": "8/10/2012",
+      "config": "en.GB.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8/10/2012",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 10,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-10-08T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression Little-Endian (dd/MM/yyyy)"
+    },
+    {
+      "id": "en/slash#10",
+      "text": "30-12-16",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "30-12-16",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 12,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-12-30T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression Little-Endian (dd/MM/yyyy)"
+    },
+    {
+      "id": "en/slash#11",
+      "text": "Friday 30-12-16",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Friday 30-12-16",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 12,
+              "weekday": 5,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-12-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression Little-Endian (dd/MM/yyyy)"
+    },
+    {
+      "id": "en/slash#12",
+      "text": "8/Oct/2012",
+      "config": "en.GB.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8/Oct/2012",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 10,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-10-08T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression Little-Endian with Month name"
+    },
+    {
+      "id": "en/slash#13",
+      "text": "06/Nov/2023",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "06/Nov/2023",
+          "start": {
+            "known": {
+              "day": 6,
+              "month": 11,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-11-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression Little-Endian with Month name"
+    },
+    {
+      "id": "en/slash#14",
+      "text": "06/Nov/2023:06:36:02",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "06/Nov/2023:06:36:02",
+          "start": {
+            "known": {
+              "day": 6,
+              "hour": 6,
+              "minute": 36,
+              "month": 11,
+              "second": 2,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2023-11-06T06:36:02.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression Little-Endian with Month name"
+    },
+    {
+      "id": "en/slash#15",
+      "text": "06/Nov/2023:06:36:02 +0200",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneOffsetRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "06/Nov/2023:06:36:02 +0200",
+          "start": {
+            "known": {
+              "day": 6,
+              "hour": 6,
+              "minute": 36,
+              "month": 11,
+              "second": 2,
+              "timezoneOffset": 120,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2023-11-06T04:36:02.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression Little-Endian with Month name"
+    },
+    {
+      "id": "en/slash#16",
+      "text": "The event is going ahead (04/2016)",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 26,
+          "text": "04/2016",
+          "start": {
+            "known": {
+              "month": 4,
+              "year": 2016
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-04-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression Shorten (mm/yyyy)"
+    },
+    {
+      "id": "en/slash#17",
+      "text": "Published: 06/2004",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 11,
+          "text": "06/2004",
+          "start": {
+            "known": {
+              "month": 6,
+              "year": 2004
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2004-06-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression Shorten (mm/yyyy)"
+    },
+    {
+      "id": "en/slash#18",
+      "text": "50/6/2018",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Skip month/year suffix of an invalid date"
+    },
+    {
+      "id": "en/slash#19",
+      "text": "99/06/2018",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Skip month/year suffix of an invalid date"
+    },
+    {
+      "id": "en/slash#20",
+      "text": "The deadline is 123/6/2018",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Skip month/year suffix of an invalid date"
+    },
+    {
+      "id": "en/slash#21",
+      "text": "6/2018",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "6/2018",
+          "start": {
+            "known": {
+              "month": 6,
+              "year": 2018
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2018-06-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Preserve complete slash dates and month/year"
+    },
+    {
+      "id": "en/slash#22",
+      "text": "Scheduled (6/2018)",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 11,
+          "text": "6/2018",
+          "start": {
+            "known": {
+              "month": 6,
+              "year": 2018
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2018-06-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Preserve complete slash dates and month/year"
+    },
+    {
+      "id": "en/slash#23",
+      "text": "Published: 6/2018",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 11,
+          "text": "6/2018",
+          "start": {
+            "known": {
+              "month": 6,
+              "year": 2018
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2018-06-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Preserve complete slash dates and month/year"
+    },
+    {
+      "id": "en/slash#24",
+      "text": "16/6/2018",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "16/6/2018",
+          "start": {
+            "known": {
+              "day": 16,
+              "month": 6,
+              "year": 2018
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2018-06-16T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Preserve complete slash dates and month/year"
+    },
+    {
+      "id": "en/slash#25",
+      "text": "50/6/2018; next date: 7/2019",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 22,
+          "text": "7/2019",
+          "start": {
+            "known": {
+              "month": 7,
+              "year": 2019
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2019-07-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Preserve complete slash dates and month/year"
+    },
+    {
+      "id": "en/slash#26",
+      "text": "8/10",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8/10",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression Shorten (dd/mm)"
+    },
+    {
+      "id": "en/slash#27",
+      "text": "8/10/2012 - 8/15/2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8/10/2012 - 8/15/2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 15,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-15T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "en/slash#28",
+      "text": "from 01/21/2021 10:00 to 01/01/2023 07:00",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "01/21/2021 10:00 to 01/01/2023 07:00",
+          "start": {
+            "known": {
+              "day": 21,
+              "hour": 10,
+              "minute": 0,
+              "month": 1,
+              "year": 2021
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2021-01-21T10:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 1,
+              "hour": 7,
+              "minute": 0,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2023-01-01T07:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expressions with Time"
+    },
+    {
+      "id": "en/slash#29",
+      "text": "08/08/2023, 09:15 AM to 08/29/2023, 09:15 AM",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "08/08/2023, 09:15 AM to 08/29/2023, 09:15 AM",
+          "start": {
+            "known": {
+              "day": 8,
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 15,
+              "month": 8,
+              "year": 2023
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2023-08-08T09:15:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 29,
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 15,
+              "month": 8,
+              "year": 2023
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2023-08-29T09:15:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expressions with Time"
+    },
+    {
+      "id": "en/slash#30",
+      "text": "2015-05-25",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2015-05-25",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 5,
+              "year": 2015
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2015-05-25T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Splitter variances patterns"
+    },
+    {
+      "id": "en/slash#31",
+      "text": "2015/05/25",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENYearMonthDayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2015/05/25",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 5,
+              "year": 2015
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2015-05-25T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Splitter variances patterns"
+    },
+    {
+      "id": "en/slash#32",
+      "text": "2015.05.25",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2015.05.25",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 5,
+              "year": 2015
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2015-05-25T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Splitter variances patterns"
+    },
+    {
+      "id": "en/slash#33",
+      "text": "05-25-2015",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "05-25-2015",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 5,
+              "year": 2015
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2015-05-25T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Splitter variances patterns"
+    },
+    {
+      "id": "en/slash#34",
+      "text": "05/25/2015",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "05/25/2015",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 5,
+              "year": 2015
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2015-05-25T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Splitter variances patterns"
+    },
+    {
+      "id": "en/slash#35",
+      "text": "05.25.2015",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "05.25.2015",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 5,
+              "year": 2015
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2015-05-25T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Splitter variances patterns"
+    },
+    {
+      "id": "en/slash#36",
+      "text": "/05/25/2015",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "05/25/2015",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 5,
+              "year": 2015
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2015-05-25T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Splitter variances patterns"
+    },
+    {
+      "id": "en/slash#37",
+      "text": "25/05/2015",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "25/05/2015",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 5,
+              "year": 2015
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2015-05-25T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Splitter variances patterns"
+    },
+    {
+      "id": "en/slash#38",
+      "text": "8/32/2014",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#39",
+      "text": "8/32",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#40",
+      "text": "2/29/2014",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#41",
+      "text": "2014/22/29",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENYearMonthDayParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#42",
+      "text": "2014/13/22",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#43",
+      "text": "80-32-89-89",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#44",
+      "text": "02/29/2022",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#45",
+      "text": "06/31/2022",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#46",
+      "text": "06/-31/2022",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#47",
+      "text": "18/13/2022",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#48",
+      "text": "15/28/2022",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#49",
+      "text": "4/13/1",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates and Unexpected Results"
+    },
+    {
+      "id": "en/slash#50",
+      "text": "5/31",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "1999-06-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5/31",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 5
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2000
+            },
+            "date": "2000-05-31T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    },
+    {
+      "id": "en/slash#51",
+      "text": "1/8 at 12pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2021-09-25T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1/8 at 12pm",
+          "start": {
+            "known": {
+              "day": 8,
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 1
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-01-08T12:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    },
+    {
+      "id": "en/slash#52",
+      "text": "14/4 90",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "14/4",
+          "start": {
+            "known": {
+              "day": 14,
+              "month": 4
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-04-14T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Slash date with an extra chunk"
+    }
+  ]
+}

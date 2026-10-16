@@ -1,0 +1,922 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_time_units_casual_relative.test.ts",
+  "cases": [
+    {
+      "id": "en/time_units_casual_relative#01",
+      "text": "next 2 weeks",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next 2 weeks",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-10-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "en/time_units_casual_relative#02",
+      "text": "next 2 days",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next 2 days",
+          "start": {
+            "known": {
+              "day": 3,
+              "month": 10,
+              "weekday": 1,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-10-03T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "en/time_units_casual_relative#03",
+      "text": "next two years",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next two years",
+          "start": {
+            "known": {
+              "year": 2018
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2018-10-01T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "en/time_units_casual_relative#04",
+      "text": "next 2 weeks 3 days",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next 2 weeks 3 days",
+          "start": {
+            "known": {
+              "day": 18,
+              "month": 10,
+              "weekday": 2,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-10-18T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "en/time_units_casual_relative#05",
+      "text": "after a year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "after a year",
+          "start": {
+            "known": {
+              "year": 2017
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2017-10-01T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "en/time_units_casual_relative#06",
+      "text": "after an hour",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "after an hour",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 16,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T16:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "en/time_units_casual_relative#07",
+      "text": "last 2 weeks",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last 2 weeks",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-09-17T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Negative time units"
+    },
+    {
+      "id": "en/time_units_casual_relative#08",
+      "text": "last two weeks",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last two weeks",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-09-17T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Negative time units"
+    },
+    {
+      "id": "en/time_units_casual_relative#09",
+      "text": "past 2 days",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "past 2 days",
+          "start": {
+            "known": {
+              "day": 29,
+              "month": 9,
+              "weekday": 4,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-09-29T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Negative time units"
+    },
+    {
+      "id": "en/time_units_casual_relative#10",
+      "text": "+2 months, 5 days",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+2 months, 5 days",
+          "start": {
+            "known": {
+              "day": 6,
+              "month": 12,
+              "weekday": 2,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-12-06T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Negative time units"
+    },
+    {
+      "id": "en/time_units_casual_relative#11",
+      "text": "+15 minutes",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+15 minutes",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 29,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-07-10T12:29:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus '+' sign"
+    },
+    {
+      "id": "en/time_units_casual_relative#12",
+      "text": "+15min",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+15min",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 29,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-07-10T12:29:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus '+' sign"
+    },
+    {
+      "id": "en/time_units_casual_relative#13",
+      "text": "+1 day 2 hour",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+1 day 2 hour",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-07-11T14:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus '+' sign"
+    },
+    {
+      "id": "en/time_units_casual_relative#14",
+      "text": "+1m",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+1m",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 15,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-07-10T12:15:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus '+' sign"
+    },
+    {
+      "id": "en/time_units_casual_relative#15",
+      "text": "-3y",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "-3y",
+          "start": {
+            "known": {
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-07-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Minus '-' sign"
+    },
+    {
+      "id": "en/time_units_casual_relative#16",
+      "text": "-2hr5min",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "-2hr5min",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 9,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 55,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T09:55:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Minus '-' sign"
+    },
+    {
+      "id": "en/time_units_casual_relative#17",
+      "text": "-5d 00",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "-5d 00",
+          "start": {
+            "known": {
+              "day": 26,
+              "hour": 0,
+              "minute": 0,
+              "month": 9,
+              "weekday": 1,
+              "year": 2016
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-09-26T00:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Minus '-' sign"
+    },
+    {
+      "id": "en/time_units_casual_relative#18",
+      "text": "3y",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "en/time_units_casual_relative#19",
+      "text": "1 m",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "en/time_units_casual_relative#20",
+      "text": "the day",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "en/time_units_casual_relative#21",
+      "text": "a day",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "en/time_units_casual_relative#22",
+      "text": "+am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "en/time_units_casual_relative#23",
+      "text": "+them",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    }
+  ]
+}

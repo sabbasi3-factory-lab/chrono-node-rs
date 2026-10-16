@@ -1,0 +1,2204 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_time_units_within.test.ts",
+  "cases": [
+    {
+      "id": "en/time_units_within#01",
+      "text": "we have to make something in 5 days.",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 26,
+          "text": "in 5 days",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 8,
+              "weekday": 3,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-15T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#02",
+      "text": "we have to make something in five days.",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 26,
+          "text": "in five days",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 8,
+              "weekday": 3,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-15T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#03",
+      "text": "we have to make something within 10 day",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 26,
+          "text": "within 10 day",
+          "start": {
+            "known": {
+              "day": 20,
+              "month": 8,
+              "weekday": 1,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-20T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#04",
+      "text": "in 5 minutes",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 5 minutes",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:19:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#05",
+      "text": "wait for 5 minutes",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "for 5 minutes",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:19:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#06",
+      "text": "within 1 hour",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within 1 hour",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T13:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#07",
+      "text": "In 5 minutes I will go home",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "In 5 minutes",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:19:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#08",
+      "text": "In 5 minutes A car need to move",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "In 5 minutes",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:19:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#09",
+      "text": "In 5 seconds A car need to move",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "In 5 seconds",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 5,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:14:05.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#10",
+      "text": "within half an hour",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within half an hour",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 44,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:44:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#11",
+      "text": "in half a quarter",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in half a quarter",
+          "start": {
+            "known": {
+              "day": 24,
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 1
+            },
+            "date": "2012-09-24T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#12",
+      "text": "within two weeks",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within two weeks",
+          "start": {
+            "known": {
+              "day": 24,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 5
+            },
+            "date": "2012-08-24T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#13",
+      "text": "within a month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within a month",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-09-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#14",
+      "text": "within a few months",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within a few months",
+          "start": {
+            "known": {
+              "month": 10,
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-10-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#15",
+      "text": "within one year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within one year",
+          "start": {
+            "known": {
+              "year": 2013
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2013-08-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#16",
+      "text": "within one Year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within one Year",
+          "start": {
+            "known": {
+              "year": 2013
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2013-08-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#17",
+      "text": "within One year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within One year",
+          "start": {
+            "known": {
+              "year": 2013
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2013-08-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#18",
+      "text": "In 5 Minutes A car need to move",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "In 5 Minutes",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:19:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#19",
+      "text": "In 5 mins a car need to move",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "In 5 mins",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:19:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#20",
+      "text": "in a week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in a week",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-10-08T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#21",
+      "text": "In around 5 hours",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T13:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "In around 5 hours",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 18,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T18:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#22",
+      "text": "In about ~5 hours",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T13:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "In about ~5 hours",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 18,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T18:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#23",
+      "text": "in 1 month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1 month",
+          "start": {
+            "known": {
+              "month": 11,
+              "year": 2016
+            },
+            "implied": {
+              "day": 1,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 52,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-11-01T14:52:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "en/time_units_within#24",
+      "text": "set a timer for 5 minutes 30 seconds",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 12,
+          "text": "for 5 minutes 30 seconds",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 30,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:19:30.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The within expression with multiple time units"
+    },
+    {
+      "id": "en/time_units_within#25",
+      "text": "set a timer for 5 minutes, 30 seconds",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 12,
+          "text": "for 5 minutes, 30 seconds",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 30,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:19:30.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The within expression with multiple time units"
+    },
+    {
+      "id": "en/time_units_within#26",
+      "text": "set a timer for 1 hour, 5 minutes, 30 seconds",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 12,
+          "text": "for 1 hour, 5 minutes, 30 seconds",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 30,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T13:19:30.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The within expression with multiple time units"
+    },
+    {
+      "id": "en/time_units_within#27",
+      "text": "set a timer for 5 minutes and 30 seconds",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 12,
+          "text": "for 5 minutes and 30 seconds",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 30,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:19:30.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The within expression with multiple time units"
+    },
+    {
+      "id": "en/time_units_within#28",
+      "text": "set a timer for 1 hour, 5 minutes, and 30 seconds",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 12,
+          "text": "for 1 hour, 5 minutes, and 30 seconds",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 30,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T13:19:30.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The within expression with multiple time units"
+    },
+    {
+      "id": "en/time_units_within#29",
+      "text": "In  about 5 hours",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:49:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "In  about 5 hours",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 17,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 49,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T17:49:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The within expression with certain keywords"
+    },
+    {
+      "id": "en/time_units_within#30",
+      "text": "within around 3 hours",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:49:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within around 3 hours",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 49,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T15:49:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The within expression with certain keywords"
+    },
+    {
+      "id": "en/time_units_within#31",
+      "text": "In several hours",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:49:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "In several hours",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 19,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 49,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T19:49:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The within expression with certain keywords"
+    },
+    {
+      "id": "en/time_units_within#32",
+      "text": "In a couple of days",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:49:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "In a couple of days",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "weekday": 0,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 49,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-12T12:49:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The within expression with certain keywords"
+    },
+    {
+      "id": "en/time_units_within#33",
+      "text": "within 30 days",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within 30 days",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 9,
+              "weekday": 0,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-09-09T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (Implied)"
+    },
+    {
+      "id": "en/time_units_within#34",
+      "text": "in 24 hours",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 24 hours",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2020
+            },
+            "implied": {},
+            "date": "2020-07-11T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Implied time values"
+    },
+    {
+      "id": "en/time_units_within#35",
+      "text": "in one day",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in one day",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 7,
+              "weekday": 6,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2020-07-11T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Implied time values"
+    },
+    {
+      "id": "en/time_units_within#36",
+      "text": "in 2 minute",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 2 minute",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 54,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T14:54:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time units' certainty"
+    },
+    {
+      "id": "en/time_units_within#37",
+      "text": "in 2hour",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 2hour",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 16,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 52,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T16:52:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time units' certainty"
+    },
+    {
+      "id": "en/time_units_within#38",
+      "text": "in a few year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in a few year",
+          "start": {
+            "known": {
+              "year": 2019
+            },
+            "implied": {
+              "day": 1,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 52,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2019-10-01T14:52:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time units' certainty"
+    },
+    {
+      "id": "en/time_units_within#39",
+      "text": "within 12 month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within 12 month",
+          "start": {
+            "known": {
+              "month": 10,
+              "year": 2017
+            },
+            "implied": {
+              "day": 1,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 52,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2017-10-01T14:52:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time units' certainty"
+    },
+    {
+      "id": "en/time_units_within#40",
+      "text": "within 3 days",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "within 3 days",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 10,
+              "weekday": 2,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 52,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-10-04T14:52:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time units' certainty"
+    },
+    {
+      "id": "en/time_units_within#41",
+      "text": "give it 2 months",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "2 months",
+          "start": {
+            "known": {
+              "month": 12,
+              "year": 2016
+            },
+            "implied": {
+              "day": 1,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 52,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-12-01T14:52:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time units' certainty"
+    },
+    {
+      "id": "en/time_units_within#42",
+      "text": "in half a quarter",
+      "config": "en.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in half a quarter",
+          "start": {
+            "known": {
+              "day": 24,
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 1
+            },
+            "date": "2012-09-24T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Strict mode"
+    },
+    {
+      "id": "en/time_units_within#43",
+      "text": "in 15m",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Strict mode"
+    },
+    {
+      "id": "en/time_units_within#44",
+      "text": "within 5hr",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Strict mode"
+    },
+    {
+      "id": "en/time_units_within#45",
+      "text": "1 hour",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 hour",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T13:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Forward date option"
+    },
+    {
+      "id": "en/time_units_within#46",
+      "text": "1 month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 month",
+          "start": {
+            "known": {
+              "month": 11,
+              "year": 2016
+            },
+            "implied": {
+              "day": 1,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 52,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-11-01T14:52:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Forward date option"
+    },
+    {
+      "id": "en/time_units_within#47",
+      "text": "in 1 month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1 month",
+          "start": {
+            "known": {
+              "month": 11,
+              "year": 2016
+            },
+            "implied": {
+              "day": 1,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 52,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-11-01T14:52:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Forward date option"
+    },
+    {
+      "id": "en/time_units_within#48",
+      "text": "in am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "en/time_units_within#49",
+      "text": "in them",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "en/time_units_within#50",
+      "text": "the second half",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    }
+  ]
+}

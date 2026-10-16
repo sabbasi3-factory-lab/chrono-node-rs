@@ -1,0 +1,300 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_merging_relative_dates.test.ts",
+  "cases": [
+    {
+      "id": "en/merging_relative_dates#1",
+      "text": "2 weeks after yesterday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-02-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "ENMergeRelativeFollowByDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 weeks after yesterday",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 2,
+              "year": 2022
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 2
+            },
+            "date": "2022-02-15T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/merging_relative_dates#2",
+      "text": "2 months before 02/02",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-02-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitAgoFormatParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeRelativeFollowByDateRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 months before 02/02",
+          "start": {
+            "known": {
+              "month": 12,
+              "year": 2021
+            },
+            "implied": {
+              "day": 2,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2021-12-02T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/merging_relative_dates#3",
+      "text": "2 days after next Friday",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-02-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeRelativeFollowByDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 days after next Friday",
+          "start": {
+            "known": {
+              "day": 13,
+              "month": 2,
+              "weekday": 0,
+              "year": 2022
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2022-02-13T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "en/merging_relative_dates#4",
+      "text": "Saturday in 3 weeks",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2026-06-24T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Saturday",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 27,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "year": 2026
+            },
+            "date": "2026-06-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        },
+        {
+          "index": 9,
+          "text": "in 3 weeks",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 7,
+              "year": 2026
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 3
+            },
+            "date": "2026-07-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday does not contradict a relative-offset date"
+    },
+    {
+      "id": "en/merging_relative_dates#5",
+      "text": "Monday in 2 weeks",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2026-06-24T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Monday",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 22,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "year": 2026
+            },
+            "date": "2026-06-22T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        },
+        {
+          "index": 7,
+          "text": "in 2 weeks",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 7,
+              "year": 2026
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 3
+            },
+            "date": "2026-07-08T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday does not contradict a relative-offset date"
+    }
+  ]
+}

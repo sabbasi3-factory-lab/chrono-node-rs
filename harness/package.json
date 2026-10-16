@@ -1,0 +1,19 @@
+{
+  "name": "chrono-node-rs-harness",
+  "private": true,
+  "description": "Golden-test generator and comparison harness for chrono-node-rs. Runs the pinned chrono-node in upstream/.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "golden": "node golden/generate.js",
+    "golden:check": "node golden/generate.js --check"
+  },
+  "devDependencies": {
+    "@types/jest": "29.5.14",
+    "jest": "29.7.0",
+    "ts-jest": "29.4.4",
+    "typescript": "5.8.3"
+  }
+}

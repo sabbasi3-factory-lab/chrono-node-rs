@@ -1,0 +1,2188 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_month.test.ts",
+  "cases": [
+    {
+      "id": "en/month#01",
+      "text": "September 2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "September 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "en/month#02",
+      "text": "Sept 2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sept 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "en/month#03",
+      "text": "Sep 2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sep 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "en/month#04",
+      "text": "Sep. 2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sep. 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "en/month#05",
+      "text": "Sep-2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sep-2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "en/month#06",
+      "text": "in June of 2022",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "June of 2022",
+          "start": {
+            "known": {
+              "month": 6,
+              "year": 2022
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2022-06-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "en/month#07",
+      "text": "Statement of comprehensive income for the year ended Dec. 2021",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 53,
+          "text": "Dec. 2021",
+          "start": {
+            "known": {
+              "month": 12,
+              "year": 2021
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2021-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "en/month#08",
+      "text": "STATEMENT OF COMPREHENSIVE INCOME FOR THE YEAR ENDED Dec. 2021",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2025-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 53,
+          "text": "Dec. 2021",
+          "start": {
+            "known": {
+              "month": 12,
+              "year": 2021
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2021-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression after uppercase non-date text"
+    },
+    {
+      "id": "en/month#09",
+      "text": "In January",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "January",
+          "start": {
+            "known": {
+              "month": 1
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-01-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Only expression"
+    },
+    {
+      "id": "en/month#10",
+      "text": "in Jan",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "Jan",
+          "start": {
+            "known": {
+              "month": 1
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-01-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Only expression"
+    },
+    {
+      "id": "en/month#11",
+      "text": "May",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "May",
+          "start": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Only expression"
+    },
+    {
+      "id": "en/month#12",
+      "text": "From May to December",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "May to December",
+          "start": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "month": 12
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Month-Only Range expression"
+    },
+    {
+      "id": "en/month#13",
+      "text": "From December to May",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "December to May",
+          "start": {
+            "known": {
+              "month": 12
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Month-Only Range expression"
+    },
+    {
+      "id": "en/month#14",
+      "text": "From May to December, 2022",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "May to December, 2022",
+          "start": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2022
+            },
+            "date": "2022-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "month": 12,
+              "year": 2022
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2022-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Month-Only Range expression"
+    },
+    {
+      "id": "en/month#15",
+      "text": "From December to May 2022",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "December to May 2022",
+          "start": {
+            "known": {
+              "month": 12
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "month": 5,
+              "year": 2022
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2022-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Month-Only Range expression"
+    },
+    {
+      "id": "en/month#16",
+      "text": "From December to May 2020",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "December to May 2020",
+          "start": {
+            "known": {
+              "month": 12
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2019
+            },
+            "date": "2019-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "month": 5,
+              "year": 2020
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2020-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Month-Only Range expression"
+    },
+    {
+      "id": "en/month#17",
+      "text": "From December to May 2025",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "December to May 2025",
+          "start": {
+            "known": {
+              "month": 12
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "month": 5,
+              "year": 2025
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2025-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Month-Only Range expression"
+    },
+    {
+      "id": "en/month#18",
+      "text": "in December",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "December",
+          "start": {
+            "known": {
+              "month": 12
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month with farward date option"
+    },
+    {
+      "id": "en/month#19",
+      "text": "in May",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "May",
+          "start": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month with farward date option"
+    },
+    {
+      "id": "en/month#20",
+      "text": "From May to December",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "May to December",
+          "start": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "month": 12
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Month with farward date option"
+    },
+    {
+      "id": "en/month#21",
+      "text": "From December to May",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-04-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "December to May",
+          "start": {
+            "known": {
+              "month": 12
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Month with farward date option"
+    },
+    {
+      "id": "en/month#22",
+      "text": "The date is Sep 2012 is the date",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 12,
+          "text": "Sep 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month expression in context"
+    },
+    {
+      "id": "en/month#23",
+      "text": "By Angie Mar November 2019",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 13,
+          "text": "November 2019",
+          "start": {
+            "known": {
+              "month": 11,
+              "year": 2019
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2019-11-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month expression in context"
+    },
+    {
+      "id": "en/month#24",
+      "text": "9/2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "9/2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month slash expression"
+    },
+    {
+      "id": "en/month#25",
+      "text": "09/2012",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "09/2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month slash expression"
+    },
+    {
+      "id": "en/month#26",
+      "text": "Aug 96",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Aug 96",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 1996
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1996-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - year 90's parsing"
+    },
+    {
+      "id": "en/month#27",
+      "text": "96 Aug 96",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "Aug 96",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 1996
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1996-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - year 90's parsing"
+    },
+    {
+      "id": "en/month#28",
+      "text": "People visiting Buñol towards the end of August get a good chance to participate in La Tomatina (under normal circumstances)",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 34,
+          "text": "end of August",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-31T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser",
+              "refiner/ENEndOfPeriodRefiner"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month should not have timezone"
+    },
+    {
+      "id": "en/month#29",
+      "text": "end of July",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of July",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 7
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-07-31T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser",
+              "refiner/ENEndOfPeriodRefiner"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of named month"
+    },
+    {
+      "id": "en/month#30",
+      "text": "last day of July",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser",
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last day of July",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 7
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-07-31T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser",
+              "refiner/ENEndOfPeriodRefiner"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of named month"
+    },
+    {
+      "id": "en/month#31",
+      "text": "end of July",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-01-15T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of July",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 7
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-07-31T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser",
+              "refiner/ENEndOfPeriodRefiner"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of named month"
+    },
+    {
+      "id": "en/month#32",
+      "text": "end of February 2024",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of February 2024",
+          "start": {
+            "known": {
+              "day": 29,
+              "month": 2,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-02-29T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser",
+              "refiner/ENEndOfPeriodRefiner"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of named month"
+    },
+    {
+      "id": "en/month#33",
+      "text": "end of October next year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser",
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of October next year",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 10,
+              "year": 2025
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2025-10-31T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser",
+              "refiner/ENEndOfPeriodRefiner"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of named month"
+    },
+    {
+      "id": "en/month#34",
+      "text": "end of october 2032",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of october 2032",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 10,
+              "year": 2032
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2032-10-31T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser",
+              "refiner/ENEndOfPeriodRefiner"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of named month"
+    },
+    {
+      "id": "en/month#35",
+      "text": "May",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "May",
+          "start": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month only in different context"
+    },
+    {
+      "id": "en/month#36",
+      "text": "in May",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "May",
+          "start": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-05-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month only in different context"
+    },
+    {
+      "id": "en/month#37",
+      "text": "The mountain may not move",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENUnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Month only in different context"
+    },
+    {
+      "id": "en/month#38",
+      "text": "May not be correct",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENUnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Month only in different context"
+    },
+    {
+      "id": "en/month#39",
+      "text": "2024 Aug",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-01-15T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENYearMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2024 Aug",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 2024
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENYearMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year Month expression"
+    },
+    {
+      "id": "en/month#40",
+      "text": "2024 August",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-01-15T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser",
+          "ENYearMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2024 August",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 2024
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENYearMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year Month expression"
+    },
+    {
+      "id": "en/month#41",
+      "text": "2024-Aug",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-01-15T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENYearMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2024-Aug",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 2024
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENYearMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year Month expression"
+    },
+    {
+      "id": "en/month#42",
+      "text": "2012 January",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-01-15T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser",
+          "ENYearMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2012 January",
+          "start": {
+            "known": {
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENYearMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year Month expression"
+    },
+    {
+      "id": "en/month#43",
+      "text": "2023 Sept",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser",
+          "ENYearMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2023 Sept",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2023
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENYearMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year Month expression"
+    },
+    {
+      "id": "en/month#44",
+      "text": "2024-August",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser",
+          "ENYearMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2024-August",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 2024
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENYearMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year Month expression"
+    },
+    {
+      "id": "en/month#45",
+      "text": "2024/August",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser",
+          "ENYearMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2024/August",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 2024
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENYearMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year Month expression"
+    },
+    {
+      "id": "en/month#46",
+      "text": "2024 AD August",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameParser",
+          "ENYearMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2024 AD August",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 2024
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-08-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENYearMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year Month expression"
+    }
+  ]
+}

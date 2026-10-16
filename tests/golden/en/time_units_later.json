@@ -1,0 +1,1771 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_time_units_later.test.ts",
+  "cases": [
+    {
+      "id": "en/time_units_later#01",
+      "text": "2 days later",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 days later",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "weekday": 0,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-12T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Later Expression"
+    },
+    {
+      "id": "en/time_units_later#02",
+      "text": "5 minutes later",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T10:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 minutes later",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 5,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T10:05:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Later Expression"
+    },
+    {
+      "id": "en/time_units_later#03",
+      "text": "3 week later",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T10:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "3 week later",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 2
+            },
+            "date": "2012-07-31T10:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Later Expression"
+    },
+    {
+      "id": "en/time_units_later#04",
+      "text": "3w later",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T10:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "3w later",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 2
+            },
+            "date": "2012-07-31T10:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Later Expression"
+    },
+    {
+      "id": "en/time_units_later#05",
+      "text": "3mo later",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T10:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "3mo later",
+          "start": {
+            "known": {
+              "month": 10,
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-10-10T10:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Later Expression"
+    },
+    {
+      "id": "en/time_units_later#06",
+      "text": "5 days from now, we did something",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 days from now",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 8,
+              "weekday": 3,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-15T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#07",
+      "text": "10 days from now, we did something",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 days from now",
+          "start": {
+            "known": {
+              "day": 20,
+              "month": 8,
+              "weekday": 1,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-20T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#08",
+      "text": "15 minute from now",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 minute from now",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 29,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:29:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#09",
+      "text": "15 minutes earlier",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 minutes earlier",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 59,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T11:59:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#10",
+      "text": "15 minute out",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 minute out",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 29,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:29:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#11",
+      "text": "   12 hours from now",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "12 hours from now",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-11T00:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#12",
+      "text": "   12 hrs from now",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "12 hrs from now",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-11T00:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#13",
+      "text": "   half an hour from now",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "half an hour from now",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 44,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:44:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#14",
+      "text": "12 hours from now I did something",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12 hours from now",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-11T00:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#15",
+      "text": "12 seconds from now I did something",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12 seconds from now",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 12,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:14:12.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#16",
+      "text": "three seconds from now I did something",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "three seconds from now",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 3,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:14:03.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#17",
+      "text": "5 Days from now, we did something",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 Days from now",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 8,
+              "weekday": 3,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-15T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#18",
+      "text": "   half An hour from now",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "half An hour from now",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 44,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:44:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#19",
+      "text": "A days from now, we did something",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "A days from now",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "weekday": 6,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-11T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#20",
+      "text": "a min out",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "a min out",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 15,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:15:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#21",
+      "text": "in 1 hour",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1 hour",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T13:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#22",
+      "text": "in 1 mon",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1 mon",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-09-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#23",
+      "text": "in 1.5 hours",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:40:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1.5 hours",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 10,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T14:10:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - From now Expression"
+    },
+    {
+      "id": "en/time_units_later#24",
+      "text": "in 1d 2hr 5min",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:40:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1d 2hr 5min",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 45,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-11T14:45:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The later expression with multiple time units"
+    },
+    {
+      "id": "en/time_units_later#25",
+      "text": "in 1d, 2hr, and 5min",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:40:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 1d, 2hr, and 5min",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 45,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-11T14:45:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The later expression with multiple time units"
+    },
+    {
+      "id": "en/time_units_later#26",
+      "text": "the min after",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "the min after",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 15,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:15:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Strict mode"
+    },
+    {
+      "id": "en/time_units_later#27",
+      "text": "15 minutes from now",
+      "config": "en.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 minutes from now",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 29,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:29:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Strict mode"
+    },
+    {
+      "id": "en/time_units_later#28",
+      "text": "25 minutes later",
+      "config": "en.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:40:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "25 minutes later",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 5,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T13:05:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Strict mode"
+    },
+    {
+      "id": "en/time_units_later#29",
+      "text": "15m from now",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Strict mode"
+    },
+    {
+      "id": "en/time_units_later#30",
+      "text": "15s later",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Strict mode"
+    },
+    {
+      "id": "en/time_units_later#31",
+      "text": "2 day after today",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "ENMergeRelativeFollowByDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 day after today",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "weekday": 0,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-12T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - After with reference"
+    },
+    {
+      "id": "en/time_units_later#32",
+      "text": "the day after tomorrow",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "ENMergeRelativeFollowByDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "the day after tomorrow",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "weekday": 0,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-12T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - After with reference"
+    },
+    {
+      "id": "en/time_units_later#33",
+      "text": "2 day after tomorrow",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "ENMergeRelativeFollowByDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 day after tomorrow",
+          "start": {
+            "known": {
+              "day": 13,
+              "month": 8,
+              "weekday": 1,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-13T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - After with reference"
+    },
+    {
+      "id": "en/time_units_later#34",
+      "text": "a week after tomorrow",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "ENMergeRelativeFollowByDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "a week after tomorrow",
+          "start": {
+            "known": {
+              "day": 18,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2012-08-18T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - After with reference"
+    },
+    {
+      "id": "en/time_units_later#35",
+      "text": "next tuesday +10 days",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-12-29T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitCasualRelativeFormatParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeRelativeAfterDateRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next tuesday +10 days",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 1,
+              "weekday": 5,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2024-01-12T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus after reference"
+    },
+    {
+      "id": "en/time_units_later#36",
+      "text": "2023-12-29 -10days",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-12-29T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitCasualRelativeFormatParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeRelativeAfterDateRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2023-12-29 -10days",
+          "start": {
+            "known": {
+              "day": 19,
+              "month": 12,
+              "weekday": 2,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-12-19T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus after reference"
+    },
+    {
+      "id": "en/time_units_later#37",
+      "text": "now + 40minutes",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-12-29T08:30:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": [
+          "ENMergeRelativeAfterDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "now + 40minutes",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 9,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 10,
+              "month": 12,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-12-29T09:10:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus after reference"
+    },
+    {
+      "id": "en/time_units_later#38",
+      "text": "tell them later",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    }
+  ]
+}

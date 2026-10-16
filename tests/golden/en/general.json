@@ -1,0 +1,1100 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en.test.ts",
+  "cases": [
+    {
+      "id": "en/general#01",
+      "text": "Something happen on 2014-04-18 13:00 - 16:00 as",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 20,
+          "text": "2014-04-18 13:00 - 16:00",
+          "start": {
+            "known": {
+              "day": 18,
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 4,
+              "year": 2014
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-04-18T13:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 18,
+              "hour": 16,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 4,
+              "year": 2014
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-04-18T16:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Date + Time Expression"
+    },
+    {
+      "id": "en/general#02",
+      "text": "between 3:30-4:30pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-07-06T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "3:30-4:30pm",
+          "start": {
+            "known": {
+              "hour": 15,
+              "minute": 30
+            },
+            "implied": {
+              "day": 6,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2020
+            },
+            "date": "2020-07-06T15:30:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 16,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 6,
+              "millisecond": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2020
+            },
+            "date": "2020-07-06T16:30:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time Expression"
+    },
+    {
+      "id": "en/general#03",
+      "text": "9:00 PST",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-07-06T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "9:00 PST",
+          "start": {
+            "known": {
+              "hour": 9,
+              "minute": 0,
+              "timezoneOffset": -480
+            },
+            "implied": {
+              "day": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2020
+            },
+            "date": "2020-07-06T17:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time Expression"
+    },
+    {
+      "id": "en/general#04",
+      "text": "Want to meet for dinner (5pm EST)?",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-07-06T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 25,
+          "text": "5pm EST)",
+          "start": {
+            "known": {
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0,
+              "timezoneOffset": -300
+            },
+            "implied": {
+              "day": 6,
+              "millisecond": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2020
+            },
+            "date": "2020-07-06T22:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Quoted Expressions"
+    },
+    {
+      "id": "en/general#05",
+      "text": "between '3:30-4:30pm'",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-07-06T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "3:30-4:30pm",
+          "start": {
+            "known": {
+              "hour": 15,
+              "minute": 30
+            },
+            "implied": {
+              "day": 6,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2020
+            },
+            "date": "2020-07-06T15:30:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 16,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 6,
+              "millisecond": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2020
+            },
+            "date": "2020-07-06T16:30:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Quoted Expressions"
+    },
+    {
+      "id": "en/general#06",
+      "text": "The date is '2014-04-18'",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENYearMonthDayParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 13,
+          "text": "2014-04-18",
+          "start": {
+            "known": {
+              "day": 18,
+              "month": 4,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-04-18T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Quoted Expressions"
+    },
+    {
+      "id": "en/general#07",
+      "text": "Tuesday",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Strict Mode"
+    },
+    {
+      "id": "en/general#08",
+      "text": "6/10/2018",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "6/10/2018",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 6,
+              "year": 2018
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2018-06-10T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Built-in English variants"
+    },
+    {
+      "id": "en/general#09",
+      "text": "6/10/2018",
+      "config": "en.GB.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "6/10/2018",
+          "start": {
+            "known": {
+              "day": 6,
+              "month": 10,
+              "year": 2018
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2018-10-06T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Built-in English variants"
+    },
+    {
+      "id": "en/general#10",
+      "text": "Adam <Adam@supercalendar.com> написал(а):\nThe date is 02.07.2013",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 54,
+          "text": "02.07.2013",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 2,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-02-07T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/general#11",
+      "text": "174 November 1,2001- March 31,2002",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 4,
+          "text": "November 1,2001- March 31,2002",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 11,
+              "year": 2001
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2001-11-01T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 31,
+              "month": 3,
+              "year": 2002
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2002-03-31T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/general#12",
+      "text": "...Thursday, December 15, 2011 Best Available Rate ",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "Thursday, December 15, 2011",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 12,
+              "weekday": 4,
+              "year": 2011
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2011-12-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/general#13",
+      "text": "SUN 15SEP 11:05 AM - 12:50 PM",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "SUN 15SEP 11:05 AM - 12:50 PM",
+          "start": {
+            "known": {
+              "day": 15,
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 5,
+              "month": 9,
+              "weekday": 0
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-09-15T11:05:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 15,
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 50,
+              "month": 9,
+              "weekday": 0
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-09-15T12:50:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/general#14",
+      "text": "FRI 13SEP 1:29 PM - FRI 13SEP 3:29 PM",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "ENMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "FRI 13SEP 1:29 PM - FRI 13SEP 3:29 PM",
+          "start": {
+            "known": {
+              "day": 13,
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 29,
+              "month": 9,
+              "weekday": 5
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-09-13T13:29:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 13,
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 29,
+              "month": 9,
+              "weekday": 5
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-09-13T15:29:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/general#15",
+      "text": "9:00 AM to 5:00 PM, Tuesday, 20 May 2013",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "9:00 AM to 5:00 PM, Tuesday, 20 May 2013",
+          "start": {
+            "known": {
+              "day": 20,
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 5,
+              "weekday": 2,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-05-20T09:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 20,
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 5,
+              "weekday": 2,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-05-20T17:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/general#16",
+      "text": "Monday afternoon to last night",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2017-07-07T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENCasualTimeParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateRangeRefiner",
+          "ENMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Monday afternoon to last night",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 3,
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2017
+            },
+            "date": "2017-07-03T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon",
+              "parser/ENCasualTimeParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "month": 7,
+              "year": 2017
+            },
+            "implied": {
+              "hour": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2017-07-07T00:00:00.000Z",
+            "tags": [
+              "parser/ENCasualDateParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/general#17",
+      "text": "07-27-2022, 02:00 AM",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2017-07-07T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "07-27-2022, 02:00 AM",
+          "start": {
+            "known": {
+              "day": 27,
+              "hour": 2,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 7,
+              "year": 2022
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2022-07-27T02:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "en/general#18",
+      "text": "October 7, 2011, of which details were not revealed out of respect to Jobs's family.[239] Apple announced on the same day that they had no plans for a public service, but were encouraging \"well-wishers\" to send their remembrance messages to an email address created to receive such messages.[240] Sunday, October 16, 2011",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENMonthNameParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "October 7, 2011",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 10,
+              "year": 2011
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2011-10-07T12:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser"
+            ]
+          },
+          "end": null
+        },
+        {
+          "index": 297,
+          "text": "Sunday, October 16, 2011",
+          "start": {
+            "known": {
+              "day": 16,
+              "month": 10,
+              "weekday": 0,
+              "year": 2011
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2011-10-16T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Wikipedia Texts"
+    },
+    {
+      "id": "en/general#19",
+      "text": "I will see you at 2:30. If not I will see you somewhere between 3:30-4:30pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-07-06T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "at 2:30",
+          "start": {
+            "known": {
+              "hour": 2,
+              "minute": 30
+            },
+            "implied": {
+              "day": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2020
+            },
+            "date": "2020-07-06T02:30:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        },
+        {
+          "index": 64,
+          "text": "3:30-4:30pm",
+          "start": {
+            "known": {
+              "hour": 15,
+              "minute": 30
+            },
+            "implied": {
+              "day": 6,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2020
+            },
+            "date": "2020-07-06T15:30:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 16,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 6,
+              "millisecond": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2020
+            },
+            "date": "2020-07-06T16:30:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Parse multiple date results"
+    }
+  ]
+}

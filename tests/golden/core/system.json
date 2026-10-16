@@ -1,0 +1,844 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/system.test.ts",
+  "cases": [
+    {
+      "id": "core/system#01",
+      "text": "7:00PM July 5th, 2020",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "7:00PM July 5th, 2020",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 19,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 7,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-07-05T19:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Basic parse date functions"
+    },
+    {
+      "id": "core/system#02",
+      "text": "7:00PM July 5th, 2020",
+      "config": "en.strict",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "7:00PM July 5th, 2020",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 19,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 7,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-07-05T19:00:00.000Z",
+            "tags": [
+              "parser/ENMonthNameMiddleEndianParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Basic parse date functions"
+    },
+    {
+      "id": "core/system#03",
+      "text": "next 5m",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next 5m",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 57,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T14:57:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Replace a parser example"
+    },
+    {
+      "id": "core/system#04",
+      "text": "next 5 minutes",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T14:52:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next 5 minutes",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 57,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T14:57:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Replace a parser example"
+    },
+    {
+      "id": "core/system#05",
+      "text": "1994-11-05T13:15:30Z",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1994-11-05T13:15:30Z",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 13,
+              "minute": 15,
+              "month": 11,
+              "second": 30,
+              "timezoneOffset": 0,
+              "year": 1994
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "1994-11-05T13:15:30.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#06",
+      "text": "1994-02-28T08:15:30-05:30",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1994-02-28T08:15:30-05:30",
+          "start": {
+            "known": {
+              "day": 28,
+              "hour": 8,
+              "minute": 15,
+              "month": 2,
+              "second": 30,
+              "timezoneOffset": -330,
+              "year": 1994
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "1994-02-28T13:45:30.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#07",
+      "text": "1994-11-05T08:15:30-05:30",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1994-11-05T08:15:30-05:30",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 8,
+              "minute": 15,
+              "month": 11,
+              "second": 30,
+              "timezoneOffset": -330,
+              "year": 1994
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "1994-11-05T13:45:30.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#08",
+      "text": "1994-11-05T08:15:30+11:30",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1994-11-05T08:15:30+11:30",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 8,
+              "minute": 15,
+              "month": 11,
+              "second": 30,
+              "timezoneOffset": 690,
+              "year": 1994
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "1994-11-04T20:45:30.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#09",
+      "text": "2014-11-30T08:15:30-05:30",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2014-11-30T08:15:30-05:30",
+          "start": {
+            "known": {
+              "day": 30,
+              "hour": 8,
+              "minute": 15,
+              "month": 11,
+              "second": 30,
+              "timezoneOffset": -330,
+              "year": 2014
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "2014-11-30T13:45:30.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#10",
+      "text": "Sat, 21 Feb 2015 11:50:48 -0500",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sat, 21 Feb 2015 11:50:48 -0500",
+          "start": {
+            "known": {
+              "day": 21,
+              "hour": 11,
+              "minute": 50,
+              "month": 2,
+              "second": 48,
+              "timezoneOffset": -300,
+              "weekday": 6,
+              "year": 2015
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2015-02-21T16:50:48.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#11",
+      "text": "22 Feb 2015 04:12:00 -0000",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "22 Feb 2015 04:12:00 -0000",
+          "start": {
+            "known": {
+              "day": 22,
+              "hour": 4,
+              "minute": 12,
+              "month": 2,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2015
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2015-02-22T04:12:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#12",
+      "text": "9999-12-31T23:59:00-00:00",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "9999-12-31T23:59:00-00:00",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 23,
+              "minute": 59,
+              "month": 12,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 9999
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "9999-12-31T23:59:00.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#13",
+      "text": "09/25/2017 10:31:50.522 PM",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "09/25/2017 10:31:50.522 PM",
+          "start": {
+            "known": {
+              "day": 25,
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 522,
+              "minute": 31,
+              "month": 9,
+              "second": 50,
+              "year": 2017
+            },
+            "implied": {},
+            "date": "2017-09-25T22:31:50.522Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#14",
+      "text": "Sat Nov 05 1994 22:45:30 GMT+0900 (JST)",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameMiddleEndianParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "ExtractTimezoneOffsetRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sat Nov 05 1994 22:45:30 GMT+0900 (JST)",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 45,
+              "month": 11,
+              "second": 30,
+              "timezoneOffset": 540,
+              "weekday": 6,
+              "year": 1994
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "1994-11-05T13:45:30.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#15",
+      "text": "Fri, 31 Mar 2000 07:00:00 UTC",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENMonthNameLittleEndianParser",
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner",
+          "ExtractTimezoneAbbrRefiner",
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Fri, 31 Mar 2000 07:00:00 UTC",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 7,
+              "minute": 0,
+              "month": 3,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 5,
+              "year": 2000
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2000-03-31T07:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#16",
+      "text": "2014-12-14T18:22:14.759Z",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2014-12-14T18:22:14.759Z",
+          "start": {
+            "known": {
+              "day": 14,
+              "hour": 18,
+              "millisecond": 759,
+              "minute": 22,
+              "month": 12,
+              "second": 14,
+              "timezoneOffset": 0,
+              "year": 2014
+            },
+            "implied": {},
+            "date": "2014-12-14T18:22:14.759Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    },
+    {
+      "id": "core/system#17",
+      "text": "2024-01-01T00:00",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2024-01-01T00:00",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 0,
+              "minute": 0,
+              "month": 1,
+              "year": 2024
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2024-01-01T00:00:00.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Compare with native js"
+    }
+  ]
+}

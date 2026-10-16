@@ -1,0 +1,2373 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/en/en_relative.test.ts",
+  "cases": [
+    {
+      "id": "en/relative#01",
+      "text": "this week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2017-11-19T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "this week",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 19,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 11,
+              "second": 0,
+              "year": 2017
+            },
+            "date": "2017-11-19T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - 'This' expressions"
+    },
+    {
+      "id": "en/relative#02",
+      "text": "this month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2017-11-19T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "this month",
+          "start": {
+            "known": {
+              "month": 11,
+              "year": 2017
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2017-11-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - 'This' expressions"
+    },
+    {
+      "id": "en/relative#03",
+      "text": "this month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2017-11-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "this month",
+          "start": {
+            "known": {
+              "month": 11,
+              "year": 2017
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2017-11-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - 'This' expressions"
+    },
+    {
+      "id": "en/relative#04",
+      "text": "this year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2017-11-19T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "this year",
+          "start": {
+            "known": {
+              "year": 2017
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0
+            },
+            "date": "2017-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - 'This' expressions"
+    },
+    {
+      "id": "en/relative#05",
+      "text": "end of the month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENEndOfCurrentMonthParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of the month",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-31T12:00:00.000Z",
+            "tags": [
+              "parser/ENEndOfCurrentMonthParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of current month"
+    },
+    {
+      "id": "en/relative#06",
+      "text": "last day of the month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENEndOfCurrentMonthParser",
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last day of the month",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-31T12:00:00.000Z",
+            "tags": [
+              "parser/ENEndOfCurrentMonthParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of current month"
+    },
+    {
+      "id": "en/relative#07",
+      "text": "end of month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-09-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENEndOfCurrentMonthParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of month",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-30T12:00:00.000Z",
+            "tags": [
+              "parser/ENEndOfCurrentMonthParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of current month"
+    },
+    {
+      "id": "en/relative#08",
+      "text": "last day of month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-02-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENEndOfCurrentMonthParser",
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last day of month",
+          "start": {
+            "known": {
+              "day": 29,
+              "month": 2,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-02-29T12:00:00.000Z",
+            "tags": [
+              "parser/ENEndOfCurrentMonthParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of current month"
+    },
+    {
+      "id": "en/relative#09",
+      "text": "end of next week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of next week",
+          "start": {
+            "known": {
+              "day": 13,
+              "month": 8,
+              "year": 2022
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 6
+            },
+            "date": "2022-08-13T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of current month"
+    },
+    {
+      "id": "en/relative#10",
+      "text": "end of next month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of next month",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 11,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 3
+            },
+            "date": "2016-11-30T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of current month"
+    },
+    {
+      "id": "en/relative#11",
+      "text": "last day of next month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-15T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last day of next month",
+          "start": {
+            "known": {
+              "day": 28,
+              "month": 2,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 2
+            },
+            "date": "2023-02-28T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of current month"
+    },
+    {
+      "id": "en/relative#12",
+      "text": "end of next year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of next year",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 12,
+              "year": 2021
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 5
+            },
+            "date": "2021-12-31T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of current month"
+    },
+    {
+      "id": "en/relative#13",
+      "text": "end of this week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of this week",
+          "start": {
+            "known": {
+              "day": 6,
+              "month": 8,
+              "year": 2022
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 6
+            },
+            "date": "2022-08-06T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of relative period"
+    },
+    {
+      "id": "en/relative#14",
+      "text": "last day of last week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-08-02T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last day of last week",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 7,
+              "year": 2022
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 6
+            },
+            "date": "2022-07-30T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of relative period"
+    },
+    {
+      "id": "en/relative#15",
+      "text": "end of the next week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-12-28T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of the next week",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 6
+            },
+            "date": "2023-01-07T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of relative period"
+    },
+    {
+      "id": "en/relative#16",
+      "text": "end of last month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-03-15T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of last month",
+          "start": {
+            "known": {
+              "day": 29,
+              "month": 2,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 4
+            },
+            "date": "2024-02-29T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of relative period"
+    },
+    {
+      "id": "en/relative#17",
+      "text": "end of next month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-31T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of next month",
+          "start": {
+            "known": {
+              "day": 28,
+              "month": 2,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 2
+            },
+            "date": "2023-02-28T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of relative period"
+    },
+    {
+      "id": "en/relative#18",
+      "text": "end of last month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-12-31T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of last month",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 11,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 4
+            },
+            "date": "2023-11-30T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of relative period"
+    },
+    {
+      "id": "en/relative#19",
+      "text": "end of this year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of this year",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 12,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 4
+            },
+            "date": "2020-12-31T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of relative period"
+    },
+    {
+      "id": "en/relative#20",
+      "text": "end of the past year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": [
+          "ENEndOfPeriodRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "end of the past year",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 12,
+              "year": 2019
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "weekday": 2
+            },
+            "date": "2019-12-31T12:00:00.000Z",
+            "tags": [
+              "refiner/ENEndOfPeriodRefiner",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - End of relative period"
+    },
+    {
+      "id": "en/relative#21",
+      "text": "last week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last week",
+          "start": {
+            "known": {
+              "day": 24,
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-09-24T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Past relative expressions"
+    },
+    {
+      "id": "en/relative#22",
+      "text": "lastmonth",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "lastmonth",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-09-01T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Past relative expressions"
+    },
+    {
+      "id": "en/relative#23",
+      "text": "last day",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last day",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 9,
+              "weekday": 5,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-09-30T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Past relative expressions"
+    },
+    {
+      "id": "en/relative#24",
+      "text": "last month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "last month",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-09-01T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Past relative expressions"
+    },
+    {
+      "id": "en/relative#25",
+      "text": "past week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "past week",
+          "start": {
+            "known": {
+              "day": 24,
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-09-24T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Past relative expressions"
+    },
+    {
+      "id": "en/relative#26",
+      "text": "next hour",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next hour",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T13:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Future relative expressions"
+    },
+    {
+      "id": "en/relative#27",
+      "text": "next week",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next week",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-10-08T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Future relative expressions"
+    },
+    {
+      "id": "en/relative#28",
+      "text": "next day",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next day",
+          "start": {
+            "known": {
+              "day": 2,
+              "month": 10,
+              "weekday": 0,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-10-02T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Future relative expressions"
+    },
+    {
+      "id": "en/relative#29",
+      "text": "next month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next month",
+          "start": {
+            "known": {
+              "month": 11,
+              "year": 2016
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-11-01T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Future relative expressions"
+    },
+    {
+      "id": "en/relative#30",
+      "text": "next year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T12:11:32.006Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next year",
+          "start": {
+            "known": {
+              "year": 2021
+            },
+            "implied": {
+              "day": 22,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 6,
+              "minute": 11,
+              "month": 11,
+              "second": 32,
+              "timezoneOffset": 0
+            },
+            "date": "2021-11-22T12:11:32.006Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Future relative expressions"
+    },
+    {
+      "id": "en/relative#31",
+      "text": "next quarter",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2021-01-22T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next quarter",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 22,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2021
+            },
+            "date": "2021-04-22T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Future relative expressions"
+    },
+    {
+      "id": "en/relative#32",
+      "text": "next qtr",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2021-10-22T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next qtr",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 22,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2022
+            },
+            "date": "2022-01-22T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Future relative expressions"
+    },
+    {
+      "id": "en/relative#33",
+      "text": "next two quarter",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2021-01-22T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next two quarter",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 22,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2021
+            },
+            "date": "2021-07-22T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Future relative expressions"
+    },
+    {
+      "id": "en/relative#34",
+      "text": "after this year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T12:11:32.006Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "after this year",
+          "start": {
+            "known": {
+              "year": 2021
+            },
+            "implied": {
+              "day": 22,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 6,
+              "minute": 11,
+              "month": 11,
+              "second": 32,
+              "timezoneOffset": 0
+            },
+            "date": "2021-11-22T12:11:32.006Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Future relative expressions"
+    },
+    {
+      "id": "en/relative#35",
+      "text": "Connect back after this year",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2022-04-16T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 13,
+          "text": "after this year",
+          "start": {
+            "known": {
+              "year": 2023
+            },
+            "implied": {
+              "day": 16,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-04-16T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Future relative expressions"
+    },
+    {
+      "id": "en/relative#36",
+      "text": "next hour",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-07T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next hour",
+          "start": {
+            "known": {
+              "day": 7,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-07T13:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date components' certainty"
+    },
+    {
+      "id": "en/relative#37",
+      "text": "next month",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-07T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next month",
+          "start": {
+            "known": {
+              "month": 11,
+              "year": 2016
+            },
+            "implied": {
+              "day": 7,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-11-07T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date components' certainty"
+    },
+    {
+      "id": "en/relative#38",
+      "text": "now",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "now",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 4,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 24,
+              "month": 11,
+              "second": 13,
+              "timezoneOffset": 0,
+              "year": 2020
+            },
+            "implied": {},
+            "date": "2020-11-29T04:24:13.000Z",
+            "tags": [
+              "casualReference/now",
+              "parser/ENCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is irrelevant"
+    },
+    {
+      "id": "en/relative#39",
+      "text": "in 10 minutes",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 10 minutes",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 4,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 34,
+              "month": 11,
+              "second": 13,
+              "timezoneOffset": 0,
+              "year": 2020
+            },
+            "implied": {},
+            "date": "2020-11-29T04:34:13.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is irrelevant"
+    },
+    {
+      "id": "en/relative#40",
+      "text": "in 10 minutes",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": "BST",
+        "timezone_offset": 60
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 10 minutes",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 5,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 34,
+              "month": 11,
+              "second": 13,
+              "timezoneOffset": 60,
+              "year": 2020
+            },
+            "implied": {},
+            "date": "2020-11-29T04:34:13.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is irrelevant"
+    },
+    {
+      "id": "en/relative#41",
+      "text": "in 10 minutes",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": "JST",
+        "timezone_offset": 540
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 10 minutes",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 34,
+              "month": 11,
+              "second": 13,
+              "timezoneOffset": 540,
+              "year": 2020
+            },
+            "implied": {},
+            "date": "2020-11-29T04:34:13.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is irrelevant"
+    },
+    {
+      "id": "en/relative#42",
+      "text": "in 20 minutes",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 20 minutes",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 4,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 44,
+              "month": 11,
+              "second": 13,
+              "timezoneOffset": 0,
+              "year": 2020
+            },
+            "implied": {},
+            "date": "2020-11-29T04:44:13.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is irrelevant"
+    },
+    {
+      "id": "en/relative#43",
+      "text": "tomorrow at 5pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-29T13:24:13.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tomorrow at 5pm",
+          "start": {
+            "known": {
+              "day": 30,
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 11,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-11-30T17:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is relevant but unknown"
+    },
+    {
+      "id": "en/relative#44",
+      "text": "tomorrow at 5pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": "JST",
+        "timezone_offset": 540
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tomorrow at 5pm",
+          "start": {
+            "known": {
+              "day": 30,
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 11,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-11-30T08:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is relevant and known"
+    },
+    {
+      "id": "en/relative#45",
+      "text": "tomorrow at 5pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": "BST",
+        "timezone_offset": 60
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tomorrow at 5pm",
+          "start": {
+            "known": {
+              "day": 30,
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 11,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-11-30T16:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is relevant and known"
+    },
+    {
+      "id": "en/relative#46",
+      "text": "tomorrow at 5pm",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2020-11-29T04:24:13.000Z",
+        "timezone_input": -420,
+        "timezone_offset": -420
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tomorrow at 5pm",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 11,
+              "year": 2020
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2020-11-30T00:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is relevant and known"
+    },
+    {
+      "id": "en/relative#47",
+      "text": "tomorrow at 9am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2025-02-27T17:00:00.000Z",
+        "timezone_input": "PST",
+        "timezone_offset": -480
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENCasualDateParser",
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tomorrow at 9am",
+          "start": {
+            "known": {
+              "day": 28,
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 2,
+              "year": 2025
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2025-02-28T17:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ENCasualDateParser",
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is relevant and known (2nd scenario)"
+    },
+    {
+      "id": "en/relative#48",
+      "text": "in 2 weeks at 9am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2025-02-27T17:00:00.000Z",
+        "timezone_input": "PST",
+        "timezone_offset": -480
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "in 2 weeks at 9am",
+          "start": {
+            "known": {
+              "day": 13,
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 3,
+              "year": 2025
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "timezoneOffset": -480,
+              "weekday": 4
+            },
+            "date": "2025-03-13T17:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is relevant and known (2nd scenario)"
+    },
+    {
+      "id": "en/relative#49",
+      "text": "2 weeks ago at 9am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2025-02-27T17:00:00.000Z",
+        "timezone_input": "PST",
+        "timezone_offset": -480
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 weeks ago at 9am",
+          "start": {
+            "known": {
+              "day": 13,
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 2,
+              "year": 2025
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "timezoneOffset": -480,
+              "weekday": 4
+            },
+            "date": "2025-02-13T17:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser",
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is relevant and known (2nd scenario)"
+    },
+    {
+      "id": "en/relative#50",
+      "text": "next friday at 9am",
+      "config": "en.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2025-02-27T17:00:00.000Z",
+        "timezone_input": "PST",
+        "timezone_offset": -480
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser",
+          "ENWeekdayParser"
+        ],
+        "refiners": [
+          "ENMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "next friday at 9am",
+          "start": {
+            "known": {
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 0,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 7,
+              "millisecond": 0,
+              "month": 3,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-03-07T17:00:00.000Z",
+            "tags": [
+              "parser/ENTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative date when the timezone is relevant and known (2nd scenario)"
+    }
+  ]
+}
