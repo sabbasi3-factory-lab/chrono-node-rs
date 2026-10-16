@@ -1,0 +1,125 @@
+# Trusted gates (DESIGN §9 gates 1, 2, 7 and the no-internal-identifiers rule). One job.
+#
+# The workflow file and every script it runs come from the BASE branch:
+# - pull_request_target always uses the base branch's version of this file, and the job checks out
+#   the base commit.
+# - merge_group checks out the queue entry's parent commit (main plus earlier entries). A PR can
+#   only reach the queue after this gate passed on pull_request_target, and the scope gate blocks
+#   agent changes to .github/** and harness/**.
+# The candidate commit is fetched as git objects and only read (diff, show, grep). Nothing from it
+# is executed: no checkout of its tree, no npm install from it, no cargo build of it.
+# Human tier: changes need the owner's review.
+name: gates
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  merge_group:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: gates-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
+
+jobs:
+  gates:
+    name: gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TRUSTED_SHA: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+      CANDIDATE_SHA: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.event.pull_request.head.sha }}
+    steps:
+      - name: Check out the trusted base commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TRUSTED_SHA }}
+          path: trusted
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch the candidate commit as data
+        working-directory: trusted
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -n "$PR_NUMBER" ]; then
+            git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/head:refs/candidate"
+          else
+            git fetch --no-tags origin "$CANDIDATE_SHA"
+          fi
+          git cat-file -e "${CANDIDATE_SHA}^{commit}"
+          echo "trusted ${TRUSTED_SHA}, candidate ${CANDIDATE_SHA}"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install trusted harness dependencies
+        working-directory: trusted/harness
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Scope check and contract SHA
+        working-directory: trusted/harness
+        env:
+          GATE_MODE: enforce
+          GH_TOKEN: ${{ github.token }}
+        run: node gates/scope-check.js
+
+      - name: No internal identifiers in the candidate
+        # Lockfiles must resolve from the public npm registry, and no file may contain local home
+        # paths or private package-feed hosts. Extra private patterns (e.g. account aliases) come
+        # from the FACTORY_FORBIDDEN_PATTERNS secret, so they are never written into a public file.
+        # Only file names are printed, never the matching text. The patterns below are split
+        # (`User""s`) so this file does not match itself.
+        working-directory: trusted
+        env:
+          EXTRA_PATTERNS: ${{ secrets.FACTORY_FORBIDDEN_PATTERNS }}
+        run: |
+          fail=0
+          bad=""
+          for f in $(git ls-tree -r --name-only "$CANDIDATE_SHA" | grep -E '(^|/)package-lock\.json$' || true); do
+            if git show "${CANDIDATE_SHA}:${f}" | grep -E '"resolved": "' | grep -vq '"resolved": "https://registry.npmjs.org/'; then
+              bad="$bad $f"
+            fi
+          done
+          if [ -n "$bad" ]; then
+            echo "::error::lockfiles resolve packages outside registry.npmjs.org:$bad"
+            fail=1
+          fi
+          generic="/User""s/[^/ \"]+/|/hom""e/[a-z][a-z0-9_-]*/|pkgs[.]visual""studio[.]com|pkgs[.]dev[.]azu""re[.]com|packagefeed""proxy"
+          files=$(git grep -IlE "$generic" "$CANDIDATE_SHA" -- . | sed "s/^${CANDIDATE_SHA}://" || true)
+          if [ -n "$files" ]; then
+            echo "::error::local paths or private feed hosts in: $(echo $files)"
+            fail=1
+          fi
+          if [ -n "${EXTRA_PATTERNS}" ]; then
+            files=$(git grep -IilE -e "${EXTRA_PATTERNS}" "$CANDIDATE_SHA" -- . | sed "s/^${CANDIDATE_SHA}://" || true)
+            if [ -n "$files" ]; then
+              echo "::error::private identifiers (FACTORY_FORBIDDEN_PATTERNS) in: $(echo $files)"
+              fail=1
+            fi
+          else
+            echo "FACTORY_FORBIDDEN_PATTERNS is not set; only generic patterns were checked"
+          fi
+          exit $fail
+
+      - name: Stage the candidate's manifests for cargo deny (data only)
+        # Only Cargo.toml and Cargo.lock are copied, with empty stub sources, so no candidate
+        # build script, toolchain file or .cargo/config can take effect.
+        run: |
+          mkdir -p candidate/src
+          git -C trusted show "${CANDIDATE_SHA}:Cargo.toml" > candidate/Cargo.toml
+          git -C trusted show "${CANDIDATE_SHA}:Cargo.lock" > candidate/Cargo.lock
+          : > candidate/src/lib.rs
+          : > candidate/build.rs
+
+      - name: cargo deny (trusted policy)
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          manifest-path: candidate/Cargo.toml
+          arguments: --all-features --config trusted/deny.toml
+          command: check

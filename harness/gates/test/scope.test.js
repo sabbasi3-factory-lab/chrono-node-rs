@@ -101,3 +101,10 @@ test("malformed acceptance fails closed", () => {
     assert.match(r.reasons.join(), /unsupported golden/);
     assert.match(r.reasons.join(), /unsupported differential/);
 });
+
+test("golden acceptance with no areas fails (it would skip the contract golden step)", () => {
+    const empty = () => ({ ...CONTRACT, acceptance: [{ golden: { step: "ENWeekdayParser", areas: [] } }] });
+    const r = evaluate({ isAgent: true, body: body(), changed: ["src/locales/en/parsers/weekday.rs"], protectedGlobs: PROTECTED, loadContract: empty });
+    assert.strictEqual(r.ok, false);
+    assert.match(r.reasons.join(), /unsupported golden acceptance/);
+});

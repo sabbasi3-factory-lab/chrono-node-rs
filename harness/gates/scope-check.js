@@ -1,23 +1,32 @@
 #!/usr/bin/env node
 "use strict";
-// CI gate: scope check + contract SHA (DESIGN §9 gates 1-2). Run in GitHub Actions on
-// pull_request and merge_group.
+// Scope check + contract SHA (DESIGN §9 gates 1-2).
+//
+// GATE_MODE=enforce (the `gates` workflow): this file and its dependencies come from the TRUSTED
+//   base checkout (pull_request_target / merge_group base). The candidate commit is only read as
+//   git data (diff, show); nothing from it is executed. Fails the job on any violation.
+// GATE_MODE=outputs (the `checks` job): computes the contract's golden areas, step and visible
+//   seed for the test steps and never fails on policy (the trusted gate does that).
 //
 // - Human PRs (no `Factory-Task:` trailer, not authored by the agent App) pass; the changed paths
 //   are printed with nothing enforced.
-// - Factory PRs must: have a contract on the base, declare `Contract-SHA:` equal to (a prefix of)
-//   the last commit that touched it, change only paths inside the contract `scope`, and touch
-//   nothing in `protected_from_agents` from factory policies/tiers.yaml (at the pinned factory
-//   version in .github/factory/factory-version). Agent PRs without a task fail.
+// - Factory PRs must: have a contract on the CURRENT base tip, declare `Contract-SHA:` equal to (a
+//   prefix of) the last commit that touched it there, change only paths inside the contract
+//   `scope`, and touch nothing in `protected_from_agents` from factory policies/tiers.yaml (at the
+//   pinned factory version in the trusted .github/factory/factory-version). Diffs use
+//   --no-renames, so a moved file counts as a deletion plus an addition. Agent PRs without a task
+//   fail.
 // Writes kind, golden_areas, golden_step, differential_seed and differential_phrases to
-// $GITHUB_OUTPUT for the contract golden and visible comparison steps.
+// $GITHUB_OUTPUT.
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const YAML = require("yaml");
 const { evaluate } = require("./scope");
 
+// The trusted checkout (this file's repo); the candidate commit must already be fetched into it.
 const REPO = path.resolve(__dirname, "../..");
+const MODE = process.env.GATE_MODE || "enforce";
 const AGENT_LOGIN = "sabbasi3-factory-agent[bot]";
 
 const git = (...args) => execFileSync("git", args, { cwd: REPO, encoding: "utf8" }).trim();
@@ -42,25 +51,29 @@ async function loadPolicyProtected() {
     return { version, protectedGlobs: list };
 }
 
+const changedPaths = (from, to) => git("diff", "--name-only", "--no-renames", from, to);
+
 async function context() {
     const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
     const repo = process.env.GITHUB_REPOSITORY;
-    if (process.env.GITHUB_EVENT_NAME === "pull_request") {
+    const name = process.env.GITHUB_EVENT_NAME;
+    if (name === "pull_request" || name === "pull_request_target") {
         const pr = event.pull_request;
-        const base = pr.base.sha;
         const head = pr.head.sha;
-        const mergeBase = git("merge-base", base, head);
-        return { pr, base: mergeBase, changed: git("diff", "--name-only", mergeBase, head) };
+        // Diff from the merge base (what the PR changes), but read contracts from the current
+        // base tip, so a contract updated on main after the branch diverged applies.
+        const mergeBase = git("merge-base", pr.base.sha, head);
+        return { pr, head, contractBase: pr.base.sha, changed: changedPaths(mergeBase, head) };
     }
-    if (process.env.GITHUB_EVENT_NAME === "merge_group") {
+    if (name === "merge_group") {
         // Each queue entry is this PR's squash commit on top of main + earlier entries.
         const m = /\/pr-(\d+)-[0-9a-f]+$/.exec(event.merge_group.head_ref);
         if (!m) throw new Error(`cannot find PR number in ${event.merge_group.head_ref}`);
         const pr = await gh(`/repos/${repo}/pulls/${m[1]}`);
         const head = event.merge_group.head_sha;
-        return { pr, base: `${head}^`, changed: git("diff", "--name-only", `${head}^`, head) };
+        return { pr, head, contractBase: `${head}^`, changed: changedPaths(`${head}^`, head) };
     }
-    throw new Error(`unsupported event ${process.env.GITHUB_EVENT_NAME}`);
+    throw new Error(`unsupported event ${name}`);
 }
 
 function loadContractAt(base) {
@@ -79,13 +92,13 @@ function loadContractAt(base) {
 }
 
 async function main() {
-    const { pr, base, changed } = await context();
+    const { pr, head, contractBase, changed } = await context();
     const changedPaths = changed ? changed.split("\n").filter(Boolean) : [];
     const { version, protectedGlobs } = await loadPolicyProtected();
     const isAgent = pr.user && pr.user.login === AGENT_LOGIN;
-    const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract: loadContractAt(base) });
+    const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract: loadContractAt(contractBase) });
 
-    console.log(`factory policies at ${version}`);
+    console.log(`mode ${MODE}; factory policies at ${version}; candidate ${head}; contracts from ${contractBase}`);
     console.log(`PR #${pr.number} by ${pr.user && pr.user.login}: ${result.kind}${result.task ? ` task ${result.task}` : ""}`);
     console.log(`changed paths (${changedPaths.length}):`);
     for (const p of changedPaths) console.log(`  ${p}`);
@@ -103,13 +116,18 @@ async function main() {
         );
     }
     if (!result.ok) {
+        if (MODE === "outputs") {
+            for (const r of result.reasons) console.log(`::warning::${r} (enforced by the gates job)`);
+            return;
+        }
         for (const r of result.reasons) console.log(`::error::${r}`);
-        process.exit(1);
+        process.exitCode = 1;
+        return;
     }
     console.log(result.kind === "human" ? "human PR: scope gate not applicable" : "scope and contract SHA ok");
 }
 
 main().catch((e) => {
     console.log(`::error::scope check failed closed: ${e.message}`);
-    process.exit(1);
+    process.exitCode = 1;
 });

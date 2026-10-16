@@ -85,7 +85,11 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
     for (const a of contract.acceptance || []) {
         if (a && a.golden !== undefined) {
             const g = a.golden;
-            const areasOk = g && Array.isArray(g.areas) && g.areas.every((x) => typeof x === "string" && /^[a-z0-9_/]+$/.test(x));
+            const areasOk =
+                g &&
+                Array.isArray(g.areas) &&
+                g.areas.length > 0 &&
+                g.areas.every((x) => typeof x === "string" && /^[a-z0-9_/]+$/.test(x));
             if (!areasOk || typeof g.step !== "string" || !/^[A-Za-z0-9]+$/.test(g.step)) {
                 reasons.push("unsupported golden acceptance (want {step, areas})");
             } else {
