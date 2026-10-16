@@ -1,0 +1,5 @@
+# Pinned so fmt and clippy results don't change under us. Bump by reviewed PR.
+[toolchain]
+channel = "1.99.1"
+components = ["clippy", "rustfmt"]
+profile = "minimal"

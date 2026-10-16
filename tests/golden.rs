@@ -4,8 +4,12 @@
 //! ```sh
 //! cargo test --test golden -- --nocapture                  # summary per area
 //! GOLDEN_AREAS=en/weekday,en/casual cargo test --test golden # only these areas
-//! GOLDEN_REQUIRE_ALL=1 ...                                  # pending cases fail too (contract acceptance)
+//! GOLDEN_REQUIRE_STEP=ENWeekdayParser ...                   # fail unless a checked case needs this step
+//! GOLDEN_REQUIRE_ALL=1 ...                                  # pending cases fail too
 //! ```
+//!
+//! Contract acceptance uses `GOLDEN_AREAS` + `GOLDEN_REQUIRE_STEP`: in the task's areas, every case
+//! whose requirements are ported must pass, and at least one of them must exercise the new step.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -49,6 +53,8 @@ fn golden_suite() {
         .ok()
         .map(|v| v.split(',').map(|s| s.trim().to_string()).collect());
     let require_all = std::env::var("GOLDEN_REQUIRE_ALL").is_ok_and(|v| v == "1");
+    let require_step = std::env::var("GOLDEN_REQUIRE_STEP").ok().filter(|s| !s.is_empty());
+    let mut step_checked = 0;
 
     let files = area_files();
     assert!(
@@ -98,6 +104,9 @@ fn golden_suite() {
                 continue;
             }
             tally.checked += 1;
+            if require_step.as_deref().is_some_and(|s| requires.contains(&s)) {
+                step_checked += 1;
+            }
             let results = chrono.parse_with_now(&req.text, &req.reference, &req.option, req.now);
             let actual = results_to_json(&req.text, &results);
             if actual != case["results"] {
@@ -119,6 +128,14 @@ fn golden_suite() {
         failed += t.failed;
     }
     println!("{:<32} {checked:>8} {pending:>8} {failed:>8}", "TOTAL");
+    if let Some(step) = &require_step {
+        println!("checked cases that need {step}: {step_checked}");
+        if step_checked == 0 {
+            failures.push(format!(
+                "no checked golden case exercises {step} (is it registered under that UPSTREAM name?)"
+            ));
+        }
+    }
 
     if !failures.is_empty() {
         for f in failures.iter().take(25) {
