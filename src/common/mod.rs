@@ -2,7 +2,9 @@
 //!
 //! `parsers/` and `refiners/` are auto-registered (see `build.rs`); don't add `mod` lines for them.
 
+pub mod casual_references;
 pub mod configuration;
+pub mod word_boundary;
 
 pub mod parsers {
     //! Auto-registered common parsers.
