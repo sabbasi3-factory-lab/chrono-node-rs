@@ -98,3 +98,4 @@ The golden suite checks every case whose `requires` are all ported. When you add
 | 6 | Mutation-check the checks: plant a bug and confirm the golden suite or comparison fails. Some mutations are equivalent (for example `<` vs `<=` where equality can't happen); they prove nothing. | PRs #4–#6 |
 | 7 | JS `%` keeps the dividend's sign, like Rust's `%`. Use `rem_euclid` only where upstream does something different. | `parsers/weekday.rs` |
 | 8 | `endsWith`, `===` and dictionary lookups are case-sensitive in upstream even when the regex has the `i` flag. Keep them case-sensitive. | `parsers/time_expression.rs` |
+| 9 | Touch **only** the file in the contract's `scope`. The trusted `gates` check lists every violation: a protected path (even a moved or renamed file), an out-of-scope path, or a stale `Contract-SHA`. A failed `gates` run goes to a human; it is never repaired. | `harness/gates/scope.js` (#18) |
