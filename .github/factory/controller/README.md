@@ -128,6 +128,27 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 - **Heartbeat:** written when the newest heartbeat in the loaded log is ≥ 55 minutes old, or missing.
   Its dedupe key is the UTC hour, so two runs in the same hour can't both write one.
 
+## Daily chain verifier (`verify-chain.ts`, `.github/workflows/audit-verify.yml`)
+
+The controller only verifies the last 7 days it loads, so a cut-off tail or a rewritten branch
+wouldn't be noticed. Once a day, a separate workflow (no App key, `issues: write` only):
+
+1. Checks out the **whole** `audit` branch and verifies every day file: file names, the right day
+   for each event, every sha, and the chain from a **genesis** event (no parent).
+2. Checks the log against every earlier **anchor**. An anchor is a comment by
+   `github-actions[bot]` on the "Audit chain anchors" issue (label `audit-anchor`), recording
+   `{at, events, last_sha, audit_head}`. The log may only grow:
+   - each anchored position must still hold the anchored event
+   - anchors never shrink
+   - an anchor comment that was edited fails
+   - a missing branch fails once anything was anchored
+
+   Comments and issues by anyone else are ignored, since anyone can comment on a public repo.
+3. On success it appends a new anchor; the comment also emails watchers, a copy outside GitHub.
+   On failure it opens (or comments on) one `audit-alert` issue and fails the run.
+
+Alerts and anchors carry only counts, SHAs, paths and dates.
+
 ## Planner (`planner.ts`)
 
 `plan(snapshot, policies, env, now)` is pure. Every decision has `dry_run: true`, a stable `reason`, an
@@ -249,6 +270,7 @@ v1's own dry-run decisions never count as real work.
 | `planner.ts` | pure planner |
 | `observe.ts` | snapshot → observed fact events |
 | `history.ts` | task history and today's spend from non-dry-run audit events |
+| `verify-chain.ts` | daily whole-log chain verifier with external anchors (its own workflow) |
 | `heartbeat.ts` | heartbeat due check and hour-bucket dedupe |
 | `executor.ts` | dry-run executor (logs only), decision → event |
 | `github.ts` | fetch client with write guard, pagination, GraphQL, snapshot reader, CI log parsing |

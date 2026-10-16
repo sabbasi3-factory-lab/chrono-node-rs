@@ -1,0 +1,66 @@
+name: audit-verify
+
+# Daily audit-chain verifier (DESIGN §11; factory policies/cadence.yaml audit_chain_verifier).
+# Plain code, no AI, no App key: it reads the WHOLE `audit` branch, recomputes every sha and the
+# hash chain from the genesis event, and checks the log against earlier anchors, which are
+# comments by github-actions[bot] on the "Audit chain anchors" issue. A truncated tail,
+# rewritten history or a deleted branch breaks an anchor even if the new log is consistent. On
+# success it appends a new anchor; on failure it opens or comments on an `audit-alert` issue
+# and fails. See .github/factory/controller/verify-chain.ts.
+#
+# Human tier: changes need the owner's review. GitHub disables scheduled workflows in public
+# repos after 60 days without repository activity; the factory repo's heartbeat watchdog would
+# notice a silent controller, but not a silent verifier, so check this workflow's runs too.
+
+on:
+  schedule:
+    - cron: "41 4 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: audit-verify
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Check out main (the verifier code)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Fetch the whole audit branch (if it exists)
+        id: audit
+        run: |
+          if git ls-remote --exit-code --heads origin audit >/dev/null; then
+            git fetch --no-tags --depth=1 origin audit
+            head=$(git rev-parse FETCH_HEAD)
+            mkdir -p "$RUNNER_TEMP/audit-log"
+            git archive "$head" | tar -x -C "$RUNNER_TEMP/audit-log"
+            echo "head=$head" >> "$GITHUB_OUTPUT"
+            echo "audit branch at $head"
+          else
+            echo "no audit branch"
+          fi
+
+      - name: Set up Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+
+      - name: Verify the chain and anchor it
+        working-directory: .github/factory/controller
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUDIT_DIR: ${{ runner.temp }}/audit-log
+          AUDIT_HEAD: ${{ steps.audit.outputs.head }}
+        run: node verify-chain.ts
