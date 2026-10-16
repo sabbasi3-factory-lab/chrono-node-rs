@@ -6,7 +6,11 @@ const { globToRegExp, evaluate, trailer } = require("../scope");
 const PROTECTED = [".github/**", "contracts/**", "upstream/**", "tests/golden/**", "Cargo.toml", "Cargo.lock", "vendor/**"];
 const CONTRACT = {
     scope: ["src/locales/en/parsers/weekday.rs", "tests/locales/en/weekday.rs"],
-    acceptance: [{ golden: "tests/golden/en/weekday.json" }, { clippy: "deny-warnings" }],
+    acceptance: [
+        { golden: { step: "ENWeekdayParser", areas: ["en/weekday", "en/casual"] } },
+        { differential: { phrases: 2000, seed: 42, match: "chrono-node@d4fe7e3" } },
+        { clippy: "deny-warnings" },
+    ],
     lastCommit: "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
 };
 const loadContract = (task) => (task === "en/weekday-parser" ? CONTRACT : null);
@@ -39,7 +43,10 @@ test("agent PR without a task fails", () => {
 
 test("in-scope factory PR passes and reports golden areas", () => {
     const r = evaluate({ isAgent: true, body: body(), changed: ["src/locales/en/parsers/weekday.rs"], protectedGlobs: PROTECTED, loadContract });
-    assert.deepStrictEqual([r.ok, r.task, r.goldenAreas], [true, "en/weekday-parser", ["en/weekday"]]);
+    assert.deepStrictEqual(
+        [r.ok, r.task, r.goldenAreas, r.goldenStep, r.differential],
+        [true, "en/weekday-parser", ["en/weekday", "en/casual"], "ENWeekdayParser", { seed: 42, phrases: 2000 }]
+    );
 });
 
 test("out-of-scope change fails (fire drill: auto PR touching src/core)", () => {
@@ -85,4 +92,12 @@ test("unknown task or bad id fails closed", () => {
         const r = evaluate({ isAgent: false, body: `Factory-Task: ${task}\nContract-SHA: a1b2c3d`, changed: ["x"], protectedGlobs: PROTECTED, loadContract });
         assert.strictEqual(r.ok, false, task);
     }
+});
+
+test("malformed acceptance fails closed", () => {
+    const bad = () => ({ ...CONTRACT, acceptance: [{ golden: "tests/golden/en/weekday.json" }, { differential: { seed: "x" } }] });
+    const r = evaluate({ isAgent: true, body: body(), changed: ["src/locales/en/parsers/weekday.rs"], protectedGlobs: PROTECTED, loadContract: bad });
+    assert.strictEqual(r.ok, false);
+    assert.match(r.reasons.join(), /unsupported golden/);
+    assert.match(r.reasons.join(), /unsupported differential/);
 });

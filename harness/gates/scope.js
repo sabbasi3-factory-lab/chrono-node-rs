@@ -46,13 +46,14 @@ const TASK_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
  *   changed       - changed paths
  *   protectedGlobs- tiers.yaml protected_from_agents
  *   loadContract  - (taskId) => {scope: string[], acceptance: [...] , lastCommit: string} | null
- * @returns {{ok: boolean, kind: "human"|"factory", reasons: string[], task?: string, goldenAreas: string[]}}
+ * @returns {{ok: boolean, kind: "human"|"factory", reasons: string[], task?: string, goldenAreas: string[],
+ *            goldenStep?: string|null, differential?: {seed: number, phrases: number}|null}}
  */
 function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
     const task = trailer(body, "Factory-Task");
     if (!task) {
         if (isAgent) return { ok: false, kind: "factory", reasons: ["agent PR without Factory-Task trailer"], goldenAreas: [] };
-        return { ok: true, kind: "human", reasons: [], goldenAreas: [] };
+        return { ok: true, kind: "human", reasons: [], goldenAreas: [], goldenStep: null, differential: null };
     }
     const reasons = [];
     if (!TASK_ID.test(task)) {
@@ -76,15 +77,32 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
     }
     if (changed.length === 0) reasons.push("no changed files");
 
+    // acceptance: - golden: { step: ENWeekdayParser, areas: [en/weekday, ...] }
+    //             - differential: { phrases: 2000, seed: 42, match: chrono-node@<sha> }
     const goldenAreas = [];
+    let goldenStep = null;
+    let differential = null;
     for (const a of contract.acceptance || []) {
-        if (a && typeof a.golden === "string") {
-            const m = /^tests\/golden\/(.+)\.json$/.exec(a.golden);
-            if (!m) reasons.push(`unsupported golden acceptance ${a.golden}`);
-            else goldenAreas.push(m[1]);
+        if (a && a.golden !== undefined) {
+            const g = a.golden;
+            const areasOk = g && Array.isArray(g.areas) && g.areas.every((x) => typeof x === "string" && /^[a-z0-9_/]+$/.test(x));
+            if (!areasOk || typeof g.step !== "string" || !/^[A-Za-z0-9]+$/.test(g.step)) {
+                reasons.push("unsupported golden acceptance (want {step, areas})");
+            } else {
+                goldenStep = g.step;
+                goldenAreas.push(...g.areas);
+            }
+        }
+        if (a && a.differential !== undefined) {
+            const d = a.differential;
+            if (!d || !Number.isInteger(d.seed) || !Number.isInteger(d.phrases) || d.phrases < 1 || d.phrases > 20000) {
+                reasons.push("unsupported differential acceptance (want {phrases, seed})");
+            } else {
+                differential = { seed: d.seed, phrases: d.phrases };
+            }
         }
     }
-    return { ok: reasons.length === 0, kind: "factory", task, reasons, goldenAreas };
+    return { ok: reasons.length === 0, kind: "factory", task, reasons, goldenAreas, goldenStep, differential };
 }
 
 module.exports = { globToRegExp, matchesAny, trailer, evaluate };

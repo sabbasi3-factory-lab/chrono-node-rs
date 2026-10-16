@@ -9,7 +9,8 @@
 //   the last commit that touched it, change only paths inside the contract `scope`, and touch
 //   nothing in `protected_from_agents` from factory policies/tiers.yaml (at the pinned factory
 //   version in .github/factory/factory-version). Agent PRs without a task fail.
-// Writes `golden_areas=<a,b>` and `kind=` to $GITHUB_OUTPUT for the contract golden step.
+// Writes kind, golden_areas, golden_step, differential_seed and differential_phrases to
+// $GITHUB_OUTPUT for the contract golden and visible comparison steps.
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
@@ -89,7 +90,17 @@ async function main() {
     console.log(`changed paths (${changedPaths.length}):`);
     for (const p of changedPaths) console.log(`  ${p}`);
     if (process.env.GITHUB_OUTPUT) {
-        fs.appendFileSync(process.env.GITHUB_OUTPUT, `kind=${result.kind}\ngolden_areas=${result.goldenAreas.join(",")}\n`);
+        const d = result.differential || { seed: 42, phrases: 2000 };
+        fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            [
+                `kind=${result.kind}`,
+                `golden_areas=${result.goldenAreas.join(",")}`,
+                `golden_step=${result.goldenStep || ""}`,
+                `differential_seed=${d.seed}`,
+                `differential_phrases=${d.phrases}`,
+            ].join("\n") + "\n"
+        );
     }
     if (!result.ok) {
         for (const r of result.reasons) console.log(`::error::${r}`);

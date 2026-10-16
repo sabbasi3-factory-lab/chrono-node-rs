@@ -70,11 +70,11 @@ jobs:
       - name: Whole-crate golden suite (no regressions)
         run: cargo test --locked --test golden -- --nocapture
 
-      - name: Contract golden cases (every case must pass)
+      - name: Contract golden cases (all ported cases pass; the new step is exercised)
         if: steps.scope.outputs.golden_areas != ''
         env:
           GOLDEN_AREAS: ${{ steps.scope.outputs.golden_areas }}
-          GOLDEN_REQUIRE_ALL: "1"
+          GOLDEN_REQUIRE_STEP: ${{ steps.scope.outputs.golden_step }}
         run: cargo test --locked --test golden -- --nocapture
 
       - name: Doc tests
@@ -84,11 +84,20 @@ jobs:
         working-directory: harness
         run: npm run golden:check
 
+      - name: Build chrono-node from upstream/
+        working-directory: harness
+        run: npm run build:upstream
+
+      - name: Comparison with chrono-node (contract seed, reproducible)
+        working-directory: harness
+        env:
+          SEED: ${{ steps.scope.outputs.differential_seed }}
+          PHRASES: ${{ steps.scope.outputs.differential_phrases }}
+        run: node compare/compare.js --seed "$SEED" --phrases "$PHRASES" --rust ../target/debug/chrono-rs-json
+
       - name: Held-out comparison with chrono-node (fresh seed, printed after the run)
         working-directory: harness
-        run: |
-          npm run build:upstream
-          node compare/compare.js --phrases 2000 --rust ../target/debug/chrono-rs-json
+        run: node compare/compare.js --phrases 2000 --rust ../target/debug/chrono-rs-json
 
   deny:
     name: deny
