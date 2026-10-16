@@ -187,6 +187,18 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     out.push(decide({ type: 'needs_human', reason: 'task_timeout', effect: 'label:needs-human', task, issue: issue?.number ?? null, pr: pr?.number ?? null, source_ids: [subject, `picked:${h.picked_at}`] }));
   }
 
+  // A picked issue whose pick time isn't in the history window can never time
+  // out: fail closed and hand it to a human instead of letting it run forever.
+  for (const i of openIssues) {
+    const task = i.task_id;
+    if (!task || !i.labels.includes(LABEL_PICKED) || i.labels.includes(LABEL_NEEDS_HUMAN)) continue;
+    if (mergedTasks.has(task) || escalated.has(task) || history(task).picked_at) continue;
+    const pr = openPulls.find((x) => x.task_id === task);
+    if (pr?.labels.includes(LABEL_NEEDS_HUMAN)) continue;
+    escalate(decide({ type: 'needs_human', reason: 'pick_time_unknown', effect: 'label:needs-human', task, issue: i.number, pr: pr?.number ?? null, source_ids: [i.node_id, 'picked:unknown'] }));
+  }
+  const unchecked = new Set(s.unchecked_heads);
+
   // ---- open factory PRs: contract freshness and CI failures
   for (const pr of openPulls) {
     if (!pr.task_id || pr.labels.includes(LABEL_NEEDS_HUMAN) || escalated.has(pr.task_id)) continue;
@@ -209,6 +221,11 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       out.push(decide({ ...base, type: 'stale_contract', reason: 'contract_changed', effect: 'label:stale-contract', contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha, c.last_commit_sha] }));
       continue;
     }
+    // Runs for this head weren't looked up (too many open PRs): the newest run may be missing.
+    if (unchecked.has(pr.head_sha)) {
+      out.push(decide({ ...base, type: 'wait', reason: 'check_runs_incomplete', source_ids: [pr.node_id, pr.head_sha] }));
+      continue;
+    }
     // A failed policy gate is not something Evergreen can repair: a human decides.
     const gates = latestCheck(s, pr, GATES_WORKFLOW);
     if (gates?.conclusion && FAILED_CONCLUSIONS.has(gates.conclusion)) {
@@ -219,6 +236,12 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     if (!run || !run.conclusion || !FAILED_CONCLUSIONS.has(run.conclusion)) continue;
     const h = history(task);
     if (h.repaired_run_ids.includes(run.run_id)) continue;
+    // Nothing is repaired until the trusted gates have passed on this exact head
+    // (missing, still running, cancelled or skipped gates → wait).
+    if (gates?.conclusion !== 'success') {
+      out.push(decide({ ...base, type: 'wait', reason: 'gates_pending', run_id: run.run_id, source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id] }));
+      continue;
+    }
     const sig = run.failure_signature;
     const failure = {
       ...base,

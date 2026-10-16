@@ -27,15 +27,23 @@ function readyWorld(over: SnapshotOverrides = {}, extraContracts = [contract('co
   });
 }
 
-// An open factory PR for en/weekday-parser with a current Contract-SHA and a failed CI run.
-function failingPrWorld(sig: string | null, h = history(), conclusion = 'failure'): Snapshot {
+const PICKED_RECENTLY = '2026-10-16T10:00:00Z';
+/** History for tasks picked two hours ago (a picked task without a pick time goes to needs_human). */
+const pickedRecently = (tasks: string[]) => Object.fromEntries(tasks.map((t) => [t, history({ picked_at: PICKED_RECENTLY })]));
+/** A completed trusted `gates` run for a PR head (pull_request_target: head_sha is the main tip). */
+const gatesRun = (id: number, candidate: string, over = {}) =>
+  checkRun(id, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: candidate, conclusion: 'success', ...over });
+
+// An open factory PR for en/weekday-parser with a current Contract-SHA, green
+// gates and a failed CI run, picked two hours ago.
+function failingPrWorld(sig: string | null, h = history({ picked_at: PICKED_RECENTLY }), conclusion = 'failure'): Snapshot {
   const c = contract('en/weekday-parser');
   const pr = pull(21, { task_id: 'en/weekday-parser', contract_sha: c.last_commit_sha.slice(0, 7) });
   return snapshot({
     issues: [issue(1, 'en/weekday-parser', ['factory:picked'])],
     pulls: [pr],
     contractList: [c],
-    check_runs: [checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion, failure_signature: sig })],
+    check_runs: [gatesRun(490, pr.head_sha), checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion, failure_signature: sig })],
     history: { 'en/weekday-parser': h },
   });
 }
@@ -118,7 +126,7 @@ describe('planner: admit', () => {
   });
 
   it('does not re-admit a task that is in flight', () => {
-    const s = readyWorld({ issues: [issue(1, 'en/weekday-parser', ['factory:ready', 'factory:picked'])] });
+    const s = readyWorld({ issues: [issue(1, 'en/weekday-parser', ['factory:ready', 'factory:picked'])], history: pickedRecently(['en/weekday-parser']) });
     assert.deepEqual(run(s), []);
   });
 
@@ -217,6 +225,7 @@ describe('planner: schedule', () => {
         contract('core/results', { scope: ['src/core/results.rs'] }),
         ...inflight.map((t) => contract(t)),
       ],
+      history: pickedRecently(inflight),
     });
     assert.deepEqual(reasons(run(s)), ['wip_full']);
   });
@@ -228,6 +237,7 @@ describe('planner: schedule', () => {
         contract('core/a', { scope: ['src/core/a.rs'], tier: 'human' }),
         contract('core/b', { scope: ['src/core/b.rs'], tier: 'human' }),
       ],
+      history: pickedRecently(['core/b']),
     });
     assert.deepEqual(reasons(run(s)), ['core_area_busy']);
   });
@@ -250,6 +260,7 @@ describe('planner: schedule', () => {
         contract('en/c', { area: 'en-casual' }),
         contract('en/d', { area: 'en-casual' }),
       ],
+      history: pickedRecently(['en/b', 'en/d']),
     });
     assert.deepEqual(reasons(run(s)), ['area_locked', 'area_locked']);
   });
@@ -339,20 +350,20 @@ describe('planner: failures', () => {
   });
 
   it('treats timed_out as a failure and ignores success/cancelled', () => {
-    assert.ok(run(failingPrWorld('x', history(), 'timed_out')).some((d) => d.reason === 'ci_failed'));
-    assert.deepEqual(run(failingPrWorld('x', history(), 'success')), []);
-    assert.deepEqual(run(failingPrWorld('x', history(), 'cancelled')), []);
+    assert.ok(run(failingPrWorld('x', undefined, 'timed_out')).some((d) => d.reason === 'ci_failed'));
+    assert.deepEqual(run(failingPrWorld('x', undefined, 'success')), []);
+    assert.deepEqual(run(failingPrWorld('x', undefined, 'cancelled')), []);
   });
 
   it('sends the same signature twice to needs_human (repeated_signature)', () => {
-    const d = find(run(failingPrWorld('sig-a', history({ repairs: 1, failure_signatures: ['sig-a'] }))), 'repeated_signature');
+    const d = find(run(failingPrWorld('sig-a', history({ picked_at: PICKED_RECENTLY, repairs: 1, failure_signatures: ['sig-a'] }))), 'repeated_signature');
     assert.equal(d.type, 'needs_human');
   });
 
   it('stops after max_repairs (max_repairs)', () => {
-    const h = history({ repairs: 2, failure_signatures: ['a', 'b'] });
+    const h = history({ picked_at: PICKED_RECENTLY, repairs: 2, failure_signatures: ['a', 'b'] });
     assert.equal(find(run(failingPrWorld('c', h)), 'max_repairs').type, 'needs_human');
-    assert.ok(run(failingPrWorld('c', history({ repairs: 1, failure_signatures: ['a'] }))).some((d) => d.reason === 'ci_failed'));
+    assert.ok(run(failingPrWorld('c', history({ picked_at: PICKED_RECENTLY, repairs: 1, failure_signatures: ['a'] }))).some((d) => d.reason === 'ci_failed'));
   });
 
   it('sends a failure without a signature to needs_human (missing_failure_signature)', () => {
@@ -360,17 +371,17 @@ describe('planner: failures', () => {
   });
 
   it('stops repairs when the per-task budget is spent (task_budget_exhausted)', () => {
-    const d = find(run(failingPrWorld('z', history({ aic_spent: 1000 }))), 'task_budget_exhausted');
+    const d = find(run(failingPrWorld('z', history({ picked_at: PICKED_RECENTLY, aic_spent: 1000 }))), 'task_budget_exhausted');
     assert.equal(d.type, 'needs_human');
   });
 
   it('does not repeat a repair already dispatched for that run', () => {
-    assert.deepEqual(run(failingPrWorld('z', history({ repairs: 1, repaired_run_ids: [500], failure_signatures: ['y'] }))), []);
+    assert.deepEqual(run(failingPrWorld('z', history({ picked_at: PICKED_RECENTLY, repairs: 1, repaired_run_ids: [500], failure_signatures: ['y'] }))), []);
   });
 
   it('only looks at the run for the current head SHA', () => {
     const s = failingPrWorld('z');
-    s.check_runs[0]!.head_sha = hex40('9');
+    s.check_runs[1]!.head_sha = hex40('9');
     assert.deepEqual(run(s), []);
   });
 
@@ -433,6 +444,7 @@ describe('review fix 5: newest run per head; gates vs ci', () => {
       pulls: [pr],
       contractList: [c],
       check_runs: runs,
+      history: pickedRecently(['en/weekday-parser']),
     });
   const ciFail = (id: number, over = {}) => checkRun(id, { head_sha: pr.head_sha, conclusion: 'failure', failure_signature: 'sig', ...over });
   const gates = (id: number, over = {}) =>
@@ -448,7 +460,7 @@ describe('review fix 5: newest run per head; gates vs ci', () => {
 
   it('the newest completed run decides (a later success clears an older failure)', () => {
     assert.deepEqual(run(world([ciFail(500), checkRun(501, { head_sha: pr.head_sha, conclusion: 'success' })])), []);
-    assert.deepEqual(reasons(run(world([checkRun(499, { head_sha: pr.head_sha }), ciFail(500)]))), ['ci_failed']);
+    assert.deepEqual(reasons(run(world([gates(450, { conclusion: 'success' }), checkRun(499, { head_sha: pr.head_sha }), ciFail(500)]))), ['ci_failed']);
   });
 
   it('a failed gates run goes to needs_human (gates_failed) and is never repaired', () => {
@@ -459,9 +471,9 @@ describe('review fix 5: newest run per head; gates vs ci', () => {
     assert.deepEqual(ds[0]!.source_ids, ['600/attempts/1', 'PR_21']);
   });
 
-  it('ignores gates runs for another PR head, still-running gates, and passed gates', () => {
-    assert.deepEqual(reasons(run(world([gates(600, { candidate_sha: hex40('9') }), ciFail(500)]))), ['ci_failed']);
-    assert.deepEqual(reasons(run(world([gates(600, { status: 'in_progress', conclusion: null }), ciFail(500)]))), ['ci_failed']);
+  it('ignores gates runs for another PR head and still-running gates (the repair waits: gates_pending); a newer pass wins', () => {
+    assert.deepEqual(reasons(run(world([gates(600, { candidate_sha: hex40('9') }), ciFail(500)]))), ['gates_pending']);
+    assert.deepEqual(reasons(run(world([gates(600, { status: 'in_progress', conclusion: null }), ciFail(500)]))), ['gates_pending']);
     assert.deepEqual(reasons(run(world([gates(600), gates(601, { conclusion: 'success' }), ciFail(500)]))), ['ci_failed']);
   });
 
@@ -488,5 +500,58 @@ describe('review fix 6: one terminal decision per task per run', () => {
   it('a task that is not timed out still gets its repair', () => {
     const s = failingPrWorld('golden:en/weekday#17', history({ picked_at: '2026-10-16T10:00:00Z' }));
     assert.deepEqual(reasons(run(s)), ['ci_failed']);
+  });
+});
+
+describe('independent review (follow-up): fail closed', () => {
+  it('a CI failure is not repaired while gates are missing, running, cancelled or skipped (gates_pending)', () => {
+    const s = failingPrWorld('sig');
+    const head = s.pulls[0]!.head_sha;
+    const variants: Snapshot[] = [
+      { ...s, check_runs: [s.check_runs[1]!] },
+      { ...s, check_runs: [gatesRun(490, head, { status: 'in_progress', conclusion: null }), s.check_runs[1]!] },
+      { ...s, check_runs: [gatesRun(490, head, { conclusion: 'cancelled' }), s.check_runs[1]!] },
+      { ...s, check_runs: [gatesRun(490, head, { conclusion: 'skipped' }), s.check_runs[1]!] },
+    ];
+    for (const v of variants) {
+      const ds = run(v);
+      assert.deepEqual(ds.map((d) => `${d.type}/${d.reason}`), ['wait/gates_pending']);
+      assert.equal(ds[0]!.effect, 'none');
+    }
+    // and it also holds back the needs_human escalations of the CI failure
+    assert.deepEqual(reasons(run({ ...failingPrWorld(null), check_runs: [failingPrWorld(null).check_runs[1]!] })), ['gates_pending']);
+  });
+
+  it('a picked issue without a pick time in the window goes to needs_human (pick_time_unknown), once', () => {
+    const s = snapshot({ issues: [issue(1, 'en/a', ['factory:picked'])], contractList: [contract('en/a')] });
+    const ds = run(s);
+    assert.deepEqual(ds.map((d) => `${d.type}/${d.reason}`), ['needs_human/pick_time_unknown']);
+    assert.equal(ds[0]!.effect, 'label:needs-human');
+    assert.deepEqual(ds[0]!.source_ids, ['I_1', 'picked:unknown']);
+    // not when already escalated, merged, or the pick time is known
+    assert.deepEqual(run(snapshot({ issues: [issue(1, 'en/a', ['factory:picked', 'needs-human'])], contractList: [contract('en/a')] })), []);
+    assert.deepEqual(run({ ...s, pulls: [mergedPull(9, 'en/a')] }).filter((d) => d.reason === 'pick_time_unknown'), []);
+    assert.deepEqual(run({ ...s, history: pickedRecently(['en/a']) }), []);
+  });
+
+  it('a picked task with an open PR and no pick time gets only pick_time_unknown (one terminal decision)', () => {
+    const s = failingPrWorld('sig', history());
+    assert.deepEqual(reasons(run(s)), ['pick_time_unknown']);
+  });
+
+  it('PRs whose runs were not looked up wait (check_runs_incomplete) instead of acting on a stale run', () => {
+    const s = failingPrWorld('sig');
+    s.unchecked_heads = [s.pulls[0]!.head_sha];
+    const ds = run(s);
+    assert.deepEqual(ds.map((d) => `${d.type}/${d.reason}`), ['wait/check_runs_incomplete']);
+    // a stale gates failure is not escalated either
+    s.check_runs[0]!.conclusion = 'failure';
+    assert.deepEqual(reasons(run(s)), ['check_runs_incomplete']);
+  });
+
+  it('unknown spend (null) never dispatches (budget_unknown)', () => {
+    assert.deepEqual(reasons(run(readyWorld({ factory_aic_today: null }))), ['budget_unknown']);
+    assert.deepEqual(reasons(run(failingPrWorld('sig'))), ['ci_failed']);
+    assert.deepEqual(reasons(run({ ...failingPrWorld('sig'), factory_aic_today: null })), ['budget_unknown']);
   });
 });

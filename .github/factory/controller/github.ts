@@ -393,6 +393,11 @@ async function firstPages<T>(client: GitHubClient, path: string, extract: (data:
  * bounded by RECENT_RUN_PAGES + MAX_HEAD_LOOKUPS. Runs are kept if they were
  * updated inside the observation window or belong to an open PR head.
  */
+/** Open PR heads that readCheckRuns does not look up by `?head_sha=` (sorted). */
+export function uncheckedHeads(openHeads: ReadonlySet<string>): string[] {
+  return [...openHeads].sort().filter((h, i) => i >= MAX_HEAD_LOOKUPS || !HEX40.test(h));
+}
+
 export async function readCheckRuns(
   client: GitHubClient,
   repo: string,
@@ -541,6 +546,7 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
     main_sha,
     contracts,
     check_runs,
+    unchecked_heads: uncheckedHeads(openHeads),
     busy_jobs,
     factory_aic_today: null,
     history: {},

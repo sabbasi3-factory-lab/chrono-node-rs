@@ -20,7 +20,7 @@ on:
         required: true
         type: string
       contract_sha:
-        description: "Contract commit SHA pinned by the controller"
+        description: "Contract commit SHA pinned by the controller (full 40 hex)"
         required: true
         type: string
 
@@ -85,25 +85,29 @@ tools:
 # Setup outside the firewall: toolchain, vendored approved crates, offline docs, and the
 # chrono-node judge for local comparisons. Everything lands outside the repo or in ignored paths.
 steps:
-  # Before any inference: reject malformed inputs and stale dispatches (the contract changed
-  # after the controller pinned it). Inputs reach the shell only through env, never interpolated.
+  # Before any inference: fail closed unless the kill switch is on, reject malformed inputs, a
+  # gh-aw aw_context (it could redirect the checkout to another PR after this check) and stale
+  # dispatches (the contract changed after the controller pinned it). Inputs reach the shell only
+  # through env, never interpolated.
   - name: Validate dispatch and contract freshness
     env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+      AW_CONTEXT: ${{ github.event.inputs.aw_context }}
       TASK: ${{ github.event.inputs.task }}
       ISSUE: ${{ github.event.inputs.issue }}
       ATTEMPT: ${{ github.event.inputs.attempt }}
       CONTRACT_SHA: ${{ github.event.inputs.contract_sha }}
     run: |
+      [ "$FACTORY_ENABLED" = "true" ] || { echo "::error::kill switch: FACTORY_ENABLED is not \"true\""; exit 1; }
+      [ -z "$AW_CONTEXT" ] || { echo "::error::aw_context must be empty for factory dispatches"; exit 1; }
       [[ "$TASK" =~ ^[a-z0-9-]+(/[a-z0-9-]+)+$ && ${#TASK} -le 100 ]] || { echo "::error::invalid task id"; exit 1; }
       [[ "$ISSUE" =~ ^[1-9][0-9]{0,8}$ && "$ATTEMPT" =~ ^[1-9][0-9]?$ ]] || { echo "::error::invalid issue or attempt"; exit 1; }
-      [[ "$CONTRACT_SHA" =~ ^[0-9a-f]{7,40}$ ]] || { echo "::error::invalid contract_sha"; exit 1; }
+      [[ "$CONTRACT_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::contract_sha must be a full 40-hex commit SHA"; exit 1; }
       contract="contracts/${TASK}.yaml"
       [ -f "$contract" ] || { echo "::error::no contract ${contract} on this commit"; exit 1; }
       last=$(git log -1 --format=%H -- "$contract")
-      case "$last" in
-        "$CONTRACT_SHA"*) echo "contract ${contract} is at ${last} (matches dispatch)" ;;
-        *) echo "::error::stale dispatch: ${contract} is at ${last}, dispatched with ${CONTRACT_SHA}"; exit 1 ;;
-      esac
+      [ "$last" = "$CONTRACT_SHA" ] || { echo "::error::stale dispatch: ${contract} is at ${last}, dispatched with ${CONTRACT_SHA}"; exit 1; }
+      echo "contract ${contract} is at ${last} (matches dispatch)"
   - name: Rust toolchain (rust-toolchain.toml)
     run: rustup toolchain install && rustc --version
   # The vendor tree lives in the workspace's gitignored target/ (always visible inside the agent
@@ -132,6 +136,7 @@ safe-outputs:
   # Strict detection must also cover failure reporting: no automatic failure issues/comments
   # carrying agent-supplied text from a run whose detection didn't succeed.
   report-failure-as-issue: false
+  report-failed-jobs: false
   missing-tool:
     create-issue: false
   missing-data:
@@ -151,12 +156,14 @@ safe-outputs:
       - "src/locales/**"
       - "src/common/parsers/**"
       - "src/common/refiners/**"
+  # Only the task issue (validated as a number before inference), never one the agent picks.
   add-comment:
     max: 1
-    target: "*"
-  # Strict: a flagged run produces nothing.
+    target: ${{ github.event.inputs.issue }}
+  # Strict: a flagged run produces nothing, and no tracking issue carries its text.
   threat-detection:
     continue-on-error: false
+    report-as-issue: false
 ---
 
 # Implement one factory task

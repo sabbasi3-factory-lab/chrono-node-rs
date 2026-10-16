@@ -170,9 +170,17 @@ export interface Snapshot {
   /** Keyed by repo path, e.g. `contracts/en/weekday-parser.yaml`. */
   contracts: Record<string, ContractSnap>;
   check_runs: CheckRunSnap[];
+  /**
+   * Open PR heads whose runs were NOT looked up (beyond MAX_HEAD_LOOKUPS, or not a
+   * 40-hex SHA). Their newest run may be missing, so the planner waits on them.
+   */
+  unchecked_heads: string[];
   /** Running + queued Actions jobs across the org; null when unknown. */
   busy_jobs: number | null;
-  /** Factory-wide AIC spent today (UTC); null when unknown. */
+  /**
+   * Factory-wide AIC spent today (UTC); null when unknown, i.e. when no
+   * `spend_snapshot` record exists for today. Unknown fails closed.
+   */
   factory_aic_today: number | null;
   /** Per task id, derived from non-dry-run audit events. */
   history: Record<string, TaskHistory>;
@@ -199,6 +207,7 @@ export type ReasonCode =
   | 'repeated_signature'
   | 'max_repairs'
   | 'missing_failure_signature'
+  | 'pick_time_unknown'
   | 'gates_failed'
   | 'task_budget_exhausted'
   | 'missing_task_marker'
@@ -219,7 +228,9 @@ export type ReasonCode =
   | 'wip_full'
   | 'human_queue_full'
   | 'core_area_busy'
-  | 'area_locked';
+  | 'area_locked'
+  | 'gates_pending'
+  | 'check_runs_incomplete';
 
 export type Effect =
   | 'dispatch_workflow:implement'
