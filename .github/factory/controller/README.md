@@ -20,13 +20,23 @@ append-only audit log on the protected `audit` branch.
    - open issues (only the `<!-- factory-task: … -->` marker is kept)
    - all PRs through GraphQL (only the `Factory-Task:`, `Contract-SHA:` and `Factory-Attempt:` trailer
      lines are kept)
+   - `main` resolved **once** to a commit SHA (`snapshot.main_sha`). The tree, the contract blobs and
+     every `commits?path=contracts/<task>.yaml&sha=<main_sha>` lookup use that SHA, so contents and the
+     contract commit SHA always come from the same state of main.
    - the contracts the planner needs, each with its blob SHA and **last commit SHA on main**
-   - `ci` and `gates` workflow runs
+   - `ci` and `gates` workflow runs. There is no `created>=` cutoff, because re-runs keep their
+     original `created_at`. The controller reads the newest 3 pages (×100) of `/actions/runs`, plus one
+     `?head_sha=` page for each open PR head (at most 30). It keeps runs updated in the last 24 h, or
+     runs for an open PR head. That is at most 33 list calls per poll.
    - when `FACTORY_ENABLED=true`, the org's busy Actions jobs
 5. `observe()` turns the snapshot into fact events, and `plan()` (pure) turns it into decisions.
 6. The executor logs `[dry-run] would <effect> …` for each decision. It has no GitHub client.
 7. Append observed facts, then non-`wait` decisions, then the heartbeat if one is due. Every event is
    deduped by `dedupe_key`.
+   - An event that fails validation (`AuditValidationError`: unsafe payload string, bad source id) is
+     logged as `skipped invalid audit event (…)` and skipped. Nothing is written for it, and the run goes
+     on to the heartbeat.
+   - API and chain errors still fail the run.
 8. Write a markdown table to `$GITHUB_STEP_SUMMARY`.
 
 ## Running it
@@ -81,6 +91,8 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 - **Payload safety:** payload strings must match `^[A-Za-z0-9._:/#@[\]+-]{0,200}$`. That allows IDs,
   SHAs, logins, enums, task ids and timestamps. Free text (titles, bodies, comments) is rejected at write
   time.
+  - Task ids are capped at 100 characters (`MAX_TASK_ID_LENGTH`), so every accepted id passes this check.
+  - A longer marker is `invalid`, and a longer `Factory-Task:` trailer is ignored.
 - **`verify(lines, expectedFirstParent?)`** (`audit.ts`) recomputes each sha. It also checks:
   - canonical form
   - exact fields
@@ -99,7 +111,7 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `merged` | PR node id | `pr`, `merge_commit_sha`, `merged_at`, `task` |
 | `human_action` | review node id | `action: review`, `pr`, `reviewer`, `state`, `submitted_at` (non-bot reviewers only) |
 | `heartbeat` | `hour:YYYY-MM-DDTHH` | `hour`, `run_id`, `trigger`, `open_pr_count`, `decision_count`, `factory_enabled` |
-| decision types | see the planner | `reason`, `effect`, and when set: `task`, `issue`, `pr`, `attempt`, `contract_sha`, `run_id`, `failure_signature` |
+| decision types | the planner's `source_ids` + `reason:<reason>` + `effect:<effect>` (a changed reason for the same subject is recorded; an identical retry dedupes) | `reason`, `effect`, and when set: `task`, `issue`, `pr`, `attempt`, `contract_sha`, `run_id`, `failure_signature` |
 
 - **Facts:** the controller observes only facts whose own GitHub timestamp is within the last 24 h. That
   is shorter than the 7 days of loaded history, so a fact is always found by the dedupe check.
@@ -124,7 +136,8 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | type | reason | when | would |
 |---|---|---|---|
 | `dispatched` | `would_dispatch` | admitted ready task passes every gate | `dispatch_workflow:implement` (attempt 1, `contract_sha` = contract commit SHA) |
-| `repair_dispatched` | `ci_failed` | latest `ci` run on the PR head failed, new signature, repairs < `max_repairs` | `dispatch_workflow:repair` |
+| `repair_dispatched` | `ci_failed` | the newest `ci` run on the PR head failed, with a new signature and repairs < `max_repairs` | `dispatch_workflow:repair` |
+| `needs_human` | `gates_failed` | the newest `gates` run for the PR head failed (policy: scope, Contract-SHA, identifiers). It is never repaired. | `label:needs-human` |
 | `needs_human` | `repeated_signature` | same failure signature seen before | `label:needs-human` |
 | `needs_human` | `max_repairs` | repairs ≥ `limits.task.max_repairs` | `label:needs-human` |
 | `needs_human` | `missing_failure_signature` | failed run without a `factory-failure-signature:` line (fail closed) | `label:needs-human` |
@@ -173,6 +186,27 @@ Unknown paths count as `human`. Auto-strict paths use `start_as` (currently `hum
 **Core tasks**
 
 A core task has a scope path under the auto-strict globs (`src/core/**` etc.).
+
+**Which CI runs count**
+
+The planner picks the newest run for the PR head: the highest `run_id`, then `run_attempt`.
+
+- **Unfinished runs:** if the newest run is still queued or running, the controller waits. An older
+  failure is not acted on.
+- **`ci` runs** (`pull_request`; `head_sha` is the PR head):
+  - a failure feeds the Evergreen repair path
+  - `failure` / `timed_out` / `startup_failure` count as failures
+- **`gates` runs** (`pull_request_target`):
+  - `head_sha` is the main tip, so the PR head comes from the run's `pull_requests[].head.sha`
+    (`candidate_sha`)
+  - a failure is a policy decision, so it goes to `needs_human/gates_failed` and is never repaired
+  - a gates failure takes precedence over a `ci` failure on the same head
+- **`merge_group` runs** are recorded as `check_result` but never trigger repairs.
+
+**One terminal decision per task per run**
+
+Task timeouts are evaluated first. A task escalated to `needs_human` in this run, for any reason, gets
+no other decision in that run: no repair, no contract decision and no second escalation.
 
 **In flight**
 

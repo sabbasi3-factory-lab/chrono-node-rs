@@ -310,9 +310,30 @@ export async function readPulls(client: GitHubClient, repo: string): Promise<Pul
   return out;
 }
 
-/** Contracts on main for the given task ids (plus their dependency closure). */
-export async function readContracts(client: GitHubClient, repo: string, tasks: Iterable<string>): Promise<Record<string, ContractSnap>> {
-  const tree = asRec((await client.request('GET', `/repos/${repo}/git/trees/main?recursive=1`)).data);
+/** Resolves `main` to one immutable commit SHA for the whole snapshot. */
+export async function resolveMainSha(client: GitHubClient, repo: string): Promise<string> {
+  const ref = asRec((await client.request('GET', `/repos/${repo}/git/ref/heads/main`)).data);
+  const sha = requireStr(asRec(ref.object).sha, 'main commit sha');
+  if (!HEX40.test(sha)) throw new Error('snapshot: main does not resolve to a commit SHA');
+  return sha;
+}
+
+/**
+ * Contracts at the commit `mainSha` for the given task ids (plus their
+ * dependency closure). The tree, every blob and every `commits?path=…`
+ * history lookup use that same commit, so contents and contract commit SHA
+ * always come from one consistent state of main.
+ */
+export async function readContracts(
+  client: GitHubClient,
+  repo: string,
+  mainSha: string,
+  tasks: Iterable<string>,
+): Promise<Record<string, ContractSnap>> {
+  if (!HEX40.test(mainSha)) throw new Error('snapshot: contracts must be read at a full commit SHA');
+  const commit = asRec((await client.request('GET', `/repos/${repo}/git/commits/${mainSha}`)).data);
+  const treeSha = requireStr(asRec(commit.tree).sha, 'main tree sha');
+  const tree = asRec((await client.request('GET', `/repos/${repo}/git/trees/${treeSha}?recursive=1`)).data);
   if (tree.truncated === true) throw new Error('snapshot: git tree truncated');
   const blobs = new Map<string, string>();
   for (const e of asArr(tree.tree)) {
@@ -334,7 +355,7 @@ export async function readContracts(client: GitHubClient, repo: string, tasks: I
     if (blob.encoding !== 'base64') throw new Error('snapshot: unexpected blob encoding');
     const text = Buffer.from(requireStr(blob.content, 'blob content'), 'base64').toString('utf8');
     const commits = asArr(
-      (await client.request('GET', `/repos/${repo}/commits?path=${encodeURIComponent(path)}&sha=main&per_page=1`)).data,
+      (await client.request('GET', `/repos/${repo}/commits?path=${encodeURIComponent(path)}&sha=${mainSha}&per_page=1`)).data,
     );
     const lastCommit = requireStr(asRec(commits[0]).sha, `last commit for ${path}`);
     const c = parseContract(path, blobSha, lastCommit, text);
@@ -349,6 +370,29 @@ export interface RecordedCheck {
   failure_signature: string | null;
 }
 
+/** Most recent pages of `/actions/runs` scanned per poll (×100 runs). */
+export const RECENT_RUN_PAGES = 3;
+/** At most this many open PR heads get their own `?head_sha=` lookup per poll. */
+export const MAX_HEAD_LOOKUPS = 30;
+
+async function firstPages<T>(client: GitHubClient, path: string, extract: (data: unknown) => T[], pages: number): Promise<T[]> {
+  const out: T[] = [];
+  let next: string | null = path;
+  for (let page = 0; next && page < pages; page++) {
+    const res: ApiResponse = await client.request('GET', next);
+    out.push(...extract(res.data));
+    next = res.next;
+  }
+  return out;
+}
+
+/**
+ * Discovers check runs without a creation cutoff (re-runs keep their original
+ * `created_at`): the newest RECENT_RUN_PAGES pages of all runs, plus one page
+ * of `?head_sha=` for each open PR head (at most MAX_HEAD_LOOKUPS). Calls are
+ * bounded by RECENT_RUN_PAGES + MAX_HEAD_LOOKUPS. Runs are kept if they were
+ * updated inside the observation window or belong to an open PR head.
+ */
 export async function readCheckRuns(
   client: GitHubClient,
   repo: string,
@@ -357,30 +401,45 @@ export async function readCheckRuns(
   recorded: ReadonlyMap<string, RecordedCheck>,
   openHeads: ReadonlySet<string>,
 ): Promise<CheckRunSnap[]> {
-  // Runs can complete long after creation; look back twice the window.
-  const since = isoSeconds(new Date(now.getTime() - 2 * windowHours * 3_600_000));
-  const runs = await paginate(
-    client,
-    `/repos/${repo}/actions/runs?created=${encodeURIComponent(`>=${since}`)}&per_page=100`,
-    (d) => asArr(asRec(d).workflow_runs),
-  );
+  const extract = (d: unknown): unknown[] => asArr(asRec(d).workflow_runs);
+  const found = await firstPages(client, `/repos/${repo}/actions/runs?per_page=100`, extract, RECENT_RUN_PAGES);
+  for (const head of [...openHeads].sort().slice(0, MAX_HEAD_LOOKUPS)) {
+    if (!HEX40.test(head)) continue;
+    found.push(...(await firstPages(client, `/repos/${repo}/actions/runs?head_sha=${head}&per_page=100`, extract, 1)));
+  }
+  // The same run can appear in both lists; keep its newest attempt.
+  const byId = new Map<number, Rec>();
+  for (const r of found) {
+    const run = asRec(r);
+    const id = requireInt(run.id, 'run id');
+    const prev = byId.get(id);
+    const attempt = typeof run.run_attempt === 'number' ? run.run_attempt : 1;
+    const prevAttempt = prev && typeof prev.run_attempt === 'number' ? prev.run_attempt : 1;
+    if (!prev || attempt > prevAttempt || (attempt === prevAttempt && String(run.updated_at) > String(prev.updated_at))) byId.set(id, run);
+  }
+
   const windowStart = now.getTime() - windowHours * 3_600_000;
   const out: CheckRunSnap[] = [];
-  for (const r of runs) {
-    const run = asRec(r);
+  for (const run of [...byId.values()].sort((a, b) => Number(a.id) - Number(b.id))) {
     const name = typeof run.name === 'string' ? run.name : '';
     const events = Object.hasOwn(CHECK_WORKFLOWS, name) ? CHECK_WORKFLOWS[name]! : null;
     const event = run.event;
     if (!events || typeof event !== 'string' || !events.includes(event)) continue;
+    const prs = asArr(run.pull_requests).map(asRec);
+    const headSha = requireStr(run.head_sha, 'run head sha');
+    let candidate: string | null = headSha;
+    if (event === 'pull_request_target') {
+      const heads = new Set(prs.map((p) => asStr(asRec(p.head).sha)).filter((x): x is string => x !== null && HEX40.test(x)));
+      candidate = heads.size === 1 ? [...heads][0]! : null;
+    }
     const snap: CheckRunSnap = {
       run_id: requireInt(run.id, 'run id'),
       run_attempt: requireInt(run.run_attempt ?? 1, 'run attempt'),
       workflow: name,
       event: event as CheckEvent,
-      head_sha: requireStr(run.head_sha, 'run head sha'),
-      pull_requests: asArr(run.pull_requests)
-        .map((p) => asRec(p).number)
-        .filter((n): n is number => typeof n === 'number' && Number.isSafeInteger(n)),
+      head_sha: headSha,
+      candidate_sha: candidate,
+      pull_requests: prs.map((p) => p.number).filter((n): n is number => typeof n === 'number' && Number.isSafeInteger(n)),
       status: asStr(run.status) ?? 'unknown',
       conclusion: asStr(run.conclusion),
       created_at: requireStr(run.created_at, 'run created_at'),
@@ -388,13 +447,16 @@ export async function readCheckRuns(
       heldout_seed: null,
       failure_signature: null,
     };
+    const inWindow = Date.parse(snap.updated_at) >= windowStart;
+    const forOpenPr = (candidate !== null && openHeads.has(candidate)) || openHeads.has(headSha);
+    if (!inWindow && !forOpenPr) continue;
     if (snap.status === 'completed' && snap.conclusion) {
       const key = `${snap.run_id}/attempts/${snap.run_attempt}`;
       const known = recorded.get(key);
       if (known) {
         snap.heldout_seed = known.heldout_seed;
         snap.failure_signature = known.failure_signature;
-      } else if (name === CI_WORKFLOW_NAME && (Date.parse(snap.updated_at) >= windowStart || openHeads.has(snap.head_sha))) {
+      } else if (name === CI_WORKFLOW_NAME) {
         // Only the ci `checks` job prints the held-out seed and failure signature.
         Object.assign(snap, await readChecksJobLog(client, repo, snap.run_id, snap.run_attempt));
       }
@@ -459,7 +521,8 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
   const tasks = new Set<string>(o.historyTasks);
   for (const i of issues) if (i.task_id) tasks.add(i.task_id);
   for (const p of pulls) if (p.task_id && p.state === 'open') tasks.add(p.task_id);
-  const contracts = await readContracts(client, o.repo, tasks);
+  const main_sha = await resolveMainSha(client, o.repo);
+  const contracts = await readContracts(client, o.repo, main_sha, tasks);
   const openHeads = new Set(pulls.filter((p) => p.state === 'open').map((p) => p.head_sha));
   const check_runs = await readCheckRuns(client, o.repo, o.now, o.windowHours, o.recordedChecks, openHeads);
   let busy_jobs: number | null = null;
@@ -475,6 +538,7 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
     fetched_at: isoSeconds(o.now),
     issues,
     pulls,
+    main_sha,
     contracts,
     check_runs,
     busy_jobs,

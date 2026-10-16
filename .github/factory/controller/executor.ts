@@ -30,7 +30,7 @@ export function execute(decisions: Decision[], log: (line: string) => void): str
   return lines;
 }
 
-/** The audit event recorded for a non-wait decision. */
+/** The audit event recorded for a non-wait decision (dedupe on source ids + reason + effect). */
 export function decisionEvent(d: Decision): PendingEvent {
   if (!isRecorded(d)) throw new Error('wait decisions are not recorded');
   if (d.dry_run !== true) throw new Error('decision is not dry-run');
@@ -42,5 +42,8 @@ export function decisionEvent(d: Decision): PendingEvent {
   if (d.contract_sha !== null) fields.contract_sha = d.contract_sha;
   if (d.run_id !== null) fields.run_id = d.run_id;
   if (d.failure_signature !== null) fields.failure_signature = d.failure_signature;
-  return { type: d.type, source_ids: d.source_ids, fields };
+  // The reason and effect are part of the dedupe identity: a changed reason for
+  // the same subject (missing_task_marker → contract_missing) is a new fact,
+  // while an identical retry still dedupes.
+  return { type: d.type, source_ids: [...d.source_ids, `reason:${d.reason}`, `effect:${d.effect}`], fields };
 }

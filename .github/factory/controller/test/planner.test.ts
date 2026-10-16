@@ -422,3 +422,71 @@ describe('planner: contract freshness', () => {
     assert.deepEqual(run(s), []);
   });
 });
+
+describe('review fix 5: newest run per head; gates vs ci', () => {
+  const c = contract('en/weekday-parser');
+  const pr = pull(21, { task_id: 'en/weekday-parser', contract_sha: c.last_commit_sha.slice(0, 7) });
+  const MAIN_TIP = hex40('e');
+  const world = (runs: ReturnType<typeof checkRun>[]): Snapshot =>
+    snapshot({
+      issues: [issue(1, 'en/weekday-parser', ['factory:picked'])],
+      pulls: [pr],
+      contractList: [c],
+      check_runs: runs,
+    });
+  const ciFail = (id: number, over = {}) => checkRun(id, { head_sha: pr.head_sha, conclusion: 'failure', failure_signature: 'sig', ...over });
+  const gates = (id: number, over = {}) =>
+    checkRun(id, { workflow: 'gates', event: 'pull_request_target', head_sha: MAIN_TIP, candidate_sha: pr.head_sha, conclusion: 'failure', ...over });
+
+  it('a newer ci run still in progress makes an older failure non-actionable', () => {
+    assert.deepEqual(run(world([ciFail(500), checkRun(501, { head_sha: pr.head_sha, status: 'in_progress', conclusion: null })])), []);
+  });
+
+  it('a re-run attempt in progress also wins over the failed attempt', () => {
+    assert.deepEqual(run(world([ciFail(500), checkRun(500, { head_sha: pr.head_sha, run_attempt: 2, status: 'queued', conclusion: null })])), []);
+  });
+
+  it('the newest completed run decides (a later success clears an older failure)', () => {
+    assert.deepEqual(run(world([ciFail(500), checkRun(501, { head_sha: pr.head_sha, conclusion: 'success' })])), []);
+    assert.deepEqual(reasons(run(world([checkRun(499, { head_sha: pr.head_sha }), ciFail(500)]))), ['ci_failed']);
+  });
+
+  it('a failed gates run goes to needs_human (gates_failed) and is never repaired', () => {
+    const ds = run(world([gates(600), ciFail(500)]));
+    assert.deepEqual(ds.map((d) => `${d.type}/${d.reason}`), ['needs_human/gates_failed']);
+    assert.equal(ds[0]!.effect, 'label:needs-human');
+    assert.equal(ds[0]!.run_id, 600);
+    assert.deepEqual(ds[0]!.source_ids, ['600/attempts/1', 'PR_21']);
+  });
+
+  it('ignores gates runs for another PR head, still-running gates, and passed gates', () => {
+    assert.deepEqual(reasons(run(world([gates(600, { candidate_sha: hex40('9') }), ciFail(500)]))), ['ci_failed']);
+    assert.deepEqual(reasons(run(world([gates(600, { status: 'in_progress', conclusion: null }), ciFail(500)]))), ['ci_failed']);
+    assert.deepEqual(reasons(run(world([gates(600), gates(601, { conclusion: 'success' }), ciFail(500)]))), ['ci_failed']);
+  });
+
+  it('does not repair merge_group failures or count gates runs as ci', () => {
+    assert.deepEqual(run(world([ciFail(500, { event: 'merge_group' })])), []);
+    assert.deepEqual(run(world([checkRun(500, { workflow: 'gates', event: 'pull_request', head_sha: pr.head_sha, conclusion: 'failure', failure_signature: 's' })])), []);
+  });
+});
+
+describe('review fix 6: one terminal decision per task per run', () => {
+  it('a timed-out task with a new CI failure gets only needs_human/task_timeout', () => {
+    const s = failingPrWorld('golden:en/weekday#17', history({ picked_at: '2026-10-15T10:00:00Z' }));
+    const ds = run(s);
+    assert.deepEqual(ds.map((d) => `${d.type}/${d.reason}`), ['needs_human/task_timeout']);
+  });
+
+  it('also suppresses failure escalations and contract decisions for a timed-out task', () => {
+    const s = failingPrWorld(null, history({ picked_at: '2026-10-15T10:00:00Z' }));
+    assert.deepEqual(reasons(run(s)), ['task_timeout']);
+    s.pulls[0]!.contract_sha = '0000000';
+    assert.deepEqual(reasons(run(s)), ['task_timeout']);
+  });
+
+  it('a task that is not timed out still gets its repair', () => {
+    const s = failingPrWorld('golden:en/weekday#17', history({ picked_at: '2026-10-16T10:00:00Z' }));
+    assert.deepEqual(reasons(run(s)), ['ci_failed']);
+  });
+});

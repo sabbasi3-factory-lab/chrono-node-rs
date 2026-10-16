@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { assertSafePayload } from '../audit.ts';
 import {
+  MAX_TASK_ID_LENGTH,
+  isTaskId,
   contractPath,
   contractShaMatches,
   globToRegExp,
@@ -141,5 +144,35 @@ describe('globs and tiers', () => {
     assert.ok(!scopesOverlap(['src/a.rs'], ['src/b.rs']));
     assert.ok(sameArea(contract('en/a', { area: 'x' }), contract('en/b', { area: 'x' })));
     assert.ok(!sameArea(contract('en/a'), contract('en/b')));
+  });
+});
+
+describe('review fix 1: task id length cap', () => {
+  const seg = (n: number, c = 'a'): string => c.repeat(n);
+  const atLimit = `${seg(64)}/${seg(MAX_TASK_ID_LENGTH - 65, 'b')}`;
+
+  it('accepts ids up to MAX_TASK_ID_LENGTH and rejects longer ones', () => {
+    assert.equal(MAX_TASK_ID_LENGTH, 100);
+    assert.equal(atLimit.length, 100);
+    assert.ok(isTaskId(atLimit));
+    assert.ok(!isTaskId(`${atLimit}c`));
+    // Five 64-char segments used to be accepted (324 chars).
+    assert.ok(!isTaskId(Array.from({ length: 5 }, () => seg(64)).join('/')));
+  });
+
+  it('every accepted id passes assertSafePayload and maps to a contract path', () => {
+    const shapes = [atLimit, seg(64), `${seg(19)}/${seg(19)}/${seg(19)}/${seg(19)}/${seg(20)}`, 'en/weekday-parser', 'a'];
+    for (const id of shapes) {
+      assert.ok(isTaskId(id), id);
+      assert.doesNotThrow(() => assertSafePayload({ task: id, effect: 'label:blocked', reason: 'missing_task_marker' }));
+      assert.doesNotThrow(() => contractPath(id));
+    }
+  });
+
+  it('an over-length marker is invalid and an over-length trailer is ignored', () => {
+    const long = `en/${seg(98)}`;
+    assert.equal(long.length, 101);
+    assert.deepEqual(parseTaskMarker(`<!-- factory-task: ${long} -->`), { task_id: null, status: 'invalid' });
+    assert.equal(parsePrTrailers(`Factory-Task: ${long}\nContract-SHA: a1b2c3d`).task_id, null);
   });
 });

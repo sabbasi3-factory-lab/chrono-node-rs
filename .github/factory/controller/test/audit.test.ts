@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   AuditLog,
+  AuditValidationError,
   assertSafePayload,
   auditPathFor,
   buildEvent,
@@ -385,5 +386,25 @@ describe('heartbeat', () => {
     const input = { run_id: 1, trigger: 'schedule', open_pr_count: 0, decision_count: 0, factory_enabled: false };
     assert.ok(await log.append(heartbeatEvent(t1, input), t1));
     assert.equal(await log.append(heartbeatEvent(t2, input), t2), null);
+  });
+});
+
+describe('review fix 1: invalid events fail validation before any write', () => {
+  it('throws AuditValidationError for unsafe payloads, bad source ids and bad types, writing nothing', async () => {
+    const gh = new FakeGitHub(REPO);
+    const log = new AuditLog(gh, { repo: REPO, factoryVersion: FV });
+    await log.load(new Date('2026-10-16T12:00:00Z'));
+    const now = new Date('2026-10-16T12:00:00Z');
+    for (const bad of [
+      pending('repair_dispatched', ['r1'], { failure_signature: 'free text with spaces' }),
+      pending('blocked', ['x'.repeat(10), 'a|b']),
+      pending('blocked', []),
+      pending('Bad Type', ['x']),
+      pending('blocked', ['x'], { task: 'a'.repeat(201) }),
+    ]) {
+      await assert.rejects(log.append(bad, now), AuditValidationError);
+    }
+    assert.equal(gh.calls.filter((c) => c.method !== 'GET').length, 0);
+    assert.ok(await log.append(pending('blocked', ['x']), now), 'later valid events still append');
   });
 });

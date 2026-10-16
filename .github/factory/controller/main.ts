@@ -9,7 +9,7 @@
 import { appendFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AuditLog, isoSeconds } from './audit.ts';
+import { AuditLog, AuditValidationError, isoSeconds } from './audit.ts';
 import { canonicalize } from './canonical.ts';
 import { decisionEvent, DRY_RUN, execute } from './executor.ts';
 import { FakeGitHub } from './fake.ts';
@@ -19,7 +19,7 @@ import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
 import { isRecorded, killSwitchEnabled, plan } from './planner.ts';
 import { loadPolicies, loadPoliciesFromDir, readFactoryVersion } from './policies.ts';
-import type { AuditEvent, Decision, GitHubClient, Policies, Snapshot } from './types.ts';
+import type { AuditEvent, Decision, GitHubClient, PendingEvent, Policies, Snapshot } from './types.ts';
 
 export const FACTORY_VERSION_FILE = new URL('../factory-version', import.meta.url);
 export const FIXTURE_POLICIES_DIR = new URL('./test/fixtures/policies/', import.meta.url);
@@ -123,8 +123,21 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   const decisions = plan(snapshot, policies, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, now);
   execute(decisions, log);
 
-  for (const ev of observed) await audit.append(ev, now);
-  for (const d of decisions) if (isRecorded(d)) await audit.append(decisionEvent(d), now);
+  // One bad input (an invalid payload) must not stop the run before the
+  // heartbeat: skip and log that event. Other errors (API, chain) still fail.
+  let skipped = 0;
+  const appendOrSkip = async (ev: PendingEvent): Promise<void> => {
+    try {
+      await audit.append(ev, now);
+    } catch (err) {
+      if (!(err instanceof AuditValidationError)) throw err;
+      skipped++;
+      log(`skipped invalid audit event (${err.message})`);
+    }
+  };
+  for (const ev of observed) await appendOrSkip(ev);
+  for (const d of decisions) if (isRecorded(d)) await appendOrSkip(decisionEvent(d));
+  if (skipped > 0) log(`skipped ${skipped} invalid audit event(s)`);
   if (heartbeatDue(audit.newestOfType('heartbeat'), now)) {
     await audit.append(
       heartbeatEvent(now, {

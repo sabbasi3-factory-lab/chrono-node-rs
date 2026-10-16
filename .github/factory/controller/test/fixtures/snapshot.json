@@ -34,6 +34,7 @@
       "merge_queue_events": []
     }
   ],
+  "main_sha": "abababababababababababababababababababab",
   "contracts": {
     "contracts/core/results.yaml": {
       "path": "contracts/core/results.yaml", "blob_sha": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
@@ -59,14 +60,16 @@
   "check_runs": [
     {
       "run_id": 900001, "run_attempt": 1, "workflow": "ci", "event": "pull_request",
-      "head_sha": "3333333333333333333333333333333333333333", "pull_requests": [21],
+      "head_sha": "3333333333333333333333333333333333333333",
+      "candidate_sha": "3333333333333333333333333333333333333333", "pull_requests": [21],
       "status": "completed", "conclusion": "success",
       "created_at": "2026-10-16T10:01:00Z", "updated_at": "2026-10-16T10:12:00Z",
       "heldout_seed": "18446744073709551615", "failure_signature": null
     },
     {
       "run_id": 900002, "run_attempt": 1, "workflow": "ci", "event": "merge_group",
-      "head_sha": "4444444444444444444444444444444444444444", "pull_requests": [],
+      "head_sha": "4444444444444444444444444444444444444444",
+      "candidate_sha": "4444444444444444444444444444444444444444", "pull_requests": [],
       "status": "completed", "conclusion": "success",
       "created_at": "2026-10-16T10:41:00Z", "updated_at": "2026-10-16T10:55:00Z",
       "heldout_seed": "42", "failure_signature": null

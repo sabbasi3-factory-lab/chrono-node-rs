@@ -9,7 +9,8 @@ import { DRY_RUN, decisionEvent, describe as describeDecision, execute } from '.
 import { FakeGitHub, type RecordedCall } from '../fake.ts';
 import { parseArgs, run, type RunDeps } from '../main.ts';
 import type { Snapshot } from '../types.ts';
-import { NOW, REPO, testPolicies } from './helpers.ts';
+import { checkRun, commitSha, contract, issue, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
+import { dedupeKey } from '../audit.ts';
 import { fakeWorld } from './world.ts';
 
 const policies = await testPolicies();
@@ -197,5 +198,58 @@ describe('fixture snapshot', () => {
 });
 
 function emptySnapshot(): Snapshot {
-  return { repo: REPO, fetched_at: '2026-10-16T12:00:00Z', issues: [], pulls: [], contracts: {}, check_runs: [], busy_jobs: null, factory_aic_today: null, history: {} };
+  return { repo: REPO, fetched_at: '2026-10-16T12:00:00Z', issues: [], pulls: [], main_sha: null, contracts: {}, check_runs: [], busy_jobs: null, factory_aic_today: null, history: {} };
 }
+
+describe('review fix 1: one bad input cannot stop the run before the heartbeat', () => {
+  it('logs and skips an event that fails validation, then still writes the heartbeat', async () => {
+    const pr = pull(21, { task_id: 'en/a', contract_sha: commitSha('en/a') });
+    const s = snapshot({
+      issues: [issue(1, 'en/a', ['factory:picked'])],
+      pulls: [pr],
+      contractList: [contract('en/a')],
+      check_runs: [checkRun(500, { head_sha: pr.head_sha, conclusion: 'failure', failure_signature: 'not a token' })],
+    });
+    const lines: string[] = [];
+    const result = await run(deps(new FakeGitHub(REPO), { snapshot: s, log: (l) => lines.push(l) }));
+    assert.ok(result.decisions.some((d) => d.type === 'repair_dispatched'), 'the planner proposed the bad decision');
+    const types = result.appended.map((e) => e.type);
+    assert.ok(!types.includes('repair_dispatched'), 'the invalid decision event was skipped');
+    assert.ok(!types.includes('check_result'), 'the invalid observed event was skipped');
+    assert.ok(types.includes('pr_opened'), 'valid events are still recorded');
+    assert.equal(types.at(-1), 'heartbeat');
+    assert.ok(lines.some((l) => l.startsWith('skipped invalid audit event (repair_dispatched:')));
+    assert.ok(lines.some((l) => l === 'skipped 2 invalid audit event(s)'));
+  });
+});
+
+describe('review fix 2: decision dedupe includes reason and effect', () => {
+  const base = { type: 'blocked', reason: 'missing_task_marker', effect: 'label:blocked', dry_run: true, task: null, issue: 12, pr: null, attempt: null, contract_sha: null, run_id: null, failure_signature: null, source_ids: ['I_12'] } as const;
+  const key = (d: Parameters<typeof decisionEvent>[0]) => {
+    const e = decisionEvent(d);
+    return dedupeKey(e.type, e.source_ids);
+  };
+
+  it('a different reason (or effect) for the same subject gets a different key; identical decisions share one', () => {
+    const a = { ...base, source_ids: ['I_12'] };
+    const b = { ...base, reason: 'contract_missing' as const, source_ids: ['I_12'] };
+    const c = { ...base, effect: 'label:needs-human' as const, source_ids: ['I_12'] };
+    assert.notEqual(key(a), key(b));
+    assert.notEqual(key(a), key(c));
+    assert.equal(key(a), key({ ...base, source_ids: ['I_12'] }));
+    assert.deepEqual(decisionEvent(a).source_ids, ['I_12', 'reason:missing_task_marker', 'effect:label:blocked']);
+  });
+
+  it('records blocked/missing_task_marker then blocked/contract_missing for the same issue, and nothing on retry', async () => {
+    const gh = new FakeGitHub(REPO);
+    const first = snapshot({ issues: [issue(12, null)] });
+    const second = snapshot({ issues: [issue(12, 'en/no-contract')] });
+    const r1 = await run(deps(gh, { snapshot: first }));
+    assert.deepEqual(r1.appended.filter((e) => e.type === 'blocked').map((e) => e.payload.reason), ['missing_task_marker']);
+    const later = new Date(NOW.getTime() + 5 * 60_000);
+    const r2 = await run(deps(gh, { snapshot: second, now: later }));
+    assert.deepEqual(r2.appended.filter((e) => e.type === 'blocked').map((e) => e.payload.reason), ['contract_missing']);
+    const r3 = await run(deps(gh, { snapshot: second, now: new Date(later.getTime() + 60_000) }));
+    assert.deepEqual(r3.appended, []);
+  });
+});

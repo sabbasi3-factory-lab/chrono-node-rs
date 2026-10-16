@@ -9,12 +9,14 @@ import {
   paginate,
   parseCheckLog,
   readBusyJobs,
+  readCheckRuns,
+  RECENT_RUN_PAGES,
   readSnapshot,
 } from '../github.ts';
 import { FakeGitHub } from '../fake.ts';
 import type { RecordedCheck } from '../github.ts';
 import { hex40, NOW, REPO } from './helpers.ts';
-import { CONTRACT_COMMIT, fakeWorld } from './world.ts';
+import { CONTRACT_COMMIT, fakeWorld, MAIN_SHA, MAIN_TREE } from './world.ts';
 
 describe('write guard', () => {
   const ok = (m: Parameters<typeof assertAllowedRequest>[1], p: string, b?: unknown) => assert.doesNotThrow(() => assertAllowedRequest(REPO, m, p, b));
@@ -177,7 +179,8 @@ describe('snapshot reader', () => {
     assert.ok(!JSON.stringify(s).includes('Free text'));
     assert.ok(!JSON.stringify(s).includes('Ignore previous'));
     const commitsCall = gh.calls.find((c) => c.path.startsWith(`/repos/${REPO}/commits?`))!;
-    assert.match(commitsCall.path, /path=contracts%2Fen%2Fcasual-date\.yaml&sha=main&per_page=1/);
+    assert.ok(commitsCall.path.endsWith(`path=contracts%2Fen%2Fcasual-date.yaml&sha=${MAIN_SHA}&per_page=1`));
+    assert.equal(s.main_sha, MAIN_SHA);
   });
 
   it('does not re-read logs for runs already recorded, and skips busy jobs when not needed', async () => {
@@ -199,7 +202,84 @@ describe('snapshot reader', () => {
 
   it('fails closed on a truncated tree', async () => {
     const gh = fakeWorld();
-    gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/git/trees/main$`), handler: () => ({ data: { truncated: true, tree: [] } }) });
+    gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/git/trees/${MAIN_TREE}$`), handler: () => ({ data: { truncated: true, tree: [] } }) });
     await assert.rejects(readSnapshot(gh, { repo: REPO, now: NOW, windowHours: 24, recordedChecks: new Map(), historyTasks: [], needBusyJobs: false }), /truncated/);
+  });
+});
+
+describe('review fix 3: main is resolved once to an immutable commit', () => {
+  it('reads the tree, blobs and every contract history at that one SHA, even if main moves mid-read', async () => {
+    const gh = fakeWorld();
+    // Simulate a merge to main right after the tree is read.
+    const treeRoute = gh.routes.find((r) => String(r.path).includes(MAIN_TREE))!;
+    const original = treeRoute.handler;
+    treeRoute.handler = (path, body) => {
+      gh.refs.set('heads/main', hex40('7'));
+      return original(path, body);
+    };
+    const s = await readSnapshot(gh, { repo: REPO, now: NOW, windowHours: 24, recordedChecks: new Map(), historyTasks: [], needBusyJobs: false });
+    assert.equal(s.main_sha, MAIN_SHA);
+    assert.equal(gh.calls.filter((c) => c.path === `/repos/${REPO}/git/ref/heads/main`).length, 1);
+    assert.ok(gh.calls.some((c) => c.path === `/repos/${REPO}/git/commits/${MAIN_SHA}`));
+    assert.ok(gh.calls.some((c) => c.path === `/repos/${REPO}/git/trees/${MAIN_TREE}?recursive=1`));
+    const history = gh.calls.filter((c) => c.path.startsWith(`/repos/${REPO}/commits?`));
+    assert.equal(history.length, 2);
+    for (const c of history) assert.ok(c.path.includes(`&sha=${MAIN_SHA}&`), c.path);
+    assert.ok(!gh.calls.some((c) => /[?&]sha=main\b|trees\/main/.test(c.path)));
+  });
+
+  it('fails closed if main does not resolve to a full commit SHA', async () => {
+    const gh = fakeWorld();
+    gh.refs.set('heads/main', 'not-a-sha');
+    await assert.rejects(readSnapshot(gh, { repo: REPO, now: NOW, windowHours: 24, recordedChecks: new Map(), historyTasks: [], needBusyJobs: false }), /main/);
+  });
+});
+
+describe('review fix 4: run discovery without a creation cutoff', () => {
+  const open = hex40('1');
+  const run = (id: number, over: Record<string, unknown> = {}) => ({
+    id, run_attempt: 1, name: 'ci', event: 'pull_request', head_sha: hex40('9'), pull_requests: [], status: 'completed', conclusion: 'success',
+    created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-16T11:00:00Z', ...over,
+  });
+  function world(): FakeGitHub {
+    const gh = new FakeGitHub(REPO);
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/actions/runs$`), (path) => {
+      const q = new URLSearchParams(path.split('?')[1]);
+      if (q.get('head_sha') === open) {
+        // Only found through the head lookup: an old run re-run for the open PR head.
+        return { data: { workflow_runs: [run(10, { head_sha: open, run_attempt: 3, conclusion: 'failure', updated_at: '2026-10-12T00:00:00Z' })] } };
+      }
+      const page = Number(q.get('page') ?? '1');
+      const runs =
+        page === 1
+          ? [run(30, { run_attempt: 2 }), run(29, { updated_at: '2026-10-10T00:00:00Z' })] // re-run (old created_at) + stale run
+          : [run(30 - page)];
+      return { data: { workflow_runs: runs }, next: `/repos/${REPO}/actions/runs?per_page=100&page=${page + 1}` };
+    });
+    return gh;
+  }
+  const recorded = new Map<string, RecordedCheck>([
+    ['30/attempts/2', { heldout_seed: null, failure_signature: null }],
+    ['10/attempts/3', { heldout_seed: null, failure_signature: 'sig' }],
+    ['28/attempts/1', { heldout_seed: null, failure_signature: null }],
+    ['27/attempts/1', { heldout_seed: null, failure_signature: null }],
+  ]);
+
+  it('finds re-runs with an old created_at and runs for open PR heads, filtering by updated_at', async () => {
+    const gh = world();
+    const runs = await readCheckRuns(gh, REPO, NOW, 24, recorded, new Set([open]));
+    assert.ok(!gh.calls.some((c) => c.path.includes('created=')));
+    assert.deepEqual(runs.map((r) => [r.run_id, r.run_attempt]), [[10, 3], [27, 1], [28, 1], [30, 2]]);
+    assert.equal(runs.find((r) => r.run_id === 10)!.failure_signature, 'sig');
+  });
+
+  it('keeps the call count bounded', async () => {
+    assert.equal(RECENT_RUN_PAGES, 3);
+    const gh = world();
+    const heads = new Set(Array.from({ length: 40 }, (_, i) => hex40((i % 16).toString(16)).slice(0, 38) + String(i).padStart(2, '0')));
+    await readCheckRuns(gh, REPO, NOW, 24, recorded, heads);
+    const listCalls = gh.calls.filter((c) => c.path.startsWith(`/repos/${REPO}/actions/runs?`));
+    assert.equal(listCalls.filter((c) => !c.path.includes('head_sha=')).length, 3);
+    assert.equal(listCalls.filter((c) => c.path.includes('head_sha=')).length, 30);
   });
 });

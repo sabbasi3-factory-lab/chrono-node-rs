@@ -79,12 +79,28 @@ function contractOf(s: Snapshot, task: string): ContractSnap | null {
   return s.contracts[contractPath(task)] ?? null;
 }
 
-function latestCheck(s: Snapshot, pr: PullSnap): CheckRunSnap | null {
+/** The workflow whose failures Evergreen repairs (build, tests, comparisons). */
+export const CI_WORKFLOW = 'ci';
+/** The trusted policy gates (scope, Contract-SHA, identifiers): never repaired, a human decides. */
+export const GATES_WORKFLOW = 'gates';
+
+/**
+ * The newest run of `workflow` for this PR head (highest run_id, then
+ * run_attempt), or null if there is none or it hasn't finished yet: a newer
+ * run that is still going makes any older result non-actionable.
+ * `ci` runs on `pull_request` (head_sha = PR head); `gates` runs on
+ * `pull_request_target`, where head_sha is the main tip, so its PR head is
+ * `candidate_sha`. merge_group runs are not used for repairs.
+ */
+export function latestCheck(s: Snapshot, pr: PullSnap, workflow: string): CheckRunSnap | null {
   let best: CheckRunSnap | null = null;
   for (const r of s.check_runs) {
-    if (r.event !== 'pull_request' || r.head_sha !== pr.head_sha || r.status !== 'completed') continue;
+    if (r.workflow !== workflow) continue;
+    if (workflow === CI_WORKFLOW && (r.event !== 'pull_request' || r.head_sha !== pr.head_sha)) continue;
+    if (workflow === GATES_WORKFLOW && (r.event !== 'pull_request_target' || r.candidate_sha !== pr.head_sha)) continue;
     if (!best || r.run_id > best.run_id || (r.run_id === best.run_id && r.run_attempt > best.run_attempt)) best = r;
   }
+  if (!best || best.status !== 'completed' || !best.conclusion) return null;
   return best;
 }
 
@@ -147,9 +163,33 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   // Candidates for dispatch (repairs first, then new tasks), gated below.
   const repairs: Decision[] = [];
 
+  // Tasks escalated to needs_human in this run get no other decision (at most
+  // one terminal decision per task per run). Timeouts are evaluated first.
+  const escalated = new Set<string>();
+  const escalate = (d: Decision): void => {
+    if (d.task) escalated.add(d.task);
+    out.push(d);
+  };
+
+  // ---- task time limit (picked → merged within max_wall_clock_hours)
+  const limitMs = p.limits.task.max_wall_clock_hours * HOUR_MS;
+  for (const task of [...inFlight].sort()) {
+    const h = history(task);
+    if (!h.picked_at || mergedTasks.has(task)) continue;
+    const pickedMs = Date.parse(h.picked_at);
+    if (!Number.isFinite(pickedMs) || nowMs - pickedMs <= limitMs) continue;
+    const issue = issueByTask.get(task);
+    const pr = openPulls.find((x) => x.task_id === task);
+    if (issue?.labels.includes(LABEL_NEEDS_HUMAN) || pr?.labels.includes(LABEL_NEEDS_HUMAN)) continue;
+    const subject = issue?.node_id ?? pr?.node_id;
+    if (!subject) continue;
+    escalated.add(task);
+    out.push(decide({ type: 'needs_human', reason: 'task_timeout', effect: 'label:needs-human', task, issue: issue?.number ?? null, pr: pr?.number ?? null, source_ids: [subject, `picked:${h.picked_at}`] }));
+  }
+
   // ---- open factory PRs: contract freshness and CI failures
   for (const pr of openPulls) {
-    if (!pr.task_id || pr.labels.includes(LABEL_NEEDS_HUMAN)) continue;
+    if (!pr.task_id || pr.labels.includes(LABEL_NEEDS_HUMAN) || escalated.has(pr.task_id)) continue;
     const task = pr.task_id;
     const base = { task, pr: pr.number, issue: issueByTask.get(task)?.number ?? null };
     const c = contractOf(s, task);
@@ -169,7 +209,13 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       out.push(decide({ ...base, type: 'stale_contract', reason: 'contract_changed', effect: 'label:stale-contract', contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha, c.last_commit_sha] }));
       continue;
     }
-    const run = latestCheck(s, pr);
+    // A failed policy gate is not something Evergreen can repair: a human decides.
+    const gates = latestCheck(s, pr, GATES_WORKFLOW);
+    if (gates?.conclusion && FAILED_CONCLUSIONS.has(gates.conclusion)) {
+      escalate(decide({ ...base, type: 'needs_human', reason: 'gates_failed', effect: 'label:needs-human', run_id: gates.run_id, contract_sha: c.last_commit_sha, source_ids: [`${gates.run_id}/attempts/${gates.run_attempt}`, pr.node_id] }));
+      continue;
+    }
+    const run = latestCheck(s, pr, CI_WORKFLOW);
     if (!run || !run.conclusion || !FAILED_CONCLUSIONS.has(run.conclusion)) continue;
     const h = history(task);
     if (h.repaired_run_ids.includes(run.run_id)) continue;
@@ -182,31 +228,16 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id],
     };
     if (!sig) {
-      out.push(decide({ ...failure, type: 'needs_human', reason: 'missing_failure_signature', effect: 'label:needs-human' }));
+      escalate(decide({ ...failure, type: 'needs_human', reason: 'missing_failure_signature', effect: 'label:needs-human' }));
     } else if (p.limits.task.stop_on_repeated_signature && h.failure_signatures.includes(sig)) {
-      out.push(decide({ ...failure, type: 'needs_human', reason: 'repeated_signature', effect: 'label:needs-human' }));
+      escalate(decide({ ...failure, type: 'needs_human', reason: 'repeated_signature', effect: 'label:needs-human' }));
     } else if (h.repairs >= p.limits.task.max_repairs) {
-      out.push(decide({ ...failure, type: 'needs_human', reason: 'max_repairs', effect: 'label:needs-human' }));
+      escalate(decide({ ...failure, type: 'needs_human', reason: 'max_repairs', effect: 'label:needs-human' }));
     } else if (h.aic_spent >= p.budgets.per_task.max_aic) {
-      out.push(decide({ ...failure, type: 'needs_human', reason: 'task_budget_exhausted', effect: 'label:needs-human' }));
+      escalate(decide({ ...failure, type: 'needs_human', reason: 'task_budget_exhausted', effect: 'label:needs-human' }));
     } else {
       repairs.push(decide({ ...failure, type: 'repair_dispatched', reason: 'ci_failed', effect: 'dispatch_workflow:repair', attempt: h.repairs + 2 }));
     }
-  }
-
-  // ---- task time limit (picked → merged within max_wall_clock_hours)
-  const limitMs = p.limits.task.max_wall_clock_hours * HOUR_MS;
-  for (const task of [...inFlight].sort()) {
-    const h = history(task);
-    if (!h.picked_at || mergedTasks.has(task)) continue;
-    const pickedMs = Date.parse(h.picked_at);
-    if (!Number.isFinite(pickedMs) || nowMs - pickedMs <= limitMs) continue;
-    const issue = issueByTask.get(task);
-    const pr = openPulls.find((x) => x.task_id === task);
-    if (issue?.labels.includes(LABEL_NEEDS_HUMAN) || pr?.labels.includes(LABEL_NEEDS_HUMAN)) continue;
-    const subject = issue?.node_id ?? pr?.node_id;
-    if (!subject) continue;
-    out.push(decide({ type: 'needs_human', reason: 'task_timeout', effect: 'label:needs-human', task, issue: issue?.number ?? null, pr: pr?.number ?? null, source_ids: [subject, `picked:${h.picked_at}`] }));
   }
 
   // ---- admission
@@ -282,6 +313,7 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   };
 
   for (const r of repairs) {
+    if (r.task && escalated.has(r.task)) continue;
     if (route(r, globalGate())) {
       out.push(r);
       planned++;

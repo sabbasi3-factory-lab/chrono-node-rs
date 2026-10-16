@@ -135,6 +135,12 @@ export interface CheckRunSnap {
   workflow: string;
   event: CheckEvent;
   head_sha: string;
+  /**
+   * The commit the run judged: `head_sha` for `pull_request`/`merge_group`;
+   * for `pull_request_target` (gates) the PR head from the run's
+   * `pull_requests[].head.sha`, because `head_sha` is then the main tip.
+   */
+  candidate_sha: string | null;
   pull_requests: number[];
   status: string;
   conclusion: string | null;
@@ -159,6 +165,8 @@ export interface Snapshot {
   fetched_at: string;
   issues: IssueSnap[];
   pulls: PullSnap[];
+  /** The main commit the contracts were read at (resolved once per run); null when not read. */
+  main_sha: string | null;
   /** Keyed by repo path, e.g. `contracts/en/weekday-parser.yaml`. */
   contracts: Record<string, ContractSnap>;
   check_runs: CheckRunSnap[];
@@ -191,6 +199,7 @@ export type ReasonCode =
   | 'repeated_signature'
   | 'max_repairs'
   | 'missing_failure_signature'
+  | 'gates_failed'
   | 'task_budget_exhausted'
   | 'missing_task_marker'
   | 'duplicate_task'

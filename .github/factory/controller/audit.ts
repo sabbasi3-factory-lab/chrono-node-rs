@@ -22,6 +22,9 @@ const AUDIT_PATH = /^audit\/\d{4}\/\d{2}\/\d{2}\.jsonl$/;
 const SAFE_STRING = /^[A-Za-z0-9._:/#@[\]+-]{0,200}$/;
 const RESERVED_PAYLOAD_KEYS = ['dedupe_key', 'factory_version', 'dry_run'];
 
+/** An event failed validation; nothing was written for it. */
+export class AuditValidationError extends Error {}
+
 export function sha256Hex(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }
@@ -306,21 +309,38 @@ export class AuditLog {
     return res.data;
   }
 
-  /** Appends one event (one commit). Returns null if its dedupe_key already exists. */
+  /**
+   * Validates an event before anything is written. Every failure is an
+   * AuditValidationError, so the caller can skip this one event and go on.
+   */
+  prepare(pending: PendingEvent): { key: string; payload: JsonObject } {
+    try {
+      const key = dedupeKey(pending.type, pending.source_ids);
+      for (const k of RESERVED_PAYLOAD_KEYS) {
+        if (k in pending.fields) throw new Error(`payload field ${k} is reserved`);
+      }
+      const payload: JsonObject = {
+        ...pending.fields,
+        dedupe_key: key,
+        factory_version: this.factoryVersion,
+        dry_run: true,
+      };
+      assertSafePayload(payload);
+      canonicalize(payload);
+      return { key, payload };
+    } catch (err) {
+      throw new AuditValidationError(`${pending.type}: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * Appends one event (one commit). Returns null if its dedupe_key already
+   * exists. Throws AuditValidationError (before any write) for an invalid event.
+   */
   async append(pending: PendingEvent, now: Date): Promise<AuditEvent | null> {
     if (!this.loaded) throw new Error('audit log not loaded');
-    const key = dedupeKey(pending.type, pending.source_ids);
+    const { key, payload } = this.prepare(pending);
     if (this.keys.has(key)) return null;
-    for (const k of RESERVED_PAYLOAD_KEYS) {
-      if (k in pending.fields) throw new Error(`payload field ${k} is reserved`);
-    }
-    const payload: JsonObject = {
-      ...pending.fields,
-      dedupe_key: key,
-      factory_version: this.factoryVersion,
-      dry_run: true,
-    };
-    assertSafePayload(payload);
     const id = randomUUID();
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {

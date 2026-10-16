@@ -73,12 +73,14 @@ export function mergedPull(n: number, task: string): PullSnap {
 }
 
 export function checkRun(id: number, over: Partial<CheckRunSnap> = {}): CheckRunSnap {
+  const head = over.head_sha ?? hex40('0');
   return {
     run_id: id,
     run_attempt: 1,
     workflow: 'ci',
     event: 'pull_request',
-    head_sha: hex40('0'),
+    head_sha: head,
+    candidate_sha: head,
     pull_requests: [],
     status: 'completed',
     conclusion: 'success',
@@ -105,6 +107,7 @@ export function snapshot(over: SnapshotOverrides = {}): Snapshot {
     fetched_at: '2026-10-16T12:00:00Z',
     issues: [],
     pulls: [],
+    main_sha: hex40('a'),
     contracts,
     check_runs: [],
     busy_jobs: 0,

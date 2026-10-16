@@ -5,6 +5,9 @@ import { hex40, REPO } from './helpers.ts';
 
 export const CONTRACT_COMMIT = hex40('c');
 export const CONTRACT_BLOB = hex40('b');
+/** The commit `main` resolves to, and its tree. */
+export const MAIN_SHA = hex40('5');
+export const MAIN_TREE = hex40('6');
 export const CONTRACT_YAML = `id: en/casual-date
 tier: auto
 scope:
@@ -21,6 +24,9 @@ export function fakeWorld(opts: WorldOptions = {}): FakeGitHub {
   const at = opts.at ?? '2026-10-16T11:00:00Z';
   const gh = new FakeGitHub(REPO);
   const r = `/repos/${REPO}`;
+  // main is served by the fake's Git Data endpoints (ref → commit → tree sha).
+  gh.refs.set('heads/main', MAIN_SHA);
+  gh.commits.set(MAIN_SHA, { tree: MAIN_TREE, parents: [], message: 'main' });
   gh.addRoute('GET', new RegExp(`^${r}/issues$`), () => ({
     data: [
       {
@@ -60,7 +66,7 @@ export function fakeWorld(opts: WorldOptions = {}): FakeGitHub {
       },
     },
   }));
-  gh.addRoute('GET', new RegExp(`^${r}/git/trees/main$`), () => ({
+  gh.addRoute('GET', new RegExp(`^${r}/git/trees/${MAIN_TREE}$`), () => ({
     data: {
       truncated: false,
       tree: [
@@ -96,7 +102,7 @@ export function fakeWorld(opts: WorldOptions = {}): FakeGitHub {
           },
           { id: 4243, run_attempt: 1, name: 'deploy', event: 'push', head_sha: hex40('2'), status: 'completed', conclusion: 'success', created_at: at, updated_at: at },
           // The trusted gates workflow: recorded, but its log is never read (no route for it).
-          { id: 4244, run_attempt: 1, name: 'gates', event: 'pull_request_target', head_sha: hex40('1'), pull_requests: [{ number: 11 }], status: 'completed', conclusion: 'failure', created_at: at, updated_at: at },
+          { id: 4244, run_attempt: 1, name: 'gates', event: 'pull_request_target', head_sha: MAIN_SHA, pull_requests: [{ number: 11, head: { sha: hex40('1') } }], status: 'completed', conclusion: 'failure', created_at: at, updated_at: at },
           // gates on an event it never runs on is ignored.
           { id: 4245, run_attempt: 1, name: 'gates', event: 'push', head_sha: hex40('2'), status: 'completed', conclusion: 'success', created_at: at, updated_at: at },
         ],

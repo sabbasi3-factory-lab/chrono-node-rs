@@ -6,9 +6,15 @@ import type { ContractSnap, MarkerStatus, Tier, TiersPolicy } from './types.ts';
 
 const TASK_ID = /^[a-z0-9][a-z0-9_-]{0,63}(\/[a-z0-9][a-z0-9_-]{0,63}){0,4}$/;
 const MARKER = /<!-- factory-task: ([^\s]+) -->/g;
+/**
+ * Hard cap on task id length. Task ids land in audit payloads (as `task`) and
+ * in contract paths, so every accepted id must stay well inside the payload's
+ * 200-char SAFE_STRING limit. Longer ids are invalid.
+ */
+export const MAX_TASK_ID_LENGTH = 100;
 
 export function isTaskId(value: unknown): value is string {
-  return typeof value === 'string' && TASK_ID.test(value);
+  return typeof value === 'string' && value.length <= MAX_TASK_ID_LENGTH && TASK_ID.test(value);
 }
 
 export function contractPath(taskId: string): string {
