@@ -2,8 +2,11 @@
 //!
 //! `parsers/` and `refiners/` are auto-registered (see `build.rs`); don't add `mod` lines for them.
 
+pub mod abstract_refiners;
 pub mod casual_references;
 pub mod configuration;
+pub mod merge_date_range;
+pub mod merge_date_time;
 pub mod time_expression;
 pub mod word_boundary;
 
