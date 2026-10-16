@@ -1,0 +1,173 @@
+#!/usr/bin/env node
+"use strict";
+// Comparison harness: random phrases through chrono-node (the judge) and the Rust port.
+//
+//   node compare/compare.js                      # fresh random seed (CI's held-out check)
+//   node compare/compare.js --seed 12345         # reproduce a run
+//   node compare/compare.js --phrases 5000 --rust ../target/release/chrono-rs-json --report out.json
+//
+// Only phrases whose required parsers/refiners are all ported in Rust are compared; the rest are
+// counted as "not yet comparable". The seed is printed AFTER the run, as the last line:
+//   factory-heldout-seed: <seed>
+// (the controller reads it from the CI log and records it in the audit log).
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+const { spawnSync } = require("child_process");
+
+// Same process time zone as the golden data. Re-exec once if needed.
+if (process.env.TZ !== "UTC") {
+    const res = spawnSync(process.execPath, process.argv.slice(1), { stdio: "inherit", env: { ...process.env, TZ: "UTC" } });
+    process.exit(res.status ?? 1);
+}
+
+const S = require("../lib/serialize");
+const { trace } = require("../lib/trace");
+const { generate } = require("./phrases");
+
+const HARNESS = path.resolve(__dirname, "..");
+const REPO = path.resolve(HARNESS, "..");
+
+function parseArgs(argv) {
+    const args = { seed: null, phrases: 2000, rust: path.join(REPO, "target/debug/chrono-rs-json"), report: null, show: 20 };
+    for (let i = 0; i < argv.length; i++) {
+        const [k, v] = [argv[i], argv[i + 1]];
+        if (k === "--seed") (args.seed = Number(v)), i++;
+        else if (k === "--phrases") (args.phrases = Number(v)), i++;
+        else if (k === "--rust") (args.rust = path.resolve(v)), i++;
+        else if (k === "--report") (args.report = path.resolve(v)), i++;
+        else if (k === "--show") (args.show = Number(v)), i++;
+        else throw new Error(`unknown argument ${k}`);
+    }
+    if (args.seed !== null && !(Number.isInteger(args.seed) && args.seed >= 0 && args.seed < 2 ** 32)) {
+        throw new Error("--seed must be an integer in [0, 2^32)");
+    }
+    return args;
+}
+
+function loadUpstream() {
+    const built = path.join(HARNESS, ".build/chrono/index.js");
+    if (!fs.existsSync(built)) throw new Error("run `npm run build:upstream` in harness/ first");
+    const chronoModule = require(built);
+    const chronoCore = require(path.join(HARNESS, ".build/chrono/chrono.js"));
+    const { Chrono, en } = chronoModule;
+    const configs = {
+        "en.casual": new Chrono(en.configuration.createCasualConfiguration(false)),
+        "en.strict": new Chrono(en.configuration.createConfiguration(true, false)),
+        "en.GB.casual": new Chrono(en.configuration.createCasualConfiguration(true)),
+        "en.GB.strict": new Chrono(en.configuration.createConfiguration(true, true)),
+    };
+    return { chronoCore, configs };
+}
+
+function runRust(rust, args, input) {
+    const res = spawnSync(rust, args, { input, maxBuffer: 1 << 30, encoding: "utf8" });
+    if (res.error) throw new Error(`cannot run ${rust}: ${res.error.message} (build it with cargo build --bin chrono-rs-json)`);
+    if (res.status !== 0) throw new Error(`${rust} exited ${res.status}: ${res.stderr}`);
+    return res.stdout;
+}
+
+function toUpstreamReference(reference) {
+    const instant = new Date(reference.instant);
+    if (reference.kind === "date") return instant;
+    return { instant, timezone: reference.timezone_input ?? undefined };
+}
+
+function main(args, seed) {
+    const started = Date.now();
+
+    const { chronoCore, configs } = loadUpstream();
+    const registered = JSON.parse(runRust(args.rust, ["--registered"], ""));
+
+    const requests = generate(seed, args.phrases);
+    const expected = new Map();
+    const comparable = [];
+    let notComparable = 0;
+    const errors = [];
+    for (const req of requests) {
+        const chrono = configs[req.config];
+        const ref = toUpstreamReference(req.reference);
+        const option = { ...req.options };
+        const traced = trace(chronoCore, chrono, req.text, ref, option);
+        const direct = S.serializeResults(chrono.parse(req.text, toUpstreamReference(req.reference), { ...req.options }));
+        const tracedOut = S.serializeResults(traced.results);
+        if (JSON.stringify(direct) !== JSON.stringify(tracedOut)) {
+            errors.push({ id: req.id, error: "trace differs from chrono.parse" });
+            continue;
+        }
+        const have = new Set(registered[req.config].registered);
+        if (![...traced.parsers, ...traced.refiners].every((n) => have.has(n))) {
+            notComparable++;
+            continue;
+        }
+        expected.set(req.id, { req, results: tracedOut, requires: { parsers: traced.parsers, refiners: traced.refiners } });
+        comparable.push(req);
+    }
+
+    const output = runRust(args.rust, [], comparable.map((r) => JSON.stringify(r)).join("\n") + "\n");
+    const actual = new Map();
+    for (const line of output.split("\n")) {
+        if (!line.trim()) continue;
+        const r = JSON.parse(line);
+        actual.set(r.id, r);
+    }
+
+    const mismatches = [];
+    let matched = 0;
+    let nonEmptyMatched = 0;
+    for (const [id, exp] of expected) {
+        const got = actual.get(id);
+        if (!got || got.error) {
+            errors.push({ id, error: got ? got.error : "no output from Rust" });
+            continue;
+        }
+        const a = JSON.stringify(S.sortKeys(exp.results));
+        const b = JSON.stringify(S.sortKeys(got.results));
+        if (a === b) {
+            matched++;
+            if (exp.results.length > 0) nonEmptyMatched++;
+        } else {
+            mismatches.push({ request: exp.req, requires: exp.requires, expected: exp.results, actual: got.results });
+        }
+    }
+
+    const summary = {
+        phrases: requests.length,
+        comparable: comparable.length,
+        not_yet_comparable: notComparable,
+        matched,
+        matched_with_results: nonEmptyMatched,
+        mismatched: mismatches.length,
+        errors: errors.length,
+        seconds: Math.round((Date.now() - started) / 100) / 10,
+    };
+    console.log("comparison with chrono-node:", JSON.stringify(summary));
+    for (const m of mismatches.slice(0, args.show)) {
+        console.log(`\nMISMATCH id=${m.request.id} config=${m.request.config} text=${JSON.stringify(m.request.text)}`);
+        console.log(`  reference ${JSON.stringify(m.request.reference)} options ${JSON.stringify(m.request.options)}`);
+        console.log(`  expected ${JSON.stringify(m.expected)}`);
+        console.log(`  actual   ${JSON.stringify(m.actual)}`);
+    }
+    for (const e of errors.slice(0, args.show)) console.log(`ERROR id=${e.id}: ${e.error}`);
+    if (args.report) {
+        fs.writeFileSync(args.report, JSON.stringify({ seed, summary, mismatches, errors }, null, 2) + "\n");
+    }
+    if (mismatches.length > 0 || errors.length > 0) {
+        console.log(`\nreproduce: node harness/compare/compare.js --seed ${seed} --phrases ${args.phrases}`);
+    }
+    return mismatches.length > 0 || errors.length > 0 ? 1 : 0;
+}
+
+const args = parseArgs(process.argv.slice(2));
+const seed = args.seed ?? crypto.randomInt(0, 2 ** 32);
+let code = 1;
+try {
+    code = main(args, seed);
+} catch (e) {
+    console.error(e && e.stack ? e.stack : e);
+} finally {
+    // Printed last, after the run (even if it crashed): the held-out seed is never shown before
+    // results exist, and every run can be reproduced.
+    console.log(`factory-heldout-seed: ${seed}`);
+}
+process.exit(code);

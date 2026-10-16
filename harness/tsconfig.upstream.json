@@ -1,0 +1,14 @@
+{
+    "extends": "../upstream/tsconfig.json",
+    "compilerOptions": {
+        "rootDir": "../upstream/src",
+        "outDir": ".build/chrono",
+        "module": "commonjs",
+        "target": "es2019",
+        "lib": ["es2019"],
+        "declaration": false,
+        "sourceMap": false,
+        "noEmit": false
+    },
+    "include": ["../upstream/src"]
+}
