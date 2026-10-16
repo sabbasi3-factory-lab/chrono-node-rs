@@ -31,9 +31,14 @@ permissions:
   # Inference uses the COPILOT_GITHUB_TOKEN PAT (DESIGN §4), not the Actions token.
   copilot-requests: none
 
-# Each dispatch gets its own slot (one task per run).
+# Each dispatch gets its own slot, so admitted tasks (WIP up to 3) run in parallel.
 concurrency:
+  group: implement-${{ github.run_id }}
   job-discriminator: ${{ github.run_id }}
+
+# Full history: the freshness check reads the contract's last modifying commit.
+checkout:
+  fetch-depth: 0
 
 engine:
   id: copilot
@@ -80,16 +85,38 @@ tools:
 # Setup outside the firewall: toolchain, vendored approved crates, offline docs, and the
 # chrono-node judge for local comparisons. Everything lands outside the repo or in ignored paths.
 steps:
+  # Before any inference: reject malformed inputs and stale dispatches (the contract changed
+  # after the controller pinned it). Inputs reach the shell only through env, never interpolated.
+  - name: Validate dispatch and contract freshness
+    env:
+      TASK: ${{ github.event.inputs.task }}
+      ISSUE: ${{ github.event.inputs.issue }}
+      ATTEMPT: ${{ github.event.inputs.attempt }}
+      CONTRACT_SHA: ${{ github.event.inputs.contract_sha }}
+    run: |
+      [[ "$TASK" =~ ^[a-z0-9-]+(/[a-z0-9-]+)+$ && ${#TASK} -le 100 ]] || { echo "::error::invalid task id"; exit 1; }
+      [[ "$ISSUE" =~ ^[1-9][0-9]{0,8}$ && "$ATTEMPT" =~ ^[1-9][0-9]?$ ]] || { echo "::error::invalid issue or attempt"; exit 1; }
+      [[ "$CONTRACT_SHA" =~ ^[0-9a-f]{7,40}$ ]] || { echo "::error::invalid contract_sha"; exit 1; }
+      contract="contracts/${TASK}.yaml"
+      [ -f "$contract" ] || { echo "::error::no contract ${contract} on this commit"; exit 1; }
+      last=$(git log -1 --format=%H -- "$contract")
+      case "$last" in
+        "$CONTRACT_SHA"*) echo "contract ${contract} is at ${last} (matches dispatch)" ;;
+        *) echo "::error::stale dispatch: ${contract} is at ${last}, dispatched with ${CONTRACT_SHA}"; exit 1 ;;
+      esac
   - name: Rust toolchain (rust-toolchain.toml)
     run: rustup toolchain install && rustc --version
+  # The vendor tree lives in the workspace's gitignored target/ (always visible inside the agent
+  # sandbox, never part of a PR); the source replacement goes in $CARGO_HOME, outside the repo.
   - name: Vendor approved crates (offline cargo for the agent)
     run: |
-      mkdir -p "$HOME/factory"
-      cargo vendor --locked --versioned-dirs "$HOME/factory/vendor" > "$HOME/factory/vendor.toml"
+      vendor="$GITHUB_WORKSPACE/target/factory-vendor"
+      mkdir -p "$vendor"
+      cargo vendor --locked --versioned-dirs "$vendor" > "$RUNNER_TEMP/vendor.toml"
       cargo_home="${CARGO_HOME:-$HOME/.cargo}"
       mkdir -p "$cargo_home"
-      { cat "$HOME/factory/vendor.toml"; printf '\n[net]\noffline = true\n'; } > "$cargo_home/config.toml"
-      cargo build --locked --all-targets
+      { cat "$RUNNER_TEMP/vendor.toml"; printf '\n[net]\noffline = true\n'; } > "$cargo_home/config.toml"
+      cargo build --locked --all-targets --offline
   - name: Offline docs for the crate and its dependencies
     run: cargo doc --locked && echo "docs in target/doc"
   - name: chrono-node judge (golden data + comparison harness)
@@ -102,6 +129,15 @@ safe-outputs:
     private-key: ${{ secrets.FACTORY_AGENT_PRIVATE_KEY }}
     owner: sabbasi3-factory-lab
     repositories: [chrono-node-rs]
+  # Strict detection must also cover failure reporting: no automatic failure issues/comments
+  # carrying agent-supplied text from a run whose detection didn't succeed.
+  report-failure-as-issue: false
+  missing-tool:
+    create-issue: false
+  missing-data:
+    create-issue: false
+  report-incomplete:
+    create-issue: false
   create-pull-request:
     max: 1
     draft: false
