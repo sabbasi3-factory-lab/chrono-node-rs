@@ -10,7 +10,7 @@
 //
 // - Human PRs (no `Factory-Task:` trailer, not authored by the agent App) pass; the changed paths
 //   are printed with nothing enforced.
-// - Factory PRs must: have a contract on the CURRENT base tip, declare `Contract-SHA:` equal to (a
+// - Factory PRs must: have a contract on the trusted tip (enforce: the default-branch tip), declare `Contract-SHA:` equal to (a
 //   prefix of) the last commit that touched it there, change only paths inside the contract
 //   `scope`, and touch nothing in `protected_from_agents` from factory policies/tiers.yaml (at the
 //   pinned factory version in the trusted .github/factory/factory-version). Diffs use
@@ -60,10 +60,12 @@ async function context() {
     if (name === "pull_request" || name === "pull_request_target") {
         const pr = event.pull_request;
         const head = pr.head.sha;
-        // Diff from the merge base (what the PR changes), but read contracts from the current
-        // base tip, so a contract updated on main after the branch diverged applies.
+        // Diff from the merge base (what the PR changes). Contracts come from the trusted tip when
+        // enforcing (TRUSTED_SHA = default-branch tip: a stacked PR's base branch is not trusted),
+        // otherwise from the current base tip, so a contract updated after the branch diverged applies.
         const mergeBase = git("merge-base", pr.base.sha, head);
-        return { pr, head, contractBase: pr.base.sha, changed: changedPaths(mergeBase, head) };
+        const contractBase = (MODE === "enforce" && process.env.TRUSTED_SHA) || pr.base.sha;
+        return { pr, head, contractBase, changed: changedPaths(mergeBase, head) };
     }
     if (name === "merge_group") {
         // Each queue entry is this PR's squash commit on top of main + earlier entries.

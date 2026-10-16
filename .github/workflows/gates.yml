@@ -1,11 +1,16 @@
 # Trusted gates (DESIGN §9 gates 1, 2, 7 and the no-internal-identifiers rule). One job.
 #
-# The workflow file and every script it runs come from the BASE branch:
-# - pull_request_target always uses the base branch's version of this file, and the job checks out
-#   the base commit.
-# - merge_group checks out the queue entry's parent commit (main plus earlier entries). A PR can
-#   only reach the queue after this gate passed on pull_request_target, and the scope gate blocks
-#   agent changes to .github/** and harness/**.
+# The workflow file and every script it runs come from the DEFAULT BRANCH (main):
+# - pull_request_target: since Dec 2025 GitHub always runs this event from the default branch's
+#   workflow file with GITHUB_SHA = the default-branch tip, whatever the PR's base branch is. The
+#   job checks out that tip (github.sha), not pull_request.base.sha: other base branches (stacked
+#   PRs) are pushable by agents, main is not. Contracts and policy also come from that tip; only
+#   the file diff starts from the PR's merge base.
+# - merge_group: checks out the queue's base (main at queue time). A PR only reaches the queue
+#   after this gate passed on pull_request_target, and the scope gate blocks agent changes to
+#   .github/** and harness/**.
+# Bootstrap: this file and harness/gates/ first exist on main when the PR adding them merges, so
+# the gate first runs (and can first pass) on PRs opened or updated after that.
 # The candidate commit is fetched as git objects and only read (diff, show, grep). Nothing from it
 # is executed: no checkout of its tree, no npm install from it, no cargo build of it.
 # Human tier: changes need the owner's review.
@@ -30,10 +35,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      TRUSTED_SHA: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+      TRUSTED_SHA: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.sha }}
       CANDIDATE_SHA: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.event.pull_request.head.sha }}
     steps:
-      - name: Check out the trusted base commit
+      - name: Check out the trusted default-branch commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.TRUSTED_SHA }}
@@ -68,6 +73,7 @@ jobs:
           GATE_MODE: enforce
           GH_TOKEN: ${{ github.token }}
         run: node gates/scope-check.js
+        # TRUSTED_SHA (job env) tells the script where contracts are read from.
 
       - name: No internal identifiers in the candidate
         # Lockfiles must resolve from the public npm registry, and no file may contain local home
