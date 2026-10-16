@@ -61,7 +61,8 @@ Constructor arguments come from `flags.get("strictMode")` and so on, using upstr
 
 ## 6. Dates and time zones (trap: JS vs Rust time zones)
 
-- Never use `chrono` or system-time APIs for date maths. Use `JsDate`: it reproduces JS `Date` exactly (`setDate`/`setMonth` overflow, `new Date(y, m, d)` mapping 0–99 to 1900s, invalid dates).
+- Never use `chrono` or system-time APIs for date maths. Use `JsDate`: it reproduces JS `Date` arithmetic (`setDate`/`setMonth` overflow, `new Date(y, m, d)` mapping 0–99 to 1900s, time clipping to an invalid date).
+- **One known difference:** on an invalid date, JS getters return `NaN`, but `JsDate` getters (`get_date`, `get_hours`, ...) return `0`. Where upstream might read fields of a possibly invalid date, check `date.get_time().is_some()` first and reproduce the upstream `NaN` behaviour explicitly (`NaN` comparisons are false; `NaN` arithmetic stays `NaN`).
 - **The system time zone is always UTC** (golden data is recorded under `TZ=UTC`). JS local getters (`getHours`) are `JsDate::get_hours`, and so on.
 - A reference's own time zone is handled by `ReferenceWithTimezone`, exactly as upstream: `context.reference.get_date_with_adjusted_timezone()`, `get_timezone_offset()`. Port these calls one-to-one.
 - `addDuration`, `addDurationAsImplied` and `createRelativeFromReference` **mutate the duration** they get (short keys renamed, fractions cascaded), so they take `&mut Duration`. If upstream reuses the duration after the call, so must you.
