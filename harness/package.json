@@ -8,7 +8,9 @@
   },
   "scripts": {
     "golden": "node golden/generate.js",
-    "golden:check": "node golden/generate.js --check"
+    "golden:check": "node golden/generate.js --check",
+    "build:upstream": "tsc -p tsconfig.upstream.json",
+    "compare": "node compare/compare.js"
   },
   "devDependencies": {
     "@types/jest": "29.5.14",
