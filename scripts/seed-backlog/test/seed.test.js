@@ -100,3 +100,15 @@ test("issue plan has the hidden marker and no factory:ready label", () => {
     }
     assert.deepStrictEqual(plan.find((p) => p.marker.includes("en/b-refiner")).blocked_by, ["en/a-parser"]);
 });
+
+test("rust paths the registry skips are rejected (mod.rs, _helpers)", () => {
+    for (const rust of ["src/locales/en/parsers/mod.rs", "src/locales/en/parsers/_helper.rs", "src/locales/en/parsers/Bad.rs"]) {
+        const bad = { ...taskmap, tasks: [{ ...taskmap.tasks[0], rust }, ...taskmap.tasks.slice(1)] };
+        assert.match(lib.validate({ taskmap: bad, upstreamFiles, configurations }).join("\n"), /rust path must be one file/, rust);
+    }
+});
+
+test("re-run keeps owner labels and replaces managed ones", () => {
+    const merged = lib.mergeLabels(["factory:ready", "tier:human", "area:old", "factory:task", "needs-human"], ["factory:task", "tier:auto", "area:x"]);
+    assert.deepStrictEqual(merged, ["area:x", "factory:ready", "factory:task", "needs-human", "tier:auto"]);
+});

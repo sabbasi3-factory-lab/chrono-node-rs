@@ -49,7 +49,8 @@ async function loadInputs() {
 
     const configurations = JSON.parse(read("tests/golden/configurations.json")).configurations;
     const cases = [];
-    for (const file of walk(path.join(REPO, "tests/golden"), (p) => /\/(core|en)\/[^/]+\.json$/.test(p))) {
+    const posix = (p) => p.split(path.sep).join("/");
+    for (const file of walk(path.join(REPO, "tests/golden"), (p) => /\/(core|en)\/[^/]+\.json$/.test(posix(p)))) {
         const area = path.relative(path.join(REPO, "tests/golden"), file).replace(/\\/g, "/").replace(/\.json$/, "");
         for (const c of JSON.parse(fs.readFileSync(file, "utf8")).cases) {
             cases.push({ area, requires: [...c.requires.parsers, ...c.requires.refiners] });
@@ -133,6 +134,17 @@ async function issuesCommand(apply) {
             throw new Error(`contracts/${f} on main differs from a fresh generation; merge the contracts PR first`);
         }
     }
+    // Preflight before any write: every label must already exist (GitHub silently drops unknown
+    // labels, and without factory:task the next run could not find these issues by label).
+    const have = new Set();
+    for (let page = 1; ; page++) {
+        const batch = await gh("GET", `/repos/${REPO_SLUG}/labels?per_page=100&page=${page}`);
+        for (const l of batch) have.add(l.name);
+        if (batch.length < 100) break;
+    }
+    const missing = [...new Set(plan.flatMap((p) => p.labels))].filter((l) => !have.has(l)).sort();
+    if (missing.length > 0) throw new Error(`create these labels first (nothing was written): ${missing.join(", ")}`);
+
     // Find existing issues by marker, so re-runs update instead of duplicating.
     const existing = new Map();
     for (let page = 1; ; page++) {
@@ -147,7 +159,9 @@ async function issuesCommand(apply) {
     for (const p of plan) {
         const id = /factory-task: ([a-z0-9/-]+)/.exec(p.marker)[1];
         const found = existing.get(id);
-        const fields = { title: p.title, body: p.body, labels: p.labels };
+        // On re-run keep owner-added labels (factory:ready, needs-human, ...); replace managed ones.
+        const labels = found ? lib.mergeLabels(found.labels.map((l) => l.name), p.labels) : p.labels;
+        const fields = { title: p.title, body: p.body, labels };
         const issue = found
             ? await gh("PATCH", `/repos/${REPO_SLUG}/issues/${found.number}`, fields)
             : await gh("POST", `/repos/${REPO_SLUG}/issues`, fields);

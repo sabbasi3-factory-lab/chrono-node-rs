@@ -44,7 +44,9 @@ function tierFor(paths, tiers) {
     return result;
 }
 
-const REGISTRY_DIR = /^src\/(common|locales\/[a-z]+)\/(parsers|refiners)\/[a-z0-9_]+\.rs$/;
+// Same rule as build.rs: snake_case files, excluding `mod.rs` and names starting with `_`
+// (those are skipped by the registry, so a step there could never register).
+const REGISTRY_DIR = /^src\/(common|locales\/[a-z]+)\/(parsers|refiners)\/(?!mod\.rs$)[a-z0-9][a-z0-9_]*\.rs$/;
 const TASK_ID = /^[a-z0-9-]+\/[a-z0-9-]+$/;
 
 /**
@@ -184,6 +186,15 @@ function renderContract(c) {
     return header + YAML.stringify(c, { lineWidth: 0, flowCollectionPadding: false, collectionStyle: "block" });
 }
 
+/** Labels the seed script manages; everything else on an issue (e.g. factory:ready) is kept. */
+const isManagedLabel = (name) => name === "factory:task" || name.startsWith("tier:") || name.startsWith("area:");
+
+/** Labels for an existing issue on re-run: keep unmanaged labels, replace managed ones. */
+function mergeLabels(existing, generated) {
+    const kept = existing.filter((l) => !isManagedLabel(l));
+    return [...new Set([...kept, ...generated])].sort();
+}
+
 /** The issue each contract becomes (after the contracts PR is merged). Pure; no network. */
 function planIssues(contracts, repo) {
     return contracts.map((c) => ({
@@ -207,4 +218,16 @@ function planIssues(contracts, repo) {
     }));
 }
 
-module.exports = { MARKER, globToRegExp, tierFor, validate, goldenFacts, assertAcyclic, buildContracts, renderContract, planIssues };
+module.exports = {
+    MARKER,
+    globToRegExp,
+    tierFor,
+    validate,
+    goldenFacts,
+    assertAcyclic,
+    buildContracts,
+    renderContract,
+    planIssues,
+    isManagedLabel,
+    mergeLabels,
+};
