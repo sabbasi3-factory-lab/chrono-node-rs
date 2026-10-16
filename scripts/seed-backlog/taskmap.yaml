@@ -1,0 +1,60 @@
+# Task map for core + English (DESIGN §6). The owner approves this file; the seed script turns it
+# into contracts/*.yaml deterministically. Change this file (by reviewed PR), never the contracts.
+#
+# Each task ports ONE upstream step into ONE Rust file (shared bases were ported by hand in
+# Stage 0, so tasks don't share files). What the script derives instead of hard-coding:
+#   - tier: from factory policies/tiers.yaml (pinned factory version) matched against `rust`
+#   - depends_on: the cheapest golden case that needs this step decides which other unported
+#     steps must land first, so the contract's golden gate can actually be met
+#   - golden areas and priority: from tests/golden (areas where the step is required; more
+#     golden cases = higher priority)
+version: 1
+upstream_root: upstream/src
+
+# Ported by hand in Stage 0 (no contracts, no issues). Listed so the script can check that every
+# step in the English configuration is either done or a task.
+done:
+  - { step: ENCasualDateParser, rust: src/locales/en/parsers/casual_date.rs }
+  - { step: ENWeekdayParser, rust: src/locales/en/parsers/weekday.rs }
+  - { step: ENTimeExpressionParser, rust: src/locales/en/parsers/time_expression.rs }
+  - { step: ENMergeDateTimeRefiner, rust: src/locales/en/refiners/merge_date_time.rs }
+  - { step: ENMergeDateRangeRefiner, rust: src/locales/en/refiners/merge_date_range.rs }
+
+tasks:
+  # --- common parsers and refiners (src/common/**: auto-strict, human tier in Stage 1) ---
+  - { id: common/iso-format-parser, step: ISOFormatParser, source: common/parsers/ISOFormatParser.ts, rust: src/common/parsers/iso_format.rs, area: common-parsers }
+  - { id: common/slash-date-format-parser, step: SlashDateFormatParser, source: common/parsers/SlashDateFormatParser.ts, rust: src/common/parsers/slash_date_format.rs, area: common-parsers }
+  - { id: common/extract-timezone-abbr-refiner, step: ExtractTimezoneAbbrRefiner, source: common/refiners/ExtractTimezoneAbbrRefiner.ts, rust: src/common/refiners/extract_timezone_abbr.rs, area: common-refiners }
+  - { id: common/extract-timezone-offset-refiner, step: ExtractTimezoneOffsetRefiner, source: common/refiners/ExtractTimezoneOffsetRefiner.ts, rust: src/common/refiners/extract_timezone_offset.rs, area: common-refiners }
+  - { id: common/forward-date-refiner, step: ForwardDateRefiner, source: common/refiners/ForwardDateRefiner.ts, rust: src/common/refiners/forward_date.rs, area: common-refiners }
+  - { id: common/merge-weekday-component-refiner, step: MergeWeekdayComponentRefiner, source: common/refiners/MergeWeekdayComponentRefiner.ts, rust: src/common/refiners/merge_weekday_component.rs, area: common-refiners }
+  - { id: common/overlap-removal-refiner, step: OverlapRemovalRefiner, source: common/refiners/OverlapRemovalRefiner.ts, rust: src/common/refiners/overlap_removal.rs, area: common-refiners }
+  - { id: common/unlikely-format-filter, step: UnlikelyFormatFilter, source: common/refiners/UnlikelyFormatFilter.ts, rust: src/common/refiners/unlikely_format_filter.rs, area: common-refiners }
+
+  # --- English parsers (auto tier) ---
+  - { id: en/casual-time-parser, step: ENCasualTimeParser, source: locales/en/parsers/ENCasualTimeParser.ts, rust: src/locales/en/parsers/casual_time.rs, area: en-casual }
+  - { id: en/end-of-current-month-parser, step: ENEndOfCurrentMonthParser, source: locales/en/parsers/ENEndOfCurrentMonthParser.ts, rust: src/locales/en/parsers/end_of_current_month.rs, area: en-casual }
+  - { id: en/month-name-parser, step: ENMonthNameParser, source: locales/en/parsers/ENMonthNameParser.ts, rust: src/locales/en/parsers/month_name.rs, area: en-month-names }
+  - { id: en/month-name-little-endian-parser, step: ENMonthNameLittleEndianParser, source: locales/en/parsers/ENMonthNameLittleEndianParser.ts, rust: src/locales/en/parsers/month_name_little_endian.rs, area: en-month-names }
+  - { id: en/month-name-middle-endian-parser, step: ENMonthNameMiddleEndianParser, source: locales/en/parsers/ENMonthNameMiddleEndianParser.ts, rust: src/locales/en/parsers/month_name_middle_endian.rs, area: en-month-names }
+  - { id: en/year-month-name-parser, step: ENYearMonthNameParser, source: locales/en/parsers/ENYearMonthNameParser.ts, rust: src/locales/en/parsers/year_month_name.rs, area: en-month-names }
+  - { id: en/year-month-day-parser, step: ENYearMonthDayParser, source: locales/en/parsers/ENYearMonthDayParser.ts, rust: src/locales/en/parsers/year_month_day.rs, area: en-numeric-dates }
+  - { id: en/slash-month-format-parser, step: ENSlashMonthFormatParser, source: locales/en/parsers/ENSlashMonthFormatParser.ts, rust: src/locales/en/parsers/slash_month_format.rs, area: en-numeric-dates }
+  - { id: en/relative-date-format-parser, step: ENRelativeDateFormatParser, source: locales/en/parsers/ENRelativeDateFormatParser.ts, rust: src/locales/en/parsers/relative_date_format.rs, area: en-relative }
+  - { id: en/time-unit-ago-format-parser, step: ENTimeUnitAgoFormatParser, source: locales/en/parsers/ENTimeUnitAgoFormatParser.ts, rust: src/locales/en/parsers/time_unit_ago_format.rs, area: en-relative }
+  - { id: en/time-unit-later-format-parser, step: ENTimeUnitLaterFormatParser, source: locales/en/parsers/ENTimeUnitLaterFormatParser.ts, rust: src/locales/en/parsers/time_unit_later_format.rs, area: en-relative }
+  - { id: en/time-unit-within-format-parser, step: ENTimeUnitWithinFormatParser, source: locales/en/parsers/ENTimeUnitWithinFormatParser.ts, rust: src/locales/en/parsers/time_unit_within_format.rs, area: en-relative }
+  - { id: en/time-unit-casual-relative-format-parser, step: ENTimeUnitCasualRelativeFormatParser, source: locales/en/parsers/ENTimeUnitCasualRelativeFormatParser.ts, rust: src/locales/en/parsers/time_unit_casual_relative_format.rs, area: en-relative }
+
+  # --- English refiners (auto tier) ---
+  - { id: en/end-of-period-refiner, step: ENEndOfPeriodRefiner, source: locales/en/refiners/ENEndOfPeriodRefiner.ts, rust: src/locales/en/refiners/end_of_period.rs, area: en-refiners }
+  - { id: en/extract-year-suffix-refiner, step: ENExtractYearSuffixRefiner, source: locales/en/refiners/ENExtractYearSuffixRefiner.ts, rust: src/locales/en/refiners/extract_year_suffix.rs, area: en-refiners }
+  - { id: en/merge-relative-after-date-refiner, step: ENMergeRelativeAfterDateRefiner, source: locales/en/refiners/ENMergeRelativeAfterDateRefiner.ts, rust: src/locales/en/refiners/merge_relative_after_date.rs, area: en-refiners }
+  - { id: en/merge-relative-follow-by-date-refiner, step: ENMergeRelativeFollowByDateRefiner, source: locales/en/refiners/ENMergeRelativeFollowByDateRefiner.ts, rust: src/locales/en/refiners/merge_relative_follow_by_date.rs, area: en-refiners }
+  - { id: en/unlikely-format-filter, step: ENUnlikelyFormatFilter, source: locales/en/refiners/ENUnlikelyFormatFilter.ts, rust: src/locales/en/refiners/unlikely_format_filter.rs, area: en-refiners }
+
+# Acceptance defaults written into every contract.
+acceptance:
+  differential: { phrases: 2000, seed: 42 }
+  clippy: deny-warnings
+  public_api: unchanged-except-added

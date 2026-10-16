@@ -1,0 +1,18 @@
+{
+  "name": "chrono-node-rs-seed-backlog",
+  "private": true,
+  "description": "Deterministic seed script: upstream/ + taskmap.yaml -> contracts/*.yaml (and, after review, issues).",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "contracts": "node seed.js contracts",
+    "check": "node seed.js contracts --check",
+    "plan-issues": "node seed.js issues --plan",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "yaml": "2.9.1"
+  }
+}
