@@ -4,6 +4,7 @@
 
 pub mod casual_references;
 pub mod configuration;
+pub mod time_expression;
 pub mod word_boundary;
 
 pub mod parsers {
