@@ -108,3 +108,40 @@ test("golden acceptance with no areas fails (it would skip the contract golden s
     assert.strictEqual(r.ok, false);
     assert.match(r.reasons.join(), /unsupported golden acceptance/);
 });
+
+test("protected paths are reported even without a task, a valid id or a contract (all violations, fail closed)", () => {
+    const changed = ["upstream/PINNED.md", "src/locales/en/parsers/month_name.rs", ".github/workflows/ci.yml"];
+    const expectProtected = (r) => {
+        assert.strictEqual(r.ok, false);
+        assert.match(r.reasons.join("\n"), /protected path changed: upstream\/PINNED.md/);
+        assert.match(r.reasons.join("\n"), /protected path changed: .github\/workflows\/ci.yml/);
+    };
+    // no contract on the base branch
+    let r = evaluate({ isAgent: false, body: "Factory-Task: en/month-name-parser\nContract-SHA: 0000000", changed, protectedGlobs: PROTECTED, loadContract });
+    expectProtected(r);
+    assert.match(r.reasons.join("\n"), /no contract contracts\/en\/month-name-parser.yaml/);
+    // malformed task id
+    r = evaluate({ isAgent: false, body: "Factory-Task: ../x", changed, protectedGlobs: PROTECTED, loadContract });
+    expectProtected(r);
+    assert.match(r.reasons.join("\n"), /invalid Factory-Task id/);
+    // agent PR without a task
+    r = evaluate({ isAgent: true, body: "no trailers", changed, protectedGlobs: PROTECTED, loadContract });
+    expectProtected(r);
+    assert.match(r.reasons.join("\n"), /agent PR without Factory-Task trailer/);
+});
+
+test("with a contract, protected and out-of-scope paths and a stale SHA are all reported together", () => {
+    const r = evaluate({
+        isAgent: true,
+        body: body().replace("a1b2c3d", "deadbee"),
+        changed: ["contracts/en/weekday-parser.yaml", "src/core/chrono.rs", "src/locales/en/parsers/weekday.rs"],
+        protectedGlobs: PROTECTED,
+        loadContract,
+    });
+    assert.strictEqual(r.ok, false);
+    const all = r.reasons.join("\n");
+    assert.match(all, /protected path changed: contracts\/en\/weekday-parser.yaml/);
+    assert.match(all, /out of contract scope: src\/core\/chrono.rs/);
+    assert.match(all, /stale contract/);
+    assert.doesNotMatch(all, /out of contract scope: contracts/); // reported once, as protected
+});

@@ -51,18 +51,22 @@ const TASK_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
  */
 function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
     const task = trailer(body, "Factory-Task");
-    if (!task) {
-        if (isAgent) return { ok: false, kind: "factory", reasons: ["agent PR without Factory-Task trailer"], goldenAreas: [] };
+    if (!task && !isAgent) {
         return { ok: true, kind: "human", reasons: [], goldenAreas: [], goldenStep: null, differential: null };
     }
+    // Factory or agent PR from here on. Fail closed and report EVERY violation: protected paths
+    // are checked first and independently of the task id and the contract, so a PR is never
+    // rejected for one reason while another (worse) violation goes unreported.
     const reasons = [];
-    if (!TASK_ID.test(task)) {
-        return { ok: false, kind: "factory", task, reasons: [`invalid Factory-Task id ${JSON.stringify(task)}`], goldenAreas: [] };
+    for (const path of changed) {
+        if (matchesAny(path, protectedGlobs)) reasons.push(`protected path changed: ${path}`);
     }
+    if (changed.length === 0) reasons.push("no changed files");
+    const fail = (extra) => ({ ok: false, kind: "factory", task: task || undefined, reasons: [...reasons, ...extra], goldenAreas: [] });
+    if (!task) return fail(["agent PR without Factory-Task trailer"]);
+    if (!TASK_ID.test(task)) return fail([`invalid Factory-Task id ${JSON.stringify(task)}`]);
     const contract = loadContract(task);
-    if (!contract) {
-        return { ok: false, kind: "factory", task, reasons: [`no contract contracts/${task}.yaml on the base branch`], goldenAreas: [] };
-    }
+    if (!contract) return fail([`no contract contracts/${task}.yaml on the base branch`]);
 
     const declared = trailer(body, "Contract-SHA");
     if (!declared) reasons.push("missing Contract-SHA trailer");
@@ -72,10 +76,8 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
 
     const scope = Array.isArray(contract.scope) ? contract.scope : [];
     for (const path of changed) {
-        if (matchesAny(path, protectedGlobs)) reasons.push(`protected path changed: ${path}`);
-        else if (!matchesAny(path, scope)) reasons.push(`out of contract scope: ${path}`);
+        if (!matchesAny(path, protectedGlobs) && !matchesAny(path, scope)) reasons.push(`out of contract scope: ${path}`);
     }
-    if (changed.length === 0) reasons.push("no changed files");
 
     // acceptance: - golden: { step: ENWeekdayParser, areas: [en/weekday, ...] }
     //             - differential: { phrases: 2000, seed: 42, match: chrono-node@<sha> }
