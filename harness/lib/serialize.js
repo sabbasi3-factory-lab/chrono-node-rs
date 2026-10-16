@@ -95,13 +95,20 @@ function deepEqualPlain(a, b) {
 }
 
 /**
- * Class name plus boolean constructor flags (strictMode, littleEndian, ...), for parsers or refiners.
- * Only booleans: other own fields are lazily built pattern caches that change after first use.
+ * Class name plus the constructor flags (strictMode, littleEndian, ...), for parsers or refiners.
+ * Boolean own fields are recorded as they are. Other own fields are mostly lazily built pattern
+ * caches that change after first use, so they're skipped, except where a constructor argument is
+ * stored in another form and is reconstructed here under its constructor name:
+ *   SlashDateFormatParser(littleEndian) stores numeric groupNumberMonth / groupNumberDay
+ *   (US: month first, so groupNumberMonth < groupNumberDay; GB: the reverse).
  */
 function describeStep(step) {
     const flags = {};
     for (const key of Object.keys(step)) {
         if (typeof step[key] === "boolean") flags[key] = step[key];
+    }
+    if (typeof step.groupNumberMonth === "number" && typeof step.groupNumberDay === "number") {
+        flags.littleEndian = step.groupNumberMonth > step.groupNumberDay;
     }
     return { name: step.constructor.name, flags: sortKeys(flags) };
 }

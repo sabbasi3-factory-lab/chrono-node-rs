@@ -19,7 +19,9 @@
         },
         {
           "name": "SlashDateFormatParser",
-          "flags": {}
+          "flags": {
+            "littleEndian": true
+          }
         },
         {
           "name": "ENTimeUnitWithinFormatParser",
@@ -177,7 +179,9 @@
         },
         {
           "name": "SlashDateFormatParser",
-          "flags": {}
+          "flags": {
+            "littleEndian": true
+          }
         },
         {
           "name": "ENTimeUnitWithinFormatParser",
@@ -301,7 +305,9 @@
         },
         {
           "name": "SlashDateFormatParser",
-          "flags": {}
+          "flags": {
+            "littleEndian": false
+          }
         },
         {
           "name": "ENTimeUnitWithinFormatParser",
@@ -459,7 +465,9 @@
         },
         {
           "name": "SlashDateFormatParser",
-          "flags": {}
+          "flags": {
+            "littleEndian": false
+          }
         },
         {
           "name": "ENTimeUnitWithinFormatParser",
