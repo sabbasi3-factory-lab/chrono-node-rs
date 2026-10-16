@@ -212,6 +212,9 @@ The planner picks the newest run for the PR head: the highest `run_id`, then `ru
 
 **One terminal decision per task per run**
 
+A task whose issue **or** PR already has `needs-human` is with a human: it gets no repair and no contract
+decision.
+
 Task timeouts are evaluated first. A task escalated to `needs_human` in this run, for any reason, gets
 no other decision in that run: no repair, no contract decision and no second escalation.
 

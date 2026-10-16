@@ -202,6 +202,8 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   // ---- open factory PRs: contract freshness and CI failures
   for (const pr of openPulls) {
     if (!pr.task_id || pr.labels.includes(LABEL_NEEDS_HUMAN) || escalated.has(pr.task_id)) continue;
+    // Handed to a human on either side (the issue or the PR): no repair or contract decision.
+    if (issueByTask.get(pr.task_id)?.labels.includes(LABEL_NEEDS_HUMAN)) continue;
     const task = pr.task_id;
     const base = { task, pr: pr.number, issue: issueByTask.get(task)?.number ?? null };
     const c = contractOf(s, task);

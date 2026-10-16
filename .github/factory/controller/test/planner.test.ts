@@ -534,6 +534,18 @@ describe('independent review (follow-up): fail closed', () => {
     assert.deepEqual(run({ ...s, history: pickedRecently(['en/a']) }), []);
   });
 
+  it('a task whose issue is labelled needs-human gets no repair, even when its PR is not labelled (review #20)', () => {
+    // After pick_time_unknown, a human labels the issue only: repairs must not resume.
+    const s = failingPrWorld('sig', history());
+    s.issues[0]!.labels.push('needs-human');
+    assert.deepEqual(run(s), []);
+    // Same with a known pick time and a stale contract: no decision for a human-held task.
+    const t = failingPrWorld('sig');
+    t.issues[0]!.labels.push('needs-human');
+    t.pulls[0]!.contract_sha = '0000000';
+    assert.deepEqual(run(t), []);
+  });
+
   it('a picked task with an open PR and no pick time gets only pick_time_unknown (one terminal decision)', () => {
     const s = failingPrWorld('sig', history());
     assert.deepEqual(reasons(run(s)), ['pick_time_unknown']);
