@@ -1,0 +1,8 @@
+# Local tools (pinned gh-aw binary, etc.)
+/.tools/
+
+# Rust
+/target/
+
+# Node
+node_modules/
