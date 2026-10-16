@@ -74,6 +74,7 @@ function build(outDir) {
         const problems = [];
 
         for (const name of fs.readdirSync(rawDir).sort()) {
+            if (!name.endsWith(".json")) continue;
             const raw = JSON.parse(fs.readFileSync(path.join(rawDir, name), "utf8"));
             problems.push(...raw.errors.map((e) => ({ source: raw.source, ...e })));
             const area = areaOf(raw.source);
@@ -122,6 +123,13 @@ function build(outDir) {
         for (const k of Object.keys(index.files).sort()) sortedFiles[k] = index.files[k];
         index.files = sortedFiles;
         fs.writeFileSync(path.join(outDir, "index.json"), JSON.stringify(index, null, 2) + "\n");
+        const configurations = JSON.parse(fs.readFileSync(path.join(rawDir, "..configurations"), "utf8"));
+        const sortedConfigs = {};
+        for (const k of Object.keys(configurations).sort()) sortedConfigs[k] = configurations[k];
+        fs.writeFileSync(
+            path.join(outDir, "configurations.json"),
+            JSON.stringify({ schema: SCHEMA, upstream: pin, configurations: sortedConfigs }, null, 2) + "\n"
+        );
         return index;
     } finally {
         fs.rmSync(rawDir, { recursive: true, force: true });
@@ -153,7 +161,9 @@ function main() {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "golden-check-"));
     try {
         build(tmp);
-        const committed = listFiles(GOLDEN).filter((f) => f === "index.json" || AREAS.some((a) => f.startsWith(a + path.sep)));
+        const committed = listFiles(GOLDEN).filter(
+            (f) => f === "index.json" || f === "configurations.json" || AREAS.some((a) => f.startsWith(a + path.sep))
+        );
         const fresh = listFiles(tmp);
         const diffs = [];
         for (const f of new Set([...committed, ...fresh])) {

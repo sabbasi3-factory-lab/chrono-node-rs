@@ -21,6 +21,7 @@ cd harness && npm run golden:check            # fail if tests/golden is stale
 | Path | Contents |
 |---|---|
 | `index.json` | Upstream pin, defaults, and per-area case and skip counts |
+| `configurations.json` | The exact parser and refiner order (with boolean flags) of `en.casual`, `en.strict`, `en.GB.casual` and `en.GB.strict`. The Rust configuration must match it. |
 | `core/<name>.json` | Cases from `upstream/test/<name>.test.ts` |
 | `en/<name>.json` | Cases from `upstream/test/en/en_<name>.test.ts` (`en.test.ts` → `general`) |
 

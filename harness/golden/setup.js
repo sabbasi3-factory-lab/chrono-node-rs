@@ -135,4 +135,8 @@ afterAll(() => {
     const source = path.relative(UPSTREAM, testPath).split(path.sep).join("/");
     const file = path.join(RAW_DIR, source.replace(/[\/]/g, "__") + ".json");
     fs.writeFileSync(file, JSON.stringify({ source, cases, skipped, errors }));
+    // The same in every test file; the generator copies it to tests/golden/configurations.json.
+    const configurations = {};
+    for (const [fingerprint, name] of KNOWN_CONFIGS) configurations[name] = JSON.parse(fingerprint);
+    fs.writeFileSync(path.join(RAW_DIR, "..configurations"), JSON.stringify(configurations));
 });
