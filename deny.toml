@@ -1,0 +1,46 @@
+# cargo-deny policy. Mirrors factory/policies/dependencies.yaml (version 1).
+# Human tier: changes need the owner's review.
+
+[graph]
+all-features = true
+
+[advisories]
+# RustSec advisories: any vulnerability or unmaintained/unsound notice fails the check.
+version = 2
+yanked = "deny"
+ignore = []
+
+[licenses]
+version = 2
+# dependencies.yaml hard_checks.licence_allowlist
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "Zlib",
+]
+confidence-threshold = 0.9
+# The allowlist is policy, not a list of what we use today.
+unused-allowed-license = "allow"
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+# dependencies.yaml hard_checks.denylist: competing natural-language date crates (contamination).
+deny = [
+    { crate = "chrono-english" },
+    { crate = "interim" },
+    { crate = "whichtime" },
+    { crate = "natural-date-parser" },
+    { crate = "two_timer" },
+    { crate = "dateparser" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
