@@ -1,0 +1,24 @@
+{
+  "name": "factory-controller",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Software factory controller v1 (dry-run only, no AI)",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "start": "node main.ts",
+    "fixture": "node main.ts --fixture test/fixtures/snapshot.json --print"
+  },
+  "dependencies": {
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  }
+}

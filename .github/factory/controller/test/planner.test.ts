@@ -1,0 +1,424 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import { plan } from '../planner.ts';
+import type { Decision, PlannerEnv, ReasonCode, Snapshot } from '../types.ts';
+import { type SnapshotOverrides, checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, snapshot, testPolicies } from './helpers.ts';
+
+const policies = await testPolicies();
+const ON: PlannerEnv = { FACTORY_ENABLED: 'true' };
+
+function run(s: Snapshot, env: PlannerEnv = ON, now = NOW): Decision[] {
+  return plan(s, policies, env, now);
+}
+const reasons = (ds: Decision[]): ReasonCode[] => ds.map((d) => d.reason);
+const find = (ds: Decision[], reason: ReasonCode): Decision => {
+  const d = ds.find((x) => x.reason === reason);
+  assert.ok(d, `expected a decision with reason ${reason}, got ${reasons(ds).join(',')}`);
+  return d;
+};
+
+// A ready, admissible task with a merged dependency.
+function readyWorld(over: SnapshotOverrides = {}, extraContracts = [contract('core/results', { scope: ['src/core/results.rs'] })]): Snapshot {
+  return snapshot({
+    issues: [issue(1, 'en/weekday-parser')],
+    pulls: [mergedPull(100, 'core/results')],
+    contractList: [contract('en/weekday-parser', { depends_on: ['core/results'] }), ...extraContracts],
+    ...over,
+  });
+}
+
+// An open factory PR for en/weekday-parser with a current Contract-SHA and a failed CI run.
+function failingPrWorld(sig: string | null, h = history(), conclusion = 'failure'): Snapshot {
+  const c = contract('en/weekday-parser');
+  const pr = pull(21, { task_id: 'en/weekday-parser', contract_sha: c.last_commit_sha.slice(0, 7) });
+  return snapshot({
+    issues: [issue(1, 'en/weekday-parser', ['factory:picked'])],
+    pulls: [pr],
+    contractList: [c],
+    check_runs: [checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion, failure_signature: sig })],
+    history: { 'en/weekday-parser': h },
+  });
+}
+
+describe('planner: stage 0 and purity', () => {
+  it('returns nothing for an empty repo (Stage 0)', () => {
+    assert.deepEqual(run(snapshot()), []);
+    assert.deepEqual(run(snapshot(), { FACTORY_ENABLED: undefined }), []);
+  });
+
+  it('is pure: same input → same output, and the snapshot is not mutated', () => {
+    const s = readyWorld();
+    const copy = structuredClone(s);
+    assert.deepEqual(run(s), run(s));
+    assert.deepEqual(s, copy);
+  });
+
+  it('marks every decision dry_run and gives each a reason code', () => {
+    const ds = [...run(readyWorld()), ...run(failingPrWorld('golden:x')), ...run(readyWorld(), { FACTORY_ENABLED: 'false' })];
+    assert.ok(ds.length > 0);
+    for (const d of ds) {
+      assert.equal(d.dry_run, true);
+      assert.match(d.reason, /^[a-z_]+$/);
+      assert.ok(d.source_ids.length > 0);
+    }
+  });
+});
+
+describe('planner: admit', () => {
+  it('dispatches a ready task (would_dispatch) with the contract commit SHA', () => {
+    const d = find(run(readyWorld()), 'would_dispatch');
+    assert.equal(d.type, 'dispatched');
+    assert.equal(d.effect, 'dispatch_workflow:implement');
+    assert.equal(d.task, 'en/weekday-parser');
+    assert.equal(d.issue, 1);
+    assert.equal(d.attempt, 1);
+    assert.equal(d.contract_sha, commitSha('en/weekday-parser'));
+  });
+
+  it('ignores issues without factory:ready', () => {
+    const s = readyWorld({ issues: [issue(1, 'en/weekday-parser', ['proposed'])] });
+    assert.deepEqual(run(s), []);
+  });
+
+  it('blocks a ready issue without a valid marker (missing_task_marker)', () => {
+    const s = readyWorld({ issues: [issue(1, null), { ...issue(2, null), marker_status: 'invalid' }] });
+    const ds = run(s);
+    assert.deepEqual(reasons(ds), ['missing_task_marker', 'missing_task_marker']);
+    assert.equal(ds[0]!.type, 'blocked');
+  });
+
+  it('blocks a second issue for the same task (duplicate_task)', () => {
+    const s = readyWorld({ issues: [issue(1, 'en/weekday-parser'), issue(2, 'en/weekday-parser')] });
+    const ds = run(s);
+    assert.equal(find(ds, 'duplicate_task').issue, 2);
+    assert.equal(find(ds, 'would_dispatch').issue, 1);
+  });
+
+  it('blocks when the contract is not on main (contract_missing)', () => {
+    const s = readyWorld({ contractList: [] });
+    const d = find(run(s), 'contract_missing');
+    assert.equal(d.type, 'blocked');
+  });
+
+  it('blocks when the contract is invalid (invalid_contract)', () => {
+    const s = readyWorld({ contractList: [contract('en/weekday-parser', { valid: false })] });
+    assert.equal(find(run(s), 'invalid_contract').type, 'blocked');
+  });
+
+  it('waits until dependencies are merged (deps_not_merged)', () => {
+    const s = readyWorld({ pulls: [pull(100, { task_id: 'core/results' })] });
+    const ds = run(s);
+    assert.equal(find(ds, 'deps_not_merged').type, 'wait');
+    assert.ok(!ds.some((d) => d.type === 'dispatched'));
+  });
+
+  it('skips a task that is already merged (already_merged)', () => {
+    const s = readyWorld({ pulls: [mergedPull(100, 'core/results'), mergedPull(101, 'en/weekday-parser')] });
+    assert.deepEqual(reasons(run(s)), ['already_merged']);
+  });
+
+  it('does not re-admit a task that is in flight', () => {
+    const s = readyWorld({ issues: [issue(1, 'en/weekday-parser', ['factory:ready', 'factory:picked'])] });
+    assert.deepEqual(run(s), []);
+  });
+
+  it('orders by dependency depth, then priority, then issue number', () => {
+    const s = snapshot({
+      issues: [issue(5, 'en/c'), issue(4, 'en/b'), issue(3, 'en/a'), issue(6, 'en/d')],
+      pulls: [mergedPull(100, 'core/results'), mergedPull(101, 'en/base')],
+      contractList: [
+        contract('core/results', { scope: ['src/core/results.rs'] }),
+        contract('en/base', { depends_on: ['core/results'] }),
+        contract('en/a', { depends_on: ['en/base'], priority: 1 }), // depth 2
+        contract('en/b', { priority: 9 }), // depth 0
+        contract('en/c', { priority: 2 }), // depth 0
+        contract('en/d', { priority: 2 }), // depth 0, higher issue number than c
+      ],
+    });
+    const order = run(s).map((d) => `${d.type}:${d.task}`);
+    assert.deepEqual(order, ['dispatched:en/c', 'dispatched:en/d', 'dispatched:en/b', 'wait:en/a']);
+    assert.equal(find(run(s), 'wip_full').task, 'en/a');
+  });
+});
+
+describe('planner: kill switch (fail closed)', () => {
+  for (const value of [undefined, '', 'false', 'TRUE', 'true ', '1']) {
+    it(`does not dispatch when FACTORY_ENABLED=${JSON.stringify(value)}`, () => {
+      const ds = run(readyWorld(), { FACTORY_ENABLED: value });
+      assert.ok(!ds.some((d) => d.type === 'dispatched' || d.type === 'repair_dispatched'));
+      const k = find(ds, 'kill_switch');
+      assert.equal(k.type, 'kill_switch');
+      assert.deepEqual(k.source_ids, ['I_1', commitSha('en/weekday-parser')].sort());
+    });
+  }
+
+  it('also stops repairs', () => {
+    const ds = run(failingPrWorld('golden:x'), { FACTORY_ENABLED: 'false' });
+    assert.deepEqual(reasons(ds), ['kill_switch']);
+  });
+
+  it('emits no kill_switch event when there is nothing to dispatch', () => {
+    assert.deepEqual(run(snapshot(), { FACTORY_ENABLED: 'false' }), []);
+  });
+});
+
+describe('planner: budgets', () => {
+  it('alerts at 80% and still dispatches (budget_alert)', () => {
+    const ds = run(readyWorld({ factory_aic_today: 8000 }));
+    assert.equal(find(ds, 'budget_alert').type, 'budget_alert');
+    assert.ok(ds.some((d) => d.type === 'dispatched'));
+  });
+
+  it('pauses dispatch at 100% (budget_pause)', () => {
+    const ds = run(readyWorld({ factory_aic_today: 10000 }));
+    const pause = ds.find((d) => d.type === 'budget_pause');
+    assert.ok(pause);
+    assert.equal(pause.effect, 'pause_dispatch');
+    assert.ok(!ds.some((d) => d.type === 'dispatched'));
+    assert.ok(ds.some((d) => d.type === 'wait' && d.reason === 'budget_pause'));
+    assert.ok(!ds.some((d) => d.type === 'budget_alert'));
+  });
+
+  it('waits when spend is unknown (budget_unknown)', () => {
+    const ds = run(readyWorld({ factory_aic_today: null }));
+    assert.deepEqual(reasons(ds), ['budget_unknown']);
+  });
+
+  it('keys budget events by UTC day', () => {
+    const d = find(run(readyWorld({ factory_aic_today: 9000 })), 'budget_alert');
+    assert.deepEqual(d.source_ids, ['day:2026-10-16']);
+  });
+});
+
+describe('planner: schedule', () => {
+  it('waits when Actions is busy (actions_busy)', () => {
+    assert.deepEqual(reasons(run(readyWorld({ busy_jobs: 15 }))), ['actions_busy']);
+  });
+
+  it('counts jobs of dispatches planned in the same run', () => {
+    const s = snapshot({
+      issues: [issue(1, 'en/a'), issue(2, 'en/b')],
+      contractList: [contract('en/a'), contract('en/b')],
+      busy_jobs: 13,
+    });
+    assert.deepEqual(reasons(run(s)), ['would_dispatch', 'actions_busy']);
+  });
+
+  it('waits when the busy job count is unknown (busy_jobs_unknown)', () => {
+    assert.deepEqual(reasons(run(readyWorld({ busy_jobs: null }))), ['busy_jobs_unknown']);
+  });
+
+  it('respects the WIP limit (wip_full)', () => {
+    const inflight = ['en/x', 'en/y', 'en/z'];
+    const s = readyWorld({
+      issues: [issue(1, 'en/weekday-parser'), ...inflight.map((t, i) => issue(10 + i, t, ['factory:picked']))],
+      contractList: [
+        contract('en/weekday-parser', { depends_on: ['core/results'] }),
+        contract('core/results', { scope: ['src/core/results.rs'] }),
+        ...inflight.map((t) => contract(t)),
+      ],
+    });
+    assert.deepEqual(reasons(run(s)), ['wip_full']);
+  });
+
+  it('serializes the core area (core_area_busy)', () => {
+    const s = snapshot({
+      issues: [issue(1, 'core/a'), issue(2, 'core/b', ['factory:picked'])],
+      contractList: [
+        contract('core/a', { scope: ['src/core/a.rs'], tier: 'human' }),
+        contract('core/b', { scope: ['src/core/b.rs'], tier: 'human' }),
+      ],
+    });
+    assert.deepEqual(reasons(run(s)), ['core_area_busy']);
+  });
+
+  it('dispatches at most one core task per run', () => {
+    const s = snapshot({
+      issues: [issue(1, 'core/a'), issue(2, 'core/b')],
+      contractList: [contract('core/a', { scope: ['src/core/a.rs'] }), contract('core/b', { scope: ['src/calculation/b.rs'] })],
+    });
+    assert.deepEqual(reasons(run(s)), ['would_dispatch', 'core_area_busy']);
+  });
+
+  it('holds one task per area lock (area_locked)', () => {
+    const shared = 'src/locales/en/parsers/shared.rs';
+    const s = snapshot({
+      issues: [issue(1, 'en/a'), issue(2, 'en/b', ['factory:picked']), issue(3, 'en/c'), issue(4, 'en/d', ['factory:picked'])],
+      contractList: [
+        contract('en/a', { scope: [shared] }),
+        contract('en/b', { scope: [shared, 'tests/locales/en/b.rs'] }),
+        contract('en/c', { area: 'en-casual' }),
+        contract('en/d', { area: 'en-casual' }),
+      ],
+    });
+    assert.deepEqual(reasons(run(s)), ['area_locked', 'area_locked']);
+  });
+
+  it('stops admitting human-tier work when the human queue is full (human_queue_full)', () => {
+    const waiting = [20, 21, 22, 23, 24, 25].map((n) => issue(n, null, ['needs-human']));
+    const s = snapshot({
+      issues: [issue(1, 'en/human-task'), issue(2, 'en/auto-task'), ...waiting],
+      contractList: [contract('en/human-task', { tier: 'human' }), contract('en/auto-task')],
+    });
+    const ds = run(s);
+    assert.equal(find(ds, 'human_queue_full').task, 'en/human-task');
+    assert.equal(find(ds, 'would_dispatch').task, 'en/auto-task');
+  });
+
+  it('allows human-tier work when the queue is exactly at the limit', () => {
+    const waiting = [20, 21, 22, 23, 24].map((n) => issue(n, null, ['needs-human']));
+    const s = snapshot({ issues: [issue(1, 'en/human-task'), ...waiting], contractList: [contract('en/human-task', { tier: 'human' })] });
+    assert.deepEqual(reasons(run(s)), ['would_dispatch']);
+  });
+
+  it('counts open human-tier factory PRs and needs-human PRs in the human queue', () => {
+    // 2 human-tier factory PRs (WIP 2 < 3) + 2 needs-human PRs + 2 needs-human issues = 6 > 5.
+    const humanPrs = [30, 31].map((n) => pull(n, { task_id: `en/h${n}`, contract_sha: commitSha(`en/h${n}`) }));
+    const labelled = [40, 41].map((n) => pull(n, { labels: ['needs-human'] }));
+    const s = snapshot({
+      issues: [issue(1, 'en/human-task'), issue(50, null, ['needs-human']), issue(51, null, ['needs-human'])],
+      pulls: [...humanPrs, ...labelled],
+      contractList: [contract('en/human-task', { tier: 'human' }), ...humanPrs.map((p) => contract(p.task_id!, { tier: 'human' }))],
+    });
+    assert.deepEqual(reasons(run(s)), ['human_queue_full']);
+    // Draft PRs are not waiting for review: 5 items → admitted.
+    const drafted = { ...s, pulls: [{ ...humanPrs[0]!, draft: true }, humanPrs[1]!, ...labelled] };
+    assert.deepEqual(reasons(run(drafted)), ['would_dispatch']);
+  });
+
+  it('treats auto-strict paths as human tier while start_as is human', () => {
+    const waiting = [20, 21, 22, 23, 24, 25].map((n) => issue(n, null, ['needs-human']));
+    const s = snapshot({ issues: [issue(1, 'core/x'), ...waiting], contractList: [contract('core/x', { tier: 'auto', scope: ['src/core/x.rs'] })] });
+    assert.deepEqual(reasons(run(s)), ['human_queue_full']);
+  });
+});
+
+describe('planner: task time limit', () => {
+  it('moves a task picked > 24 h ago to needs_human (task_timeout)', () => {
+    const s = snapshot({
+      issues: [issue(1, 'en/a', ['factory:picked'])],
+      contractList: [contract('en/a')],
+      history: { 'en/a': history({ picked_at: '2026-10-15T11:59:59Z' }) },
+    });
+    const d = find(run(s), 'task_timeout');
+    assert.equal(d.type, 'needs_human');
+    assert.equal(d.effect, 'label:needs-human');
+    assert.deepEqual(d.source_ids, ['I_1', 'picked:2026-10-15T11:59:59Z']);
+  });
+
+  it('does not time out at exactly 24 h, nor merged tasks', () => {
+    const s = snapshot({
+      issues: [issue(1, 'en/a', ['factory:picked'])],
+      contractList: [contract('en/a')],
+      history: { 'en/a': history({ picked_at: '2026-10-15T12:00:00Z' }) },
+    });
+    assert.deepEqual(run(s), []);
+    const merged = { ...s, pulls: [mergedPull(9, 'en/a')], history: { 'en/a': history({ picked_at: '2026-10-01T00:00:00Z' }) } };
+    assert.ok(!run(merged).some((d) => d.reason === 'task_timeout'));
+  });
+
+  it('does not re-escalate a task already labelled needs-human', () => {
+    const s = snapshot({
+      issues: [issue(1, 'en/a', ['factory:picked', 'needs-human'])],
+      contractList: [contract('en/a')],
+      history: { 'en/a': history({ picked_at: '2026-10-14T00:00:00Z' }) },
+    });
+    assert.ok(!run(s).some((d) => d.reason === 'task_timeout'));
+  });
+});
+
+describe('planner: failures', () => {
+  it('dispatches a repair for a new failure (ci_failed)', () => {
+    const d = find(run(failingPrWorld('golden:en/weekday#17')), 'ci_failed');
+    assert.equal(d.type, 'repair_dispatched');
+    assert.equal(d.effect, 'dispatch_workflow:repair');
+    assert.equal(d.attempt, 2);
+    assert.equal(d.run_id, 500);
+    assert.equal(d.failure_signature, 'golden:en/weekday#17');
+    assert.deepEqual(d.source_ids, ['500/attempts/1', 'PR_21']);
+  });
+
+  it('treats timed_out as a failure and ignores success/cancelled', () => {
+    assert.ok(run(failingPrWorld('x', history(), 'timed_out')).some((d) => d.reason === 'ci_failed'));
+    assert.deepEqual(run(failingPrWorld('x', history(), 'success')), []);
+    assert.deepEqual(run(failingPrWorld('x', history(), 'cancelled')), []);
+  });
+
+  it('sends the same signature twice to needs_human (repeated_signature)', () => {
+    const d = find(run(failingPrWorld('sig-a', history({ repairs: 1, failure_signatures: ['sig-a'] }))), 'repeated_signature');
+    assert.equal(d.type, 'needs_human');
+  });
+
+  it('stops after max_repairs (max_repairs)', () => {
+    const h = history({ repairs: 2, failure_signatures: ['a', 'b'] });
+    assert.equal(find(run(failingPrWorld('c', h)), 'max_repairs').type, 'needs_human');
+    assert.ok(run(failingPrWorld('c', history({ repairs: 1, failure_signatures: ['a'] }))).some((d) => d.reason === 'ci_failed'));
+  });
+
+  it('sends a failure without a signature to needs_human (missing_failure_signature)', () => {
+    assert.equal(find(run(failingPrWorld(null)), 'missing_failure_signature').type, 'needs_human');
+  });
+
+  it('stops repairs when the per-task budget is spent (task_budget_exhausted)', () => {
+    const d = find(run(failingPrWorld('z', history({ aic_spent: 1000 }))), 'task_budget_exhausted');
+    assert.equal(d.type, 'needs_human');
+  });
+
+  it('does not repeat a repair already dispatched for that run', () => {
+    assert.deepEqual(run(failingPrWorld('z', history({ repairs: 1, repaired_run_ids: [500], failure_signatures: ['y'] }))), []);
+  });
+
+  it('only looks at the run for the current head SHA', () => {
+    const s = failingPrWorld('z');
+    s.check_runs[0]!.head_sha = hex40('9');
+    assert.deepEqual(run(s), []);
+  });
+
+  it('gates repairs on busy Actions (actions_busy)', () => {
+    const s = failingPrWorld('z');
+    s.busy_jobs = 20;
+    assert.deepEqual(reasons(run(s)), ['actions_busy']);
+  });
+});
+
+describe('planner: contract freshness', () => {
+  const c = contract('en/weekday-parser');
+  const world = (sha: string | null, contracts = [c]): Snapshot =>
+    snapshot({ pulls: [pull(21, { task_id: 'en/weekday-parser', contract_sha: sha })], contractList: contracts });
+
+  it('accepts the full SHA and a ≥7 char prefix', () => {
+    assert.deepEqual(run(world(c.last_commit_sha)), []);
+    assert.deepEqual(run(world(c.last_commit_sha.slice(0, 7))), []);
+  });
+
+  it('flags a different SHA as stale (contract_changed)', () => {
+    const d = find(run(world('0000000')), 'contract_changed');
+    assert.equal(d.type, 'stale_contract');
+    assert.equal(d.contract_sha, c.last_commit_sha);
+    assert.equal(d.effect, 'label:stale-contract');
+  });
+
+  it('does not accept the blob SHA in place of the commit SHA', () => {
+    assert.equal(find(run(world(c.blob_sha)), 'contract_changed').type, 'stale_contract');
+  });
+
+  it('blocks a factory PR that does not declare Contract-SHA (missing_contract_sha)', () => {
+    assert.equal(find(run(world(null)), 'missing_contract_sha').type, 'blocked');
+  });
+
+  it('flags a PR whose contract was withdrawn (contract_missing)', () => {
+    assert.equal(find(run(world(c.last_commit_sha, [])), 'contract_missing').type, 'stale_contract');
+  });
+
+  it('blocks a PR whose contract is invalid (invalid_contract)', () => {
+    assert.equal(find(run(world(c.last_commit_sha, [{ ...c, valid: false }])), 'invalid_contract').type, 'blocked');
+  });
+
+  it('ignores PRs without Factory-Task and PRs already labelled needs-human', () => {
+    const s = snapshot({
+      pulls: [pull(1), pull(2, { task_id: 'en/weekday-parser', contract_sha: '0000000', labels: ['needs-human'] })],
+      contractList: [c],
+    });
+    assert.deepEqual(run(s), []);
+  });
+});
