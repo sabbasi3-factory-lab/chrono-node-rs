@@ -1,0 +1,81 @@
+{
+  "repo": "sabbasi3-factory-lab/chrono-node-rs",
+  "fetched_at": "2026-10-16T12:00:00Z",
+  "issues": [
+    { "number": 10, "node_id": "I_fixture10", "labels": ["factory:ready"], "task_id": "en/casual-date", "marker_status": "ok" },
+    { "number": 11, "node_id": "I_fixture11", "labels": ["factory:ready"], "task_id": "en/time-expression", "marker_status": "ok" },
+    { "number": 12, "node_id": "I_fixture12", "labels": ["factory:ready"], "task_id": null, "marker_status": "missing" },
+    { "number": 13, "node_id": "I_fixture13", "labels": ["factory:picked"], "task_id": "en/weekday-parser", "marker_status": "ok" }
+  ],
+  "pulls": [
+    {
+      "number": 20, "node_id": "PR_fixture20", "state": "merged", "draft": false,
+      "author": "sabbasi3", "author_is_bot": false,
+      "head_sha": "1111111111111111111111111111111111111111",
+      "created_at": "2026-10-16T09:00:00Z", "merged_at": "2026-10-16T11:00:00Z",
+      "merge_commit_sha": "2222222222222222222222222222222222222222",
+      "labels": [], "task_id": "core/results", "contract_sha": "aaaaaaa", "attempt": null,
+      "reviews": [],
+      "merge_queue_events": [
+        { "node_id": "AMQE_fixture1", "kind": "queued", "created_at": "2026-10-16T10:40:00Z", "actor": "sabbasi3" },
+        { "node_id": "RMQE_fixture1", "kind": "dequeued", "created_at": "2026-10-16T11:00:00Z", "actor": null }
+      ]
+    },
+    {
+      "number": 21, "node_id": "PR_fixture21", "state": "open", "draft": false,
+      "author": "sabbasi3-factory-agent[bot]", "author_is_bot": true,
+      "head_sha": "3333333333333333333333333333333333333333",
+      "created_at": "2026-10-16T10:00:00Z", "merged_at": null, "merge_commit_sha": null,
+      "labels": [], "task_id": "en/weekday-parser", "contract_sha": "bbbbbbb", "attempt": 1,
+      "reviews": [
+        { "node_id": "PRR_fixture1", "author": "sabbasi3", "author_is_bot": false, "state": "APPROVED", "submitted_at": "2026-10-16T11:30:00Z" },
+        { "node_id": "PRR_fixture2", "author": "copilot-pull-request-reviewer[bot]", "author_is_bot": true, "state": "COMMENTED", "submitted_at": "2026-10-16T10:05:00Z" }
+      ],
+      "merge_queue_events": []
+    }
+  ],
+  "main_sha": "abababababababababababababababababababab",
+  "contracts": {
+    "contracts/core/results.yaml": {
+      "path": "contracts/core/results.yaml", "blob_sha": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0",
+      "last_commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "valid": true, "id": "core/results", "tier": "human",
+      "depends_on": [], "scope": ["src/core/results.rs"], "priority": 1, "area": "core"
+    },
+    "contracts/en/weekday-parser.yaml": {
+      "path": "contracts/en/weekday-parser.yaml", "blob_sha": "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+      "last_commit_sha": "cccccccccccccccccccccccccccccccccccccccc", "valid": true, "id": "en/weekday-parser", "tier": "auto",
+      "depends_on": ["core/results"], "scope": ["src/locales/en/parsers/weekday.rs", "tests/locales/en/weekday.rs"], "priority": 2, "area": null
+    },
+    "contracts/en/casual-date.yaml": {
+      "path": "contracts/en/casual-date.yaml", "blob_sha": "c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2",
+      "last_commit_sha": "dddddddddddddddddddddddddddddddddddddddd", "valid": true, "id": "en/casual-date", "tier": "auto",
+      "depends_on": ["core/results"], "scope": ["src/locales/en/parsers/casual_date.rs", "tests/locales/en/casual_date.rs"], "priority": 3, "area": null
+    },
+    "contracts/en/time-expression.yaml": {
+      "path": "contracts/en/time-expression.yaml", "blob_sha": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+      "last_commit_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "valid": true, "id": "en/time-expression", "tier": "auto",
+      "depends_on": ["en/weekday-parser"], "scope": ["src/locales/en/parsers/time_expression.rs"], "priority": 4, "area": null
+    }
+  },
+  "check_runs": [
+    {
+      "run_id": 900001, "run_attempt": 1, "workflow": "ci", "event": "pull_request",
+      "head_sha": "3333333333333333333333333333333333333333",
+      "candidate_sha": "3333333333333333333333333333333333333333", "pull_requests": [21],
+      "status": "completed", "conclusion": "success",
+      "created_at": "2026-10-16T10:01:00Z", "updated_at": "2026-10-16T10:12:00Z",
+      "heldout_seed": "18446744073709551615", "failure_signature": null
+    },
+    {
+      "run_id": 900002, "run_attempt": 1, "workflow": "ci", "event": "merge_group",
+      "head_sha": "4444444444444444444444444444444444444444",
+      "candidate_sha": "4444444444444444444444444444444444444444", "pull_requests": [],
+      "status": "completed", "conclusion": "success",
+      "created_at": "2026-10-16T10:41:00Z", "updated_at": "2026-10-16T10:55:00Z",
+      "heldout_seed": "42", "failure_signature": null
+    }
+  ],
+  "busy_jobs": 3,
+  "factory_aic_today": 8500,
+  "history": {}
+}

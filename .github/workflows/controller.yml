@@ -1,0 +1,89 @@
+name: controller
+
+# Factory controller v1 (DESIGN §7, §11): plain code, no AI, dry-run only.
+# It plans and logs decisions; the only thing it writes is the audit log on
+# the protected `audit` branch, using the controller GitHub App token.
+#
+# Security notes:
+# - `pull_request_target` (never `pull_request`) so a PR can never run a
+#   modified controller with the App key. PR code is NEVER checked out.
+# - `pull_request_review` is intentionally not a trigger; reviews are
+#   observed by polling.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+  issues:
+    types: [labeled, unlabeled]
+  workflow_run:
+    workflows: ["ci", "gates"]
+    types: [completed]
+  pull_request_target:
+    types: [opened, reopened, closed, enqueued, dequeued, ready_for_review]
+  push:
+    branches: [main]
+    paths: ["contracts/**"]
+
+concurrency:
+  group: factory-controller
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: read
+  checks: read
+
+jobs:
+  controller:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: .github/factory/controller
+    steps:
+      - name: Check out main (never PR code)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Set up Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: .github/factory/controller/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Unit tests (fail closed)
+        run: npm test
+
+      # The App token is minted only after install and tests, so no third-party
+      # code runs while it exists except the controller itself.
+      - name: Create controller App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-contents: write
+          permission-actions: read
+          permission-issues: read
+          permission-pull-requests: read
+
+      - name: Run controller (dry-run)
+        run: node main.ts
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
