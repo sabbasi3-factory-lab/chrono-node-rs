@@ -117,14 +117,36 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
   is shorter than the 7 days of loaded history, so a fact is always found by the dedupe check.
 - **Merge queue:** queue entries and exits come from PR timeline items `AddedToMergeQueueEvent` and
   `RemovedFromMergeQueueEvent` (GraphQL).
-- **Held-out seed:** read from the `checks` job log of each `ci` run
-  (`GET /repos/{o}/{r}/actions/jobs/{id}/logs`).
-  - It must be an exact line `factory-heldout-seed: <decimal>`, after the Actions timestamp prefix.
-  - Lines printed inside a step whose `##[group]Run …` command passes `--seed` are ignored. That step is
-    the reproducible contract-seeded comparison, which prints its seed in the same format.
-  - Conflicting values are dropped.
-  - It is stored as a decimal **string** because it may exceed 2^53.
-  - Logs are read once per run attempt. After that, the recorded value is reused.
+- **Held-out seed (commit–reveal, trusted):** the `checks` job runs PR code, so no line it prints after
+  that code starts is trusted on its own.
+  - **Only changes that leave `.github/` alone.** A `pull_request` run executes the PR's (merged) copy
+    of the workflow, so a change to the workflow, or anything it could use, could forge the record. The
+    controller asks the compare API for the change under test (`main...<run head>`: the PR's own
+    changes since its merge base). If any file, or either side of a rename, is under `.github/`, or the
+    list can't be checked (error, 300+ files), it records **no** seed and **no** signature and doesn't
+    read the log. Then `needs_human/missing_heldout_seed` applies.
+  - The job's **first** step (`Held-out seed commitment (trusted, before any PR code)`) runs before
+    checkout. It prints only `factory-heldout-commit: <sha256("<salt>:<seed>")>` and writes the seed
+    and salt to private files. Later steps read them into non-exported shell variables, so they're never
+    in a step header or a child process environment before the reveal.
+  - After the run, a final step reveals them: `factory-heldout-seed: <n>` and `factory-heldout-salt: <hex>`.
+  - The controller records a seed only if the first step really is that step and succeeded (jobs API),
+    exactly one commitment line exists and it's inside the first `##[group]Run` section, no commitment
+    line appears anywhere else, and exactly one revealed seed/salt pair hashes to it. Otherwise the
+    seed is `null`.
+  - It is stored as a decimal **string**. Logs are read once per run attempt; then the recorded value is reused.
+  - **No seed ⇒ a human looks.** A factory PR whose newest `ci` run finished `success` or `failure`
+    without a trusted seed (missing, forged, ambiguous or unrevealed commitment, or a `.github/` change)
+    goes to `needs_human/missing_heldout_seed`, whatever the result.
+  - **What it proves, and what it doesn't.** Commit–reveal proves *which* seed the trusted first step
+    generated, and that the recorded seed wasn't chosen by PR code. It does **not** prove the comparison
+    really ran with that seed, or honestly: the `checks` job runs PR code, which can read files on the
+    runner and change later steps. The trusted verdicts stay with `gates` (scope, contract, identifiers,
+    deny) and with a human review.
+- **Failure signature (trusted; only when the change leaves `.github/` alone; coarse, per step):** derived from the runner-reported step results of the `checks` job
+  (jobs API), never from log text: `step:<slug of the first failed step>`, or `job:<conclusion>` when the
+  job failed without a failed step. It is coarser than a per-case signature (two different golden
+  failures in one step share a signature), which errs towards `needs_human`.
 - **Heartbeat:** written when the newest heartbeat in the loaded log is ≥ 55 minutes old, or missing.
   Its dedupe key is the UTC hour, so two runs in the same hour can't both write one.
 
@@ -138,9 +160,10 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `dispatched` | `would_dispatch` | admitted ready task passes every gate | `dispatch_workflow:implement` (attempt 1, `contract_sha` = contract commit SHA) |
 | `repair_dispatched` | `ci_failed` | the newest `ci` run on the PR head failed, with a new signature and repairs < `max_repairs` | `dispatch_workflow:repair` |
 | `needs_human` | `gates_failed` | the newest `gates` run for the PR head failed (policy: scope, Contract-SHA, identifiers). It is never repaired. | `label:needs-human` |
-| `needs_human` | `repeated_signature` | same failure signature seen before | `label:needs-human` |
+| `needs_human` | `repeated_signature` | same failure signature seen before. Signatures are **per step** (coarse): two different failures in one step count as a repeat | `label:needs-human` |
 | `needs_human` | `max_repairs` | repairs ≥ `limits.task.max_repairs` | `label:needs-human` |
-| `needs_human` | `missing_failure_signature` | failed run without a `factory-failure-signature:` line (fail closed) | `label:needs-human` |
+| `needs_human` | `missing_heldout_seed` | the newest `ci` run on the PR head finished (`success`/`failure`) without a trusted held-out seed (see "Held-out seed" below); checked before any repair | `label:needs-human` |
+| `needs_human` | `missing_failure_signature` | failed run whose signature can't be derived from the `checks` job's step results (fail closed) | `label:needs-human` |
 | `needs_human` | `task_budget_exhausted` | task AIC ≥ `budgets.per_task.max_aic` | `label:needs-human` |
 | `needs_human` | `task_timeout` | picked > `max_wall_clock_hours` ago and not merged | `label:needs-human` |
 | `needs_human` | `pick_time_unknown` | issue has `factory:picked` but no pick time in the history window, so it could never time out (fail closed) | `label:needs-human` |

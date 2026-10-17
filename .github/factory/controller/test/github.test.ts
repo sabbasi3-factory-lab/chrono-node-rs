@@ -1,16 +1,22 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { describe, it } from 'node:test';
 import {
   assertAllowedRequest,
   createClient,
   GitHubApiError,
   MAX_HEAD_LOOKUPS,
+  leavesGithubDirAlone,
   mapPull,
   nextPathFromLink,
   paginate,
-  parseCheckLog,
+  failureSignatureFromSteps,
+  HELDOUT_COMMIT_STEP,
+  parseHeldoutSeed,
+  trustedCommitStepRan,
   readBusyJobs,
   readCheckRuns,
+  readChecksJobLog,
   RECENT_RUN_PAGES,
   readSnapshot,
   uncheckedHeads,
@@ -109,39 +115,74 @@ describe('client', () => {
   });
 });
 
-describe('check log parsing (held-out seed)', () => {
-  it('extracts the exact seed line after the timestamp prefix, as a decimal string', () => {
-    const log = [
-      '2026-10-16T11:00:00.0000000Z ##[group]Run echo "factory-heldout-seed: $SEED"',
-      '2026-10-16T11:00:00.0000000Z \u001b[36;1mecho "factory-heldout-seed: $SEED"\u001b[0m',
-      '2026-10-16T11:00:01.0000000Z factory-heldout-seed: 18446744073709551615',
-      '2026-10-16T11:00:02.0000000Z factory-failure-signature: golden:en/weekday#17',
+describe('trusted held-out seed (commit–reveal) and failure signature', () => {
+  const commitFor = (salt: string, seed: string) => createHash('sha256').update(`${salt}:${seed}`).digest('hex');
+  const SALT = '0123456789abcdef0123456789abcdef';
+  const SEED = '3141592653';
+  const ts = (n: number) => `2026-10-16T11:00:${String(n).padStart(2, '0')}.0000000Z `;
+  /** A checks-job log: the trusted first step, then PR steps (with `extra` output), then the reveal. */
+  const jobLog = (opts: { commitLines?: string[]; extra?: string[]; reveal?: string[] } = {}) =>
+    [
+      `${ts(0)}##[group]Run seed=$(od -An -N4 -tu4 /dev/urandom | tr -d ' \\n')`,
+      `${ts(0)}\u001b[36;1mecho "factory-heldout-commit: $commit"\u001b[0m`,
+      `${ts(0)}##[endgroup]`,
+      ...(opts.commitLines ?? [`${ts(1)}factory-heldout-commit: ${commitFor(SALT, SEED)}`]),
+      `${ts(2)}##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1`,
+      ...(opts.extra ?? []).map((l) => `${ts(3)}${l}`),
+      `${ts(4)}##[group]Run node compare/compare.js --seed "$HELDOUT_SEED" --phrases 2000`,
+      `${ts(5)}factory-comparison-seed: ${SEED}`,
+      `${ts(6)}##[group]Run echo "factory-heldout-seed: $HELDOUT_SEED"`,
+      ...(opts.reveal ?? [`${ts(7)}factory-heldout-seed: ${SEED}`, `${ts(7)}factory-heldout-salt: ${SALT}`]),
     ].join('\n');
-    assert.deepEqual(parseCheckLog(log), { heldout_seed: '18446744073709551615', failure_signature: 'golden:en/weekday#17' });
+
+  it('accepts the revealed seed that matches the first step\'s single commitment', () => {
+    assert.equal(parseHeldoutSeed(jobLog()), SEED);
   });
 
-  it('ignores the seed printed by the contract-seeded (--seed) comparison step', () => {
-    const log = [
-      '2026-10-16T11:00:00.0000000Z ##[group]Run node compare/compare.js --seed "$SEED" --phrases "$PHRASES" --rust ../target/debug/chrono-rs-json',
-      '2026-10-16T11:00:00.1000000Z ##[endgroup]',
-      '2026-10-16T11:00:05.0000000Z factory-heldout-seed: 42',
-      '2026-10-16T11:00:06.0000000Z ##[group]Run node compare/compare.js --phrases 2000 --rust ../target/debug/chrono-rs-json',
-      '2026-10-16T11:00:06.1000000Z ##[endgroup]',
-      '2026-10-16T11:00:09.0000000Z factory-heldout-seed: 3141592653',
-    ].join('\n');
-    assert.equal(parseCheckLog(log).heldout_seed, '3141592653');
-    // Without step markers, two different seeds conflict → null.
-    assert.equal(parseCheckLog('factory-heldout-seed: 42\nfactory-heldout-seed: 3141592653').heldout_seed, null);
+  it('ignores forged reveals from PR code (they do not match the commitment)', () => {
+    const forged = ['factory-heldout-seed: 42', `factory-heldout-salt: ${'f'.repeat(32)}`];
+    assert.equal(parseHeldoutSeed(jobLog({ extra: forged })), SEED);
   });
 
-  it('ignores near-misses and fails closed on conflicting values', () => {
-    assert.equal(parseCheckLog('factory-heldout-seed: 12 extra').heldout_seed, null);
-    assert.equal(parseCheckLog('factory-heldout-seed: -1').heldout_seed, null);
-    assert.equal(parseCheckLog('factory-heldout-seed: 012').heldout_seed, null);
-    assert.equal(parseCheckLog('x factory-heldout-seed: 12').heldout_seed, null);
-    assert.equal(parseCheckLog('factory-heldout-seed: 1\nfactory-heldout-seed: 2').heldout_seed, null);
-    assert.equal(parseCheckLog('factory-heldout-seed: 7\r\nfactory-heldout-seed: 7').heldout_seed, '7');
-    assert.equal(parseCheckLog('factory-failure-signature: has spaces').failure_signature, null);
+  it('fails closed on a commitment printed outside the first step, or on none, or two', () => {
+    const fake = `factory-heldout-commit: ${commitFor('a'.repeat(32), '42')}`;
+    assert.equal(parseHeldoutSeed(jobLog({ extra: [fake, 'factory-heldout-seed: 42', `factory-heldout-salt: ${'a'.repeat(32)}`] })), null);
+    assert.equal(parseHeldoutSeed(jobLog({ commitLines: [] })), null);
+    assert.equal(parseHeldoutSeed(jobLog({ commitLines: [`${ts(1)}factory-heldout-commit: ${commitFor(SALT, SEED)}`, `${ts(1)}factory-heldout-commit: ${commitFor(SALT, '7')}`] })), null);
+  });
+
+  it('returns null without a matching reveal (wrong salt, missing salt, or no reveal at all)', () => {
+    assert.equal(parseHeldoutSeed(jobLog({ reveal: [`factory-heldout-seed: ${SEED}`, `factory-heldout-salt: ${'0'.repeat(32)}`] })), null);
+    assert.equal(parseHeldoutSeed(jobLog({ reveal: [`factory-heldout-seed: ${SEED}`] })), null);
+    assert.equal(parseHeldoutSeed(jobLog({ reveal: [] })), null);
+  });
+
+  it('ignores near-miss lines', () => {
+    assert.equal(parseHeldoutSeed(jobLog({ reveal: [`x factory-heldout-seed: ${SEED}`, `factory-heldout-salt: ${SALT}`] })), null);
+    assert.equal(parseHeldoutSeed(jobLog({ reveal: [`factory-heldout-seed: 0${SEED}`, `factory-heldout-salt: ${SALT}`] })), null);
+    assert.equal(parseHeldoutSeed(jobLog({ reveal: [`factory-heldout-seed: ${SEED}\r`, `factory-heldout-salt: ${SALT}\r`] })), SEED);
+  });
+
+  it('checks that the first step is the trusted commitment step and that it succeeded', () => {
+    const step = (number: number, name: string, conclusion = 'success') => ({ number, name, conclusion });
+    assert.ok(trustedCommitStepRan([step(1, 'Set up job'), step(2, HELDOUT_COMMIT_STEP), step(3, 'Run actions/checkout')]));
+    assert.ok(!trustedCommitStepRan([step(1, 'Set up job'), step(2, 'Run actions/checkout'), step(3, HELDOUT_COMMIT_STEP)]));
+    assert.ok(!trustedCommitStepRan([step(1, 'Set up job'), step(2, HELDOUT_COMMIT_STEP, 'failure')]));
+    assert.ok(!trustedCommitStepRan([]));
+  });
+
+  it('derives the failure signature from runner-reported step results only', () => {
+    const steps = [
+      { number: 1, name: 'Set up job', conclusion: 'success' },
+      { number: 7, name: 'Whole-crate golden suite (no regressions)', conclusion: 'failure' },
+      { number: 9, name: 'Doc tests', conclusion: 'failure' },
+    ];
+    assert.equal(failureSignatureFromSteps(steps, 'failure'), 'step:whole-crate-golden-suite-no-regressions');
+    assert.equal(failureSignatureFromSteps([...steps].reverse(), 'failure'), 'step:whole-crate-golden-suite-no-regressions');
+    assert.equal(failureSignatureFromSteps([{ number: 1, name: 'Set up job', conclusion: 'success' }], 'timed_out'), 'job:timed_out');
+    assert.equal(failureSignatureFromSteps(steps, 'success'), null);
+    assert.equal(failureSignatureFromSteps(steps, 'cancelled'), null);
+    assert.equal(failureSignatureFromSteps(steps, null), null);
   });
 });
 
@@ -293,5 +334,70 @@ describe('independent review (follow-up): truncated run lookup', () => {
     assert.deepEqual(unchecked, [...heads].sort().slice(MAX_HEAD_LOOKUPS));
     assert.deepEqual(uncheckedHeads(new Set(['not-a-sha', hex40('1')])), ['not-a-sha']);
     assert.deepEqual(uncheckedHeads(new Set([hex40('1')])), []);
+  });
+});
+
+describe('readChecksJobLog (trusted sources only)', () => {
+  it('derives the signature from step results and never reads the log when the trusted first step did not run', async () => {
+    const gh = new FakeGitHub(REPO);
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/actions/runs/7/attempts/1/jobs$`), () => ({
+      data: {
+        jobs: [
+          {
+            id: 70,
+            name: 'checks',
+            conclusion: 'failure',
+            steps: [
+              { number: 1, name: 'Set up job', conclusion: 'success' },
+              { number: 2, name: 'Run actions/checkout@v7', conclusion: 'success' },
+              { number: 3, name: 'cargo clippy -D warnings', conclusion: 'failure' },
+            ],
+          },
+        ],
+      },
+    }));
+    const r = await readChecksJobLog(gh, REPO, 7, 1);
+    assert.deepEqual(r, { heldout_seed: null, failure_signature: 'step:cargo-clippy-d-warnings' });
+    assert.ok(!gh.calls.some((c) => c.path.includes('/logs')), 'no log read without the trusted step');
+  });
+});
+
+describe('CI signals only when the change leaves .github/ alone (review #22)', () => {
+  const compareRoute = new RegExp(`^/repos/${REPO}/compare/`);
+  const read = async (gh: FakeGitHub) => {
+    const s = await readSnapshot(gh, { repo: REPO, now: NOW, windowHours: 24, recordedChecks: new Map(), historyTasks: [], needBusyJobs: false });
+    return s.check_runs.find((r) => r.run_id === 4242)!;
+  };
+  const withFiles = (files: unknown, status = 200): FakeGitHub => {
+    const gh = fakeWorld();
+    gh.routes.unshift({ method: 'GET', path: compareRoute, handler: () => ({ status, data: { files } }) });
+    return gh;
+  };
+
+  it('records the seed when the diff from main leaves .github/ alone', async () => {
+    assert.equal((await read(fakeWorld())).heldout_seed, '9007199254740993');
+  });
+
+  it('records no seed and no signature (and reads no log) when the diff touches .github/, or can\'t be checked', async () => {
+    const cases: FakeGitHub[] = [
+      withFiles([{ filename: '.github/workflows/ci.yml' }]),
+      withFiles([{ filename: 'src/x.rs', previous_filename: '.github/actions/a.yml' }]),
+      withFiles([{ filename: '.github' }]),
+      withFiles(Array.from({ length: 300 }, (_, i) => ({ filename: `src/f${i}.rs` }))),
+      withFiles(null),
+      withFiles([], 404),
+    ];
+    for (const gh of cases) {
+      const r = await read(gh);
+      assert.equal(r.heldout_seed, null);
+      assert.equal(r.failure_signature, null);
+      assert.ok(!gh.calls.some((c) => c.path.includes('/jobs/99/logs')), 'no log read');
+    }
+  });
+
+  it('leavesGithubDirAlone: same commit is fine; malformed SHAs are not', async () => {
+    const gh = fakeWorld();
+    assert.equal(await leavesGithubDirAlone(gh, REPO, hex40('1'), hex40('1')), true);
+    assert.equal(await leavesGithubDirAlone(gh, REPO, 'main', hex40('1')), false);
   });
 });
