@@ -4,6 +4,7 @@ import {
   assertAllowedRequest,
   createClient,
   GitHubApiError,
+  MAX_HEAD_LOOKUPS,
   mapPull,
   nextPathFromLink,
   paginate,
@@ -12,6 +13,7 @@ import {
   readCheckRuns,
   RECENT_RUN_PAGES,
   readSnapshot,
+  uncheckedHeads,
 } from '../github.ts';
 import { FakeGitHub } from '../fake.ts';
 import type { RecordedCheck } from '../github.ts';
@@ -281,5 +283,15 @@ describe('review fix 4: run discovery without a creation cutoff', () => {
     const listCalls = gh.calls.filter((c) => c.path.startsWith(`/repos/${REPO}/actions/runs?`));
     assert.equal(listCalls.filter((c) => !c.path.includes('head_sha=')).length, 3);
     assert.equal(listCalls.filter((c) => c.path.includes('head_sha=')).length, 30);
+  });
+});
+
+describe('independent review (follow-up): truncated run lookup', () => {
+  it('reports heads beyond MAX_HEAD_LOOKUPS (and non-SHA heads) as unchecked', () => {
+    const heads = new Set(Array.from({ length: MAX_HEAD_LOOKUPS + 2 }, (_, i) => i.toString(16).padStart(40, '0')));
+    const unchecked = uncheckedHeads(heads);
+    assert.deepEqual(unchecked, [...heads].sort().slice(MAX_HEAD_LOOKUPS));
+    assert.deepEqual(uncheckedHeads(new Set(['not-a-sha', hex40('1')])), ['not-a-sha']);
+    assert.deepEqual(uncheckedHeads(new Set([hex40('1')])), []);
   });
 });

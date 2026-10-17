@@ -89,7 +89,27 @@ describe('history (from audit events)', () => {
 
   it('ignores dry-run events entirely', () => {
     const d = deriveState([ev('dispatched', '2026-10-16T01:00:00Z', { task: 'en/a', dry_run: true }), ev('run_finished', '2026-10-16T02:00:00Z', { task: 'en/a', aic: 50, dry_run: true })], NOW);
-    assert.deepEqual(d, { history: {}, factory_aic_today: 0 });
+    assert.deepEqual(d, { history: {}, factory_aic_today: null });
+  });
+
+  it('spend is unknown (null) without a spend_snapshot for today, even with run_finished events (fail closed)', () => {
+    assert.equal(deriveState([], NOW).factory_aic_today, null);
+    assert.equal(deriveState([ev('run_finished', '2026-10-16T02:00:00Z', { task: 'en/a', aic: 40 })], NOW).factory_aic_today, null);
+    // yesterday's snapshot, a snapshot for another day, a bad value, and a dry-run snapshot don't count
+    const notToday = [
+      ev('spend_snapshot', '2026-10-15T23:00:00Z', { day: '2026-10-15', aic_today: 10 }),
+      ev('spend_snapshot', '2026-10-16T01:00:00Z', { day: '2026-10-15', aic_today: 10 }),
+      ev('spend_snapshot', '2026-10-16T01:30:00Z', { day: '2026-10-16', aic_today: -1 }),
+      ev('spend_snapshot', '2026-10-16T01:45:00Z', { day: '2026-10-16', aic_today: 5, dry_run: true }),
+    ];
+    assert.equal(deriveState(notToday, NOW).factory_aic_today, null);
+  });
+
+  it('with a spend_snapshot for today: the larger of the newest snapshot and the run_finished sum', () => {
+    const snap = (ts: string, aic: number) => ev('spend_snapshot', ts, { day: '2026-10-16', aic_today: aic });
+    assert.equal(deriveState([snap('2026-10-16T00:05:00Z', 0)], NOW).factory_aic_today, 0);
+    assert.equal(deriveState([snap('2026-10-16T01:00:00Z', 300), snap('2026-10-16T02:00:00Z', 120), ev('run_finished', '2026-10-16T02:30:00Z', { aic: 40 })], NOW).factory_aic_today, 120);
+    assert.equal(deriveState([snap('2026-10-16T01:00:00Z', 20), ev('run_finished', '2026-10-16T02:30:00Z', { aic: 40 })], NOW).factory_aic_today, 40);
   });
 
   it('derives picked_at, repairs, signatures and spend from real events', () => {
@@ -100,6 +120,7 @@ describe('history (from audit events)', () => {
         ev('repair_dispatched', '2026-10-16T01:00:00Z', { task: 'en/a', run_id: 9, failure_signature: 'sig' }),
         ev('run_finished', '2026-10-16T02:00:00Z', { task: 'en/a', aic: 40 }),
         ev('run_finished', '2026-10-16T03:00:00Z', { aic: 10 }),
+        ev('spend_snapshot', '2026-10-16T00:05:00Z', { day: '2026-10-16', aic_today: 0 }),
       ],
       NOW,
     );

@@ -1,5 +1,7 @@
 // Canned GitHub API responses for a small repo, served by FakeGitHub.
 
+import { auditPathFor, buildEvent, commitMessage, dedupeKey } from '../audit.ts';
+import { canonicalize } from '../canonical.ts';
 import { FakeGitHub } from '../fake.ts';
 import { hex40, REPO } from './helpers.ts';
 
@@ -120,4 +122,25 @@ export function fakeWorld(opts: WorldOptions = {}): FakeGitHub {
   }));
   gh.addRoute('GET', /^\/orgs\/sabbasi3-factory-lab\/repos$/, () => ({ data: [{ full_name: REPO, archived: false }] }));
   return gh;
+}
+
+/**
+ * Puts one real (non-dry-run) `spend_snapshot` event for the given time's UTC day
+ * on the fake audit branch, as the outcomes collector would. Without it,
+ * today's spend is unknown and the planner never dispatches (fail closed).
+ */
+export async function seedSpendSnapshot(gh: FakeGitHub, at: string, aicToday = 0): Promise<void> {
+  const r = `/repos/${REPO}/git`;
+  const event = buildEvent({
+    type: 'spend_snapshot',
+    timestamp: at,
+    parents: [],
+    payload: { day: at.slice(0, 10), aic_today: aicToday, dedupe_key: dedupeKey('spend_snapshot', [at]), factory_version: 'seed', dry_run: false },
+  });
+  const path = auditPathFor(at);
+  const blob = (await gh.request('POST', `${r}/blobs`, { body: { content: `${canonicalize(event)}\n` } })).data as { sha: string };
+  const tree = (await gh.request('POST', `${r}/trees`, { body: { tree: [{ path, sha: blob.sha }] } })).data as { sha: string };
+  const commit = (await gh.request('POST', `${r}/commits`, { body: { tree: tree.sha, parents: [], message: commitMessage('spend_snapshot', event.sha, path) } })).data as { sha: string };
+  gh.refs.set('heads/audit', commit.sha);
+  gh.calls.length = 0; // seeding is setup, not controller behaviour
 }

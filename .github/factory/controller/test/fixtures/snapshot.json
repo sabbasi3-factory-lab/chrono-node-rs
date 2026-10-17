@@ -75,7 +75,10 @@
       "heldout_seed": "42", "failure_signature": null
     }
   ],
+  "unchecked_heads": [],
   "busy_jobs": 3,
   "factory_aic_today": 8500,
-  "history": {}
+  "history": {
+    "en/weekday-parser": { "picked_at": "2026-10-16T09:00:00Z", "repairs": 0, "failure_signatures": [], "repaired_run_ids": [], "aic_spent": 0 }
+  }
 }

@@ -7,13 +7,19 @@ import { isTaskId } from './tasks.ts';
 
 export interface DerivedState {
   history: Record<string, TaskHistory>;
-  factory_aic_today: number;
+  /**
+   * Null (unknown) unless a `spend_snapshot` record for today exists: the absence
+   * of `run_finished` events is not proof that nothing was spent (fail closed).
+   * When known: max(newest snapshot's `aic_today`, sum of today's `run_finished`).
+   */
+  factory_aic_today: number | null;
 }
 
 export function deriveState(events: AuditEvent[], now: Date): DerivedState {
   const history: Record<string, TaskHistory> = {};
   const day = now.toISOString().slice(0, 10);
   let aicToday = 0;
+  let snapshotToday: number | null = null;
   const entry = (task: string): TaskHistory =>
     (history[task] ??= { picked_at: null, repairs: 0, failure_signatures: [], repaired_run_ids: [], aic_spent: 0 });
 
@@ -43,9 +49,16 @@ export function deriveState(events: AuditEvent[], now: Date): DerivedState {
         if (e.timestamp.startsWith(day)) aicToday += aic;
         break;
       }
+      case 'spend_snapshot': {
+        const aic = e.payload.aic_today;
+        if (e.payload.day !== day || !e.timestamp.startsWith(day)) break;
+        if (typeof aic !== 'number' || !Number.isFinite(aic) || aic < 0) break;
+        snapshotToday = aic; // events are in log order: the newest wins
+        break;
+      }
       default:
         break;
     }
   }
-  return { history, factory_aic_today: aicToday };
+  return { history, factory_aic_today: snapshotToday === null ? null : Math.max(snapshotToday, aicToday) };
 }

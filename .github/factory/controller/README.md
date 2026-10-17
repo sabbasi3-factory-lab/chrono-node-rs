@@ -143,6 +143,7 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `needs_human` | `missing_failure_signature` | failed run without a `factory-failure-signature:` line (fail closed) | `label:needs-human` |
 | `needs_human` | `task_budget_exhausted` | task AIC ≥ `budgets.per_task.max_aic` | `label:needs-human` |
 | `needs_human` | `task_timeout` | picked > `max_wall_clock_hours` ago and not merged | `label:needs-human` |
+| `needs_human` | `pick_time_unknown` | issue has `factory:picked` but no pick time in the history window, so it could never time out (fail closed) | `label:needs-human` |
 | `stale_contract` | `contract_changed` | PR `Contract-SHA:` isn't a ≥7-hex prefix of the contract's last commit SHA on main | `label:stale-contract` |
 | `stale_contract` | `contract_missing` | the PR's contract is gone from main | `label:stale-contract` |
 | `blocked` | `missing_contract_sha` | factory PR without `Contract-SHA:` | `label:blocked` |
@@ -153,6 +154,8 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `budget_alert` | `budget_alert` | factory AIC today ≥ `alert_at_pct` | `alert:owner` |
 | `budget_pause` | `budget_pause` | factory AIC today ≥ `pause_at_pct` | `pause_dispatch` |
 | `kill_switch` | `kill_switch` | something would be dispatched but `FACTORY_ENABLED` isn't exactly `"true"` | none (one aggregated decision) |
+| `wait` | `gates_pending` | a `ci` failure, but the newest `gates` run on the head is missing, unfinished or not `success`: nothing is repaired until gates pass | nothing (logged, **not** recorded) |
+| `wait` | `check_runs_incomplete` | the PR head is beyond `MAX_HEAD_LOOKUPS` (30) open PRs, so its newest runs may be missing | nothing (logged, **not** recorded) |
 | `wait` | `already_merged`, `deps_not_merged`, `budget_unknown`, `budget_pause`, `busy_jobs_unknown`, `actions_busy`, `wip_full`, `human_queue_full`, `core_area_busy`, `area_locked` | the task is held back this run | nothing (logged, **not** recorded) |
 
 **Admission**
@@ -201,9 +204,16 @@ The planner picks the newest run for the PR head: the highest `run_id`, then `ru
     (`candidate_sha`)
   - a failure is a policy decision, so it goes to `needs_human/gates_failed` and is never repaired
   - a gates failure takes precedence over a `ci` failure on the same head
+- **A repair needs green gates:** a `ci` failure is only acted on when the newest `gates` run on the
+  same head completed with `success`; otherwise the task waits (`gates_pending`).
+- **Too many open PRs:** heads beyond `MAX_HEAD_LOOKUPS` are not looked up, so their PRs wait
+  (`check_runs_incomplete`) instead of acting on a possibly stale run.
 - **`merge_group` runs** are recorded as `check_result` but never trigger repairs.
 
 **One terminal decision per task per run**
+
+A task whose issue **or** PR already has `needs-human` is with a human: it gets no repair and no contract
+decision.
 
 Task timeouts are evaluated first. A task escalated to `needs_human` in this run, for any reason, gets
 no other decision in that run: no repair, no contract decision and no second escalation.
@@ -217,6 +227,11 @@ non-dry-run `picked`/`dispatched` event exists.
 
 History comes only from **non-dry-run** audit events: picked time, repairs, signatures and spend. So
 v1's own dry-run decisions never count as real work.
+
+**Spend fails closed.** Today's factory spend is **unknown** (`null` → `wait/budget_unknown`, no
+dispatch or repair) unless a non-dry-run `spend_snapshot` event for today exists (payload `day`,
+`aic_today`, written by the outcomes collector from `gh aw logs`). When it exists, spend is the larger of
+the newest snapshot and the sum of today's `run_finished` AIC. An empty log is never read as 0 AIC.
 
 ## How dry-run is enforced
 

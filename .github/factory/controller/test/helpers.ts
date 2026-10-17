@@ -110,6 +110,7 @@ export function snapshot(over: SnapshotOverrides = {}): Snapshot {
     main_sha: hex40('a'),
     contracts,
     check_runs: [],
+    unchecked_heads: [],
     busy_jobs: 0,
     factory_aic_today: 0,
     history: {},
