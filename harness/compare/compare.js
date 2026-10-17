@@ -2,17 +2,18 @@
 "use strict";
 // Comparison harness: random phrases through chrono-node (the judge) and the Rust port.
 //
-//   node compare/compare.js                      # fresh random seed (CI's held-out check)
-//   node compare/compare.js --seed 12345         # reproduce a run
+//   node compare/compare.js                      # fresh random seed (local held-out run)
+//   node compare/compare.js --seed 12345         # reproduce a run (CI passes its held-out seed this way)
 //   node compare/compare.js --phrases 5000 --rust ../target/release/chrono-rs-json --report out.json
 //
 // Only phrases whose required parsers/refiners are all ported in Rust are compared; the rest are
 // counted as "not yet comparable". The seed is printed AFTER the run, as the last line. A fresh
-// seed (no --seed) is the held-out check; the controller reads it from the CI log and records it
-// in the audit log:
+// seed (no --seed) prints:
 //   factory-heldout-seed: <seed>
-// A given seed (the contract's visible one, or a reproduction) prints instead:
+// A given seed (the contract's visible one, a reproduction, or CI's held-out seed) prints instead:
 //   factory-comparison-seed: <seed>
+// In CI the held-out seed comes from the trusted first step of the `checks` job (commit–reveal,
+// see .github/workflows/ci.yml); the controller records it from there, not from this output.
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");

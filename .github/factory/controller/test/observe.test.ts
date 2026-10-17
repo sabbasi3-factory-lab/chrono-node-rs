@@ -66,7 +66,7 @@ describe('observe', () => {
   });
 
   it('omits heldout_seed when CI did not print one', () => {
-    const ev = observe(snapshot({ check_runs: [checkRun(5)] }), NOW);
+    const ev = observe(snapshot({ check_runs: [checkRun(5, { heldout_seed: null })] }), NOW);
     assert.equal('heldout_seed' in ev[0]!.fields, false);
   });
 

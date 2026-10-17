@@ -146,9 +146,12 @@ export interface CheckRunSnap {
   conclusion: string | null;
   created_at: string;
   updated_at: string;
-  /** Decimal string from the `factory-heldout-seed: <n>` log line of the `checks` job. */
+  /**
+   * Decimal string: the `checks` job's held-out seed, accepted only through the commit–reveal
+   * anchored in its trusted first step (see `parseHeldoutSeed`).
+   */
   heldout_seed: string | null;
-  /** From the `factory-failure-signature: <sig>` log line of the `checks` job. */
+  /** `step:<first failed step>` or `job:<conclusion>`, from runner-reported step results (never log text). */
   failure_signature: string | null;
 }
 
@@ -208,6 +211,7 @@ export type ReasonCode =
   | 'max_repairs'
   | 'missing_failure_signature'
   | 'pick_time_unknown'
+  | 'missing_heldout_seed'
   | 'gates_failed'
   | 'task_budget_exhausted'
   | 'missing_task_marker'

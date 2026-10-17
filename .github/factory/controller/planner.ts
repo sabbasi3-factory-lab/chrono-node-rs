@@ -22,6 +22,9 @@ export const LABEL_READY = 'factory:ready';
 export const LABEL_PICKED = 'factory:picked';
 export const LABEL_NEEDS_HUMAN = 'needs-human';
 
+/** ci conclusions after which the reveal step has run, so a held-out seed must exist. */
+export const SEED_EXPECTED_CONCLUSIONS = new Set(['success', 'failure']);
+
 /** CI conclusions treated as a failure that needs a repair. */
 export const FAILED_CONCLUSIONS = new Set(['failure', 'timed_out', 'startup_failure']);
 
@@ -235,6 +238,13 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       continue;
     }
     const run = latestCheck(s, pr, CI_WORKFLOW);
+    // Every finished ci run (pass or fail) must carry a held-out seed from the trusted
+    // commit–reveal. None means the commitment was missing, forged, ambiguous or unrevealed, or
+    // the change touched `.github/`: a human looks, whatever the result (fail closed).
+    if (run && run.heldout_seed === null && SEED_EXPECTED_CONCLUSIONS.has(run.conclusion ?? '')) {
+      escalate(decide({ ...base, type: 'needs_human', reason: 'missing_heldout_seed', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id] }));
+      continue;
+    }
     if (!run || !run.conclusion || !FAILED_CONCLUSIONS.has(run.conclusion)) continue;
     const h = history(task);
     if (h.repaired_run_ids.includes(run.run_id)) continue;

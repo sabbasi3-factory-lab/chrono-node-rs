@@ -2,6 +2,7 @@
 // The client refuses every mutating request except the Git Data API writes
 // to the audit branch: controller v1 is dry-run only.
 
+import { createHash } from 'node:crypto';
 import { AUDIT_BRANCH, isoSeconds } from './audit.ts';
 import { isTaskId, parseContract, parsePrTrailers, parseTaskMarker, contractPath } from './tasks.ts';
 import type {
@@ -163,34 +164,81 @@ function requireInt(v: unknown, what: string): number {
   return v;
 }
 
+/** The first step of the ci `checks` job: the only trusted source of the held-out seed commitment. */
+export const HELDOUT_COMMIT_STEP = 'Held-out seed commitment (trusted, before any PR code)';
+
+const TIMESTAMP_PREFIX = /^\uFEFF?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z /;
+const MAX_REVEALS = 20;
+
 /**
- * Extracts the held-out seed and failure signature from a `checks` job log.
- * Lines must be exactly `factory-heldout-seed: <decimal>` /
- * `factory-failure-signature: <token>` (after the Actions timestamp prefix).
- * Seed lines printed by a step whose `##[group]Run …` command passes `--seed`
- * are ignored: that is the reproducible contract-seeded comparison, not the
- * held-out one. Conflicting values yield null (fail closed). The seed stays a
- * decimal string because it may exceed 2^53.
+ * The held-out seed, by commit–reveal (DESIGN §9, §11). The `checks` job runs PR code, so no
+ * log line printed after that code starts can be trusted on its own. The trusted first step
+ * prints `factory-heldout-commit: <sha256("<salt>:<seed>")>` before any PR code is on the
+ * runner; after the run, `factory-heldout-seed: <n>` and `factory-heldout-salt: <hex>` reveal it.
+ * A seed is returned only if:
+ *   - exactly one commitment line exists, and it is inside the first step's `##[group]Run`
+ *     section (output printed later can't move before it), and no commitment line appears
+ *     anywhere else (a second one means something forged it: fail closed);
+ *   - exactly one revealed seed matches it with a revealed salt.
+ * The seed stays a decimal string.
  */
-export function parseCheckLog(text: string): { heldout_seed: string | null; failure_signature: string | null } {
+export function parseHeldoutSeed(text: string): string | null {
+  let runGroups = 0;
+  const commits: string[] = [];
+  let foreignCommit = false;
   const seeds = new Set<string>();
-  const sigs = new Set<string>();
-  let seededStep = false;
+  const salts = new Set<string>();
   for (const rawLine of text.split('\n')) {
-    const line = rawLine.replace(/\r$/, '').replace(/^\uFEFF?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z /, '');
+    const line = rawLine.replace(/\r$/, '').replace(TIMESTAMP_PREFIX, '');
     if (line.startsWith('##[group]Run ')) {
-      seededStep = /(^|\s)--seed(\s|=|$)/.test(line.slice('##[group]Run '.length));
+      runGroups++;
       continue;
     }
-    let m = /^factory-heldout-seed: (0|[1-9][0-9]{0,19})$/.exec(line);
-    if (m && !seededStep) seeds.add(m[1]!);
-    m = /^factory-failure-signature: ([A-Za-z0-9:/#._-]{1,128})$/.exec(line);
-    if (m) sigs.add(m[1]!);
+    let m = /^factory-heldout-commit: ([0-9a-f]{64})$/.exec(line);
+    if (m) {
+      if (runGroups === 1) commits.push(m[1]!);
+      else foreignCommit = true;
+      continue;
+    }
+    m = /^factory-heldout-seed: (0|[1-9][0-9]{0,19})$/.exec(line);
+    if (m) seeds.add(m[1]!);
+    m = /^factory-heldout-salt: ([0-9a-f]{32})$/.exec(line);
+    if (m) salts.add(m[1]!);
   }
-  return {
-    heldout_seed: seeds.size === 1 ? [...seeds][0]! : null,
-    failure_signature: sigs.size === 1 ? [...sigs][0]! : null,
-  };
+  if (foreignCommit || commits.length !== 1) return null;
+  const matches = new Set<string>();
+  for (const seed of [...seeds].slice(0, MAX_REVEALS)) {
+    for (const salt of [...salts].slice(0, MAX_REVEALS)) {
+      if (createHash('sha256').update(`${salt}:${seed}`).digest('hex') === commits[0]) matches.add(seed);
+    }
+  }
+  return matches.size === 1 ? [...matches][0]! : null;
+}
+
+/** CI job conclusions that mean the job failed. */
+const FAILED_JOB_CONCLUSIONS = new Set(['failure', 'timed_out', 'startup_failure']);
+
+/**
+ * The failure signature, from runner-reported step results (the jobs API), never from log
+ * text that PR code could print: `step:<slug of the first failed step>`, or `job:<conclusion>`
+ * when the job failed without a failed step (for example a timeout). Null for a job that didn't fail.
+ */
+export function failureSignatureFromSteps(steps: unknown[], jobConclusion: string | null): string | null {
+  if (!jobConclusion || !FAILED_JOB_CONCLUSIONS.has(jobConclusion)) return null;
+  const ordered = steps.map(asRec).filter((st) => typeof st.number === 'number').sort((a, b) => Number(a.number) - Number(b.number));
+  const failed = ordered.find((st) => st.conclusion === 'failure');
+  if (failed) {
+    const slug = (asStr(failed.name) ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100);
+    return `step:${slug || 'unnamed'}`;
+  }
+  return `job:${jobConclusion}`;
+}
+
+/** True if the job's first step after "Set up job" is the trusted commitment step and it succeeded. */
+export function trustedCommitStepRan(steps: unknown[]): boolean {
+  const ordered = steps.map(asRec).filter((st) => typeof st.number === 'number').sort((a, b) => Number(a.number) - Number(b.number));
+  const first = ordered.find((st) => st.name !== 'Set up job');
+  return first !== undefined && first.name === HELDOUT_COMMIT_STEP && first.conclusion === 'success';
 }
 
 // ---------------------------------------------------------------- snapshot pieces
@@ -405,6 +453,8 @@ export async function readCheckRuns(
   windowHours: number,
   recorded: ReadonlyMap<string, RecordedCheck>,
   openHeads: ReadonlySet<string>,
+  /** main's commit: CI signals count only if the run's diff from it leaves `.github/` alone (null = none count). */
+  mainSha: string | null = null,
 ): Promise<CheckRunSnap[]> {
   const extract = (d: unknown): unknown[] => asArr(asRec(d).workflow_runs);
   const found = await firstPages(client, `/repos/${repo}/actions/runs?per_page=100`, extract, RECENT_RUN_PAGES);
@@ -462,13 +512,41 @@ export async function readCheckRuns(
         snap.heldout_seed = known.heldout_seed;
         snap.failure_signature = known.failure_signature;
       } else if (name === CI_WORKFLOW_NAME) {
-        // Only the ci `checks` job prints the held-out seed and failure signature.
-        Object.assign(snap, await readChecksJobLog(client, repo, snap.run_id, snap.run_attempt));
+        // The ci `checks` job: seed from its trusted commit–reveal, signature from its step
+        // results, but only if the change under test leaves `.github/` alone. `pull_request`
+        // runs execute the PR's (merged) copy of the workflow, so a change there could forge both.
+        if (mainSha && (await leavesGithubDirAlone(client, repo, mainSha, headSha))) {
+          Object.assign(snap, await readChecksJobLog(client, repo, snap.run_id, snap.run_attempt));
+        }
       }
     }
     out.push(snap);
   }
   return out;
+}
+
+/** GitHub's compare API lists at most this many files; a longer diff can't be checked. */
+const COMPARE_FILE_LIMIT = 300;
+
+/**
+ * True only if the change from `base` to `head` (three-dot: since their merge base, i.e. the
+ * PR's own changes) touches nothing under `.github/`, including either side of a rename. Any
+ * error, a truncated file list or a missing commit returns false (fail closed).
+ */
+export async function leavesGithubDirAlone(client: GitHubClient, repo: string, base: string, head: string): Promise<boolean> {
+  if (!HEX40.test(base) || !HEX40.test(head)) return false;
+  if (base === head) return true;
+  const res = await client.request('GET', `/repos/${repo}/compare/${base}...${head}?per_page=${COMPARE_FILE_LIMIT}`, { allowStatuses: [404, 422] });
+  if (res.status !== 200) return false;
+  const files = asRec(res.data).files;
+  if (!Array.isArray(files) || files.length >= COMPARE_FILE_LIMIT) return false;
+  for (const f of files.map(asRec)) {
+    for (const path of [f.filename, f.previous_filename]) {
+      if (path === undefined) continue;
+      if (typeof path !== 'string' || path === '.github' || path.startsWith('.github/')) return false;
+    }
+  }
+  return true;
 }
 
 export async function readChecksJobLog(client: GitHubClient, repo: string, runId: number, attempt: number): Promise<RecordedCheck> {
@@ -477,13 +555,16 @@ export async function readChecksJobLog(client: GitHubClient, repo: string, runId
   );
   const checks = jobs.map(asRec).filter((j) => j.name === CHECKS_JOB_NAME);
   if (checks.length !== 1) return { heldout_seed: null, failure_signature: null };
-  const jobId = requireInt(checks[0]!.id, 'job id');
+  const job = checks[0]!;
+  const steps = asArr(job.steps);
+  const failure_signature = failureSignatureFromSteps(steps, asStr(job.conclusion));
+  if (!trustedCommitStepRan(steps)) return { heldout_seed: null, failure_signature };
+  const jobId = requireInt(job.id, 'job id');
   const res = await client.request('GET', `/repos/${repo}/actions/jobs/${jobId}/logs`, {
     accept: 'raw',
     allowStatuses: [404, 410],
   });
-  if (typeof res.data !== 'string') return { heldout_seed: null, failure_signature: null };
-  return parseCheckLog(res.data);
+  return { heldout_seed: typeof res.data === 'string' ? parseHeldoutSeed(res.data) : null, failure_signature };
 }
 
 const BUSY_JOB_STATUSES = new Set(['queued', 'in_progress', 'waiting', 'pending', 'requested']);
@@ -529,7 +610,7 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
   const main_sha = await resolveMainSha(client, o.repo);
   const contracts = await readContracts(client, o.repo, main_sha, tasks);
   const openHeads = new Set(pulls.filter((p) => p.state === 'open').map((p) => p.head_sha));
-  const check_runs = await readCheckRuns(client, o.repo, o.now, o.windowHours, o.recordedChecks, openHeads);
+  const check_runs = await readCheckRuns(client, o.repo, o.now, o.windowHours, o.recordedChecks, openHeads, main_sha);
   let busy_jobs: number | null = null;
   if (o.needBusyJobs) {
     try {

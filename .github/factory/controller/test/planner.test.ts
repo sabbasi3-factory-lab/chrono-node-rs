@@ -567,3 +567,30 @@ describe('independent review (follow-up): fail closed', () => {
     assert.deepEqual(reasons(run({ ...failingPrWorld('sig'), factory_aic_today: null })), ['budget_unknown']);
   });
 });
+
+describe('review #22: a finished ci run without a trusted held-out seed goes to a human', () => {
+  const ciRun = (s: Snapshot) => s.check_runs.find((r) => r.workflow === 'ci' && r.run_id === 500)!;
+  it('passed or failed ci without a seed → needs_human/missing_heldout_seed (one terminal decision)', () => {
+    for (const conclusion of ['success', 'failure']) {
+      const s = failingPrWorld('sig', undefined, conclusion);
+      ciRun(s).heldout_seed = null;
+      const ds = run(s);
+      assert.deepEqual(ds.map((d) => `${d.type}/${d.reason}`), ['needs_human/missing_heldout_seed'], conclusion);
+      assert.equal(ds[0]!.effect, 'label:needs-human');
+      assert.equal(ds[0]!.run_id, 500);
+      assert.deepEqual(ds[0]!.source_ids, ['500/attempts/1', 'PR_21']);
+    }
+  });
+
+  it('not for cancelled or startup failures (no reveal ran), and a failed gates run still wins', () => {
+    for (const conclusion of ['cancelled', 'startup_failure']) {
+      const s = failingPrWorld('sig', undefined, conclusion);
+      ciRun(s).heldout_seed = null;
+      assert.ok(!run(s).some((d) => d.reason === 'missing_heldout_seed'), conclusion);
+    }
+    const g = failingPrWorld('sig');
+    ciRun(g).heldout_seed = null;
+    g.check_runs.push(checkRun(600, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: g.pulls[0]!.head_sha, conclusion: 'failure' }));
+    assert.deepEqual(reasons(run(g)), ['gates_failed']);
+  });
+});

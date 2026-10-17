@@ -23,5 +23,6 @@ Setup: Node 24 or later, then `npm ci` in this directory. Dependency versions ar
   ```text
   factory-heldout-seed: 1234567890
   ```
-  With `--seed` (the contract's visible seed, or a reproduction) the line is `factory-comparison-seed: <n>` instead, so the log holds exactly one held-out seed. CI uses a fresh seed on every run. The controller reads that line from the CI log and records it in the audit log. Seeds aren't stored anywhere else.
+  With `--seed` (the contract's visible seed, or a reproduction) the line is `factory-comparison-seed: <n>` instead.
+- **Held-out seed in CI (commit–reveal):** CI uses a fresh seed on every run, but it doesn't come from this script. The `checks` job's first step, which runs before any PR code, draws a seed and a salt, writes them to private files and prints only `factory-heldout-commit: <sha256("<salt>:<seed>")>`. The held-out comparison reads the seed into a shell variable (never a step header or exported variable) and runs with `--seed <that seed>`. After the run, a final step reveals `factory-heldout-seed: <n>` and `factory-heldout-salt: <hex>`. The controller records the seed in the audit log only if the reveal matches the single commitment from the first step and the change leaves `.github/` alone, so PR code can't forge the recorded seed. That proves which seed was generated, not that the comparison used it honestly; a factory PR without a trusted seed goes to a human. Seeds aren't stored anywhere else.
 - **Reproduce** a failure with `node compare/compare.js --seed <seed> --phrases <n>`.

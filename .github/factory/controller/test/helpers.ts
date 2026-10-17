@@ -86,7 +86,8 @@ export function checkRun(id: number, over: Partial<CheckRunSnap> = {}): CheckRun
     conclusion: 'success',
     created_at: '2026-10-16T11:00:00Z',
     updated_at: '2026-10-16T11:10:00Z',
-    heldout_seed: null,
+    // A finished ci run normally carries its revealed held-out seed; tests about a missing seed set null.
+    heldout_seed: '42',
     failure_signature: null,
     ...over,
   };

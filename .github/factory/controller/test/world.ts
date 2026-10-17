@@ -2,10 +2,14 @@
 
 import { auditPathFor, buildEvent, commitMessage, dedupeKey } from '../audit.ts';
 import { canonicalize } from '../canonical.ts';
+import { createHash } from 'node:crypto';
 import { FakeGitHub } from '../fake.ts';
+import { HELDOUT_COMMIT_STEP } from '../github.ts';
 import { hex40, REPO } from './helpers.ts';
 
 export const CONTRACT_COMMIT = hex40('c');
+const HELDOUT_SALT = '00112233445566778899aabbccddeeff';
+
 export const CONTRACT_BLOB = hex40('b');
 /** The commit `main` resolves to, and its tree. */
 export const MAIN_SHA = hex40('5');
@@ -29,6 +33,10 @@ export function fakeWorld(opts: WorldOptions = {}): FakeGitHub {
   // main is served by the fake's Git Data endpoints (ref → commit → tree sha).
   gh.refs.set('heads/main', MAIN_SHA);
   gh.commits.set(MAIN_SHA, { tree: MAIN_TREE, parents: [], message: 'main' });
+  // The change under test (main...PR head) leaves .github/ alone: its CI signals count.
+  gh.addRoute('GET', new RegExp(`^${r}/compare/${MAIN_SHA}\\.\\.\\.${hex40('1')}$`), () => ({
+    data: { files: [{ filename: 'src/locales/en/parsers/weekday.rs', status: 'modified' }] },
+  }));
   gh.addRoute('GET', new RegExp(`^${r}/issues$`), () => ({
     data: [
       {
@@ -112,10 +120,32 @@ export function fakeWorld(opts: WorldOptions = {}): FakeGitHub {
     };
   });
   gh.addRoute('GET', new RegExp(`^${r}/actions/runs/4242/attempts/1/jobs$`), () => ({
-    data: { jobs: [{ id: 99, name: 'checks' }, { id: 98, name: 'other' }] },
+    data: {
+      jobs: [
+        {
+          id: 99,
+          name: 'checks',
+          conclusion: 'success',
+          steps: [
+            { number: 1, name: 'Set up job', conclusion: 'success' },
+            { number: 2, name: HELDOUT_COMMIT_STEP, conclusion: 'success' },
+            { number: 3, name: 'Run actions/checkout@v7', conclusion: 'success' },
+          ],
+        },
+        { id: 98, name: 'other' },
+      ],
+    },
   }));
   gh.addRoute('GET', new RegExp(`^${r}/actions/jobs/99/logs$`), () => ({
-    data: '2026-10-16T11:00:01.1234567Z ##[group]Run echo "factory-heldout-seed: $SEED"\n2026-10-16T11:00:01.2000000Z factory-heldout-seed: 9007199254740993\n',
+    data: [
+      '2026-10-16T11:00:01.1234567Z ##[group]Run seed=$(od -An -N4 -tu4 /dev/urandom)',
+      `2026-10-16T11:00:01.2000000Z factory-heldout-commit: ${createHash('sha256').update(`${HELDOUT_SALT}:9007199254740993`).digest('hex')}`,
+      '2026-10-16T11:00:02.0000000Z ##[group]Run actions/checkout@v7',
+      '2026-10-16T11:00:09.0000000Z ##[group]Run echo "factory-heldout-seed: $HELDOUT_SEED"',
+      '2026-10-16T11:00:09.1000000Z factory-heldout-seed: 9007199254740993',
+      `2026-10-16T11:00:09.1000000Z factory-heldout-salt: ${HELDOUT_SALT}`,
+      '',
+    ].join('\n'),
   }));
   gh.addRoute('GET', new RegExp(`^${r}/actions/runs/555/jobs$`), () => ({
     data: { jobs: [{ status: 'in_progress' }, { status: 'queued' }, { status: 'completed' }] },

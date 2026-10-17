@@ -27,6 +27,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # Trusted: the first step, before any PR code exists on the runner (even before checkout).
+      # It commits to a fresh held-out seed by printing only sha256("<salt>:<seed>"). The seed and
+      # salt go to private files, which later steps read into non-exported shell variables, so
+      # they never appear in a step header or a child process environment before the reveal
+      # after the run. The controller records a seed only if the reveal matches this single
+      # commitment, and only when the change leaves .github/ alone (DESIGN §9, §11). It proves which
+      # seed was generated, not that PR code used it honestly; PR code on the same runner could
+      # still read the files. This guards the record, not secrecy from the build.
+      - name: Held-out seed commitment (trusted, before any PR code)
+        run: |
+          dir="$RUNNER_TEMP/factory-heldout"
+          mkdir -p -m 700 "$dir"
+          umask 077
+          seed=$(od -An -N4 -tu4 /dev/urandom | tr -d ' \n')
+          salt=$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')
+          printf '%s' "$seed" > "$dir/seed"
+          printf '%s' "$salt" > "$dir/salt"
+          commit=$(printf '%s:%s' "$salt" "$seed" | sha256sum | cut -d' ' -f1)
+          echo "factory-heldout-commit: $commit"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -99,6 +119,15 @@ jobs:
           PHRASES: ${{ steps.scope.outputs.differential_phrases }}
         run: node compare/compare.js --seed "$SEED" --phrases "$PHRASES" --rust ../target/debug/chrono-rs-json
 
-      - name: Held-out comparison with chrono-node (fresh seed, printed after the run)
+      - name: Held-out comparison with chrono-node (fresh seed from the first step)
         working-directory: harness
-        run: node compare/compare.js --phrases 2000 --rust ../target/debug/chrono-rs-json
+        run: |
+          seed=$(cat "$RUNNER_TEMP/factory-heldout/seed")
+          node compare/compare.js --seed "$seed" --phrases 2000 --rust ../target/debug/chrono-rs-json
+
+      # After the run (even if it failed): reveal the seed and salt for the commitment above.
+      - name: Reveal the held-out seed
+        if: always()
+        run: |
+          echo "factory-heldout-seed: $(cat "$RUNNER_TEMP/factory-heldout/seed")"
+          echo "factory-heldout-salt: $(cat "$RUNNER_TEMP/factory-heldout/salt")"
