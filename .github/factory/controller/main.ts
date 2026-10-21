@@ -13,7 +13,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AuditLog, AuditValidationError, dedupeKey, isoSeconds } from './audit.ts';
 import { canonicalize } from './canonical.ts';
-import { decisionEvent, execute, executeLive, isLive } from './executor.ts';
+import { decisionEvent, execute, executeLive, isLive, pendingHandoffs } from './executor.ts';
 import { FakeGitHub } from './fake.ts';
 import { createClient, readSnapshot, type RecordedCheck } from './github.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
@@ -152,6 +152,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       repo,
       log,
       runUrl: deps.runUrl ?? null,
+      pending: pendingHandoffs(audit.events),
       isNew: (ev) => !audit.hasDedupeKey(dedupeKey(ev.type, ev.source_ids)),
       validate: (ev) => {
         audit.prepare(ev);

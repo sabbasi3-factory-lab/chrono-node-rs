@@ -5,7 +5,7 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { assertAllowedRequest, COMMENT_MARKER } from '../github.ts';
 import { AUDIT_BRANCH, splitLines, verify } from '../audit.ts';
-import { decisionEvent, describe as describeDecision, execute, executeLive, isLive, liveDecision } from '../executor.ts';
+import { decisionEvent, describe as describeDecision, execute, executeLive, isLive, liveDecision, pendingHandoffs } from '../executor.ts';
 import { FakeGitHub, type RecordedCall } from '../fake.ts';
 import { parseArgs, run, type RunDeps } from '../main.ts';
 import type { Snapshot } from '../types.ts';
@@ -285,11 +285,28 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
 
 const LIVE_ENV = { FACTORY_ENABLED: 'true', GITHUB_RUN_ID: '42', GITHUB_EVENT_NAME: 'schedule' };
 
-/** fakeWorld + routes for the three live writes. `dispatchStatus` simulates a failed dispatch. */
-function liveWorld(dispatchStatus = 204): FakeGitHub {
-  const gh = fakeWorld();
+/**
+ * fakeWorld + routes for the three live writes. `dispatchStatus` simulates a failed dispatch;
+ * `failComments` makes the next N comment POSTs fail. Comments persist across runs (GET lists them).
+ */
+function liveWorld(dispatchStatus = 204, failComments = 0): FakeGitHub & { comments: Map<number, string[]> } {
+  const gh = fakeWorld() as FakeGitHub & { comments: Map<number, string[]> };
+  gh.comments = new Map();
+  let failures = failComments;
   gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues/\\d+/labels$`), () => ({ data: [] }));
-  gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues/\\d+/comments$`), () => ({ status: 201, data: { id: 1 } }));
+  gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues/\\d+/comments$`), (path, body) => {
+    if (failures > 0) {
+      failures--;
+      return { status: 502, data: null };
+    }
+    const n = Number(/issues\/(\d+)\/comments/.exec(path)![1]);
+    gh.comments.set(n, [...(gh.comments.get(n) ?? []), (body as { body: string }).body]);
+    return { status: 201, data: { id: 1 } };
+  });
+  gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/\\d+/comments$`), (path) => {
+    const n = Number(/issues\/(\d+)\/comments/.exec(path)![1]);
+    return { data: (gh.comments.get(n) ?? []).map((body, i) => ({ id: i + 1, body })) };
+  });
   gh.addRoute('POST', new RegExp(`^/repos/${REPO}/actions/workflows/implement\\.lock\\.yml/dispatches$`), () => ({ status: dispatchStatus, data: null }));
   return gh;
 }
@@ -367,16 +384,16 @@ describe('main: live mode (FACTORY_ENABLED=true)', () => {
     const d = { ...base, source_ids: [...base.source_ids] };
     assert.deepEqual([liveDecision(d).type, liveDecision(d).reason, liveDecision(d).effect], ['needs_human', 'repair_unavailable', 'label:needs-human']);
     const calls: { method: string; path: string; body: unknown }[] = [];
-    const client = { request: async (method: string, path: string, o: { body?: unknown } = {}) => (calls.push({ method, path, body: o.body }), { status: 200, data: null, next: null }) };
+    const client = { request: async (method: string, path: string, o: { body?: unknown } = {}) => (calls.push({ method, path, body: o.body }), { status: 200, data: method === 'GET' ? [] : null, next: null }) };
     const recorded: string[] = [];
-    await executeLive([d], { client: client as never, repo: REPO, log: () => {}, runUrl: null, isNew: () => true, validate: () => {}, record: async (ev) => void recorded.push(`${ev.type}/${String(ev.fields.reason)}`) });
-    assert.deepEqual(calls.map((c) => [c.path, c.body]), [
-      [`/repos/${REPO}/issues/21/labels`, { labels: ['needs-human'] }],
-      [`/repos/${REPO}/issues/3/labels`, { labels: ['needs-human'] }],
-      [`/repos/${REPO}/issues/21/comments`, calls[2]!.body],
+    await executeLive([d], { client: client as never, repo: REPO, log: () => {}, runUrl: null, isNew: () => true, validate: () => {}, record: async (ev) => void recorded.push(`${ev.type}/${String(ev.fields.reason ?? ev.fields.effect)}`) });
+    assert.deepEqual(calls.filter((c) => c.method === 'POST').map((c) => c.path), [
+      `/repos/${REPO}/issues/21/labels`,
+      `/repos/${REPO}/issues/3/labels`,
+      `/repos/${REPO}/issues/21/comments`,
     ]);
     assert.ok(!calls.some((c) => c.path.includes('/dispatches')));
-    assert.deepEqual(recorded, ['needs_human/repair_unavailable']);
+    assert.deepEqual(recorded, ['needs_human/repair_unavailable', 'handoff_done/label:needs-human'], 'recorded before the effect, completed after');
   });
 });
 
@@ -431,5 +448,51 @@ describe('write allowlist by mode', () => {
       ['POST', '/graphql', { query: 'mutation { x }' }],
     ] as const;
     for (const w of refused) assert.equal(allowed('live', w), false, `${w[0]} ${w[1]}`);
+  });
+});
+
+describe('live mode: review fixes', () => {
+  it('a decision recorded while the switch was off still gets its live effect after switching on', async () => {
+    const gh = liveWorld();
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    const off = await run(deps(gh, { env: { ...LIVE_ENV, FACTORY_ENABLED: undefined }, forceDryRun: false }));
+    assert.equal(off.live, false);
+    assert.ok(off.appended.some((e) => e.type === 'needs_human' && e.payload.reason === 'gates_failed' && e.payload.dry_run === true));
+    assert.deepEqual(effectCalls(gh), []);
+    gh.calls.length = 0;
+    const on = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.ok(on.appended.some((e) => e.type === 'needs_human' && e.payload.reason === 'gates_failed' && e.payload.dry_run === false));
+    assert.ok(effectCalls(gh).some((c) => c.path === `/repos/${REPO}/issues/11/labels`));
+    assert.equal(gh.comments.get(11)?.length, 1);
+  });
+
+  it('a hand-off whose comment failed is finished by the next live run, with exactly one comment', async () => {
+    const gh = liveWorld(204, 1);
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    await assert.rejects(run(deps(gh, { env: LIVE_ENV, forceDryRun: false })), /comments: HTTP 502/);
+    assert.equal(gh.comments.get(11)?.length ?? 0, 0);
+    const later = (min: number) => new Date(NOW.getTime() + min * 60_000);
+    const second = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, now: later(5) }));
+    assert.equal(gh.comments.get(11)?.length, 1);
+    assert.match(gh.comments.get(11)![0]!, /<!-- factory-decision: sha256:[0-9a-f]{64} -->/);
+    assert.ok(second.appended.some((e) => e.type === 'handoff_done'));
+    gh.calls.length = 0;
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, now: later(10) }));
+    assert.deepEqual(effectCalls(gh), [], 'nothing left to do');
+    assert.equal(gh.comments.get(11)?.length, 1);
+  });
+
+  it('a hand-off whose comment was posted but not marked done is completed without a second comment', async () => {
+    const gh = liveWorld();
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false }));
+    assert.equal(gh.comments.get(11)?.length, 1);
+    // Simulate a lost handoff_done: finish the pending list again by hand.
+    const events = [...splitLines(gh.fileAt(AUDIT_BRANCH, 'audit/2026/10/16.jsonl')!)].map((l) => JSON.parse(l)).filter((e) => e.type !== 'handoff_done');
+    const pending = pendingHandoffs(events);
+    assert.equal(pending.length, 1);
+    const client = { request: (m: 'GET' | 'POST', p: string, o?: { body?: unknown }) => gh.request(m, p, o) };
+    await executeLive([], { client, repo: REPO, log: () => {}, runUrl: null, isNew: () => true, validate: () => {}, record: async () => {}, pending });
+    assert.equal(gh.comments.get(11)?.length, 1, 'the marker prevents a duplicate comment');
   });
 });

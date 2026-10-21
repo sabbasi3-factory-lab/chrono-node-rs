@@ -280,8 +280,15 @@ the newest snapshot and the sum of today's `run_finished` AIC. An empty log is n
 | `dispatch_workflow:repair` | there is no repair workflow yet, so it becomes `needs_human`/`repair_unavailable`: label + comment |
 | `alert:owner`, `pause_dispatch`, `none` | no GitHub effect; recorded in the audit log only |
 
-- **Once per decision.** An effect runs only if its audit event (same dedupe key as in dry-run) is
-  new. The event is validated before the effect and recorded right after it, with `dry_run: false`.
+- **Once per decision.** An effect runs only if its **live** audit event is new. Live decision events
+  add `mode:live` to their dedupe identity, so a decision recorded in dry-run (switch off) doesn't
+  count as done once the switch is on. Every event is validated before any effect, and recorded
+  with `dry_run: false`.
+- **Hand-offs finish even if a step fails.** For a label effect the decision is recorded first,
+  then the label(s), then one comment carrying a hidden `<!-- factory-decision: <key> -->` marker,
+  then a `handoff_done` event. Each live run first finishes any recorded hand-off without
+  `handoff_done` (at most 20 per run): labels are re-added (idempotent), and the comment is posted
+  only if none with its marker exists. The planner skips human-held tasks, so it wouldn't retry them.
 - **No double dispatch.** `factory:picked` is added before the dispatch. If the dispatch or the
   record fails, the run fails (fail closed), and the next run sees a picked issue with no pick time:
   `needs_human`/`pick_time_unknown`, never a second dispatch.
@@ -294,7 +301,8 @@ the newest snapshot and the sum of today's `run_finished` AIC. An empty log is n
   starting with the template marker (≤ 2,000 chars). It still refuses merges, closes, label removal,
   `factory:ready`, reviews, other workflows, other refs and GraphQL mutations.
 - The workflow requests `actions`, `issues` and `pull-requests` **write** only when
-  `vars.FACTORY_ENABLED == 'true'`. The same variable decides the controller's mode.
+  `vars.FACTORY_ENABLED` is exactly `true`, checked case-sensitively in a shell step (Actions
+  expressions compare strings case-insensitively). The controller applies the same rule.
 - **Dispatch also needs a spend record.** The planner waits (`budget_unknown`) unless a non-dry-run
   `spend_snapshot` for today exists (see History), so live mode alone doesn't dispatch anything.
 

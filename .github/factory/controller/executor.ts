@@ -15,15 +15,22 @@
 //   alert:owner, pause_dispatch, none → no GitHub effect; recorded in the audit log only
 // It never merges, closes, removes a label, adds `factory:ready`, or dispatches anything else.
 //
-// Each decision's effect runs only if its audit event is new (the same dedupe key as the dry-run
-// record), is validated before any effect, and is recorded (dry_run: false) right after it. A
-// dispatch labels the issue `factory:picked` BEFORE dispatching: if anything fails after that,
-// the planner sees a picked issue without a pick time and hands it to a human
-// (needs_human/pick_time_unknown) instead of dispatching it twice.
+// Each decision's effect runs only if its LIVE audit event is new. Live events carry `mode:live`
+// in their dedupe identity, so a decision recorded while the switch was off (dry-run) doesn't
+// count as done. Every event is validated before any effect.
+// - Dispatch: label the issue `factory:picked`, dispatch, then record. If anything fails after the
+//   label, the planner sees a picked issue without a pick time and hands it to a human
+//   (needs_human/pick_time_unknown) instead of dispatching it twice.
+// - Hand-off (label + comment): record the decision first, then add the label(s), then post one
+//   comment carrying a hidden marker with the decision's dedupe key, then record `handoff_done`.
+//   Every live run first finishes any recorded hand-off without `handoff_done` (the planner skips
+//   human-held tasks, so it wouldn't retry them): labels are re-added (idempotent) and the comment
+//   is posted only if no comment with its marker exists yet.
 
-import { COMMENT_MARKER, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH } from './github.ts';
+import { dedupeKey } from './audit.ts';
+import { COMMENT_MARKER, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate } from './github.ts';
 import { isRecorded, LABEL_NEEDS_HUMAN, LABEL_PICKED } from './planner.ts';
-import type { Decision, GitHubClient, JsonObject, PendingEvent, PlannerEnv, ReasonCode } from './types.ts';
+import type { AuditEvent, Decision, GitHubClient, JsonObject, PendingEvent, PlannerEnv, ReasonCode } from './types.ts';
 
 /** Live only when FACTORY_ENABLED is exactly "true"; anything else (unset, "TRUE", "1") is dry-run. */
 export function isLive(env: PlannerEnv): boolean {
@@ -53,8 +60,11 @@ export function execute(decisions: Decision[], log: (line: string) => void): str
   return lines;
 }
 
-/** The audit event recorded for a non-wait decision (dedupe on source ids + reason + effect). */
-export function decisionEvent(d: Decision): PendingEvent {
+/**
+ * The audit event recorded for a non-wait decision (dedupe on source ids + reason + effect, plus
+ * `mode:live` for live records, so a dry-run record never stands in for a live effect).
+ */
+export function decisionEvent(d: Decision, live = false): PendingEvent {
   if (!isRecorded(d)) throw new Error('wait decisions are not recorded');
   if (d.dry_run !== true) throw new Error('decisions are plans (dry_run: true); the audit log records whether they ran');
   const fields: JsonObject = { reason: d.reason, effect: d.effect };
@@ -68,7 +78,7 @@ export function decisionEvent(d: Decision): PendingEvent {
   // The reason and effect are part of the dedupe identity: a changed reason for
   // the same subject (missing_task_marker → contract_missing) is a new fact,
   // while an identical retry still dedupes.
-  return { type: d.type, source_ids: [...d.source_ids, `reason:${d.reason}`, `effect:${d.effect}`], fields };
+  return { type: d.type, source_ids: [...d.source_ids, `reason:${d.reason}`, `effect:${d.effect}`, ...(live ? ['mode:live'] : [])], fields };
 }
 
 /** In live mode a repair becomes a human hand-off: there is no repair workflow yet. */
@@ -102,7 +112,10 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   contract_changed: "The contract changed after this PR's `Contract-SHA:`.",
 };
 
-export function commentBody(d: Decision, label: string, runUrl: string | null): string {
+/** Hidden marker that ties a comment to its decision, so a retried hand-off never posts twice. */
+export const decisionMarker = (key: string): string => `<!-- factory-decision: ${key} -->`;
+
+export function commentBody(d: Pick<Decision, 'type' | 'reason'>, label: string, runUrl: string | null, key: string): string {
   const text = REASON_TEXT[d.reason] ?? 'See the audit log for details.';
   const body = [
     `${COMMENT_MARKER} · \`${d.type}\` (\`${d.reason}\`)`,
@@ -110,6 +123,8 @@ export function commentBody(d: Decision, label: string, runUrl: string | null): 
     text,
     '',
     `Labelled \`${label}\`. The controller doesn't remove labels; a person does.${runUrl ? ` Run: ${runUrl}` : ''}`,
+    '',
+    decisionMarker(key),
   ].join('\n');
   if (body.length > MAX_COMMENT_LENGTH) throw new Error('comment too long');
   return body;
@@ -126,14 +141,65 @@ export interface LiveDeps {
   /** Records the event (dry_run: false). */
   record: (ev: PendingEvent) => Promise<void>;
   runUrl: string | null;
+  /** Recorded live hand-offs that have no `handoff_done` yet (see pendingHandoffs). */
+  pending?: PendingHandoff[];
 }
+
+export interface PendingHandoff {
+  key: string;
+  type: Decision['type'];
+  reason: ReasonCode;
+  effect: Decision['effect'];
+  issue: number | null;
+  pr: number | null;
+}
+
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v > 0;
+
+/** Live hand-offs in the loaded audit window that were recorded but not completed. */
+export function pendingHandoffs(events: AuditEvent[]): PendingHandoff[] {
+  const done = new Set<string>();
+  for (const e of events) if (e.type === 'handoff_done' && typeof e.payload.decision === 'string') done.add(e.payload.decision);
+  const out: PendingHandoff[] = [];
+  for (const e of events) {
+    const p = e.payload;
+    if (p.dry_run !== false || typeof p.effect !== 'string' || !LABEL_OF[p.effect as Decision['effect']]) continue;
+    const key = p.dedupe_key as string;
+    if (done.has(key)) continue;
+    const issue = isNum(p.issue) ? p.issue : null;
+    const pr = isNum(p.pr) ? p.pr : null;
+    if (issue === null && pr === null) continue;
+    out.push({ key, type: e.type as Decision['type'], reason: p.reason as ReasonCode, effect: p.effect as Decision['effect'], issue, pr });
+  }
+  return out;
+}
+
+export const MAX_RECONCILE_PER_RUN = 20;
 
 async function addLabel(deps: LiveDeps, number: number, label: string): Promise<void> {
   await deps.client.request('POST', `/repos/${deps.repo}/issues/${number}/labels`, { body: { labels: [label] } });
 }
 
-/** Live: take each decision's effect once, then record it. Returns how many decisions ran. */
+/** Labels (idempotent), then the comment unless one with its marker exists, then `handoff_done`. */
+async function completeHandoff(deps: LiveDeps, h: PendingHandoff): Promise<void> {
+  const label = LABEL_OF[h.effect]!;
+  const targets = [h.pr, h.issue].filter((n): n is number => n !== null);
+  for (const n of targets) await addLabel(deps, n, label);
+  const marker = decisionMarker(h.key);
+  const comments = await paginate(deps.client, `/repos/${deps.repo}/issues/${targets[0]}/comments?per_page=100`, (d) => (Array.isArray(d) ? d : []));
+  const posted = comments.some((c) => typeof (c as { body?: unknown }).body === 'string' && (c as { body: string }).body.includes(marker));
+  if (!posted) {
+    await deps.client.request('POST', `/repos/${deps.repo}/issues/${targets[0]}/comments`, { body: { body: commentBody(h, label, deps.runUrl, h.key) } });
+  }
+  await deps.record({ type: 'handoff_done', source_ids: [`done:${h.key}`], fields: { decision: h.key, effect: h.effect } });
+}
+
+/** Live: finish pending hand-offs, then take each new decision's effect once. Returns how many ran. */
 export async function executeLive(decisions: Decision[], deps: LiveDeps): Promise<number> {
+  for (const h of (deps.pending ?? []).slice(0, MAX_RECONCILE_PER_RUN)) {
+    deps.log(`[live] finishing hand-off ${h.type}/${h.reason}${h.issue !== null ? ` issue=#${h.issue}` : ''}${h.pr !== null ? ` pr=#${h.pr}` : ''}`);
+    await completeHandoff(deps, h);
+  }
   let ran = 0;
   for (const planned of decisions) {
     if (!isRecorded(planned)) {
@@ -141,7 +207,7 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
       continue;
     }
     const d = liveDecision(planned);
-    const ev = decisionEvent(d);
+    const ev = decisionEvent(d, true);
     if (!deps.isNew(ev)) {
       deps.log(`[live] already done: ${d.type}/${d.reason}${d.issue !== null ? ` issue=#${d.issue}` : ''}${d.pr !== null ? ` pr=#${d.pr}` : ''}`);
       continue;
@@ -154,17 +220,18 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
       await deps.client.request('POST', `/repos/${deps.repo}/actions/workflows/${IMPLEMENT_WORKFLOW}/dispatches`, {
         body: { ref: 'main', inputs: { task: d.task, issue: String(d.issue), attempt: String(d.attempt), contract_sha: d.contract_sha } },
       });
+      await deps.record(ev);
     } else if (LABEL_OF[d.effect]) {
-      const label = LABEL_OF[d.effect]!;
-      const targets = [d.pr, d.issue].filter((n): n is number => n !== null);
-      if (targets.length === 0) throw new Error(`${d.type}/${d.reason} has no issue or PR to label`);
-      for (const n of targets) await addLabel(deps, n, label);
-      await deps.client.request('POST', `/repos/${deps.repo}/issues/${targets[0]}/comments`, { body: { body: commentBody(d, label, deps.runUrl) } });
+      if (d.pr === null && d.issue === null) throw new Error(`${d.type}/${d.reason} has no issue or PR to label`);
+      // Record first: if a later step fails, the next live run finishes it (pendingHandoffs).
+      await deps.record(ev);
+      await completeHandoff(deps, { key: dedupeKey(ev.type, ev.source_ids), type: d.type, reason: d.reason, effect: d.effect, issue: d.issue, pr: d.pr });
     } else if (d.effect === 'dispatch_workflow:repair') {
       throw new Error('repair dispatch is not available');
+    } else {
+      // alert:owner, pause_dispatch and none have no GitHub effect: the record is the effect.
+      await deps.record(ev);
     }
-    // alert:owner, pause_dispatch and none have no GitHub effect: the record is the effect.
-    await deps.record(ev);
     ran++;
   }
   return ran;
