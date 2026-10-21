@@ -150,6 +150,8 @@ export function fakeWorld(opts: WorldOptions = {}): FakeGitHub {
   gh.addRoute('GET', new RegExp(`^${r}/actions/runs/555/jobs$`), () => ({
     data: { jobs: [{ status: 'in_progress' }, { status: 'queued' }, { status: 'completed' }] },
   }));
+  // No implement runs today: spend measures 0 (tests of unknown spend replace this route).
+  gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), () => ({ data: { total_count: 0, workflow_runs: [] } }));
   gh.addRoute('GET', /^\/orgs\/sabbasi3-factory-lab\/repos$/, () => ({ data: [{ full_name: REPO, archived: false }] }));
   return gh;
 }

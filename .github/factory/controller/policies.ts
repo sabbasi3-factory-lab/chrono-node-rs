@@ -125,6 +125,10 @@ export function parsePolicies(texts: PolicyTexts): Policies {
   const budgets: BudgetsPolicy = {
     version: 1,
     per_task: { max_aic: num(b, 'budgets', 'per_task.max_aic') },
+    per_run: {
+      implement: num(b, 'budgets', 'per_run.implement', 1),
+      threat_detection: num(b, 'budgets', 'per_run.threat_detection', 1),
+    },
     factory_per_day: {
       max_aic: num(b, 'budgets', 'factory_per_day.max_aic', 1),
       alert_at_pct: num(b, 'budgets', 'factory_per_day.alert_at_pct'),

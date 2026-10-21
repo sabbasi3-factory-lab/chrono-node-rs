@@ -130,6 +130,7 @@ export function createClient(token: string, repo: string, fetchFn: FetchFn = fet
       if (!path.startsWith('/')) throw new Error('request path must start with /');
       assertAllowedRequest(repo, method, path, options.body, mode);
       const raw = options.accept === 'raw';
+      const binary = options.accept === 'binary';
       const headers: Record<string, string> = {
         Accept: raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json',
         Authorization: `Bearer ${token}`,
@@ -152,6 +153,7 @@ export function createClient(token: string, repo: string, fetchFn: FetchFn = fet
       }
       let data: unknown = null;
       if (raw) data = await res.text();
+      else if (binary) data = new Uint8Array(await res.arrayBuffer());
       else if (res.status !== 204) data = await res.json();
       return { status: res.status, data, next: nextPathFromLink(res.headers.get('link')) };
     },

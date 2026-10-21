@@ -19,6 +19,7 @@ import { createClient, readSnapshot, type RecordedCheck } from './github.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
+import { readSpendToday, spendSnapshotFields } from './spend.ts';
 import { isRecorded, killSwitchEnabled, plan } from './planner.ts';
 import { loadPolicies, loadPoliciesFromDir, readFactoryVersion } from './policies.ts';
 import type { AuditEvent, Decision, GitHubClient, PendingEvent, Policies, Snapshot } from './types.ts';
@@ -81,12 +82,13 @@ function trigger(env: RunEnv): string {
   return /^[a-z_]{1,40}$/.test(t) ? t : 'unknown';
 }
 
-export function renderSummary(decisions: Decision[], appended: AuditEvent[], factoryEnabled: boolean, live = false): string {
+export function renderSummary(decisions: Decision[], appended: AuditEvent[], factoryEnabled: boolean, live = false, spend: string | null = null): string {
   const cell = (v: string | number | null): string => (v === null ? '' : String(v));
   const lines = [
     `## Factory controller (${live ? 'live' : 'dry-run'})`,
     '',
     `Kill switch: ${factoryEnabled ? 'dispatch allowed (`FACTORY_ENABLED=true`)' : 'dispatch blocked'}`,
+    ...(spend ? [`Spend today: ${spend}`] : []),
     '',
   ];
   if (decisions.length === 0) {
@@ -125,7 +127,30 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         needBusyJobs: factoryEnabled,
       });
   snapshot.history = { ...derived.history, ...snapshot.history };
-  snapshot.factory_aic_today ??= derived.factory_aic_today;
+
+  // Spend, measured before planning (fixture mode uses the snapshot's value). Unknown spend
+  // means no dispatch: the planner waits on budget_unknown.
+  let spendNote = 'fixture';
+  if (deps.snapshot) {
+    snapshot.factory_aic_today ??= derived.factory_aic_today;
+  } else {
+    const spend = await readSpendToday(client, repo, now, policies.budgets.per_run);
+    if (spend.aic === null) {
+      snapshot.factory_aic_today = null;
+      spendNote = `unknown: ${spend.reason}`;
+    } else {
+      snapshot.factory_aic_today = spend.aic;
+      spendNote = `${spend.aic} AIC from ${spend.runs.length} implement run(s)`;
+    }
+    log(`spend today: ${spendNote}`);
+    if (spend.aic !== null) {
+      const day = isoSeconds(now).slice(0, 10);
+      // A measurement, not a decision: recorded as real (dry_run: false) in both modes. A new
+      // event only when the total or its sources change (dedupe on them).
+      const sources = spend.runs.map((r) => `run:${r.run_id}:${r.status}:${r.aic}`);
+      await audit.append({ type: 'spend_snapshot', source_ids: [`day:${day}`, `aic:${spend.aic}`, ...sources], fields: spendSnapshotFields(day, spend), dry_run: false }, now);
+    }
+  }
 
   const observed = observe(snapshot, now);
   // In live mode the decisions are what the controller will actually do (a repair becomes a
@@ -181,7 +206,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     );
   }
   log(`appended ${audit.appended.length} audit event(s) at ${isoSeconds(now)}`);
-  return { snapshot, decisions, appended: [...audit.appended], summary: renderSummary(decisions, audit.appended, factoryEnabled, live), live };
+  return { snapshot, decisions, appended: [...audit.appended], summary: renderSummary(decisions, audit.appended, factoryEnabled, live, spendNote), live };
 }
 
 // ---------------------------------------------------------------- CLI

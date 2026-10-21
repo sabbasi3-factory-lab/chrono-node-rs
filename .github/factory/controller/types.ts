@@ -30,6 +30,8 @@ export interface BudgetsPolicy {
   version: number;
   per_task: { max_aic: number };
   factory_per_day: { max_aic: number; alert_at_pct: number; pause_at_pct: number };
+  /** Per-run caps (gh-aw max-ai-credits); used to reserve spend for runs still going. */
+  per_run: { implement: number; threat_detection: number };
 }
 
 export type Tier = 'auto' | 'auto-strict' | 'human';
@@ -283,6 +285,8 @@ export interface AuditEvent {
 export interface PendingEvent {
   type: string;
   source_ids: string[];
+  /** Overrides the log's dry_run flag: measurements (spend_snapshot) are real in both modes. */
+  dry_run?: boolean;
   /** Payload fields without dedupe_key/factory_version/dry_run. */
   fields: JsonObject;
 }
@@ -294,7 +298,8 @@ export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 export interface RequestOptions {
   body?: unknown;
   /** `raw` returns the response body as text. */
-  accept?: 'json' | 'raw';
+  /** `raw` returns text, `binary` a Uint8Array (artifact zips). */
+  accept?: 'json' | 'raw' | 'binary';
   /** Statuses returned to the caller instead of thrown. */
   allowStatuses?: number[];
 }

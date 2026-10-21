@@ -14,6 +14,18 @@ import { dedupeKey } from '../audit.ts';
 import { CONTRACT_COMMIT, fakeWorld, seedSpendSnapshot } from './world.ts';
 
 const policies = await testPolicies();
+
+/** fakeWorld with one completed implement run today whose agent ran but left no usage artifact. */
+function unreadableSpendWorld(): FakeGitHub {
+  const gh = fakeWorld();
+  const r = `/repos/${REPO}`;
+  gh.routes.unshift(
+    { method: 'GET', path: new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 900, run_attempt: 1, status: 'completed', conclusion: 'success', created_at: '2026-10-16T09:00:00Z' }] } }) },
+    { method: 'GET', path: new RegExp(`^${r}/actions/runs/900/attempts/1/jobs$`), handler: () => ({ data: { jobs: [{ name: 'agent', steps: [{ name: 'Execute GitHub Copilot CLI', conclusion: 'success' }] }] } }) },
+    { method: 'GET', path: new RegExp(`^${r}/actions/runs/900/artifacts$`), handler: () => ({ data: { artifacts: [] } }) },
+  );
+  return gh;
+}
 const FV = '320c4fcedefc03648caa4cda140bd93932367986';
 const controllerDir = fileURLToPath(new URL('..', import.meta.url));
 
@@ -73,7 +85,8 @@ describe('main: dry-run enforcement', () => {
       assert.ok(result.decisions.length > 0);
       assertOnlyReadsAndAuditWrites(gh.calls);
       for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'dry-run'));
-      for (const e of result.appended) assert.equal(e.payload.dry_run, true, e.type);
+      // Every event is dry-run except the spend measurement, which is a fact in both modes.
+      for (const e of result.appended) assert.equal(e.payload.dry_run, e.type !== 'spend_snapshot', e.type);
       const writes = gh.calls.filter((c) => c.method !== 'GET' && c.path !== '/graphql');
       // Exactly 4 Git Data calls per event (blob, tree, commit, ref).
       assert.equal(writes.length, result.appended.length * 4);
@@ -107,7 +120,7 @@ describe('main: dry-run enforcement', () => {
     const cr = result.appended.find((e) => e.type === 'check_result')!;
     assert.equal(cr.payload.heldout_seed, '9007199254740993');
     for (const e of result.appended) {
-      assert.equal(e.payload.dry_run, true);
+      assert.equal(e.payload.dry_run, e.type !== 'spend_snapshot');
       assert.equal(e.payload.factory_version, FV);
       assert.match(String(e.payload.dedupe_key), /^sha256:[0-9a-f]{64}$/);
     }
@@ -272,9 +285,11 @@ describe('review fix 2: decision dedupe includes reason and effect', () => {
 });
 
 describe('independent review (follow-up): spend fails closed end to end', () => {
-  it('an empty audit log means unknown spend: nothing is dispatched, even with FACTORY_ENABLED=true', async () => {
+  it('unreadable spend (a completed run without its usage artifact) means nothing is dispatched, even with FACTORY_ENABLED=true', async () => {
     const lines: string[] = [];
-    const result = await run(deps(fakeWorld(), { log: (l) => lines.push(l) }));
+    const result = await run(deps(unreadableSpendWorld(), { log: (l) => lines.push(l) }));
+    assert.ok(lines.some((l) => l.startsWith('spend today: unknown: run 900 has 0 usage artifacts')));
+    assert.ok(!result.appended.some((e) => e.type === 'spend_snapshot'));
     assert.ok(!result.decisions.some((d) => d.type === 'dispatched'));
     assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
     assert.ok(!result.appended.some((e) => e.type === 'dispatched'));
@@ -289,8 +304,8 @@ const LIVE_ENV = { FACTORY_ENABLED: 'true', GITHUB_RUN_ID: '42', GITHUB_EVENT_NA
  * fakeWorld + routes for the three live writes. `dispatchStatus` simulates a failed dispatch;
  * `failComments` makes the next N comment POSTs fail. Comments persist across runs (GET lists them).
  */
-function liveWorld(dispatchStatus = 204, failComments = 0): FakeGitHub & { comments: Map<number, string[]> } {
-  const gh = fakeWorld() as FakeGitHub & { comments: Map<number, string[]> };
+function liveWorld(dispatchStatus = 204, failComments = 0, base: FakeGitHub = fakeWorld()): FakeGitHub & { comments: Map<number, string[]> } {
+  const gh = base as FakeGitHub & { comments: Map<number, string[]> };
   gh.comments = new Map();
   let failures = failComments;
   gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues/\\d+/labels$`), () => ({ data: [] }));
@@ -364,8 +379,8 @@ describe('main: live mode (FACTORY_ENABLED=true)', () => {
     assert.ok(!file.includes('"type":"dispatched"'));
   });
 
-  it('without a spend record for today nothing is dispatched (budget_unknown), even live', async () => {
-    const gh = liveWorld();
+  it('with spend unknown nothing is dispatched (budget_unknown), even live', async () => {
+    const gh = liveWorld(204, 0, unreadableSpendWorld());
     const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false }));
     assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
     assert.ok(!effectCalls(gh).some((c) => c.path.endsWith('/dispatches')));
@@ -521,5 +536,38 @@ describe('live mode: what the run reports', () => {
     assert.doesNotMatch(result.summary, /dispatch_workflow:repair/);
     const ev = result.appended.find((e) => e.payload.reason === 'repair_unavailable')!;
     assert.deepEqual([ev.type, ev.payload.effect, ev.payload.dry_run], ['needs_human', 'label:needs-human', false]);
+  });
+});
+
+describe('spend collector in the run', () => {
+  it('records a real spend_snapshot (dry_run: false, with sources) before planning, even in dry-run, and only when it changes', async () => {
+    const gh = fakeWorld();
+    const r = `/repos/${REPO}`;
+    gh.routes.unshift(
+      { method: 'GET', path: new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 901, run_attempt: 1, status: 'in_progress', created_at: '2026-10-16T09:00:00Z' }] } }) },
+    );
+    const lines: string[] = [];
+    const first = await run(deps(gh, { log: (l) => lines.push(l) }));
+    assert.equal(first.live, false);
+    assert.ok(lines.includes('spend today: 900 AIC from 1 implement run(s)'));
+    const snap = first.appended.find((e) => e.type === 'spend_snapshot')!;
+    assert.equal(snap.payload.dry_run, false);
+    assert.deepEqual([snap.payload.day, snap.payload.aic_today, snap.payload.runs], ['2026-10-16', 900, [{ run_id: 901, status: 'reserved', aic: 900 }]]);
+    assert.ok(first.appended.indexOf(snap) < first.appended.findIndex((e) => e.type === 'dispatched'), 'measured before the decisions are recorded');
+    assert.equal(first.snapshot.factory_aic_today, 900);
+    assert.match(first.summary, /Spend today: 900 AIC from 1 implement run\(s\)/);
+    const second = await run(deps(gh, { now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.ok(!second.appended.some((e) => e.type === 'spend_snapshot'), 'unchanged spend is not recorded again');
+  });
+
+  it('reserved spend counts against the daily budget (pause when reservations reach it)', async () => {
+    const gh = fakeWorld();
+    const r = `/repos/${REPO}`;
+    const runs = Array.from({ length: 12 }, (_, i) => ({ id: 910 + i, run_attempt: 1, status: 'queued', created_at: '2026-10-16T09:00:00Z' }));
+    gh.routes.unshift({ method: 'GET', path: new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: runs } }) });
+    const result = await run(deps(gh));
+    assert.equal(result.snapshot.factory_aic_today, 10800);
+    assert.ok(result.decisions.some((d) => d.type === 'budget_pause'));
+    assert.ok(!result.decisions.some((d) => d.type === 'dispatched'));
   });
 });
