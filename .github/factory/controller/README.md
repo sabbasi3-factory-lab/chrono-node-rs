@@ -253,10 +253,25 @@ non-dry-run `picked`/`dispatched` event exists.
 History comes only from **non-dry-run** audit events: picked time, repairs, signatures and spend. So
 v1's own dry-run decisions never count as real work.
 
-**Spend fails closed.** Today's factory spend is **unknown** (`null` → `wait/budget_unknown`, no
-dispatch or repair) unless a non-dry-run `spend_snapshot` event for today exists (payload `day`,
-`aic_today`, written by the outcomes collector from `gh aw logs`). When it exists, spend is the larger of
-the newest snapshot and the sum of today's `run_finished` AIC. An empty log is never read as 0 AIC.
+**Spend is measured every run, before planning (`spend.ts`), and fails closed.** For each
+`implement.lock.yml` run created today (UTC):
+
+| Run | Counted as |
+|---|---|
+| queued / in progress | **reserved** at the per-run caps: `budgets.per_run.implement + per_run.threat_detection` (500 + 400) |
+| completed, no job's `Execute …` step ran (e.g. dispatch validation failed) | **0** (`no_inference`): no model calls were made |
+| completed, with model calls | **measured** from gh-aw's `usage` artifact: the agent from `agent_usage.json` → `ai_credits`; every other job whose `Execute …` step ran (detection, and evals or others if gh-aw adds them) from the sum of `ai_credits_this_response` in `<job>/token_usage.jsonl` |
+
+If **any** completed run's spend can't be read, today's spend is **unknown** (`null` →
+`wait/budget_unknown`): no or expired `usage` artifact, more than one, a download/API error, a missing or
+malformed accounting file, a zip that fails its size/CRC checks (stored/deflate only, no ZIP64 or
+encryption, ≤ 20 MB), a re-run (attempt > 1), or an unexpected job name. No runs today means a measured
+**0**. The artifact zip is read with Node's zlib; nothing is executed.
+
+When spend is known, the controller records a `spend_snapshot` (`day`, `aic_today`, `runs[{run_id,
+status, aic}]`, `runs_total`) with **`dry_run: false` in both modes** (it's a measurement, not a
+decision), deduped on the total and its sources, so it's only re-recorded when something changed. The
+planner uses the fresh measurement directly; fixture mode uses the snapshot's value.
 
 ## Modes: dry-run and live
 
@@ -320,7 +335,8 @@ whole pipeline against a recording fake in both modes, and checks every call aga
 | `tasks.ts` | marker/trailer/contract parsing, globs, tiers, area locks |
 | `planner.ts` | pure planner |
 | `observe.ts` | snapshot → observed fact events |
-| `history.ts` | task history and today's spend from non-dry-run audit events |
+| `history.ts` | task history and spend from non-dry-run audit events |
+| `spend.ts` | today's implement spend from gh-aw usage artifacts (reserved / measured / unknown) |
 | `heartbeat.ts` | heartbeat due check and hour-bucket dedupe |
 | `executor.ts` | the mode switch (`isLive`), dry-run logger, live effects, decision → event |
 | `github.ts` | fetch client with write guard, pagination, GraphQL, snapshot reader, CI log parsing |

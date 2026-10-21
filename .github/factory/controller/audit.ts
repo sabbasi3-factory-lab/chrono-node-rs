@@ -327,7 +327,7 @@ export class AuditLog {
         ...pending.fields,
         dedupe_key: key,
         factory_version: this.factoryVersion,
-        dry_run: this.dryRun,
+        dry_run: pending.dry_run ?? this.dryRun,
       };
       assertSafePayload(payload);
       canonicalize(payload);
