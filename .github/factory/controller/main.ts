@@ -1,6 +1,8 @@
-// Controller v1 entrypoint (dry-run only, no AI).
-//   load policies → read audit log → snapshot → observe → plan → log
-//   decisions → append audit events → heartbeat.
+// Controller entrypoint (no AI).
+//   load policies → read audit log → snapshot → observe → plan → execute (live) or log
+//   (dry-run) decisions → append audit events → heartbeat.
+// Live only when FACTORY_ENABLED is exactly "true" (executor.ts lists the effects);
+// otherwise dry-run, exactly as v1.
 //
 // Usage:
 //   node main.ts                                   (CI; needs GH_TOKEN etc.)
@@ -9,9 +11,9 @@
 import { appendFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AuditLog, AuditValidationError, isoSeconds } from './audit.ts';
+import { AuditLog, AuditValidationError, dedupeKey, isoSeconds } from './audit.ts';
 import { canonicalize } from './canonical.ts';
-import { decisionEvent, DRY_RUN, execute } from './executor.ts';
+import { decisionEvent, execute, executeLive, isLive, liveDecision, pendingHandoffs } from './executor.ts';
 import { FakeGitHub } from './fake.ts';
 import { createClient, readSnapshot, type RecordedCheck } from './github.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
@@ -40,6 +42,10 @@ export interface RunDeps {
   log: (line: string) => void;
   /** Fixture mode: use this snapshot instead of reading GitHub. */
   snapshot?: Snapshot;
+  /** Force dry-run whatever FACTORY_ENABLED says (fixture mode). */
+  forceDryRun?: boolean;
+  /** This run's URL, for comments (live mode). */
+  runUrl?: string | null;
 }
 
 export interface RunResult {
@@ -47,6 +53,7 @@ export interface RunResult {
   decisions: Decision[];
   appended: AuditEvent[];
   summary: string;
+  live: boolean;
 }
 
 function recordedChecks(events: AuditEvent[]): Map<string, RecordedCheck> {
@@ -74,10 +81,10 @@ function trigger(env: RunEnv): string {
   return /^[a-z_]{1,40}$/.test(t) ? t : 'unknown';
 }
 
-export function renderSummary(decisions: Decision[], appended: AuditEvent[], factoryEnabled: boolean): string {
+export function renderSummary(decisions: Decision[], appended: AuditEvent[], factoryEnabled: boolean, live = false): string {
   const cell = (v: string | number | null): string => (v === null ? '' : String(v));
   const lines = [
-    '## Factory controller v1 (dry-run)',
+    `## Factory controller (${live ? 'live' : 'dry-run'})`,
     '',
     `Kill switch: ${factoryEnabled ? 'dispatch allowed (`FACTORY_ENABLED=true`)' : 'dispatch blocked'}`,
     '',
@@ -85,7 +92,7 @@ export function renderSummary(decisions: Decision[], appended: AuditEvent[], fac
   if (decisions.length === 0) {
     lines.push('No decisions.');
   } else {
-    lines.push('| # | type | reason | would | task | issue | PR |', '|---|---|---|---|---|---|---|');
+    lines.push(`| # | type | reason | ${live ? 'effect' : 'would'} | task | issue | PR |`, '|---|---|---|---|---|---|---|');
     decisions.forEach((d, i) => {
       lines.push(
         `| ${i + 1} | ${d.type} | ${d.reason} | ${d.effect} | ${cell(d.task)} | ${d.issue === null ? '' : `#${d.issue}`} | ${d.pr === null ? '' : `#${d.pr}`} |`,
@@ -98,11 +105,12 @@ export function renderSummary(decisions: Decision[], appended: AuditEvent[], fac
 }
 
 export async function run(deps: RunDeps): Promise<RunResult> {
-  if (DRY_RUN !== true) throw new Error('controller v1 must run in dry-run mode');
   const { client, repo, policies, now, log } = deps;
   const factoryEnabled = killSwitchEnabled({ FACTORY_ENABLED: deps.env.FACTORY_ENABLED });
+  const live = !deps.forceDryRun && isLive({ FACTORY_ENABLED: deps.env.FACTORY_ENABLED });
+  log(`mode: ${live ? 'live (FACTORY_ENABLED=true)' : 'dry-run'}`);
 
-  const audit = new AuditLog(client, { repo, factoryVersion: deps.factoryVersion });
+  const audit = new AuditLog(client, { repo, factoryVersion: deps.factoryVersion, dryRun: !live });
   await audit.load(now);
   const derived = deriveState(audit.events, now);
 
@@ -120,8 +128,11 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   snapshot.factory_aic_today ??= derived.factory_aic_today;
 
   const observed = observe(snapshot, now);
-  const decisions = plan(snapshot, policies, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, now);
-  execute(decisions, log);
+  // In live mode the decisions are what the controller will actually do (a repair becomes a
+  // human hand-off: there is no repair workflow), so the summary and result match the audit log.
+  const planned = plan(snapshot, policies, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, now);
+  const decisions = live ? planned.map(liveDecision) : planned;
+  if (!live) execute(decisions, log);
 
   // One bad input (an invalid payload) must not stop the run before the
   // heartbeat: skip and log that event. Other errors (API, chain) still fail.
@@ -136,7 +147,26 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     }
   };
   for (const ev of observed) await appendOrSkip(ev);
-  for (const d of decisions) if (isRecorded(d)) await appendOrSkip(decisionEvent(d));
+  if (live) {
+    // Effects, each recorded right after it ran. An effect failure stops the run (fail closed);
+    // an event that can't be recorded is rejected before its effect runs.
+    await executeLive(decisions, {
+      client,
+      repo,
+      log,
+      runUrl: deps.runUrl ?? null,
+      pending: pendingHandoffs(audit.events),
+      isNew: (ev) => !audit.hasDedupeKey(dedupeKey(ev.type, ev.source_ids)),
+      validate: (ev) => {
+        audit.prepare(ev);
+      },
+      record: async (ev) => {
+        await audit.append(ev, now);
+      },
+    });
+  } else {
+    for (const d of decisions) if (isRecorded(d)) await appendOrSkip(decisionEvent(d));
+  }
   if (skipped > 0) log(`skipped ${skipped} invalid audit event(s)`);
   if (heartbeatDue(audit.newestOfType('heartbeat'), now)) {
     await audit.append(
@@ -151,7 +181,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     );
   }
   log(`appended ${audit.appended.length} audit event(s) at ${isoSeconds(now)}`);
-  return { snapshot, decisions, appended: [...audit.appended], summary: renderSummary(decisions, audit.appended, factoryEnabled) };
+  return { snapshot, decisions, appended: [...audit.appended], summary: renderSummary(decisions, audit.appended, factoryEnabled, live), live };
 }
 
 // ---------------------------------------------------------------- CLI
@@ -193,8 +223,9 @@ async function cli(): Promise<void> {
       now,
       log,
       snapshot,
+      forceDryRun: true,
     };
-    log(`fixture mode: ${args.fixture} (in-memory audit branch, nothing leaves this process)`);
+    log(`fixture mode: ${args.fixture} (in-memory audit branch, always dry-run, nothing leaves this process)`);
   } else {
     const repo = process.env.GITHUB_REPOSITORY ?? '';
     if (!/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(repo)) throw new Error('GITHUB_REPOSITORY missing or invalid');
@@ -202,8 +233,12 @@ async function cli(): Promise<void> {
     if (!token) throw new Error('GH_TOKEN missing');
     // Policies before any GitHub call: if they can't be loaded, nothing is read or written.
     const policies = await loadPolicies(factoryVersion);
+    const mode = isLive({ FACTORY_ENABLED: process.env.FACTORY_ENABLED }) ? 'live' : 'dry-run';
+    const server = process.env.GITHUB_SERVER_URL ?? 'https://github.com';
+    const ghRun = process.env.GITHUB_RUN_ID;
     deps = {
-      client: createClient(token, repo),
+      client: createClient(token, repo, fetch, mode),
+      runUrl: ghRun && /^[0-9]{1,20}$/.test(ghRun) ? `${server}/${repo}/actions/runs/${ghRun}` : null,
       repo,
       policies,
       factoryVersion,

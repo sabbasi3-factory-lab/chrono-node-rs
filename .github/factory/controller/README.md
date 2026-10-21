@@ -1,12 +1,13 @@
-# Factory controller v1 (dry-run)
+# Factory controller
 
 Plain GitHub Actions and TypeScript, with **no AI**. It implements the controller from the factory design
 ([DESIGN.md](https://github.com/sabbasi3-factory-lab/factory/blob/main/DESIGN.md) §7 and §11), pinned to the
 factory version in [`../factory-version`](../factory-version).
 
-**v1 is dry-run only.** It reads GitHub, plans decisions with reason codes, and logs what it *would* do.
-It never labels, comments, dispatches, queues, merges or reverts. The only thing it writes is the
-append-only audit log on the protected `audit` branch.
+**Dry-run unless `FACTORY_ENABLED` is exactly `"true"`.** In dry-run it reads GitHub, plans decisions
+with reason codes and logs what it *would* do; the only thing it writes is the append-only audit log
+on the protected `audit` branch. In **live** mode it also takes a short, fixed list of effects (below).
+It never queues, merges, closes or reverts anything, and never removes a label, in either mode.
 
 ## Pipeline (`main.ts`)
 
@@ -30,7 +31,8 @@ append-only audit log on the protected `audit` branch.
      runs for an open PR head. That is at most 33 list calls per poll.
    - when `FACTORY_ENABLED=true`, the org's busy Actions jobs
 5. `observe()` turns the snapshot into fact events, and `plan()` (pure) turns it into decisions.
-6. The executor logs `[dry-run] would <effect> …` for each decision. It has no GitHub client.
+6. Dry-run: the executor logs `[dry-run] would <effect> …` for each decision (no GitHub client). Live: it
+   takes each decision's effect once (see below), and records it right after.
 7. Append observed facts, then non-`wait` decisions, then the heartbeat if one is due. Every event is
    deduped by `dedupe_key`.
    - An event that fails validation (`AuditValidationError`: unsafe payload string, bad source id) is
@@ -256,25 +258,57 @@ dispatch or repair) unless a non-dry-run `spend_snapshot` event for today exists
 `aic_today`, written by the outcomes collector from `gh aw logs`). When it exists, spend is the larger of
 the newest snapshot and the sum of today's `run_finished` AIC. An empty log is never read as 0 AIC.
 
-## How dry-run is enforced
+## Modes: dry-run and live
 
-- `executor.ts` exports `DRY_RUN = true as const`. It is not an input or an env var. `run()` and
-  `execute()` throw if it is not `true`.
+**Dry-run** (default, and whenever `FACTORY_ENABLED` isn't exactly `"true"`, including unset, `TRUE`, `1`):
 - The executor has **no GitHub client**. It only formats `would …` log lines.
-- The real client (`github.ts`) calls `assertAllowedRequest()` before every request. It refuses
-  everything except:
-  - GETs
-  - read-only GraphQL `query`
-  - `POST git/blobs|trees|commits`
-  - `PATCH git/refs/heads/audit` with `force: false`
-  - `POST git/refs` for `refs/heads/audit`
-- `test/main.test.ts` runs the whole pipeline against a recording fake. It asserts that every
-  non-GET call is one of those audit-branch Git Data writes.
-- The workflow's `GITHUB_TOKEN` is read-only.
-- The App token is requested with only `contents: write` plus read scopes. It is minted after
-  `npm ci` and `npm test`.
-- The workflow uses `pull_request_target` and always checks out `main`, so PR code never runs with the
-  App token.
+- Every audit event is written with `dry_run: true`.
+- The real client (`github.ts`) calls `assertAllowedRequest(…, 'dry-run')` before every request. It
+  refuses everything except: GETs; read-only GraphQL `query`; `POST git/blobs|trees|commits`;
+  `PATCH git/refs/heads/audit` with `force: false`; `POST git/refs` for `refs/heads/audit`.
+- The workflow requests the App token with `contents: write` plus **read** scopes only.
+- `--fixture` mode is always dry-run.
+
+**Live** (`FACTORY_ENABLED=true`): exactly these effects become real.
+
+| Decision effect | What the controller does (in this order) |
+|---|---|
+| `dispatch_workflow:implement` | add `factory:picked` to the task issue, then dispatch `implement.lock.yml` on `main` with `{task, issue, attempt, contract_sha}` (full SHA) |
+| `label:needs-human` | add `needs-human` to the PR and/or issue, then one templated comment on the PR (or the issue) |
+| `label:blocked` | add `blocked`, then one templated comment |
+| `label:stale-contract` | add `stale-contract`, then one templated comment |
+| `dispatch_workflow:repair` | there is no repair workflow yet, so it becomes `needs_human`/`repair_unavailable`: label + comment |
+| `alert:owner`, `pause_dispatch`, `none` | no GitHub effect; recorded in the audit log only |
+
+- **Once per decision.** An effect runs only if its **live** audit event is new. Live decision events
+  add `mode:live` to their dedupe identity, so a decision recorded in dry-run (switch off) doesn't
+  count as done once the switch is on. Every event is validated before any effect, and recorded
+  with `dry_run: false`.
+- **Hand-offs finish even if a step fails.** For a label effect the decision is recorded first,
+  then the label(s), then one comment carrying a hidden `<!-- factory-decision: <key> -->` marker,
+  then a `handoff_done` event. Each live run first finishes any recorded hand-off without
+  `handoff_done` (at most 20 per run): labels are re-added (idempotent), and the comment is posted
+  only if none with its marker exists. The planner skips human-held tasks, so it wouldn't retry them.
+- **No double dispatch.** `factory:picked` is added before the dispatch. If the dispatch or the
+  record fails, the run fails (fail closed), and the next run sees a picked issue with no pick time:
+  `needs_human`/`pick_time_unknown`, never a second dispatch.
+- **Comments** come from a fixed template: `**Factory controller** · <type> (<reason>)`, one fixed
+  sentence per reason code, the label, and the run link. No text from issues, PRs or agents.
+- **The client's allowlist** (`assertAllowedRequest(…, 'live')`) independently allows only:
+  `POST actions/workflows/implement.lock.yml/dispatches` with `ref: main` and exactly the four
+  validated string inputs (no `aw_context`); `POST issues/<n>/labels` with labels from
+  `factory:picked`, `needs-human`, `blocked`, `stale-contract`; `POST issues/<n>/comments` with a body
+  starting with the template marker (≤ 2,000 chars). It still refuses merges, closes, label removal,
+  `factory:ready`, reviews, other workflows, other refs and GraphQL mutations.
+- The workflow requests `actions`, `issues` and `pull-requests` **write** only when
+  `vars.FACTORY_ENABLED` is exactly `true`, checked case-sensitively in a shell step (Actions
+  expressions compare strings case-insensitively). The controller applies the same rule.
+- **Dispatch also needs a spend record.** The planner waits (`budget_unknown`) unless a non-dry-run
+  `spend_snapshot` for today exists (see History), so live mode alone doesn't dispatch anything.
+
+Both modes: the workflow uses `pull_request_target` and always checks out `main`, so PR code never runs
+with the App token; the token is minted after `npm ci` and `npm test`. `test/main.test.ts` runs the
+whole pipeline against a recording fake in both modes, and checks every call against the allowlist.
 
 ## Files
 
@@ -288,7 +322,7 @@ the newest snapshot and the sum of today's `run_finished` AIC. An empty log is n
 | `observe.ts` | snapshot → observed fact events |
 | `history.ts` | task history and today's spend from non-dry-run audit events |
 | `heartbeat.ts` | heartbeat due check and hour-bucket dedupe |
-| `executor.ts` | dry-run executor (logs only), decision → event |
+| `executor.ts` | the mode switch (`isLive`), dry-run logger, live effects, decision → event |
 | `github.ts` | fetch client with write guard, pagination, GraphQL, snapshot reader, CI log parsing |
 | `policies.ts` | pinned policy loader and validation |
 | `fake.ts` | in-memory GitHub fake (tests and `--fixture`) |

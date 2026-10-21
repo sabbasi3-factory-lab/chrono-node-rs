@@ -3,15 +3,15 @@ import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { assertAllowedRequest } from '../github.ts';
+import { assertAllowedRequest, COMMENT_MARKER } from '../github.ts';
 import { AUDIT_BRANCH, splitLines, verify } from '../audit.ts';
-import { DRY_RUN, decisionEvent, describe as describeDecision, execute } from '../executor.ts';
+import { decisionEvent, describe as describeDecision, execute, executeLive, isLive, liveDecision, pendingHandoffs } from '../executor.ts';
 import { FakeGitHub, type RecordedCall } from '../fake.ts';
 import { parseArgs, run, type RunDeps } from '../main.ts';
 import type { Snapshot } from '../types.ts';
 import { checkRun, commitSha, contract, hex40, history, issue, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
 import { dedupeKey } from '../audit.ts';
-import { fakeWorld, seedSpendSnapshot } from './world.ts';
+import { CONTRACT_COMMIT, fakeWorld, seedSpendSnapshot } from './world.ts';
 
 const policies = await testPolicies();
 const FV = '320c4fcedefc03648caa4cda140bd93932367986';
@@ -26,6 +26,9 @@ function deps(client: FakeGitHub, over: Partial<RunDeps> = {}): RunDeps {
     env: { FACTORY_ENABLED: 'true', GITHUB_RUN_ID: '123', GITHUB_EVENT_NAME: 'schedule' },
     now: NOW,
     log: () => {},
+    // The planner sees FACTORY_ENABLED=true (so it plans dispatches), but these tests check the
+    // dry-run path. Tests of the real switch set forceDryRun: false.
+    forceDryRun: true,
     ...over,
   };
 }
@@ -54,17 +57,23 @@ function assertOnlyReadsAndAuditWrites(calls: RecordedCall[]): void {
 }
 
 describe('main: dry-run enforcement', () => {
-  it('DRY_RUN is a hard-wired constant', () => {
-    assert.equal(DRY_RUN, true);
+  it('is live only when FACTORY_ENABLED is exactly "true"', () => {
+    assert.equal(isLive({ FACTORY_ENABLED: 'true' }), true);
+    for (const v of [undefined, '', 'false', 'TRUE', 'True', 'true ', ' true', '1', 'yes', 'on']) assert.equal(isLive({ FACTORY_ENABLED: v }), false, String(v));
   });
 
-  for (const enabled of ['true', undefined]) {
-    it(`never calls a mutating endpoint except audit-branch Git Data writes (FACTORY_ENABLED=${String(enabled)})`, async () => {
+  // The switch-off case: dry-run stays on, exactly as v1.
+  for (const enabled of [undefined, 'false', 'TRUE', 'true ', '1']) {
+    it(`dry-run stays on: no mutating call except audit-branch Git Data writes, every event dry_run (FACTORY_ENABLED=${JSON.stringify(enabled)})`, async () => {
       const gh = fakeWorld();
-      const result = await run(deps(gh, { env: { FACTORY_ENABLED: enabled, GITHUB_RUN_ID: '1', GITHUB_EVENT_NAME: 'schedule' } }));
+      await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+      const result = await run(deps(gh, { env: { FACTORY_ENABLED: enabled, GITHUB_RUN_ID: '1', GITHUB_EVENT_NAME: 'schedule' }, forceDryRun: false }));
+      assert.equal(result.live, false);
       assert.ok(result.appended.length > 0);
       assert.ok(result.decisions.length > 0);
       assertOnlyReadsAndAuditWrites(gh.calls);
+      for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'dry-run'));
+      for (const e of result.appended) assert.equal(e.payload.dry_run, true, e.type);
       const writes = gh.calls.filter((c) => c.method !== 'GET' && c.path !== '/graphql');
       // Exactly 4 Git Data calls per event (blob, tree, commit, ref).
       assert.equal(writes.length, result.appended.length * 4);
@@ -153,12 +162,12 @@ describe('main: dry-run enforcement', () => {
 });
 
 describe('executor', () => {
-  it('only logs, never acts', () => {
+  it('dry-run only logs, never acts', () => {
     const d = { type: 'needs_human', reason: 'task_timeout', effect: 'label:needs-human', dry_run: true, task: 'en/a', issue: 1, pr: null, attempt: null, contract_sha: null, run_id: null, failure_signature: null, source_ids: ['I_1'] } as const;
     const out: string[] = [];
     execute([{ ...d, source_ids: [...d.source_ids] }], (l) => out.push(l));
     assert.deepEqual(out, ['[dry-run] would label:needs-human (needs_human/task_timeout) task=en/a issue=#1']);
-    assert.equal(execute.length, 2, 'executor takes decisions + logger only (no client)');
+    assert.equal(execute.length, 2, 'the dry-run executor takes decisions + logger only (no client)');
     assert.equal(describeDecision({ ...d, source_ids: [], type: 'wait', reason: 'wip_full', effect: 'none' }), '[dry-run] wait (wip_full) task=en/a issue=#1');
     assert.deepEqual(decisionEvent({ ...d, source_ids: ['I_1'] }).fields, { reason: 'task_timeout', effect: 'label:needs-human', task: 'en/a', issue: 1 });
     assert.throws(() => decisionEvent({ ...d, source_ids: ['I_1'], type: 'wait' }), /not recorded/);
@@ -269,5 +278,248 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
     assert.ok(!result.decisions.some((d) => d.type === 'dispatched'));
     assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
     assert.ok(!result.appended.some((e) => e.type === 'dispatched'));
+  });
+});
+
+// ---------------------------------------------------------------- live mode
+
+const LIVE_ENV = { FACTORY_ENABLED: 'true', GITHUB_RUN_ID: '42', GITHUB_EVENT_NAME: 'schedule' };
+
+/**
+ * fakeWorld + routes for the three live writes. `dispatchStatus` simulates a failed dispatch;
+ * `failComments` makes the next N comment POSTs fail. Comments persist across runs (GET lists them).
+ */
+function liveWorld(dispatchStatus = 204, failComments = 0): FakeGitHub & { comments: Map<number, string[]> } {
+  const gh = fakeWorld() as FakeGitHub & { comments: Map<number, string[]> };
+  gh.comments = new Map();
+  let failures = failComments;
+  gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues/\\d+/labels$`), () => ({ data: [] }));
+  gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues/\\d+/comments$`), (path, body) => {
+    if (failures > 0) {
+      failures--;
+      return { status: 502, data: null };
+    }
+    const n = Number(/issues\/(\d+)\/comments/.exec(path)![1]);
+    gh.comments.set(n, [...(gh.comments.get(n) ?? []), (body as { body: string }).body]);
+    return { status: 201, data: { id: 1 } };
+  });
+  gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/\\d+/comments$`), (path) => {
+    const n = Number(/issues\/(\d+)\/comments/.exec(path)![1]);
+    return { data: (gh.comments.get(n) ?? []).map((body, i) => ({ id: i + 1, body })) };
+  });
+  gh.addRoute('POST', new RegExp(`^/repos/${REPO}/actions/workflows/implement\\.lock\\.yml/dispatches$`), () => ({ status: dispatchStatus, data: null }));
+  return gh;
+}
+const effectCalls = (gh: FakeGitHub) => gh.calls.filter((c) => c.method === 'POST' && !/\/git\/|^\/graphql$/.test(c.path));
+
+describe('main: live mode (FACTORY_ENABLED=true)', () => {
+  it('labels the issue picked, then dispatches implement on main, then records it (dry_run: false)', async () => {
+    const gh = liveWorld();
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    const lines: string[] = [];
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, runUrl: 'https://github.com/x/y/actions/runs/42', log: (l) => lines.push(l) }));
+    assert.equal(result.live, true);
+    assert.ok(lines.includes('mode: live (FACTORY_ENABLED=true)'));
+    const calls = effectCalls(gh).map((c) => [c.path, c.body]);
+    const pick = calls.findIndex(([p]) => p === `/repos/${REPO}/issues/10/labels`);
+    const dispatch = calls.findIndex(([p]) => String(p).endsWith('/implement.lock.yml/dispatches'));
+    assert.ok(pick >= 0 && dispatch > pick, 'factory:picked is added before the dispatch');
+    assert.deepEqual(calls[pick]![1], { labels: ['factory:picked'] });
+    assert.deepEqual(calls[dispatch]![1], { ref: 'main', inputs: { task: 'en/casual-date', issue: '10', attempt: '1', contract_sha: CONTRACT_COMMIT } });
+    // Every call the controller made is on the live allowlist.
+    for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
+    const dispatched = result.appended.find((e) => e.type === 'dispatched')!;
+    assert.equal(dispatched.payload.dry_run, false);
+    assert.equal(dispatched.payload.reason, 'would_dispatch');
+    for (const e of result.appended) assert.equal(e.payload.dry_run, false, e.type);
+  });
+
+  it('a failed gates run: labels the PR needs-human and posts one templated comment', async () => {
+    const gh = liveWorld();
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, runUrl: 'https://github.com/x/y/actions/runs/42' }));
+    const calls = effectCalls(gh);
+    assert.deepEqual(calls.find((c) => c.path === `/repos/${REPO}/issues/11/labels`)!.body, { labels: ['needs-human'] });
+    const comment = calls.find((c) => c.path === `/repos/${REPO}/issues/11/comments`)!.body as { body: string };
+    assert.ok(comment.body.startsWith(`${COMMENT_MARKER} · \`needs_human\` (\`gates_failed\`)`));
+    assert.match(comment.body, /Run: https:\/\/github.com\/x\/y\/actions\/runs\/42/);
+    assert.ok(!comment.body.includes('Ignore previous instructions'), 'no text from the PR body');
+  });
+
+  it('a second run takes no effect twice (audit dedupe and the pick time)', async () => {
+    const gh = liveWorld();
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false }));
+    gh.calls.length = 0;
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.deepEqual(effectCalls(gh), []);
+  });
+
+  it('a failed dispatch fails the run after factory:picked, and records nothing (no double dispatch later)', async () => {
+    const gh = liveWorld(500);
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    await assert.rejects(run(deps(gh, { env: LIVE_ENV, forceDryRun: false })), /dispatches: HTTP 500/);
+    assert.ok(effectCalls(gh).some((c) => c.path === `/repos/${REPO}/issues/10/labels`));
+    const file = gh.fileAt(AUDIT_BRANCH, 'audit/2026/10/16.jsonl') ?? '';
+    assert.ok(!file.includes('"type":"dispatched"'));
+  });
+
+  it('without a spend record for today nothing is dispatched (budget_unknown), even live', async () => {
+    const gh = liveWorld();
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false }));
+    assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
+    assert.ok(!effectCalls(gh).some((c) => c.path.endsWith('/dispatches')));
+  });
+
+  it('fixture mode stays dry-run even with FACTORY_ENABLED=true', async () => {
+    const gh = liveWorld();
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: true }));
+    assert.equal(result.live, false);
+    assert.deepEqual(effectCalls(gh), []);
+  });
+
+  it('a repair becomes needs_human/repair_unavailable (there is no repair workflow yet)', async () => {
+    const base = { type: 'repair_dispatched', reason: 'ci_failed', effect: 'dispatch_workflow:repair', dry_run: true, task: 'en/a', issue: 3, pr: 21, attempt: 2, contract_sha: 'c'.repeat(40), run_id: 500, failure_signature: 's', source_ids: ['500/attempts/1', 'PR_21'] } as const;
+    const d = { ...base, source_ids: [...base.source_ids] };
+    assert.deepEqual([liveDecision(d).type, liveDecision(d).reason, liveDecision(d).effect], ['needs_human', 'repair_unavailable', 'label:needs-human']);
+    const calls: { method: string; path: string; body: unknown }[] = [];
+    const client = { request: async (method: string, path: string, o: { body?: unknown } = {}) => (calls.push({ method, path, body: o.body }), { status: 200, data: method === 'GET' ? [] : null, next: null }) };
+    const recorded: string[] = [];
+    await executeLive([d], { client: client as never, repo: REPO, log: () => {}, runUrl: null, isNew: () => true, validate: () => {}, record: async (ev) => void recorded.push(`${ev.type}/${String(ev.fields.reason ?? ev.fields.effect)}`) });
+    assert.deepEqual(calls.filter((c) => c.method === 'POST').map((c) => c.path), [
+      `/repos/${REPO}/issues/21/labels`,
+      `/repos/${REPO}/issues/3/labels`,
+      `/repos/${REPO}/issues/21/comments`,
+    ]);
+    assert.ok(!calls.some((c) => c.path.includes('/dispatches')));
+    assert.deepEqual(recorded, ['needs_human/repair_unavailable', 'handoff_done/label:needs-human'], 'recorded before the effect, completed after');
+  });
+});
+
+describe('write allowlist by mode', () => {
+  const sha = 'a'.repeat(40);
+  const dispatch = (inputs: Record<string, unknown>, ref = 'main', wf = 'implement.lock.yml') => ['POST', `/repos/${REPO}/actions/workflows/${wf}/dispatches`, { ref, inputs }] as const;
+  const good = { task: 'en/time-unit-ago-format-parser', issue: '45', attempt: '1', contract_sha: sha };
+  const allowed = (mode: 'live' | 'dry-run', [m, p, b]: readonly [string, string, unknown]) => {
+    try {
+      assertAllowedRequest(REPO, m as 'POST', p, b, mode);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  it('dry-run refuses every live write', () => {
+    for (const w of [dispatch(good), ['POST', `/repos/${REPO}/issues/45/labels`, { labels: ['factory:picked'] }], ['POST', `/repos/${REPO}/issues/45/comments`, { body: `${COMMENT_MARKER} x` }]] as const) {
+      assert.equal(allowed('dry-run', w), false, w[1]);
+      assert.equal(allowed('live', w), true, w[1]);
+    }
+  });
+
+  it('live allows only implement on main, with exactly the four validated inputs', () => {
+    assert.equal(allowed('live', dispatch(good, 'dev')), false);
+    assert.equal(allowed('live', dispatch(good, 'main', 'pages.yml')), false);
+    assert.equal(allowed('live', dispatch({ ...good, aw_context: '{}' })), false, 'no extra inputs (aw_context)');
+    assert.equal(allowed('live', dispatch({ ...good, contract_sha: sha.slice(0, 7) })), false, 'full SHA only');
+    assert.equal(allowed('live', dispatch({ ...good, task: '../x' })), false);
+    assert.equal(allowed('live', dispatch({ ...good, issue: 45 })), false, 'inputs are strings');
+    assert.equal(allowed('live', dispatch({ ...good, issue: '0' })), false);
+  });
+
+  it('live adds only the four controller labels, and comments only from the template', () => {
+    const labels = (l: unknown) => ['POST', `/repos/${REPO}/issues/45/labels`, { labels: l }] as const;
+    for (const l of ['factory:picked', 'needs-human', 'blocked', 'stale-contract']) assert.equal(allowed('live', labels([l])), true, l);
+    for (const l of [['factory:ready'], ['tier:auto'], [], ['needs-human', 'factory:ready'], 'needs-human']) assert.equal(allowed('live', labels(l)), false, JSON.stringify(l));
+    assert.equal(allowed('live', ['POST', `/repos/${REPO}/issues/45/comments`, { body: 'hello' }]), false);
+    assert.equal(allowed('live', ['POST', `/repos/${REPO}/issues/45/comments`, { body: `${COMMENT_MARKER} ${'x'.repeat(2000)}` }]), false);
+    assert.equal(allowed('live', ['POST', `/repos/other/repo/issues/45/comments`, { body: `${COMMENT_MARKER} x` }]), false);
+  });
+
+  it('live still refuses merges, closes, label removal, reviews and other writes', () => {
+    const refused = [
+      ['PUT', `/repos/${REPO}/pulls/21/merge`, {}],
+      ['PATCH', `/repos/${REPO}/issues/45`, { state: 'closed' }],
+      ['DELETE', `/repos/${REPO}/issues/45/labels/needs-human`, undefined],
+      ['PUT', `/repos/${REPO}/issues/45/labels`, { labels: ['needs-human'] }],
+      ['POST', `/repos/${REPO}/pulls/21/reviews`, { event: 'APPROVE' }],
+      ['POST', `/repos/${REPO}/issues`, { title: 'x' }],
+      ['PATCH', `/repos/${REPO}/git/refs/heads/main`, { sha, force: false }],
+      ['POST', '/graphql', { query: 'mutation { x }' }],
+    ] as const;
+    for (const w of refused) assert.equal(allowed('live', w), false, `${w[0]} ${w[1]}`);
+  });
+});
+
+describe('live mode: review fixes', () => {
+  it('a decision recorded while the switch was off still gets its live effect after switching on', async () => {
+    const gh = liveWorld();
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    const off = await run(deps(gh, { env: { ...LIVE_ENV, FACTORY_ENABLED: undefined }, forceDryRun: false }));
+    assert.equal(off.live, false);
+    assert.ok(off.appended.some((e) => e.type === 'needs_human' && e.payload.reason === 'gates_failed' && e.payload.dry_run === true));
+    assert.deepEqual(effectCalls(gh), []);
+    gh.calls.length = 0;
+    const on = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.ok(on.appended.some((e) => e.type === 'needs_human' && e.payload.reason === 'gates_failed' && e.payload.dry_run === false));
+    assert.ok(effectCalls(gh).some((c) => c.path === `/repos/${REPO}/issues/11/labels`));
+    assert.equal(gh.comments.get(11)?.length, 1);
+  });
+
+  it('a hand-off whose comment failed is finished by the next live run, with exactly one comment', async () => {
+    const gh = liveWorld(204, 1);
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    await assert.rejects(run(deps(gh, { env: LIVE_ENV, forceDryRun: false })), /comments: HTTP 502/);
+    assert.equal(gh.comments.get(11)?.length ?? 0, 0);
+    const later = (min: number) => new Date(NOW.getTime() + min * 60_000);
+    const second = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, now: later(5) }));
+    assert.equal(gh.comments.get(11)?.length, 1);
+    assert.match(gh.comments.get(11)![0]!, /<!-- factory-decision: sha256:[0-9a-f]{64} -->/);
+    assert.ok(second.appended.some((e) => e.type === 'handoff_done'));
+    gh.calls.length = 0;
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, now: later(10) }));
+    assert.deepEqual(effectCalls(gh), [], 'nothing left to do');
+    assert.equal(gh.comments.get(11)?.length, 1);
+  });
+
+  it('a hand-off whose comment was posted but not marked done is completed without a second comment', async () => {
+    const gh = liveWorld();
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false }));
+    assert.equal(gh.comments.get(11)?.length, 1);
+    // Simulate a lost handoff_done: finish the pending list again by hand.
+    const events = [...splitLines(gh.fileAt(AUDIT_BRANCH, 'audit/2026/10/16.jsonl')!)].map((l) => JSON.parse(l)).filter((e) => e.type !== 'handoff_done');
+    const pending = pendingHandoffs(events);
+    assert.equal(pending.length, 1);
+    const client = { request: (m: 'GET' | 'POST', p: string, o?: { body?: unknown }) => gh.request(m, p, o) };
+    await executeLive([], { client, repo: REPO, log: () => {}, runUrl: null, isNew: () => true, validate: () => {}, record: async () => {}, pending });
+    assert.equal(gh.comments.get(11)?.length, 1, 'the marker prevents a duplicate comment');
+  });
+});
+
+describe('live mode: what the run reports', () => {
+  it('a repair candidate is reported and recorded as the hand-off that actually happened', async () => {
+    const c = contract('en/weekday-parser');
+    const pr = pull(21, { task_id: 'en/weekday-parser', contract_sha: c.last_commit_sha });
+    const s = snapshot({
+      issues: [issue(1, 'en/weekday-parser', ['factory:picked'])],
+      pulls: [pr],
+      contractList: [c],
+      check_runs: [
+        checkRun(490, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, conclusion: 'success' }),
+        checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'failure', failure_signature: 'step:golden', heldout_seed: '7' }),
+      ],
+      history: { 'en/weekday-parser': history({ picked_at: '2026-10-16T10:00:00Z' }) },
+    });
+    const gh = liveWorld();
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: s }));
+    assert.equal(result.live, true);
+    assert.ok(!result.decisions.some((d) => d.type === 'repair_dispatched' || d.effect === 'dispatch_workflow:repair'));
+    const d = result.decisions.find((x) => x.reason === 'repair_unavailable')!;
+    assert.deepEqual([d.type, d.effect], ['needs_human', 'label:needs-human']);
+    assert.match(result.summary, /\| needs_human \| repair_unavailable \| label:needs-human \|/);
+    assert.doesNotMatch(result.summary, /dispatch_workflow:repair/);
+    const ev = result.appended.find((e) => e.payload.reason === 'repair_unavailable')!;
+    assert.deepEqual([ev.type, ev.payload.effect, ev.payload.dry_run], ['needs_human', 'label:needs-human', false]);
   });
 });

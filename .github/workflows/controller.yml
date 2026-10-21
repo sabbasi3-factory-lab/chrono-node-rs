@@ -1,8 +1,11 @@
 name: controller
 
-# Factory controller v1 (DESIGN §7, §11): plain code, no AI, dry-run only.
-# It plans and logs decisions; the only thing it writes is the audit log on
-# the protected `audit` branch, using the controller GitHub App token.
+# Factory controller (DESIGN §7, §11): plain code, no AI.
+# Dry-run unless the repo variable FACTORY_ENABLED is exactly "true": it then plans, logs and
+# writes only the audit log on the protected `audit` branch, with a token that can't do more.
+# Live (FACTORY_ENABLED=true): it also dispatches the implement workflow, adds the controller's
+# labels and posts templated comments; the token gets exactly the write permissions for that,
+# and the client's allowlist refuses every other write (executor.ts lists the effects).
 #
 # Security notes:
 # - `pull_request_target` (never `pull_request`) so a PR can never run a
@@ -64,6 +67,19 @@ jobs:
       - name: Unit tests (fail closed)
         run: npm test
 
+      # Exact, case-sensitive check (Actions expression `==` ignores case), the same rule as
+      # isLive() in the controller: only the string "true" turns live mode and write scopes on.
+      - name: Controller mode
+        id: mode
+        env:
+          FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then
+            { echo "mode=live"; echo "scope=write"; } >> "$GITHUB_OUTPUT"
+          else
+            { echo "mode=dry-run"; echo "scope=read"; } >> "$GITHUB_OUTPUT"
+          fi
+
       # The App token is minted only after install and tests, so no third-party
       # code runs while it exists except the controller itself.
       - name: Create controller App token
@@ -75,11 +91,12 @@ jobs:
           owner: sabbasi3-factory-lab
           repositories: chrono-node-rs
           permission-contents: write
-          permission-actions: read
-          permission-issues: read
-          permission-pull-requests: read
+          # Write only when live (exact "true"); the controller applies the same rule.
+          permission-actions: ${{ steps.mode.outputs.scope }}
+          permission-issues: ${{ steps.mode.outputs.scope }}
+          permission-pull-requests: ${{ steps.mode.outputs.scope }}
 
-      - name: Run controller (dry-run)
+      - name: Run controller (${{ steps.mode.outputs.mode }})
         run: node main.ts
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
