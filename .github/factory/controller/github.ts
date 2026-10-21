@@ -42,11 +42,51 @@ export class GitHubApiError extends Error {
 
 // ---------------------------------------------------------------- write guard
 
+/** The only workflow live mode may dispatch, on `main` only. */
+export const IMPLEMENT_WORKFLOW = 'implement.lock.yml';
+/** The only labels live mode may add. It never removes a label, and never adds `factory:ready`. */
+export const LIVE_LABELS: readonly string[] = ['factory:picked', 'needs-human', 'blocked', 'stale-contract'];
+/** Every comment live mode posts starts with this and comes from a fixed template (no agent text). */
+export const COMMENT_MARKER = '**Factory controller**';
+export const MAX_COMMENT_LENGTH = 2000;
+
+export type ControllerMode = 'dry-run' | 'live';
+
+const exactKeys = (o: unknown, keys: string[]): o is Record<string, unknown> =>
+  o !== null && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).sort().join(',') === [...keys].sort().join(',');
+
+/** Live-mode writes: exactly a dispatch of implement on main, adding allowed labels, a templated comment. */
+function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknown): boolean {
+  if (method !== 'POST') return false;
+  if (p === `/repos/${repo}/actions/workflows/${IMPLEMENT_WORKFLOW}/dispatches`) {
+    if (!exactKeys(b, ['ref', 'inputs']) || b.ref !== 'main') return false;
+    const i = b.inputs;
+    return (
+      exactKeys(i, ['task', 'issue', 'attempt', 'contract_sha']) &&
+      isTaskId(i.task) &&
+      typeof i.issue === 'string' && /^[1-9][0-9]{0,8}$/.test(i.issue) &&
+      typeof i.attempt === 'string' && /^[1-9][0-9]?$/.test(i.attempt) &&
+      typeof i.contract_sha === 'string' && HEX40.test(i.contract_sha)
+    );
+  }
+  if (new RegExp(`^/repos/${escapeRe(repo)}/issues/[1-9][0-9]{0,8}/labels$`).test(p)) {
+    return exactKeys(b, ['labels']) && Array.isArray(b.labels) && b.labels.length > 0 && b.labels.every((l) => typeof l === 'string' && LIVE_LABELS.includes(l));
+  }
+  if (new RegExp(`^/repos/${escapeRe(repo)}/issues/[1-9][0-9]{0,8}/comments$`).test(p)) {
+    return exactKeys(b, ['body']) && typeof b.body === 'string' && b.body.startsWith(COMMENT_MARKER) && b.body.length <= MAX_COMMENT_LENGTH;
+  }
+  return false;
+}
+
+const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
- * Throws unless the request is read-only or one of the audit-branch Git Data
- * writes (blob, tree, commit, fast-forward ref update/creation of `audit`).
+ * Throws unless the request is read-only, one of the audit-branch Git Data writes (blob, tree,
+ * commit, fast-forward ref update/creation of `audit`), or, in live mode only, one of the three
+ * live writes above. Everything else (merge, close, label removal, other workflows, other refs)
+ * is refused in both modes.
  */
-export function assertAllowedRequest(repo: string, method: HttpMethod, path: string, body?: unknown): void {
+export function assertAllowedRequest(repo: string, method: HttpMethod, path: string, body?: unknown, mode: ControllerMode = 'dry-run'): void {
   const p = path.split('?')[0] ?? '';
   if (method === 'GET') return;
   const b = (body ?? {}) as Record<string, unknown>;
@@ -59,7 +99,12 @@ export function assertAllowedRequest(repo: string, method: HttpMethod, path: str
   if (method === 'POST' && (p === `${git}/blobs` || p === `${git}/trees` || p === `${git}/commits`)) return;
   if (method === 'PATCH' && p === `${git}/refs/heads/${AUDIT_BRANCH}` && b.force === false) return;
   if (method === 'POST' && p === `${git}/refs` && b.ref === `refs/heads/${AUDIT_BRANCH}`) return;
-  throw new Error(`refusing ${method} ${p}: controller v1 is dry-run and only writes the audit branch`);
+  if (mode === 'live' && liveWriteAllowed(repo, method, p, body)) return;
+  throw new Error(
+    mode === 'live'
+      ? `refusing ${method} ${p}: not one of the controller's allowed writes`
+      : `refusing ${method} ${p}: the controller is in dry-run mode and only writes the audit branch`,
+  );
 }
 
 // ---------------------------------------------------------------- client
@@ -78,12 +123,12 @@ export function nextPathFromLink(link: string | null): string | null {
 
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
 
-export function createClient(token: string, repo: string, fetchFn: FetchFn = fetch): GitHubClient {
+export function createClient(token: string, repo: string, fetchFn: FetchFn = fetch, mode: ControllerMode = 'dry-run'): GitHubClient {
   if (!token) throw new Error('GitHub token missing');
   return {
     async request(method: HttpMethod, path: string, options: RequestOptions = {}): Promise<ApiResponse> {
       if (!path.startsWith('/')) throw new Error('request path must start with /');
-      assertAllowedRequest(repo, method, path, options.body);
+      assertAllowedRequest(repo, method, path, options.body, mode);
       const raw = options.accept === 'raw';
       const headers: Record<string, string> = {
         Accept: raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json',

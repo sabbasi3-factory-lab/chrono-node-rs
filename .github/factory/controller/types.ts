@@ -212,6 +212,7 @@ export type ReasonCode =
   | 'missing_failure_signature'
   | 'pick_time_unknown'
   | 'missing_heldout_seed'
+  | 'repair_unavailable'
   | 'gates_failed'
   | 'task_budget_exhausted'
   | 'missing_task_marker'

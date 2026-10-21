@@ -217,6 +217,8 @@ export interface AuditLogOptions {
   factoryVersion: string;
   historyDays?: number;
   maxRetries?: number;
+  /** The `dry_run` flag written on every event (default true). False only in live mode. */
+  dryRun?: boolean;
 }
 
 /**
@@ -229,6 +231,7 @@ export class AuditLog {
   private readonly factoryVersion: string;
   private readonly historyDays: number;
   private readonly maxRetries: number;
+  private readonly dryRun: boolean;
   private head: { sha: string; tree: string } | null = null;
   private files = new Map<string, string>();
   private keys = new Set<string>();
@@ -242,6 +245,7 @@ export class AuditLog {
     this.factoryVersion = options.factoryVersion;
     this.historyDays = Math.max(2, options.historyDays ?? DEFAULT_HISTORY_DAYS);
     this.maxRetries = options.maxRetries ?? MAX_APPEND_RETRIES;
+    this.dryRun = options.dryRun ?? true;
   }
 
   hasDedupeKey(key: string): boolean {
@@ -323,7 +327,7 @@ export class AuditLog {
         ...pending.fields,
         dedupe_key: key,
         factory_version: this.factoryVersion,
-        dry_run: true,
+        dry_run: this.dryRun,
       };
       assertSafePayload(payload);
       canonicalize(payload);

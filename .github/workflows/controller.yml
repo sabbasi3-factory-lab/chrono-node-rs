@@ -1,8 +1,11 @@
 name: controller
 
-# Factory controller v1 (DESIGN §7, §11): plain code, no AI, dry-run only.
-# It plans and logs decisions; the only thing it writes is the audit log on
-# the protected `audit` branch, using the controller GitHub App token.
+# Factory controller (DESIGN §7, §11): plain code, no AI.
+# Dry-run unless the repo variable FACTORY_ENABLED is exactly "true": it then plans, logs and
+# writes only the audit log on the protected `audit` branch, with a token that can't do more.
+# Live (FACTORY_ENABLED=true): it also dispatches the implement workflow, adds the controller's
+# labels and posts templated comments; the token gets exactly the write permissions for that,
+# and the client's allowlist refuses every other write (executor.ts lists the effects).
 #
 # Security notes:
 # - `pull_request_target` (never `pull_request`) so a PR can never run a
@@ -75,11 +78,12 @@ jobs:
           owner: sabbasi3-factory-lab
           repositories: chrono-node-rs
           permission-contents: write
-          permission-actions: read
-          permission-issues: read
-          permission-pull-requests: read
+          # Write only when live; the same variable decides the mode in the controller.
+          permission-actions: ${{ vars.FACTORY_ENABLED == 'true' && 'write' || 'read' }}
+          permission-issues: ${{ vars.FACTORY_ENABLED == 'true' && 'write' || 'read' }}
+          permission-pull-requests: ${{ vars.FACTORY_ENABLED == 'true' && 'write' || 'read' }}
 
-      - name: Run controller (dry-run)
+      - name: Run controller (${{ vars.FACTORY_ENABLED == 'true' && 'live' || 'dry-run' }})
         run: node main.ts
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
