@@ -13,7 +13,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AuditLog, AuditValidationError, dedupeKey, isoSeconds } from './audit.ts';
 import { canonicalize } from './canonical.ts';
-import { decisionEvent, execute, executeLive, isLive, pendingHandoffs } from './executor.ts';
+import { decisionEvent, execute, executeLive, isLive, liveDecision, pendingHandoffs } from './executor.ts';
 import { FakeGitHub } from './fake.ts';
 import { createClient, readSnapshot, type RecordedCheck } from './github.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
@@ -128,7 +128,10 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   snapshot.factory_aic_today ??= derived.factory_aic_today;
 
   const observed = observe(snapshot, now);
-  const decisions = plan(snapshot, policies, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, now);
+  // In live mode the decisions are what the controller will actually do (a repair becomes a
+  // human hand-off: there is no repair workflow), so the summary and result match the audit log.
+  const planned = plan(snapshot, policies, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, now);
+  const decisions = live ? planned.map(liveDecision) : planned;
   if (!live) execute(decisions, log);
 
   // One bad input (an invalid payload) must not stop the run before the

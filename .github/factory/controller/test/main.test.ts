@@ -496,3 +496,30 @@ describe('live mode: review fixes', () => {
     assert.equal(gh.comments.get(11)?.length, 1, 'the marker prevents a duplicate comment');
   });
 });
+
+describe('live mode: what the run reports', () => {
+  it('a repair candidate is reported and recorded as the hand-off that actually happened', async () => {
+    const c = contract('en/weekday-parser');
+    const pr = pull(21, { task_id: 'en/weekday-parser', contract_sha: c.last_commit_sha });
+    const s = snapshot({
+      issues: [issue(1, 'en/weekday-parser', ['factory:picked'])],
+      pulls: [pr],
+      contractList: [c],
+      check_runs: [
+        checkRun(490, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, conclusion: 'success' }),
+        checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'failure', failure_signature: 'step:golden', heldout_seed: '7' }),
+      ],
+      history: { 'en/weekday-parser': history({ picked_at: '2026-10-16T10:00:00Z' }) },
+    });
+    const gh = liveWorld();
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: s }));
+    assert.equal(result.live, true);
+    assert.ok(!result.decisions.some((d) => d.type === 'repair_dispatched' || d.effect === 'dispatch_workflow:repair'));
+    const d = result.decisions.find((x) => x.reason === 'repair_unavailable')!;
+    assert.deepEqual([d.type, d.effect], ['needs_human', 'label:needs-human']);
+    assert.match(result.summary, /\| needs_human \| repair_unavailable \| label:needs-human \|/);
+    assert.doesNotMatch(result.summary, /dispatch_workflow:repair/);
+    const ev = result.appended.find((e) => e.payload.reason === 'repair_unavailable')!;
+    assert.deepEqual([ev.type, ev.payload.effect, ev.payload.dry_run], ['needs_human', 'label:needs-human', false]);
+  });
+});
