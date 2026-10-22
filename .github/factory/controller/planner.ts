@@ -143,7 +143,13 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   const nowMs = now.getTime();
 
   const mergedTasks = new Set<string>();
-  for (const pr of s.pulls) if (pr.state === 'merged' && pr.task_id) mergedTasks.add(pr.task_id);
+  /** Task → its first merged PR (lowest number), the one that finished it. */
+  const mergedPr = new Map<string, PullSnap>();
+  for (const pr of [...s.pulls].sort((a, b) => a.number - b.number)) {
+    if (pr.state !== 'merged' || !pr.task_id) continue;
+    mergedTasks.add(pr.task_id);
+    if (!mergedPr.has(pr.task_id)) mergedPr.set(pr.task_id, pr);
+  }
   const openPulls = s.pulls.filter((pr) => pr.state === 'open').sort((a, b) => a.number - b.number);
   const openIssues = [...s.issues].sort((a, b) => a.number - b.number);
   const issueByTask = new Map<string, IssueSnap>();
@@ -187,6 +193,18 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   // Merge-queue candidates: gated by the kill switch only (merging spends no AI credits).
   const merges: Decision[] = [];
 
+  // ---- task done: an open task issue whose task has a merged PR leaves the pipeline (close the
+  // issue as completed, remove factory:ready/factory:picked). Gated by the kill switch only (no
+  // escalation can hold it back). It keeps being planned while the issue is open, so an
+  // interrupted close is finished next poll.
+  const dones: Decision[] = [];
+  for (const i of openIssues) {
+    if (i.marker_status !== 'ok' || !i.task_id) continue;
+    const done = mergedPr.get(i.task_id);
+    if (!done) continue;
+    dones.push(decide({ type: 'task_done', reason: 'task_merged', effect: 'close_task', task: i.task_id, issue: i.number, pr: done.number, source_ids: [i.node_id, done.node_id] }));
+  }
+
   // Tasks escalated to needs_human in this run get no other decision (at most
   // one terminal decision per task per run). Timeouts are evaluated first.
   const escalated = new Set<string>();
@@ -226,6 +244,8 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   // ---- open factory PRs: contract freshness and CI failures
   for (const pr of openPulls) {
     if (!pr.task_id || pr.labels.includes(LABEL_NEEDS_HUMAN) || escalated.has(pr.task_id)) continue;
+    // The task is already done (another PR merged): a leftover open PR gets no repair, hand-off or merge.
+    if (mergedTasks.has(pr.task_id)) continue;
     // Handed to a human on either side (the issue or the PR): no repair or contract decision.
     if (issueByTask.get(pr.task_id)?.labels.includes(LABEL_NEEDS_HUMAN)) continue;
     const task = pr.task_id;
@@ -412,6 +432,7 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     if (m.task && escalated.has(m.task)) continue;
     if (route(m, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(m);
   }
+  for (const d of dones) if (route(d, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(d);
 
   for (const r of repairs) {
     if (r.task && escalated.has(r.task)) continue;

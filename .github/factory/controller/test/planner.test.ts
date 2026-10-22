@@ -122,7 +122,7 @@ describe('planner: admit', () => {
 
   it('skips a task that is already merged (already_merged)', () => {
     const s = readyWorld({ pulls: [mergedPull(100, 'core/results'), mergedPull(101, 'en/weekday-parser')] });
-    assert.deepEqual(reasons(run(s)), ['already_merged']);
+    assert.deepEqual(reasons(run(s)).sort(), ['already_merged', 'task_merged']);
   });
 
   it('does not re-admit a task that is in flight', () => {
@@ -731,5 +731,50 @@ describe('merge stage: auto-merge only green auto-tier agent PRs', () => {
   it('does not wait for reviews: a Copilot review comment is a signal, not a gate', () => {
     const s = world({ pr: { reviews: [{ node_id: 'PRR_1', author: 'copilot-pull-request-reviewer', author_is_bot: true, state: 'COMMENTED', submitted_at: '2026-10-16T11:30:00Z' }] } });
     assert.deepEqual(decisions(s), ['auto_merge/auto_merge_ready']);
+  });
+});
+
+describe('task done: a merged task leaves the pipeline', () => {
+  const T = 'en/time-unit-ago-format-parser';
+  const doneWorld = (over: SnapshotOverrides = {}) =>
+    snapshot({ issues: [issue(45, T, ['factory:task', 'factory:ready', 'factory:picked'])], pulls: [mergedPull(54, T)], contractList: [contract(T)], ...over });
+
+  it('an open issue whose task has a merged PR: task_done/task_merged → close_task (the #45 backfill)', () => {
+    const ds = run(doneWorld());
+    const d = find(ds, 'task_merged');
+    assert.deepEqual([d.type, d.effect, d.task, d.issue, d.pr, d.source_ids], ['task_done', 'close_task', T, 45, 54, ['I_45', 'PR_54']]);
+    assert.ok(!ds.some((x) => x.type === 'needs_human'), 'a picked issue whose task merged is not pick_time_unknown or a timeout');
+    assert.ok(!ds.some((x) => x.type === 'dispatched'));
+  });
+
+  it('is planned whatever the issue labels (ready only, needs-human, none), with the first merged PR', () => {
+    for (const labels of [['factory:ready'], ['needs-human'], []]) {
+      const d = find(run(doneWorld({ issues: [issue(45, T, labels)], pulls: [mergedPull(60, T), mergedPull(54, T)] })), 'task_merged');
+      assert.equal(d.pr, 54, labels.join(','));
+    }
+  });
+
+  it('nothing for an open, closed-unmerged or other-task PR, or an issue without a valid marker', () => {
+    for (const pulls of [[pull(54, { task_id: T })], [pull(54, { task_id: T, state: 'closed' })], [mergedPull(54, 'en/other')]]) {
+      assert.ok(!reasons(run(doneWorld({ pulls }))).includes('task_merged'));
+    }
+    const noMarker = { ...issue(45, T), marker_status: 'invalid' as const, task_id: null };
+    assert.ok(!reasons(run(doneWorld({ issues: [noMarker] }))).includes('task_merged'));
+  });
+
+  it('a leftover open PR for the merged task (here with failed gates) gets no decision and does not hold back the close', () => {
+    const open = pull(57, { task_id: T, contract_sha: commitSha(T) });
+    const ds = run(doneWorld({ pulls: [mergedPull(54, T), open], check_runs: [gatesRun(700, open.head_sha, { conclusion: 'failure' }), checkRun(701, { head_sha: open.head_sha, conclusion: 'failure' })] }));
+    assert.deepEqual(reasons(ds), ['task_merged']);
+  });
+
+  it('the kill switch holds it (no close while FACTORY_ENABLED is off)', () => {
+    const ds = run(doneWorld(), { FACTORY_ENABLED: undefined });
+    assert.ok(!reasons(ds).includes('task_merged'));
+    assert.ok(find(ds, 'kill_switch').source_ids.includes('PR_54'));
+  });
+
+  it('is deterministic: the same snapshot gives the same decision and source ids', () => {
+    assert.deepEqual(run(doneWorld()), run(doneWorld()));
   });
 });

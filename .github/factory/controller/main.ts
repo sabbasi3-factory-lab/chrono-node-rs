@@ -1,6 +1,6 @@
 // Controller entrypoint (no AI).
 //   load policies → read audit log → snapshot → observe → plan → execute (live) or log
-//   (dry-run) decisions → append audit events → heartbeat.
+//   (dry-run) decisions → append audit events → Project status sync → heartbeat.
 // Live only when FACTORY_ENABLED is exactly "true" (executor.ts lists the effects);
 // otherwise dry-run, exactly as v1.
 //
@@ -19,6 +19,7 @@ import { createClient, readSnapshot, type RecordedCheck } from './github.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
+import { statusContext, syncProject } from './project.ts';
 import { readSpendToday, spendSnapshotFields } from './spend.ts';
 import { isRecorded, killSwitchEnabled, plan } from './planner.ts';
 import { loadPolicies, loadPoliciesFromDir, readFactoryVersion } from './policies.ts';
@@ -82,13 +83,14 @@ function trigger(env: RunEnv): string {
   return /^[a-z_]{1,40}$/.test(t) ? t : 'unknown';
 }
 
-export function renderSummary(decisions: Decision[], appended: AuditEvent[], factoryEnabled: boolean, live = false, spend: string | null = null): string {
+export function renderSummary(decisions: Decision[], appended: AuditEvent[], factoryEnabled: boolean, live = false, spend: string | null = null, project: string | null = null): string {
   const cell = (v: string | number | null): string => (v === null ? '' : String(v));
   const lines = [
     `## Factory controller (${live ? 'live' : 'dry-run'})`,
     '',
     `Kill switch: ${factoryEnabled ? 'dispatch allowed (`FACTORY_ENABLED=true`)' : 'dispatch blocked'}`,
     ...(spend ? [`Spend today: ${spend}`] : []),
+    ...(project ? [`Project status: ${project}`] : []),
     '',
   ];
   if (decisions.length === 0) {
@@ -193,6 +195,16 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     for (const d of decisions) if (isRecorded(d)) await appendOrSkip(decisionEvent(d));
   }
   if (skipped > 0) log(`skipped ${skipped} invalid audit event(s)`);
+  // Project "Factory status" (best-effort, never fails the run). Read after the effects, so issue
+  // labels and closes from this run already show. Not in fixture mode (no Project there).
+  let projectNote: string | null = null;
+  if (!deps.snapshot) {
+    const sync = await syncProject(client, repo, statusContext(snapshot, live ? decisions : []), live, log);
+    const n = sync.changes.length;
+    projectNote = sync.error
+      ? `stopped after ${sync.applied} update(s): ${sync.error}`
+      : live ? `${sync.applied} update(s)` : `${n} update(s) planned (dry-run)`;
+  }
   if (heartbeatDue(audit.newestOfType('heartbeat'), now)) {
     await audit.append(
       heartbeatEvent(now, {
@@ -206,7 +218,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     );
   }
   log(`appended ${audit.appended.length} audit event(s) at ${isoSeconds(now)}`);
-  return { snapshot, decisions, appended: [...audit.appended], summary: renderSummary(decisions, audit.appended, factoryEnabled, live, spendNote), live };
+  return { snapshot, decisions, appended: [...audit.appended], summary: renderSummary(decisions, audit.appended, factoryEnabled, live, spendNote, projectNote), live };
 }
 
 // ---------------------------------------------------------------- CLI

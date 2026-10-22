@@ -4,8 +4,10 @@ name: controller
 # Dry-run unless the repo variable FACTORY_ENABLED is exactly "true": it then plans, logs and
 # writes only the audit log on the protected `audit` branch, with a token that can't do more.
 # Live (FACTORY_ENABLED=true): it also dispatches the implement workflow, adds the controller's
-# labels and posts templated comments; the token gets exactly the write permissions for that,
-# and the client's allowlist refuses every other write (executor.ts lists the effects).
+# labels, posts templated comments, enqueues green auto-tier PRs, closes finished tasks' issues
+# (removing factory:ready/factory:picked) and sets the Project #1 "Factory status" field; the
+# token gets exactly the write permissions for that, and the client's allowlist refuses every
+# other write (executor.ts and project.ts list the effects).
 #
 # Security notes:
 # - `pull_request_target` (never `pull_request`) so a PR can never run a
@@ -95,6 +97,8 @@ jobs:
           permission-actions: ${{ steps.mode.outputs.scope }}
           permission-issues: ${{ steps.mode.outputs.scope }}
           permission-pull-requests: ${{ steps.mode.outputs.scope }}
+          # Project #1 "Factory status" (org-level Projects; read in dry-run).
+          permission-organization-projects: ${{ steps.mode.outputs.scope }}
 
       - name: Run controller (${{ steps.mode.outputs.mode }})
         run: node main.ts

@@ -204,6 +204,7 @@ export interface Snapshot {
 export type DecisionType =
   | 'dispatched'
   | 'auto_merge'
+  | 'task_done'
   | 'repair_dispatched'
   | 'needs_human'
   | 'blocked'
@@ -225,6 +226,7 @@ export type ReasonCode =
   | 'missing_heldout_seed'
   | 'repair_unavailable'
   | 'auto_merge_ready'
+  | 'task_merged'
   | 'merge_queue_rejected'
   | 'enqueue_failed'
   | 'gates_failed'
@@ -256,6 +258,7 @@ export type Effect =
   | 'dispatch_workflow:implement'
   | 'dispatch_workflow:repair'
   | 'enqueue_merge'
+  | 'close_task'
   | 'label:needs-human'
   | 'label:blocked'
   | 'label:stale-contract'

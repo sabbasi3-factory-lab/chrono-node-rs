@@ -26,9 +26,37 @@ export interface WorldOptions {
   at?: string;
 }
 
-export function fakeWorld(opts: WorldOptions = {}): FakeGitHub {
+/** A FakeGitHub whose GraphQL route also serves Project #1 (`project`; null = not found). */
+export type ProjectWorld = FakeGitHub & { project: unknown };
+
+/** A Project #1 GraphQL node: "Factory status" options and items (issues of REPO unless `repo`). */
+export function projectNode(items: { item: string; issue: number; status: string | null; open?: boolean; labels?: string[]; task?: string | null; repo?: string }[]): unknown {
+  const names = ['Proposed', 'Ready', 'Building', 'Checks', 'Repairing', 'Needs you', 'Live'];
+  return {
+    id: 'PVT_1',
+    field: { __typename: 'ProjectV2SingleSelectField', id: 'PVTSSF_1', options: names.map((name, i) => ({ id: `0000000${i}`, name })) },
+    items: {
+      pageInfo: { hasNextPage: false, endCursor: null },
+      nodes: items.map((it) => ({
+        id: it.item,
+        fieldValueByName: it.status === null ? null : { __typename: 'ProjectV2ItemFieldSingleSelectValue', name: it.status },
+        content: {
+          __typename: 'Issue',
+          number: it.issue,
+          state: it.open === false ? 'CLOSED' : 'OPEN',
+          body: it.task === null ? 'no marker' : `text\n<!-- factory-task: ${it.task ?? 'en/casual-date'} -->`,
+          repository: { nameWithOwner: it.repo ?? REPO },
+          labels: { nodes: (it.labels ?? []).map((name) => ({ name })) },
+        },
+      })),
+    },
+  };
+}
+
+export function fakeWorld(opts: WorldOptions = {}): ProjectWorld {
   const at = opts.at ?? '2026-10-16T11:00:00Z';
-  const gh = new FakeGitHub(REPO);
+  const gh = new FakeGitHub(REPO) as ProjectWorld;
+  gh.project = null;
   const r = `/repos/${REPO}`;
   // main is served by the fake's Git Data endpoints (ref → commit → tree sha).
   gh.refs.set('heads/main', MAIN_SHA);
@@ -48,7 +76,7 @@ export function fakeWorld(opts: WorldOptions = {}): FakeGitHub {
       { number: 11, node_id: 'PRI_11', labels: [], body: 'a PR', pull_request: {} },
     ],
   }));
-  gh.addRoute('POST', /^\/graphql$/, () => ({
+  gh.addRoute('POST', /^\/graphql$/, (_p, body) => (String((body as { query?: unknown } | undefined)?.query).includes('projectV2(') ? { data: { data: { organization: { projectV2: gh.project } } } } : {
     data: {
       data: {
         repository: {

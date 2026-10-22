@@ -39,7 +39,9 @@ It never queues, merges, closes or reverts anything, and never removes a label, 
      logged as `skipped invalid audit event (…)` and skipped. Nothing is written for it, and the run goes
      on to the heartbeat.
    - API and chain errors still fail the run.
-8. Write a markdown table to `$GITHUB_STEP_SUMMARY`.
+8. Sync the Project #1 "Factory status" field (`project.ts`, see **Project status** below), then write
+   the heartbeat if one is due.
+9. Write a markdown table to `$GITHUB_STEP_SUMMARY`.
 
 ## Running it
 
@@ -160,6 +162,7 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | type | reason | when | would |
 |---|---|---|---|
 | `auto_merge` | `auto_merge_ready` | a green auto-tier agent PR (see **Merge stage**) | `enqueue_merge` |
+| `task_done` | `task_merged` | an open issue with a valid task marker whose task has a merged PR (the first one, `pr`). Planned on every poll while the issue is open; gated only by the kill switch (no escalation holds it back). A leftover open PR for a task that's already merged gets no decision at all | `close_task` |
 | `needs_human` | `merge_queue_rejected` | the PR left the merge queue without merging after its head went green; never re-queued automatically | `label:needs-human` |
 | `wait` | `merge_not_ready` | an auto-tier PR with green checks but an unmet merge condition (named in `source_ids` as `blocker:<why>`) | nothing (logged, **not** recorded) |
 | `dispatched` | `would_dispatch` | admitted ready task passes every gate | `dispatch_workflow:implement` (attempt 1, `contract_sha` = contract commit SHA) |
@@ -319,6 +322,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
 | `label:stale-contract` | add `stale-contract`, then one templated comment |
 | `dispatch_workflow:repair` | there is no repair workflow yet, so it becomes `needs_human`/`repair_unavailable`: label + comment |
 | `enqueue_merge` | GraphQL `enqueuePullRequest` for the PR with `expectedHeadOid` = the planned head (exact mutation), then record `auto_merge` with its head. If GitHub refuses (GraphQL error or HTTP 4xx): re-read the PR head. If it moved, the plan is stale, nothing is recorded, and the next poll re-plans. Otherwise `needs_human`/`enqueue_failed` (label + comment). Once that failure is recorded, that PR and head are never sent to GitHub again, even if the hand-off was interrupted. HTTP 5xx fails the run, and the next poll retries. |
+| `close_task` | record `task_done` (once), then remove `factory:ready` and `factory:picked` from the issue (a 404 for a label that's already gone is fine), then close it with `state_reason: completed`. The effect re-runs whenever it's planned (the issue is still open), so an interrupted close finishes on the next poll; the event isn't recorded twice. This also backfills tasks merged before this stage existed (#45). |
 | `alert:owner`, `pause_dispatch`, `none` | no GitHub effect; recorded in the audit log only |
 
 - **Once per decision.** An effect runs only if its **live** audit event is new. Live decision events
@@ -340,10 +344,13 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
   validated string inputs (no `aw_context`); `POST issues/<n>/labels` with labels from
   `factory:picked`, `needs-human`, `blocked`, `stale-contract`; `POST issues/<n>/comments` with a body
   starting with the template marker (≤ 2,000 chars); and the exact `enqueuePullRequest` GraphQL
-  mutation with one `PR_…` node id and a 40-hex `expectedHeadOid` (no other variables, no queue jumping). It still refuses direct
-  merges, dequeues, closes, label removal, `factory:ready`, reviews, other workflows, other refs and
-  every other GraphQL mutation.
-- The workflow requests `actions`, `issues` and `pull-requests` **write** only when
+  mutation with one `PR_…` node id and a 40-hex `expectedHeadOid` (no other variables, no queue jumping);
+  `PATCH issues/<n>` with exactly `{state: closed, state_reason: completed}`; `DELETE
+  issues/<n>/labels/<factory:ready|factory:picked>` (no body); and the exact
+  `updateProjectV2ItemFieldValue` mutation with `PVT_`/`PVTI_`/`PVTSSF_` ids and one option id. It
+  still refuses direct merges, dequeues, other closes or issue edits, removing any other label, adding
+  `factory:ready`, reviews, other workflows, other refs and every other GraphQL mutation.
+- The workflow requests `actions`, `issues`, `pull-requests` and `organization-projects` **write** only when
   `vars.FACTORY_ENABLED` is exactly `true`, checked case-sensitively in a shell step (Actions
   expressions compare strings case-insensitively). The controller applies the same rule.
 - **Dispatch also needs a spend record.** The planner waits (`budget_unknown`) unless a non-dry-run
@@ -352,6 +359,27 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
 Both modes: the workflow uses `pull_request_target` and always checks out `main`, so PR code never runs
 with the App token; the token is minted after `npm ci` and `npm test`. `test/main.test.ts` runs the
 whole pipeline against a recording fake in both modes, and checks every call against the allowlist.
+
+## Project status (`project.ts`)
+
+Each run (not in `--fixture` mode) reads org Project #1 after the effects, and sets "Factory status"
+on every item that is an issue of this repo with a task marker, when its current value differs:
+
+| status | when |
+|---|---|
+| `Live` | the task has a merged PR (whatever the issue state) |
+| `Needs you` | the issue or the task's open PR has `needs-human`, `blocked` or `stale-contract` |
+| `Checks` | the task has an open PR |
+| `Building` | the issue has `factory:picked` |
+| `Ready` | the issue has `factory:ready` |
+| `Proposed` | none of the above |
+
+Issues closed without their task merged, items without a task marker, and other repos' items are
+left alone. It never adds or removes items, and `Repairing` isn't used (there's no repair workflow).
+Live only; dry-run logs `[dry-run] would set Factory status …`. It's a projection for people, not a
+record, so it writes no audit events, and it's **best-effort**: an unreadable Project, a missing
+option or a refused update stops the sync, shows in the run summary (`Project status: stopped …`),
+and is redone next poll, but never fails the run.
 
 ## Files
 
@@ -367,6 +395,7 @@ whole pipeline against a recording fake in both modes, and checks every call aga
 | `spend.ts` | today's implement spend from gh-aw usage artifacts (reserved / measured / unknown) |
 | `heartbeat.ts` | heartbeat due check and hour-bucket dedupe |
 | `executor.ts` | the mode switch (`isLive`), dry-run logger, live effects, decision → event |
+| `project.ts` | Project #1 "Factory status" sync (desired status, read, exact update) |
 | `github.ts` | fetch client with write guard, pagination, GraphQL, snapshot reader, CI log parsing |
 | `policies.ts` | pinned policy loader and validation |
 | `fake.ts` | in-memory GitHub fake (tests and `--fixture`) |
