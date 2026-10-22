@@ -589,20 +589,23 @@ describe('merge stage in the run (live)', () => {
     });
   }
   /** liveWorld + a GraphQL route for the enqueue mutation (`reply` decides the response). */
-  function mergeWorld(reply: () => { status?: number; data: unknown } = () => ({ data: { data: { enqueuePullRequest: { mergeQueueEntry: { id: 'MQE_1' } } } } })) {
+  function mergeWorld(reply: () => { status?: number; data: unknown } = () => ({ data: { data: { enqueuePullRequest: { mergeQueueEntry: { id: 'MQE_1' } } } } }), currentHead = hex40('1')) {
     const gh = liveWorld();
     const calls: unknown[] = [];
-    gh.routes.unshift({ method: 'POST', path: /^\/graphql$/, handler: (_p, body) => (calls.push(body), reply()) });
+    gh.routes.unshift(
+      { method: 'POST', path: /^\/graphql$/, handler: (_p, body) => (calls.push(body), reply()) },
+      { method: 'GET', path: new RegExp(`^/repos/${REPO}/pulls/21$`), handler: () => ({ data: { number: 21, head: { sha: currentHead } } }) },
+    );
     return { gh, calls };
   }
 
   it('enqueues with the exact mutation and the PR node id, then records auto_merge (dry_run: false)', async () => {
     const { gh, calls } = mergeWorld();
     const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: greenSnapshot() }));
-    assert.deepEqual(calls, [{ query: ENQUEUE_MUTATION, variables: { id: 'PR_21' } }]);
+    assert.deepEqual(calls, [{ query: ENQUEUE_MUTATION, variables: { id: 'PR_21', head: hex40('1') } }]);
     for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
     const ev = result.appended.find((e) => e.type === 'auto_merge')!;
-    assert.deepEqual([ev.payload.reason, ev.payload.effect, ev.payload.pr, ev.payload.dry_run], ['auto_merge_ready', 'enqueue_merge', 21, false]);
+    assert.deepEqual([ev.payload.reason, ev.payload.effect, ev.payload.pr, ev.payload.head_sha, ev.payload.dry_run], ['auto_merge_ready', 'enqueue_merge', 21, hex40('1'), false]);
     assert.ok(!effectCalls(gh).some((c) => /\/merge$|\/labels$|\/comments$/.test(c.path)), 'no direct merge, no labels, no comments');
   });
 
@@ -634,11 +637,33 @@ describe('merge stage in the run (live)', () => {
       const { gh } = mergeWorld(reply);
       const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: greenSnapshot() }));
       assert.ok(result.appended.some((e) => e.type === 'needs_human' && e.payload.reason === 'enqueue_failed' && e.payload.dry_run === false));
-      assert.ok(result.appended.some((e) => e.type === 'auto_merge'), 'the attempt is recorded too, so it is not retried');
+      assert.ok(!result.appended.some((e) => e.type === 'auto_merge'), 'not recorded as enqueued');
       assert.deepEqual(effectCalls(gh).find((c) => c.path === `/repos/${REPO}/issues/21/labels`)?.body, { labels: ['needs-human'] });
       assert.equal(gh.comments.get(21)?.length, 1);
       assert.match(gh.comments.get(21)![0]!, /`needs_human` \(`enqueue_failed`\)/);
     }
+  });
+
+  it('the head moved between planning and enqueue: GitHub refuses, the plan is stale, nothing is recorded or labelled', async () => {
+    const { gh, calls } = mergeWorld(() => ({ data: { errors: [{ message: 'head changed' }] } }), hex40('9'));
+    const lines: string[] = [];
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: greenSnapshot(), log: (l) => lines.push(l) }));
+    assert.equal(calls.length, 1);
+    assert.ok(lines.some((l) => l.includes('head moved') && l.includes('stale plan')));
+    assert.ok(!result.appended.some((e) => e.type === 'auto_merge' || e.payload.reason === 'enqueue_failed'));
+    assert.deepEqual(effectCalls(gh).filter((c) => /labels|comments/.test(c.path)), []);
+  });
+
+  it('a refusal whose hand-off failed halfway is never retried: the next run finishes the hand-off and does not call GitHub again', async () => {
+    const { gh, calls } = mergeWorld(() => ({ data: { errors: [{ message: 'not mergeable' }] } }));
+    let labelFailures = 1;
+    gh.routes.unshift({ method: 'POST', path: new RegExp(`^/repos/${REPO}/issues/\\d+/labels$`), handler: () => (labelFailures-- > 0 ? { status: 502, data: null } : { data: [] }) });
+    await assert.rejects(run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: greenSnapshot() })), /labels: HTTP 502/);
+    assert.equal(calls.length, 1);
+    const second = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: greenSnapshot(), now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.equal(calls.length, 1, 'the enqueue is not attempted again');
+    assert.equal(gh.comments.get(21)?.length, 1, 'the pending hand-off was finished');
+    assert.ok(second.appended.some((e) => e.type === 'handoff_done'));
   });
 
   it('a transient enqueue failure (HTTP 5xx) fails the run and records nothing, so the next run retries', async () => {
@@ -676,13 +701,16 @@ describe('write allowlist: the enqueue mutation', () => {
     }
   };
   it('live allows exactly ENQUEUE_MUTATION with one PR node id; everything else is refused', () => {
-    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_kwDOabc_-1' } }), true);
-    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_kwDOabc' } }, 'dry-run'), false);
-    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'I_123' } }), false, 'not a PR id');
-    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_1', jump: true } }), false);
-    assert.equal(ok({ query: ENQUEUE_MUTATION.replace('enqueuePullRequest(input: {pullRequestId: $id})', 'enqueuePullRequest(input: {pullRequestId: $id, jump: true})'), variables: { id: 'PR_1' } }), false, 'no jumping the queue');
-    assert.equal(ok({ query: 'mutation($id: ID!) { mergePullRequest(input: {pullRequestId: $id}) { clientMutationId } }', variables: { id: 'PR_1' } }), false);
-    assert.equal(ok({ query: 'mutation($id: ID!) { dequeuePullRequest(input: {id: $id}) { clientMutationId } }', variables: { id: 'PR_1' } }), false);
-    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_1' }, operationName: 'x' }), false);
+    const H = hex40('1');
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_kwDOabc_-1', head: H } }), true);
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_kwDOabc', head: H } }, 'dry-run'), false);
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_1' } }), false, 'the expected head is required');
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_1', head: H.slice(0, 7) } }), false, 'full head SHA');
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'I_123', head: H } }), false, 'not a PR id');
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_1', head: H, jump: true } }), false);
+    assert.equal(ok({ query: ENQUEUE_MUTATION.replace('expectedHeadOid: $head}', 'expectedHeadOid: $head, jump: true}'), variables: { id: 'PR_1', head: H } }), false, 'no jumping the queue');
+    assert.equal(ok({ query: 'mutation($id: ID!) { mergePullRequest(input: {pullRequestId: $id}) { clientMutationId } }', variables: { id: 'PR_1', head: H } }), false);
+    assert.equal(ok({ query: 'mutation($id: ID!) { dequeuePullRequest(input: {id: $id}) { clientMutationId } }', variables: { id: 'PR_1', head: H } }), false);
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_1', head: H }, operationName: 'x' }), false);
   });
 });

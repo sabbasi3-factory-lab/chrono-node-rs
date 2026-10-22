@@ -85,6 +85,8 @@ export interface MergeQueueEventSnap {
   kind: 'queued' | 'dequeued';
   created_at: string;
   actor: string | null;
+  /** RemovedFromMergeQueueEvent.reason (e.g. "merged"); null for queued events. */
+  reason?: string | null;
 }
 
 export type PullState = 'open' | 'closed' | 'merged';
@@ -167,6 +169,8 @@ export interface TaskHistory {
   failure_signatures: string[];
   repaired_run_ids: number[];
   aic_spent: number;
+  /** Live merge-queue enqueues by the controller (from `auto_merge` events): which head, when. */
+  enqueued?: { pr: number; head: string; at: string }[];
 }
 
 export interface Snapshot {
@@ -271,6 +275,8 @@ export interface Decision {
   contract_sha: string | null;
   run_id: number | null;
   failure_signature: string | null;
+  /** The PR head this decision is about (merge-stage decisions). */
+  head_sha?: string | null;
   /** Deterministic GitHub IDs/SHAs this decision is about; feeds the dedupe key. */
   source_ids: string[];
 }

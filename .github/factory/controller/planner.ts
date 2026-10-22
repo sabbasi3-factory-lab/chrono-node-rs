@@ -270,15 +270,35 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     if (run?.conclusion === 'success' && gates?.conclusion === 'success' && taskTier(c, p.tiers) === 'auto' && !isCoreTask(c, p.tiers)) {
       if (pr.in_merge_queue) continue;
       const issue = issueByTask.get(task);
-      // Removed from the queue after this head's green CI (merge-group checks failed, or a person
-      // dequeued it): a person decides; it's never re-queued automatically.
-      const lastMq = [...pr.merge_queue_events].sort((a, b) => a.created_at.localeCompare(b.created_at)).at(-1);
-      if (lastMq?.kind === 'dequeued' && lastMq.created_at > run.created_at) {
-        escalate(decide({ ...base, type: 'needs_human', reason: 'merge_queue_rejected', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, lastMq.node_id] }));
+      // Queue history. GitHub's removal events don't say which head was queued, so each of the
+      // controller's own enqueues (recorded with its head) claims the first removal after it.
+      // Removals no controller enqueue claims came from someone else's queue entry.
+      const removals = pr.merge_queue_events
+        .filter((e) => e.kind === 'dequeued' && (e.reason ?? '').toLowerCase() !== 'merged')
+        .sort((a, b) => a.created_at.localeCompare(b.created_at));
+      const ours = (history(task).enqueued ?? []).filter((e) => e.pr === pr.number).sort((a, b) => a.at.localeCompare(b.at));
+      const claimed = new Map<string, (typeof removals)[number]>();
+      const used = new Set<string>();
+      for (const e of ours) {
+        const r = removals.find((x) => !used.has(x.node_id) && x.created_at > e.at);
+        if (r) {
+          used.add(r.node_id);
+          claimed.set(`${e.head}@${e.at}`, r);
+        }
+      }
+      const mine = ours.filter((e) => e.head === pr.head_sha);
+      const rejectedMine = mine.map((e) => claimed.get(`${e.head}@${e.at}`)).find((r) => r !== undefined);
+      const foreign = removals.filter((r) => !used.has(r.node_id));
+      // Our enqueue of this head left the queue unmerged, or someone else's queue entry was
+      // removed and we never queued this head: a person decides. Never re-queued automatically.
+      const rejected = rejectedMine ?? (mine.length === 0 ? foreign.at(-1) : undefined);
+      if (rejected) {
+        escalate(decide({ ...base, type: 'needs_human', reason: 'merge_queue_rejected', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, rejected.node_id] }));
         continue;
       }
+      if (mine.length > 0) continue; // this head is already queued (or merging)
       const blocker = autoMergeBlocker(pr, c, issue, run, gates, p);
-      const merge = decide({ ...base, type: 'auto_merge', reason: 'auto_merge_ready', effect: 'enqueue_merge', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha] });
+      const merge: Decision = { ...decide({ ...base, type: 'auto_merge', reason: 'auto_merge_ready', effect: 'enqueue_merge', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha] }), head_sha: pr.head_sha };
       if (blocker !== null) {
         out.push({ ...wait('merge_not_ready', merge), source_ids: [pr.node_id, pr.head_sha, `blocker:${blocker}`] });
         continue;

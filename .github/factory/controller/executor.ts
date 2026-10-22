@@ -81,6 +81,7 @@ export function decisionEvent(d: Decision, live = false): PendingEvent {
   if (d.contract_sha !== null) fields.contract_sha = d.contract_sha;
   if (d.run_id !== null) fields.run_id = d.run_id;
   if (d.failure_signature !== null) fields.failure_signature = d.failure_signature;
+  if (typeof d.head_sha === 'string') fields.head_sha = d.head_sha;
   // The reason and effect are part of the dedupe identity: a changed reason for
   // the same subject (missing_task_marker → contract_missing) is a new fact,
   // while an identical retry still dedupes.
@@ -237,25 +238,40 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
     } else if (d.effect === 'enqueue_merge') {
       if (d.pr === null) throw new Error('enqueue decision has no PR');
       const prId = d.source_ids[0];
-      if (!prId || !/^PR_/.test(prId)) throw new Error('enqueue decision has no PR node id');
+      const head = d.head_sha;
+      if (!prId || !/^PR_/.test(prId) || typeof head !== 'string' || !/^[0-9a-f]{40}$/.test(head)) throw new Error('enqueue decision has no PR node id or head');
+      // A refusal already handed to a person for this PR and head is final: never ask GitHub again.
+      const failed: Decision = { ...d, type: 'needs_human', reason: 'enqueue_failed', effect: 'label:needs-human', source_ids: [...d.source_ids, 'enqueue_failed'] };
+      const failedEv = decisionEvent(failed, true);
+      if (!deps.isNew(failedEv)) {
+        deps.log(`[live] enqueue for pr=#${d.pr} head=${head.slice(0, 7)} was refused before: not retried`);
+        continue;
+      }
       let refused: string | null = null;
       try {
-        const res = await deps.client.request('POST', '/graphql', { body: { query: ENQUEUE_MUTATION, variables: { id: prId } } });
+        const res = await deps.client.request('POST', '/graphql', { body: { query: ENQUEUE_MUTATION, variables: { id: prId, head } } });
         const body = res.data as { errors?: unknown[]; data?: { enqueuePullRequest?: { mergeQueueEntry?: { id?: unknown } } } } | null;
         if (!body || (body.errors && body.errors.length > 0) || typeof body.data?.enqueuePullRequest?.mergeQueueEntry?.id !== 'string') refused = 'GraphQL error';
       } catch (err) {
         if (!(err instanceof Error) || !/HTTP 4\d\d/.test(err.message)) throw err; // transient: fail the run, retry next poll
         refused = err.message;
       }
-      if (refused !== null) {
+      if (refused === null) {
+        await deps.record(ev); // records the head that was enqueued (history: enqueued)
+      } else {
+        // A head that moved since planning makes the plan stale: nothing is recorded, and the
+        // next poll re-plans for the new head. Otherwise GitHub refused this head: a person decides.
+        const now = await deps.client.request('GET', `/repos/${deps.repo}/pulls/${d.pr}`);
+        const current = (now.data as { head?: { sha?: unknown } } | null)?.head?.sha;
+        if (current !== head) {
+          deps.log(`[live] pr=#${d.pr} head moved (${head.slice(0, 7)} → ${String(current).slice(0, 7)}): stale plan, re-planned next poll`);
+          continue;
+        }
         deps.log(`[live] enqueue refused for pr=#${d.pr} (${refused}): handing it to a person`);
-        const h: Decision = { ...d, type: 'needs_human', reason: 'enqueue_failed', effect: 'label:needs-human', source_ids: [...d.source_ids, 'enqueue_failed'] };
-        const hev = decisionEvent(h, true);
-        deps.validate(hev);
-        await deps.record(hev);
-        await completeHandoff(deps, { key: dedupeKey(hev.type, hev.source_ids), type: h.type, reason: h.reason, effect: h.effect, issue: h.issue, pr: h.pr });
+        deps.validate(failedEv);
+        await deps.record(failedEv);
+        await completeHandoff(deps, { key: dedupeKey(failedEv.type, failedEv.source_ids), type: failed.type, reason: failed.reason, effect: failed.effect, issue: failed.issue, pr: failed.pr });
       }
-      await deps.record(ev);
     } else if (d.effect === 'dispatch_workflow:repair') {
       throw new Error('repair dispatch is not available');
     } else {

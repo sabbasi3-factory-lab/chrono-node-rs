@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { plan } from '../planner.ts';
-import type { Decision, PlannerEnv, ReasonCode, Snapshot } from '../types.ts';
+import type { Decision, MergeQueueEventSnap, PlannerEnv, ReasonCode, Snapshot } from '../types.ts';
 import { type SnapshotOverrides, checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, snapshot, testPolicies } from './helpers.ts';
 
 const policies = await testPolicies();
@@ -669,14 +669,51 @@ describe('merge stage: auto-merge only green auto-tier agent PRs', () => {
     assert.deepEqual(decisions(world({ pr: { labels: ['needs-human'] } })), []);
   });
 
-  it('already in the queue: nothing; left the queue after this head went green: needs_human/merge_queue_rejected', () => {
-    assert.deepEqual(decisions(world({ pr: { in_merge_queue: true } })), []);
-    const dq = (at: string) => world({ pr: { merge_queue_events: [{ node_id: 'AMQ_1', kind: 'queued', created_at: '2026-10-16T11:10:00Z', actor: 'x' }, { node_id: 'RMQ_1', kind: 'dequeued', created_at: at, actor: 'github-merge-queue[bot]' }] } });
-    const ds = run(dq('2026-10-16T11:20:00Z'));
-    assert.deepEqual(ds.map((d) => `${d.type}/${d.reason}`), ['needs_human/merge_queue_rejected']);
-    assert.deepEqual([ds[0]!.effect, ds[0]!.source_ids], ['label:needs-human', ['PR_21', 'RMQ_1']]);
-    // A dequeue before this head's green CI (an older head) doesn't block a new attempt.
-    assert.deepEqual(decisions(dq('2026-10-16T10:59:00Z')), ['auto_merge/auto_merge_ready']);
+  describe('queue history: removals are tied to the controller\'s own enqueues (by head), not to run times', () => {
+    const H = hex40('1');
+    const OLD = hex40('7');
+    const removal = (id: string, at: string, reason = 'manually removed') => ({ node_id: id, kind: 'dequeued' as const, created_at: at, actor: 'x', reason });
+    const added = (id: string, at: string) => ({ node_id: id, kind: 'queued' as const, created_at: at, actor: 'x' });
+    const withQueue = (events: MergeQueueEventSnap[], enqueued: { pr: number; head: string; at: string }[] = [], ci: Record<string, unknown> = {}) => {
+      const s = world({ pr: { merge_queue_events: events as never }, ci });
+      s.history['en/weekday-parser'] = { ...s.history['en/weekday-parser']!, enqueued };
+      return s;
+    };
+
+    it('already in the queue: nothing', () => {
+      assert.deepEqual(decisions(world({ pr: { in_merge_queue: true } })), []);
+    });
+
+    it('our enqueue of this head left the queue unmerged → merge_queue_rejected, even after a newer green run on the same head', () => {
+      const s = withQueue([added('AMQ_1', '2026-10-16T11:10:00Z'), removal('RMQ_1', '2026-10-16T11:20:00Z', 'failed checks')], [{ pr: 21, head: H, at: '2026-10-16T11:10:00Z' }], { created_at: '2026-10-16T11:30:00Z' });
+      const ds = run(s);
+      assert.deepEqual(ds.map((d) => `${d.type}/${d.reason}`), ['needs_human/merge_queue_rejected']);
+      assert.deepEqual([ds[0]!.effect, ds[0]!.source_ids], ['label:needs-human', ['PR_21', 'RMQ_1']]);
+    });
+
+    it('our enqueue of this head with no removal after it: already queued or merging, nothing to do', () => {
+      assert.deepEqual(decisions(withQueue([added('AMQ_1', '2026-10-16T11:10:00Z')], [{ pr: 21, head: H, at: '2026-10-16T11:10:00Z' }])), []);
+    });
+
+    it('someone else queued it and it was removed → never auto re-queued (merge_queue_rejected), whatever the run times', () => {
+      for (const ci of [{ created_at: '2026-10-16T11:00:00Z' }, { created_at: '2026-10-16T12:00:00Z' }]) {
+        const s = withQueue([added('AMQ_9', '2026-10-16T11:10:00Z'), removal('RMQ_9', '2026-10-16T11:20:00Z')], [], ci);
+        assert.deepEqual(decisions(s), ['needs_human/merge_queue_rejected']);
+      }
+    });
+
+    it('our old head was queued and removed: the new head is still eligible (the removal is claimed by the old enqueue)', () => {
+      const s = withQueue([added('AMQ_1', '2026-10-16T09:10:00Z'), removal('RMQ_1', '2026-10-16T11:20:00Z')], [{ pr: 21, head: OLD, at: '2026-10-16T09:10:00Z' }], { created_at: '2026-10-16T11:00:00Z' });
+      assert.deepEqual(decisions(s), ['auto_merge/auto_merge_ready']);
+    });
+
+    it('a removal with reason "merged" is not a rejection', () => {
+      assert.deepEqual(decisions(withQueue([removal('RMQ_1', '2026-10-16T11:20:00Z', 'merged')])), ['auto_merge/auto_merge_ready']);
+    });
+
+    it('the merge decision carries the planned head', () => {
+      assert.equal(run(world())[0]!.head_sha, H);
+    });
   });
 
   it('respects the kill switch: switch off → kill_switch aggregate, no merge decision', () => {

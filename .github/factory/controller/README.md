@@ -200,8 +200,13 @@ controller puts the PR in the merge queue (`enqueue_merge`), but only if every c
 It's gated only by the kill switch (`FACTORY_ENABLED`); merging spends no AI credits. Reviews aren't
 waited for: a Copilot review is a signal, not a gate. The merge queue then runs `checks` and `gates`
 on the merge group, and GitHub merges. The controller never merges directly. `queued`, `dequeued` and
-`merged` are recorded as observed facts. A PR that leaves the queue without merging, after its head
-went green, goes to `needs_human/merge_queue_rejected`.
+`merged` are recorded as observed facts.
+
+Queue history: GitHub's removal events don't say which head was queued, so each live `auto_merge`
+record (which stores its `head_sha`) claims the first non-`merged` removal after it. If the controller's
+enqueue of the **current head** was removed, or someone else's queue entry was removed and the controller
+never queued this head, the PR goes to `needs_human/merge_queue_rejected` and is never re-queued
+automatically. A removal claimed by an older head's enqueue doesn't block a new head.
 
 **Admission**
 
@@ -313,7 +318,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
 | `label:blocked` | add `blocked`, then one templated comment |
 | `label:stale-contract` | add `stale-contract`, then one templated comment |
 | `dispatch_workflow:repair` | there is no repair workflow yet, so it becomes `needs_human`/`repair_unavailable`: label + comment |
-| `enqueue_merge` | GraphQL `enqueuePullRequest` for the PR (exact mutation, one PR node id), then record. If GitHub refuses (GraphQL error or HTTP 4xx): `needs_human`/`enqueue_failed` (label + comment), and the attempt is recorded so it isn't retried. HTTP 5xx fails the run, and the next poll retries. |
+| `enqueue_merge` | GraphQL `enqueuePullRequest` for the PR with `expectedHeadOid` = the planned head (exact mutation), then record `auto_merge` with its head. If GitHub refuses (GraphQL error or HTTP 4xx): re-read the PR head. If it moved, the plan is stale, nothing is recorded, and the next poll re-plans. Otherwise `needs_human`/`enqueue_failed` (label + comment). Once that failure is recorded, that PR and head are never sent to GitHub again, even if the hand-off was interrupted. HTTP 5xx fails the run, and the next poll retries. |
 | `alert:owner`, `pause_dispatch`, `none` | no GitHub effect; recorded in the audit log only |
 
 - **Once per decision.** An effect runs only if its **live** audit event is new. Live decision events
@@ -335,7 +340,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
   validated string inputs (no `aw_context`); `POST issues/<n>/labels` with labels from
   `factory:picked`, `needs-human`, `blocked`, `stale-contract`; `POST issues/<n>/comments` with a body
   starting with the template marker (≤ 2,000 chars); and the exact `enqueuePullRequest` GraphQL
-  mutation with one `PR_…` node id (no other variables, no queue jumping). It still refuses direct
+  mutation with one `PR_…` node id and a 40-hex `expectedHeadOid` (no other variables, no queue jumping). It still refuses direct
   merges, dequeues, closes, label removal, `factory:ready`, reviews, other workflows, other refs and
   every other GraphQL mutation.
 - The workflow requests `actions`, `issues` and `pull-requests` **write** only when
