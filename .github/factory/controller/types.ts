@@ -109,6 +109,10 @@ export interface PullSnap {
   attempt: number | null;
   reviews: ReviewSnap[];
   merge_queue_events: MergeQueueEventSnap[];
+  /** GitHub's `mergeable` ('MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'); null when not read. */
+  mergeable?: string | null;
+  /** GitHub's `isInMergeQueue`. */
+  in_merge_queue?: boolean;
 }
 
 export interface ContractSnap {
@@ -195,6 +199,7 @@ export interface Snapshot {
 
 export type DecisionType =
   | 'dispatched'
+  | 'auto_merge'
   | 'repair_dispatched'
   | 'needs_human'
   | 'blocked'
@@ -215,6 +220,9 @@ export type ReasonCode =
   | 'pick_time_unknown'
   | 'missing_heldout_seed'
   | 'repair_unavailable'
+  | 'auto_merge_ready'
+  | 'merge_queue_rejected'
+  | 'enqueue_failed'
   | 'gates_failed'
   | 'task_budget_exhausted'
   | 'missing_task_marker'
@@ -236,12 +244,14 @@ export type ReasonCode =
   | 'human_queue_full'
   | 'core_area_busy'
   | 'area_locked'
+  | 'merge_not_ready'
   | 'gates_pending'
   | 'check_runs_incomplete';
 
 export type Effect =
   | 'dispatch_workflow:implement'
   | 'dispatch_workflow:repair'
+  | 'enqueue_merge'
   | 'label:needs-human'
   | 'label:blocked'
   | 'label:stale-contract'

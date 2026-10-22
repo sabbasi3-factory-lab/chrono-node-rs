@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { assertAllowedRequest, COMMENT_MARKER } from '../github.ts';
+import { assertAllowedRequest, COMMENT_MARKER, ENQUEUE_MUTATION } from '../github.ts';
 import { AUDIT_BRANCH, splitLines, verify } from '../audit.ts';
 import { decisionEvent, describe as describeDecision, execute, executeLive, isLive, liveDecision, pendingHandoffs } from '../executor.ts';
 import { FakeGitHub, type RecordedCall } from '../fake.ts';
@@ -569,5 +569,120 @@ describe('spend collector in the run', () => {
     assert.equal(result.snapshot.factory_aic_today, 10800);
     assert.ok(result.decisions.some((d) => d.type === 'budget_pause'));
     assert.ok(!result.decisions.some((d) => d.type === 'dispatched'));
+  });
+});
+
+describe('merge stage in the run (live)', () => {
+  /** An eligible green auto-tier agent PR (#21) for en/weekday-parser, issue #1 picked. */
+  function greenSnapshot(over: Partial<ReturnType<typeof pull>> = {}) {
+    const c = contract('en/weekday-parser');
+    const pr = pull(21, { task_id: 'en/weekday-parser', contract_sha: c.last_commit_sha, mergeable: 'MERGEABLE', in_merge_queue: false, ...over });
+    return snapshot({
+      issues: [issue(1, 'en/weekday-parser', ['factory:ready', 'factory:picked'])],
+      pulls: [pr],
+      contractList: [c],
+      check_runs: [
+        checkRun(490, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, conclusion: 'success' }),
+        checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'success', heldout_seed: '7' }),
+      ],
+      history: { 'en/weekday-parser': history({ picked_at: '2026-10-16T10:00:00Z' }) },
+    });
+  }
+  /** liveWorld + a GraphQL route for the enqueue mutation (`reply` decides the response). */
+  function mergeWorld(reply: () => { status?: number; data: unknown } = () => ({ data: { data: { enqueuePullRequest: { mergeQueueEntry: { id: 'MQE_1' } } } } })) {
+    const gh = liveWorld();
+    const calls: unknown[] = [];
+    gh.routes.unshift({ method: 'POST', path: /^\/graphql$/, handler: (_p, body) => (calls.push(body), reply()) });
+    return { gh, calls };
+  }
+
+  it('enqueues with the exact mutation and the PR node id, then records auto_merge (dry_run: false)', async () => {
+    const { gh, calls } = mergeWorld();
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: greenSnapshot() }));
+    assert.deepEqual(calls, [{ query: ENQUEUE_MUTATION, variables: { id: 'PR_21' } }]);
+    for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
+    const ev = result.appended.find((e) => e.type === 'auto_merge')!;
+    assert.deepEqual([ev.payload.reason, ev.payload.effect, ev.payload.pr, ev.payload.dry_run], ['auto_merge_ready', 'enqueue_merge', 21, false]);
+    assert.ok(!effectCalls(gh).some((c) => /\/merge$|\/labels$|\/comments$/.test(c.path)), 'no direct merge, no labels, no comments');
+  });
+
+  it('a second run does not enqueue again (live dedupe on the PR and head)', async () => {
+    const { gh, calls } = mergeWorld();
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: greenSnapshot() }));
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: greenSnapshot(), now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.equal(calls.length, 1);
+  });
+
+  it('dry-run and the kill switch never enqueue', async () => {
+    for (const env of [{ ...LIVE_ENV, FACTORY_ENABLED: undefined }, { ...LIVE_ENV, FACTORY_ENABLED: 'false' }]) {
+      const { gh, calls } = mergeWorld();
+      const result = await run(deps(gh, { env, forceDryRun: false, snapshot: greenSnapshot() }));
+      assert.equal(result.live, false);
+      assert.deepEqual(calls, []);
+    }
+    // Dry-run with the planner seeing FACTORY_ENABLED=true: the plan is logged and recorded as dry-run only.
+    const { gh, calls } = mergeWorld();
+    const lines: string[] = [];
+    const result = await run(deps(gh, { snapshot: greenSnapshot(), log: (l) => lines.push(l) }));
+    assert.deepEqual(calls, []);
+    assert.ok(lines.some((l) => l.startsWith('[dry-run] would enqueue_merge (auto_merge/auto_merge_ready) task=en/weekday-parser issue=#1 pr=#21')));
+    assert.equal(result.appended.find((e) => e.type === 'auto_merge')!.payload.dry_run, true);
+  });
+
+  it('GitHub refusing the enqueue (GraphQL error or HTTP 4xx) becomes needs_human/enqueue_failed: label + one comment', async () => {
+    for (const reply of [() => ({ data: { errors: [{ message: 'Pull request is not mergeable' }] } }), () => ({ status: 403, data: null })]) {
+      const { gh } = mergeWorld(reply);
+      const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: greenSnapshot() }));
+      assert.ok(result.appended.some((e) => e.type === 'needs_human' && e.payload.reason === 'enqueue_failed' && e.payload.dry_run === false));
+      assert.ok(result.appended.some((e) => e.type === 'auto_merge'), 'the attempt is recorded too, so it is not retried');
+      assert.deepEqual(effectCalls(gh).find((c) => c.path === `/repos/${REPO}/issues/21/labels`)?.body, { labels: ['needs-human'] });
+      assert.equal(gh.comments.get(21)?.length, 1);
+      assert.match(gh.comments.get(21)![0]!, /`needs_human` \(`enqueue_failed`\)/);
+    }
+  });
+
+  it('a transient enqueue failure (HTTP 5xx) fails the run and records nothing, so the next run retries', async () => {
+    const { gh } = mergeWorld(() => ({ status: 502, data: null }));
+    await assert.rejects(run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: greenSnapshot() })), /graphql: HTTP 502/);
+    assert.ok(!(gh.fileAt(AUDIT_BRANCH, 'audit/2026/10/16.jsonl') ?? '').includes('"type":"auto_merge"'));
+  });
+
+  it('records queued and merged as observed facts', async () => {
+    const { gh } = mergeWorld();
+    const s = greenSnapshot({
+      in_merge_queue: false,
+      state: 'merged',
+      merged_at: '2026-10-16T11:40:00Z',
+      merge_commit_sha: hex40('f'),
+      merge_queue_events: [
+        { node_id: 'AMQ_9', kind: 'queued', created_at: '2026-10-16T11:30:00Z', actor: 'sabbasi3-factory-controller' },
+        { node_id: 'RMQ_9', kind: 'dequeued', created_at: '2026-10-16T11:39:59Z', actor: 'github-merge-queue' },
+      ],
+    });
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: s }));
+    const types = result.appended.map((e) => e.type);
+    assert.ok(types.includes('queued') && types.includes('merged'), types.join(','));
+    assert.ok(!result.decisions.some((d) => d.type === 'auto_merge'), 'a merged PR is not queued again');
+  });
+});
+
+describe('write allowlist: the enqueue mutation', () => {
+  const ok = (body: unknown, mode: 'live' | 'dry-run' = 'live') => {
+    try {
+      assertAllowedRequest(REPO, 'POST', '/graphql', body, mode);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  it('live allows exactly ENQUEUE_MUTATION with one PR node id; everything else is refused', () => {
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_kwDOabc_-1' } }), true);
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_kwDOabc' } }, 'dry-run'), false);
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'I_123' } }), false, 'not a PR id');
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_1', jump: true } }), false);
+    assert.equal(ok({ query: ENQUEUE_MUTATION.replace('enqueuePullRequest(input: {pullRequestId: $id})', 'enqueuePullRequest(input: {pullRequestId: $id, jump: true})'), variables: { id: 'PR_1' } }), false, 'no jumping the queue');
+    assert.equal(ok({ query: 'mutation($id: ID!) { mergePullRequest(input: {pullRequestId: $id}) { clientMutationId } }', variables: { id: 'PR_1' } }), false);
+    assert.equal(ok({ query: 'mutation($id: ID!) { dequeuePullRequest(input: {id: $id}) { clientMutationId } }', variables: { id: 'PR_1' } }), false);
+    assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_1' }, operationName: 'x' }), false);
   });
 });

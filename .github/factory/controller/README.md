@@ -159,6 +159,9 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 
 | type | reason | when | would |
 |---|---|---|---|
+| `auto_merge` | `auto_merge_ready` | a green auto-tier agent PR (see **Merge stage**) | `enqueue_merge` |
+| `needs_human` | `merge_queue_rejected` | the PR left the merge queue without merging after its head went green; never re-queued automatically | `label:needs-human` |
+| `wait` | `merge_not_ready` | an auto-tier PR with green checks but an unmet merge condition (named in `source_ids` as `blocker:<why>`) | nothing (logged, **not** recorded) |
 | `dispatched` | `would_dispatch` | admitted ready task passes every gate | `dispatch_workflow:implement` (attempt 1, `contract_sha` = contract commit SHA) |
 | `repair_dispatched` | `ci_failed` | the newest `ci` run on the PR head failed, with a new signature and repairs < `max_repairs` | `dispatch_workflow:repair` |
 | `needs_human` | `gates_failed` | the newest `gates` run for the PR head failed (policy: scope, Contract-SHA, identifiers). It is never repaired. | `label:needs-human` |
@@ -182,6 +185,23 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `wait` | `gates_pending` | a `ci` failure, but the newest `gates` run on the head is missing, unfinished or not `success`: nothing is repaired until gates pass | nothing (logged, **not** recorded) |
 | `wait` | `check_runs_incomplete` | the PR head is beyond `MAX_HEAD_LOOKUPS` (30) open PRs, so its newest runs may be missing | nothing (logged, **not** recorded) |
 | `wait` | `already_merged`, `deps_not_merged`, `budget_unknown`, `budget_pause`, `busy_jobs_unknown`, `actions_busy`, `wip_full`, `human_queue_full`, `core_area_busy`, `area_locked` | the task is held back this run | nothing (logged, **not** recorded) |
+
+**Merge stage**
+
+When the newest `ci` **and** `gates` runs on a factory PR's current head are both `success`, the
+controller puts the PR in the merge queue (`enqueue_merge`), but only if every condition holds:
+- the task is **`tier: auto`** and not core: never human, auto-strict (`start_as: human`) or core
+- the author is the agent App, the PR isn't a draft, and GitHub says it's `MERGEABLE`
+- `Contract-SHA:` equals the contract's commit SHA **exactly** (full 40 hex)
+- the task issue has `factory:picked`, and neither the issue nor the PR has `needs-human`
+- the `ci` run has a trusted held-out seed
+- it isn't already in the queue
+
+It's gated only by the kill switch (`FACTORY_ENABLED`); merging spends no AI credits. Reviews aren't
+waited for: a Copilot review is a signal, not a gate. The merge queue then runs `checks` and `gates`
+on the merge group, and GitHub merges. The controller never merges directly. `queued`, `dequeued` and
+`merged` are recorded as observed facts. A PR that leaves the queue without merging, after its head
+went green, goes to `needs_human/merge_queue_rejected`.
 
 **Admission**
 
@@ -293,6 +313,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
 | `label:blocked` | add `blocked`, then one templated comment |
 | `label:stale-contract` | add `stale-contract`, then one templated comment |
 | `dispatch_workflow:repair` | there is no repair workflow yet, so it becomes `needs_human`/`repair_unavailable`: label + comment |
+| `enqueue_merge` | GraphQL `enqueuePullRequest` for the PR (exact mutation, one PR node id), then record. If GitHub refuses (GraphQL error or HTTP 4xx): `needs_human`/`enqueue_failed` (label + comment), and the attempt is recorded so it isn't retried. HTTP 5xx fails the run, and the next poll retries. |
 | `alert:owner`, `pause_dispatch`, `none` | no GitHub effect; recorded in the audit log only |
 
 - **Once per decision.** An effect runs only if its **live** audit event is new. Live decision events
@@ -313,8 +334,10 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
   `POST actions/workflows/implement.lock.yml/dispatches` with `ref: main` and exactly the four
   validated string inputs (no `aw_context`); `POST issues/<n>/labels` with labels from
   `factory:picked`, `needs-human`, `blocked`, `stale-contract`; `POST issues/<n>/comments` with a body
-  starting with the template marker (≤ 2,000 chars). It still refuses merges, closes, label removal,
-  `factory:ready`, reviews, other workflows, other refs and GraphQL mutations.
+  starting with the template marker (≤ 2,000 chars); and the exact `enqueuePullRequest` GraphQL
+  mutation with one `PR_…` node id (no other variables, no queue jumping). It still refuses direct
+  merges, dequeues, closes, label removal, `factory:ready`, reviews, other workflows, other refs and
+  every other GraphQL mutation.
 - The workflow requests `actions`, `issues` and `pull-requests` **write** only when
   `vars.FACTORY_ENABLED` is exactly `true`, checked case-sensitively in a shell step (Actions
   expressions compare strings case-insensitively). The controller applies the same rule.
