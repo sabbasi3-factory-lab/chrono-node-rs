@@ -85,6 +85,8 @@ export interface MergeQueueEventSnap {
   kind: 'queued' | 'dequeued';
   created_at: string;
   actor: string | null;
+  /** RemovedFromMergeQueueEvent.reason (e.g. "merged"); null for queued events. */
+  reason?: string | null;
 }
 
 export type PullState = 'open' | 'closed' | 'merged';
@@ -109,6 +111,10 @@ export interface PullSnap {
   attempt: number | null;
   reviews: ReviewSnap[];
   merge_queue_events: MergeQueueEventSnap[];
+  /** GitHub's `mergeable` ('MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'); null when not read. */
+  mergeable?: string | null;
+  /** GitHub's `isInMergeQueue`. */
+  in_merge_queue?: boolean;
 }
 
 export interface ContractSnap {
@@ -163,6 +169,8 @@ export interface TaskHistory {
   failure_signatures: string[];
   repaired_run_ids: number[];
   aic_spent: number;
+  /** Live merge-queue enqueues by the controller (from `auto_merge` events): which head, when. */
+  enqueued?: { pr: number; head: string; at: string }[];
 }
 
 export interface Snapshot {
@@ -195,6 +203,7 @@ export interface Snapshot {
 
 export type DecisionType =
   | 'dispatched'
+  | 'auto_merge'
   | 'repair_dispatched'
   | 'needs_human'
   | 'blocked'
@@ -215,6 +224,9 @@ export type ReasonCode =
   | 'pick_time_unknown'
   | 'missing_heldout_seed'
   | 'repair_unavailable'
+  | 'auto_merge_ready'
+  | 'merge_queue_rejected'
+  | 'enqueue_failed'
   | 'gates_failed'
   | 'task_budget_exhausted'
   | 'missing_task_marker'
@@ -236,12 +248,14 @@ export type ReasonCode =
   | 'human_queue_full'
   | 'core_area_busy'
   | 'area_locked'
+  | 'merge_not_ready'
   | 'gates_pending'
   | 'check_runs_incomplete';
 
 export type Effect =
   | 'dispatch_workflow:implement'
   | 'dispatch_workflow:repair'
+  | 'enqueue_merge'
   | 'label:needs-human'
   | 'label:blocked'
   | 'label:stale-contract'
@@ -261,6 +275,8 @@ export interface Decision {
   contract_sha: string | null;
   run_id: number | null;
   failure_signature: string | null;
+  /** The PR head this decision is about (merge-stage decisions). */
+  head_sha?: string | null;
   /** Deterministic GitHub IDs/SHAs this decision is about; feeds the dedupe key. */
   source_ids: string[];
 }

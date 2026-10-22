@@ -21,6 +21,25 @@ import type {
 export const LABEL_READY = 'factory:ready';
 export const LABEL_PICKED = 'factory:picked';
 export const LABEL_NEEDS_HUMAN = 'needs-human';
+/** The agent App's login (GraphQL gives `name`, REST `name[bot]`). Only its PRs are auto-merged. */
+export const AGENT_LOGIN = 'sabbasi3-factory-agent';
+
+/**
+ * The merge stage (DESIGN §7 step 5): a factory PR goes to the merge queue only if every
+ * condition holds. Returns the reason it can't (a wait), or null when it can.
+ * Never for human, auto-strict or core tasks: those always wait for a person.
+ */
+export function autoMergeBlocker(pr: PullSnap, c: ContractSnap, issue: IssueSnap | undefined, ci: CheckRunSnap | null, gates: CheckRunSnap | null, p: Policies): string | null {
+  if (taskTier(c, p.tiers) !== 'auto' || isCoreTask(c, p.tiers)) return 'not_auto_tier';
+  if (pr.draft) return 'draft';
+  if (!pr.author_is_bot || (pr.author ?? '').replace(/\[bot\]$/, '') !== AGENT_LOGIN) return 'not_agent_pr';
+  if (pr.contract_sha !== c.last_commit_sha) return 'contract_sha_not_exact';
+  if (!issue || !issue.labels.includes(LABEL_PICKED)) return 'issue_not_picked';
+  if (ci?.conclusion !== 'success' || ci.heldout_seed === null) return 'ci_not_green';
+  if (gates?.conclusion !== 'success') return 'gates_not_green';
+  if (pr.mergeable !== 'MERGEABLE') return 'not_mergeable';
+  return null;
+}
 
 /** ci conclusions after which the reveal step has run, so a held-out seed must exist. */
 export const SEED_EXPECTED_CONCLUSIONS = new Set(['success', 'failure']);
@@ -165,6 +184,8 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
 
   // Candidates for dispatch (repairs first, then new tasks), gated below.
   const repairs: Decision[] = [];
+  // Merge-queue candidates: gated by the kill switch only (merging spends no AI credits).
+  const merges: Decision[] = [];
 
   // Tasks escalated to needs_human in this run get no other decision (at most
   // one terminal decision per task per run). Timeouts are evaluated first.
@@ -243,6 +264,46 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     // the change touched `.github/`: a human looks, whatever the result (fail closed).
     if (run && run.heldout_seed === null && SEED_EXPECTED_CONCLUSIONS.has(run.conclusion ?? '')) {
       escalate(decide({ ...base, type: 'needs_human', reason: 'missing_heldout_seed', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id] }));
+      continue;
+    }
+    // ---- merge stage: green auto-tier agent PRs go to the merge queue (live), nothing else does.
+    if (run?.conclusion === 'success' && gates?.conclusion === 'success' && taskTier(c, p.tiers) === 'auto' && !isCoreTask(c, p.tiers)) {
+      if (pr.in_merge_queue) continue;
+      const issue = issueByTask.get(task);
+      // Queue history. GitHub's removal events don't say which head was queued, so each of the
+      // controller's own enqueues (recorded with its head) claims the first removal after it.
+      // Removals no controller enqueue claims came from someone else's queue entry.
+      const removals = pr.merge_queue_events
+        .filter((e) => e.kind === 'dequeued' && (e.reason ?? '').toLowerCase() !== 'merged')
+        .sort((a, b) => a.created_at.localeCompare(b.created_at));
+      const ours = (history(task).enqueued ?? []).filter((e) => e.pr === pr.number).sort((a, b) => a.at.localeCompare(b.at));
+      const claimed = new Map<string, (typeof removals)[number]>();
+      const used = new Set<string>();
+      for (const e of ours) {
+        const r = removals.find((x) => !used.has(x.node_id) && x.created_at > e.at);
+        if (r) {
+          used.add(r.node_id);
+          claimed.set(`${e.head}@${e.at}`, r);
+        }
+      }
+      const mine = ours.filter((e) => e.head === pr.head_sha);
+      const rejectedMine = mine.map((e) => claimed.get(`${e.head}@${e.at}`)).find((r) => r !== undefined);
+      const foreign = removals.filter((r) => !used.has(r.node_id));
+      // Our enqueue of this head left the queue unmerged, or someone else's queue entry was
+      // removed and we never queued this head: a person decides. Never re-queued automatically.
+      const rejected = rejectedMine ?? (mine.length === 0 ? foreign.at(-1) : undefined);
+      if (rejected) {
+        escalate(decide({ ...base, type: 'needs_human', reason: 'merge_queue_rejected', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, rejected.node_id] }));
+        continue;
+      }
+      if (mine.length > 0) continue; // this head is already queued (or merging)
+      const blocker = autoMergeBlocker(pr, c, issue, run, gates, p);
+      const merge: Decision = { ...decide({ ...base, type: 'auto_merge', reason: 'auto_merge_ready', effect: 'enqueue_merge', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha] }), head_sha: pr.head_sha };
+      if (blocker !== null) {
+        out.push({ ...wait('merge_not_ready', merge), source_ids: [pr.node_id, pr.head_sha, `blocker:${blocker}`] });
+        continue;
+      }
+      merges.push(merge);
       continue;
     }
     if (!run || !run.conclusion || !FAILED_CONCLUSIONS.has(run.conclusion)) continue;
@@ -346,6 +407,11 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     else if (gate) out.push(wait(gate, d));
     return gate === null;
   };
+
+  for (const m of merges) {
+    if (m.task && escalated.has(m.task)) continue;
+    if (route(m, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(m);
+  }
 
   for (const r of repairs) {
     if (r.task && escalated.has(r.task)) continue;

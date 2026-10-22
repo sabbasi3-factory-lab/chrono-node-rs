@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { plan } from '../planner.ts';
-import type { Decision, PlannerEnv, ReasonCode, Snapshot } from '../types.ts';
+import type { Decision, MergeQueueEventSnap, PlannerEnv, ReasonCode, Snapshot } from '../types.ts';
 import { type SnapshotOverrides, checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, snapshot, testPolicies } from './helpers.ts';
 
 const policies = await testPolicies();
@@ -351,7 +351,8 @@ describe('planner: failures', () => {
 
   it('treats timed_out as a failure and ignores success/cancelled', () => {
     assert.ok(run(failingPrWorld('x', undefined, 'timed_out')).some((d) => d.reason === 'ci_failed'));
-    assert.deepEqual(run(failingPrWorld('x', undefined, 'success')), []);
+    // A green auto-tier PR goes to the merge stage instead (here it waits: its Contract-SHA is a prefix).
+    assert.deepEqual(run(failingPrWorld('x', undefined, 'success')).map((d) => `${d.type}/${d.reason}`), ['wait/merge_not_ready']);
     assert.deepEqual(run(failingPrWorld('x', undefined, 'cancelled')), []);
   });
 
@@ -592,5 +593,143 @@ describe('review #22: a finished ci run without a trusted held-out seed goes to 
     ciRun(g).heldout_seed = null;
     g.check_runs.push(checkRun(600, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: g.pulls[0]!.head_sha, conclusion: 'failure' }));
     assert.deepEqual(reasons(run(g)), ['gates_failed']);
+  });
+});
+
+describe('merge stage: auto-merge only green auto-tier agent PRs', () => {
+  const MAIN_TIP = hex40('e');
+  /** A green, eligible PR world for en/weekday-parser; `over` tweaks the pieces. */
+  const world = (o: { contract?: Partial<ReturnType<typeof contract>>; pr?: Partial<ReturnType<typeof pull>>; issueLabels?: string[]; ci?: Record<string, unknown>; gates?: Record<string, unknown> | null } = {}): Snapshot => {
+    const c = contract('en/weekday-parser', o.contract ?? {});
+    const pr = pull(21, { task_id: 'en/weekday-parser', contract_sha: c.last_commit_sha, mergeable: 'MERGEABLE', in_merge_queue: false, ...(o.pr ?? {}) });
+    return snapshot({
+      issues: [issue(1, 'en/weekday-parser', o.issueLabels ?? ['factory:ready', 'factory:picked'])],
+      pulls: [pr],
+      contractList: [c],
+      check_runs: [
+        ...(o.gates === null ? [] : [checkRun(490, { workflow: 'gates', event: 'pull_request_target', head_sha: MAIN_TIP, candidate_sha: pr.head_sha, conclusion: 'success', ...(o.gates ?? {}) })]),
+        checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'success', created_at: '2026-10-16T11:00:00Z', ...(o.ci ?? {}) }),
+      ],
+      history: { 'en/weekday-parser': history({ picked_at: '2026-10-16T10:00:00Z' }) },
+    });
+  };
+  const decisions = (s: Snapshot, env: PlannerEnv = ON) => run(s, env).map((d) => `${d.type}/${d.reason}`);
+  const blockerOf = (s: Snapshot) => run(s).find((d) => d.reason === 'merge_not_ready')?.source_ids.find((x) => x.startsWith('blocker:'));
+
+  it('an eligible PR is queued: auto_merge/auto_merge_ready → enqueue_merge, keyed on the PR and its head', () => {
+    const ds = run(world());
+    assert.deepEqual(ds.map((d) => `${d.type}/${d.reason}`), ['auto_merge/auto_merge_ready']);
+    assert.equal(ds[0]!.effect, 'enqueue_merge');
+    assert.equal(ds[0]!.pr, 21);
+    assert.deepEqual(ds[0]!.source_ids, ['PR_21', hex40('1')]);
+  });
+
+  it('never for human, auto-strict or core tiers (no merge decision at all)', () => {
+    assert.deepEqual(decisions(world({ contract: { tier: 'human' } })), []);
+    assert.deepEqual(decisions(world({ contract: { scope: ['src/core/results.rs'] } })), [], 'core / auto-strict (start_as human)');
+    assert.deepEqual(decisions(world({ contract: { scope: ['src/common/parsers/x.rs'] } })), [], 'auto-strict path');
+    assert.deepEqual(decisions(world({ contract: { scope: ['src/locales/en/parsers/a.rs', 'harness/x.js'] } })), [], 'any human path makes the task human');
+  });
+
+  it('waits (merge_not_ready) for each unmet condition, naming it', () => {
+    const cases: [string, Parameters<typeof world>[0]][] = [
+      ['blocker:contract_sha_not_exact', { pr: { contract_sha: commitSha('en/weekday-parser').slice(0, 7) } }],
+      ['blocker:issue_not_picked', { issueLabels: ['factory:ready'] }],
+      ['blocker:draft', { pr: { draft: true } }],
+      ['blocker:not_agent_pr', { pr: { author: 'sabbasi3', author_is_bot: false } }],
+      ['blocker:not_agent_pr', { pr: { author: 'other-bot[bot]', author_is_bot: true } }],
+      ['blocker:not_mergeable', { pr: { mergeable: 'CONFLICTING' } }],
+      ['blocker:not_mergeable', { pr: { mergeable: 'UNKNOWN' } }],
+      ['blocker:not_mergeable', { pr: { mergeable: null } }],
+    ];
+    for (const [blocker, o] of cases) {
+      const s = world(o);
+      assert.deepEqual(decisions(s), ['wait/merge_not_ready'], blocker);
+      assert.equal(blockerOf(s), blocker);
+    }
+    // A Contract-SHA that isn't even a prefix is stale (handled before the merge stage).
+    assert.deepEqual(decisions(world({ pr: { contract_sha: '0000000' } })), ['stale_contract/contract_changed']);
+  });
+
+  it('nothing to merge unless both newest checks are success on the current head', () => {
+    assert.deepEqual(decisions(world({ gates: null })), [], 'gates missing');
+    assert.deepEqual(decisions(world({ gates: { status: 'in_progress', conclusion: null } })), [], 'gates running');
+    assert.deepEqual(decisions(world({ gates: { conclusion: 'cancelled' } })), [], 'gates cancelled');
+    assert.deepEqual(decisions(world({ gates: { candidate_sha: hex40('9') } })), [], 'gates for another head');
+    assert.deepEqual(decisions(world({ ci: { status: 'in_progress', conclusion: null } })), [], 'ci running');
+    assert.deepEqual(decisions(world({ ci: { head_sha: hex40('9') } })), [], 'ci for another head');
+    assert.deepEqual(decisions(world({ ci: { heldout_seed: null } })), ['needs_human/missing_heldout_seed'], 'no trusted seed');
+    const s = world();
+    s.check_runs.push(checkRun(501, { head_sha: s.pulls[0]!.head_sha, conclusion: 'failure', failure_signature: 'step:x' }));
+    assert.ok(!decisions(s).includes('auto_merge/auto_merge_ready'), 'a newer failing ci wins');
+  });
+
+  it('no merge decision for a task held by a human (needs-human on the issue or the PR)', () => {
+    assert.deepEqual(decisions(world({ issueLabels: ['factory:picked', 'needs-human'] })), []);
+    assert.deepEqual(decisions(world({ pr: { labels: ['needs-human'] } })), []);
+  });
+
+  describe('queue history: removals are tied to the controller\'s own enqueues (by head), not to run times', () => {
+    const H = hex40('1');
+    const OLD = hex40('7');
+    const removal = (id: string, at: string, reason = 'manually removed') => ({ node_id: id, kind: 'dequeued' as const, created_at: at, actor: 'x', reason });
+    const added = (id: string, at: string) => ({ node_id: id, kind: 'queued' as const, created_at: at, actor: 'x' });
+    const withQueue = (events: MergeQueueEventSnap[], enqueued: { pr: number; head: string; at: string }[] = [], ci: Record<string, unknown> = {}) => {
+      const s = world({ pr: { merge_queue_events: events as never }, ci });
+      s.history['en/weekday-parser'] = { ...s.history['en/weekday-parser']!, enqueued };
+      return s;
+    };
+
+    it('already in the queue: nothing', () => {
+      assert.deepEqual(decisions(world({ pr: { in_merge_queue: true } })), []);
+    });
+
+    it('our enqueue of this head left the queue unmerged → merge_queue_rejected, even after a newer green run on the same head', () => {
+      const s = withQueue([added('AMQ_1', '2026-10-16T11:10:00Z'), removal('RMQ_1', '2026-10-16T11:20:00Z', 'failed checks')], [{ pr: 21, head: H, at: '2026-10-16T11:10:00Z' }], { created_at: '2026-10-16T11:30:00Z' });
+      const ds = run(s);
+      assert.deepEqual(ds.map((d) => `${d.type}/${d.reason}`), ['needs_human/merge_queue_rejected']);
+      assert.deepEqual([ds[0]!.effect, ds[0]!.source_ids], ['label:needs-human', ['PR_21', 'RMQ_1']]);
+    });
+
+    it('our enqueue of this head with no removal after it: already queued or merging, nothing to do', () => {
+      assert.deepEqual(decisions(withQueue([added('AMQ_1', '2026-10-16T11:10:00Z')], [{ pr: 21, head: H, at: '2026-10-16T11:10:00Z' }])), []);
+    });
+
+    it('someone else queued it and it was removed → never auto re-queued (merge_queue_rejected), whatever the run times', () => {
+      for (const ci of [{ created_at: '2026-10-16T11:00:00Z' }, { created_at: '2026-10-16T12:00:00Z' }]) {
+        const s = withQueue([added('AMQ_9', '2026-10-16T11:10:00Z'), removal('RMQ_9', '2026-10-16T11:20:00Z')], [], ci);
+        assert.deepEqual(decisions(s), ['needs_human/merge_queue_rejected']);
+      }
+    });
+
+    it('our old head was queued and removed: the new head is still eligible (the removal is claimed by the old enqueue)', () => {
+      const s = withQueue([added('AMQ_1', '2026-10-16T09:10:00Z'), removal('RMQ_1', '2026-10-16T11:20:00Z')], [{ pr: 21, head: OLD, at: '2026-10-16T09:10:00Z' }], { created_at: '2026-10-16T11:00:00Z' });
+      assert.deepEqual(decisions(s), ['auto_merge/auto_merge_ready']);
+    });
+
+    it('a removal with reason "merged" is not a rejection', () => {
+      assert.deepEqual(decisions(withQueue([removal('RMQ_1', '2026-10-16T11:20:00Z', 'merged')])), ['auto_merge/auto_merge_ready']);
+    });
+
+    it('the merge decision carries the planned head', () => {
+      assert.equal(run(world())[0]!.head_sha, H);
+    });
+  });
+
+  it('respects the kill switch: switch off → kill_switch aggregate, no merge decision', () => {
+    assert.deepEqual(decisions(world(), { FACTORY_ENABLED: undefined }), ['kill_switch/kill_switch']);
+    assert.deepEqual(decisions(world(), { FACTORY_ENABLED: 'TRUE' }), ['kill_switch/kill_switch']);
+  });
+
+  it('is not gated by spend or Actions load (merging spends no AI credits)', () => {
+    const s = world();
+    s.factory_aic_today = null;
+    s.busy_jobs = null;
+    assert.deepEqual(decisions(s), ['auto_merge/auto_merge_ready']);
+  });
+
+  it('does not wait for reviews: a Copilot review comment is a signal, not a gate', () => {
+    const s = world({ pr: { reviews: [{ node_id: 'PRR_1', author: 'copilot-pull-request-reviewer', author_is_bot: true, state: 'COMMENTED', submitted_at: '2026-10-16T11:30:00Z' }] } });
+    assert.deepEqual(decisions(s), ['auto_merge/auto_merge_ready']);
   });
 });

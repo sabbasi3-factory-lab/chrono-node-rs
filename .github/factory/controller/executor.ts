@@ -10,10 +10,16 @@
 //   label:needs-human           → add `needs-human` to the PR and/or issue, then one templated comment
 //   label:blocked               → add `blocked`, then one templated comment
 //   label:stale-contract        → add `stale-contract`, then one templated comment
+//   enqueue_merge               → add the PR to the merge queue (GraphQL enqueuePullRequest); only
+//                                 for green auto-tier agent PRs (planner autoMergeBlocker). If
+//                                 GitHub refuses, the PR is handed to a person instead
+//                                 (needs_human/enqueue_failed). GitHub then merges it once the
+//                                 merge-group checks pass; `queued` and `merged` are observed facts.
 //   dispatch_workflow:repair    → no repair workflow exists yet: escalated instead to
 //                                 needs_human/repair_unavailable (label + comment)
 //   alert:owner, pause_dispatch, none → no GitHub effect; recorded in the audit log only
-// It never merges, closes, removes a label, adds `factory:ready`, or dispatches anything else.
+// It never merges directly (only the merge queue merges), closes, removes a label, adds
+// `factory:ready`, or dispatches anything else.
 //
 // Each decision's effect runs only if its LIVE audit event is new. Live events carry `mode:live`
 // in their dedupe identity, so a decision recorded while the switch was off (dry-run) doesn't
@@ -28,7 +34,7 @@
 //   is posted only if no comment with its marker exists yet.
 
 import { dedupeKey } from './audit.ts';
-import { COMMENT_MARKER, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate } from './github.ts';
+import { COMMENT_MARKER, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate } from './github.ts';
 import { isRecorded, LABEL_NEEDS_HUMAN, LABEL_PICKED } from './planner.ts';
 import type { AuditEvent, Decision, GitHubClient, JsonObject, PendingEvent, PlannerEnv, ReasonCode } from './types.ts';
 
@@ -75,6 +81,7 @@ export function decisionEvent(d: Decision, live = false): PendingEvent {
   if (d.contract_sha !== null) fields.contract_sha = d.contract_sha;
   if (d.run_id !== null) fields.run_id = d.run_id;
   if (d.failure_signature !== null) fields.failure_signature = d.failure_signature;
+  if (typeof d.head_sha === 'string') fields.head_sha = d.head_sha;
   // The reason and effect are part of the dedupe identity: a changed reason for
   // the same subject (missing_task_marker → contract_missing) is a new fact,
   // while an identical retry still dedupes.
@@ -104,6 +111,8 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   task_timeout: 'The task has been in progress longer than the time limit.',
   pick_time_unknown: 'The issue is marked picked, but the audit log has no pick time for it.',
   repair_unavailable: 'CI failed. There is no repair workflow yet, so a person decides what to do.',
+  merge_queue_rejected: 'This PR left the merge queue without merging (the merge-group checks failed, or it was removed). It is not re-queued automatically.',
+  enqueue_failed: 'Every check passed, but GitHub refused to add this PR to the merge queue.',
   invalid_contract: "The task's contract on main can't be used.",
   missing_contract_sha: 'The PR has no `Contract-SHA:` trailer.',
   missing_task_marker: 'The issue has no valid factory task marker.',
@@ -226,6 +235,43 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
       // Record first: if a later step fails, the next live run finishes it (pendingHandoffs).
       await deps.record(ev);
       await completeHandoff(deps, { key: dedupeKey(ev.type, ev.source_ids), type: d.type, reason: d.reason, effect: d.effect, issue: d.issue, pr: d.pr });
+    } else if (d.effect === 'enqueue_merge') {
+      if (d.pr === null) throw new Error('enqueue decision has no PR');
+      const prId = d.source_ids[0];
+      const head = d.head_sha;
+      if (!prId || !/^PR_/.test(prId) || typeof head !== 'string' || !/^[0-9a-f]{40}$/.test(head)) throw new Error('enqueue decision has no PR node id or head');
+      // A refusal already handed to a person for this PR and head is final: never ask GitHub again.
+      const failed: Decision = { ...d, type: 'needs_human', reason: 'enqueue_failed', effect: 'label:needs-human', source_ids: [...d.source_ids, 'enqueue_failed'] };
+      const failedEv = decisionEvent(failed, true);
+      if (!deps.isNew(failedEv)) {
+        deps.log(`[live] enqueue for pr=#${d.pr} head=${head.slice(0, 7)} was refused before: not retried`);
+        continue;
+      }
+      let refused: string | null = null;
+      try {
+        const res = await deps.client.request('POST', '/graphql', { body: { query: ENQUEUE_MUTATION, variables: { id: prId, head } } });
+        const body = res.data as { errors?: unknown[]; data?: { enqueuePullRequest?: { mergeQueueEntry?: { id?: unknown } } } } | null;
+        if (!body || (body.errors && body.errors.length > 0) || typeof body.data?.enqueuePullRequest?.mergeQueueEntry?.id !== 'string') refused = 'GraphQL error';
+      } catch (err) {
+        if (!(err instanceof Error) || !/HTTP 4\d\d/.test(err.message)) throw err; // transient: fail the run, retry next poll
+        refused = err.message;
+      }
+      if (refused === null) {
+        await deps.record(ev); // records the head that was enqueued (history: enqueued)
+      } else {
+        // A head that moved since planning makes the plan stale: nothing is recorded, and the
+        // next poll re-plans for the new head. Otherwise GitHub refused this head: a person decides.
+        const now = await deps.client.request('GET', `/repos/${deps.repo}/pulls/${d.pr}`);
+        const current = (now.data as { head?: { sha?: unknown } } | null)?.head?.sha;
+        if (current !== head) {
+          deps.log(`[live] pr=#${d.pr} head moved (${head.slice(0, 7)} → ${String(current).slice(0, 7)}): stale plan, re-planned next poll`);
+          continue;
+        }
+        deps.log(`[live] enqueue refused for pr=#${d.pr} (${refused}): handing it to a person`);
+        deps.validate(failedEv);
+        await deps.record(failedEv);
+        await completeHandoff(deps, { key: dedupeKey(failedEv.type, failedEv.source_ids), type: failed.type, reason: failed.reason, effect: failed.effect, issue: failed.issue, pr: failed.pr });
+      }
     } else if (d.effect === 'dispatch_workflow:repair') {
       throw new Error('repair dispatch is not available');
     } else {

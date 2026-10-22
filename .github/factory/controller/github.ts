@@ -42,6 +42,12 @@ export class GitHubApiError extends Error {
 
 // ---------------------------------------------------------------- write guard
 
+/**
+ * The only GraphQL mutation live mode may send, byte for byte, with one PR node id and the
+ * planned head: GitHub refuses it if the PR's head moved since planning.
+ */
+export const ENQUEUE_MUTATION = 'mutation($id: ID!, $head: GitObjectID!) { enqueuePullRequest(input: {pullRequestId: $id, expectedHeadOid: $head}) { mergeQueueEntry { id } } }';
+
 /** The only workflow live mode may dispatch, on `main` only. */
 export const IMPLEMENT_WORKFLOW = 'implement.lock.yml';
 /** The only labels live mode may add. It never removes a label, and never adds `factory:ready`. */
@@ -92,6 +98,7 @@ export function assertAllowedRequest(repo: string, method: HttpMethod, path: str
   const b = (body ?? {}) as Record<string, unknown>;
   if (method === 'POST' && p === '/graphql') {
     const q = b.query;
+    if (mode === 'live' && q === ENQUEUE_MUTATION && exactKeys(b, ['query', 'variables']) && exactKeys(b.variables, ['id', 'head']) && typeof b.variables.id === 'string' && /^PR_[A-Za-z0-9_-]{1,80}$/.test(b.variables.id) && typeof b.variables.head === 'string' && HEX40.test(b.variables.head)) return;
     if (typeof q === 'string' && /^\s*(query\b|\{)/.test(q) && !/\bmutation\b/i.test(q)) return;
     throw new Error('refusing GraphQL request that is not a read-only query');
   }
@@ -313,7 +320,7 @@ export const PULLS_QUERY = `query($owner: String!, $name: String!, $cursor: Stri
     pullRequests(first: 50, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        id number state isDraft createdAt mergedAt body headRefOid
+        id number state isDraft createdAt mergedAt body headRefOid mergeable isInMergeQueue
         mergeCommit { oid }
         author { login __typename }
         labels(first: 100) { pageInfo { hasNextPage } nodes { name } }
@@ -322,7 +329,7 @@ export const PULLS_QUERY = `query($owner: String!, $name: String!, $cursor: Stri
           nodes {
             __typename
             ... on AddedToMergeQueueEvent { id createdAt actor { login __typename } }
-            ... on RemovedFromMergeQueueEvent { id createdAt actor { login __typename } }
+            ... on RemovedFromMergeQueueEvent { id createdAt reason actor { login __typename } }
           }
         }
       }
@@ -361,6 +368,7 @@ export function mapPull(node: unknown): PullSnap {
       kind,
       created_at: requireStr(ev.createdAt, 'merge queue event time'),
       actor: login(ev.actor).login,
+      reason: asStr(ev.reason),
     });
   }
   const headSha = requireStr(n.headRefOid, 'PR head sha');
@@ -382,6 +390,8 @@ export function mapPull(node: unknown): PullSnap {
     attempt: trailers.attempt,
     reviews,
     merge_queue_events: mq,
+    mergeable: asStr(n.mergeable),
+    in_merge_queue: n.isInMergeQueue === true,
   };
 }
 
