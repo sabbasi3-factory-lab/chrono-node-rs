@@ -762,6 +762,12 @@ describe('task done: a merged task leaves the pipeline', () => {
     assert.ok(!reasons(run(doneWorld({ issues: [noMarker] }))).includes('task_merged'));
   });
 
+  it('a leftover open PR for the merged task (here with failed gates) gets no decision and does not hold back the close', () => {
+    const open = pull(57, { task_id: T, contract_sha: commitSha(T) });
+    const ds = run(doneWorld({ pulls: [mergedPull(54, T), open], check_runs: [gatesRun(700, open.head_sha, { conclusion: 'failure' }), checkRun(701, { head_sha: open.head_sha, conclusion: 'failure' })] }));
+    assert.deepEqual(reasons(ds), ['task_merged']);
+  });
+
   it('the kill switch holds it (no close while FACTORY_ENABLED is off)', () => {
     const ds = run(doneWorld(), { FACTORY_ENABLED: undefined });
     assert.ok(!reasons(ds).includes('task_merged'));
