@@ -50,8 +50,21 @@ export const ENQUEUE_MUTATION = 'mutation($id: ID!, $head: GitObjectID!) { enque
 
 /** The only workflow live mode may dispatch, on `main` only. */
 export const IMPLEMENT_WORKFLOW = 'implement.lock.yml';
-/** The only labels live mode may add. It never removes a label, and never adds `factory:ready`. */
+/** The only labels live mode may add. It never adds `factory:ready`. */
 export const LIVE_LABELS: readonly string[] = ['factory:picked', 'needs-human', 'blocked', 'stale-contract'];
+/** The only labels live mode may remove, and only from a finished task's issue (close_task). */
+export const DONE_REMOVED_LABELS: readonly string[] = ['factory:ready', 'factory:picked'];
+/** The only issue update live mode may send: close a finished task's issue as completed. */
+export const CLOSE_COMPLETED = { state: 'closed', state_reason: 'completed' } as const;
+
+/** The org Project (v2) whose "Factory status" field the controller keeps in sync. */
+export const FACTORY_PROJECT_NUMBER = 1;
+export const FACTORY_STATUS_FIELD = 'Factory status';
+/**
+ * The only Project mutation live mode may send, byte for byte: set one item's single-select
+ * field to one option. The controller only ever passes the "Factory status" field of Project 1.
+ */
+export const PROJECT_STATUS_MUTATION = 'mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) { updateProjectV2ItemFieldValue(input: {projectId: $project, itemId: $item, fieldId: $field, value: {singleSelectOptionId: $option}}) { projectV2Item { id } } }';
 /** Every comment live mode posts starts with this and comes from a fixed template (no agent text). */
 export const COMMENT_MARKER = '**Factory controller**';
 export const MAX_COMMENT_LENGTH = 2000;
@@ -61,8 +74,20 @@ export type ControllerMode = 'dry-run' | 'live';
 const exactKeys = (o: unknown, keys: string[]): o is Record<string, unknown> =>
   o !== null && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).sort().join(',') === [...keys].sort().join(',');
 
-/** Live-mode writes: exactly a dispatch of implement on main, adding allowed labels, a templated comment. */
+/**
+ * Live-mode writes: exactly a dispatch of implement on main, adding allowed labels, a templated
+ * comment, and for a finished task: removing `factory:ready`/`factory:picked` and closing the
+ * issue as completed.
+ */
 function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknown): boolean {
+  const issue = `^/repos/${escapeRe(repo)}/issues/[1-9][0-9]{0,8}`;
+  if (method === 'DELETE') {
+    const m = new RegExp(`${issue}/labels/([^/]+)$`).exec(p);
+    return m !== null && b === undefined && DONE_REMOVED_LABELS.map(encodeURIComponent).includes(m[1]!);
+  }
+  if (method === 'PATCH') {
+    return new RegExp(`${issue}$`).test(p) && exactKeys(b, ['state', 'state_reason']) && b.state === CLOSE_COMPLETED.state && b.state_reason === CLOSE_COMPLETED.state_reason;
+  }
   if (method !== 'POST') return false;
   if (p === `/repos/${repo}/actions/workflows/${IMPLEMENT_WORKFLOW}/dispatches`) {
     if (!exactKeys(b, ['ref', 'inputs']) || b.ref !== 'main') return false;
@@ -86,11 +111,22 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
 
 const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const NODE_ID = (prefix: string): RegExp => new RegExp(`^${prefix}_[A-Za-z0-9_-]{1,80}$`);
+function projectStatusVariables(v: unknown): boolean {
+  return (
+    exactKeys(v, ['project', 'item', 'field', 'option']) &&
+    typeof v.project === 'string' && NODE_ID('PVT').test(v.project) &&
+    typeof v.item === 'string' && NODE_ID('PVTI').test(v.item) &&
+    typeof v.field === 'string' && NODE_ID('PVTSSF').test(v.field) &&
+    typeof v.option === 'string' && /^[0-9a-f]{6,40}$/.test(v.option)
+  );
+}
+
 /**
  * Throws unless the request is read-only, one of the audit-branch Git Data writes (blob, tree,
- * commit, fast-forward ref update/creation of `audit`), or, in live mode only, one of the three
- * live writes above. Everything else (merge, close, label removal, other workflows, other refs)
- * is refused in both modes.
+ * commit, fast-forward ref update/creation of `audit`), or, in live mode only, one of the live
+ * writes above (and the two exact GraphQL mutations). Everything else (merge, other closes or
+ * issue edits, other label removals, other workflows, other refs) is refused in both modes.
  */
 export function assertAllowedRequest(repo: string, method: HttpMethod, path: string, body?: unknown, mode: ControllerMode = 'dry-run'): void {
   const p = path.split('?')[0] ?? '';
@@ -99,6 +135,7 @@ export function assertAllowedRequest(repo: string, method: HttpMethod, path: str
   if (method === 'POST' && p === '/graphql') {
     const q = b.query;
     if (mode === 'live' && q === ENQUEUE_MUTATION && exactKeys(b, ['query', 'variables']) && exactKeys(b.variables, ['id', 'head']) && typeof b.variables.id === 'string' && /^PR_[A-Za-z0-9_-]{1,80}$/.test(b.variables.id) && typeof b.variables.head === 'string' && HEX40.test(b.variables.head)) return;
+    if (mode === 'live' && q === PROJECT_STATUS_MUTATION && exactKeys(b, ['query', 'variables']) && projectStatusVariables(b.variables)) return;
     if (typeof q === 'string' && /^\s*(query\b|\{)/.test(q) && !/\bmutation\b/i.test(q)) return;
     throw new Error('refusing GraphQL request that is not a read-only query');
   }

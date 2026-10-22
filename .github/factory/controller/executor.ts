@@ -15,11 +15,17 @@
 //                                 GitHub refuses, the PR is handed to a person instead
 //                                 (needs_human/enqueue_failed). GitHub then merges it once the
 //                                 merge-group checks pass; `queued` and `merged` are observed facts.
+//   close_task                  → a task whose PR merged: remove `factory:ready` and
+//                                 `factory:picked` from its issue, then close it as completed.
+//                                 Recorded (`task_done`) first, once; the effect is idempotent and
+//                                 re-run while the issue is open, so an interrupted close finishes
+//                                 on the next poll.
 //   dispatch_workflow:repair    → no repair workflow exists yet: escalated instead to
 //                                 needs_human/repair_unavailable (label + comment)
 //   alert:owner, pause_dispatch, none → no GitHub effect; recorded in the audit log only
-// It never merges directly (only the merge queue merges), closes, removes a label, adds
-// `factory:ready`, or dispatches anything else.
+// It never merges directly (only the merge queue merges), closes anything but a finished task's
+// issue, removes any other label, adds `factory:ready`, or dispatches anything else.
+// main.ts then syncs the Project "Factory status" field (project.ts), best-effort.
 //
 // Each decision's effect runs only if its LIVE audit event is new. Live events carry `mode:live`
 // in their dedupe identity, so a decision recorded while the switch was off (dry-run) doesn't
@@ -34,7 +40,7 @@
 //   is posted only if no comment with its marker exists yet.
 
 import { dedupeKey } from './audit.ts';
-import { COMMENT_MARKER, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate } from './github.ts';
+import { CLOSE_COMPLETED, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate } from './github.ts';
 import { isRecorded, LABEL_NEEDS_HUMAN, LABEL_PICKED } from './planner.ts';
 import type { AuditEvent, Decision, GitHubClient, JsonObject, PendingEvent, PlannerEnv, ReasonCode } from './types.ts';
 
@@ -217,6 +223,21 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
     }
     const d = liveDecision(planned);
     const ev = decisionEvent(d, true);
+    if (d.effect === 'close_task') {
+      if (d.issue === null) throw new Error('task_done decision has no issue');
+      // Recorded once (first), then the idempotent effect, every time it's planned (issue still open).
+      if (deps.isNew(ev)) {
+        deps.validate(ev);
+        await deps.record(ev);
+      }
+      deps.log(describe(d, true));
+      for (const label of DONE_REMOVED_LABELS) {
+        await deps.client.request('DELETE', `/repos/${deps.repo}/issues/${d.issue}/labels/${encodeURIComponent(label)}`, { allowStatuses: [404] });
+      }
+      await deps.client.request('PATCH', `/repos/${deps.repo}/issues/${d.issue}`, { body: { ...CLOSE_COMPLETED } });
+      ran++;
+      continue;
+    }
     if (!deps.isNew(ev)) {
       deps.log(`[live] already done: ${d.type}/${d.reason}${d.issue !== null ? ` issue=#${d.issue}` : ''}${d.pr !== null ? ` pr=#${d.pr}` : ''}`);
       continue;

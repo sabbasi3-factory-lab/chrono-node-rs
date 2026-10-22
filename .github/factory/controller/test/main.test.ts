@@ -3,20 +3,20 @@ import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { assertAllowedRequest, COMMENT_MARKER, ENQUEUE_MUTATION } from '../github.ts';
+import { assertAllowedRequest, COMMENT_MARKER, ENQUEUE_MUTATION, PROJECT_STATUS_MUTATION } from '../github.ts';
 import { AUDIT_BRANCH, splitLines, verify } from '../audit.ts';
 import { decisionEvent, describe as describeDecision, execute, executeLive, isLive, liveDecision, pendingHandoffs } from '../executor.ts';
 import { FakeGitHub, type RecordedCall } from '../fake.ts';
 import { parseArgs, run, type RunDeps } from '../main.ts';
 import type { Snapshot } from '../types.ts';
-import { checkRun, commitSha, contract, hex40, history, issue, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
+import { checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
 import { dedupeKey } from '../audit.ts';
-import { CONTRACT_COMMIT, fakeWorld, seedSpendSnapshot } from './world.ts';
+import { CONTRACT_COMMIT, fakeWorld, projectNode, seedSpendSnapshot, type ProjectWorld } from './world.ts';
 
 const policies = await testPolicies();
 
 /** fakeWorld with one completed implement run today whose agent ran but left no usage artifact. */
-function unreadableSpendWorld(): FakeGitHub {
+function unreadableSpendWorld(): ProjectWorld {
   const gh = fakeWorld();
   const r = `/repos/${REPO}`;
   gh.routes.unshift(
@@ -304,9 +304,38 @@ const LIVE_ENV = { FACTORY_ENABLED: 'true', GITHUB_RUN_ID: '42', GITHUB_EVENT_NA
  * fakeWorld + routes for the three live writes. `dispatchStatus` simulates a failed dispatch;
  * `failComments` makes the next N comment POSTs fail. Comments persist across runs (GET lists them).
  */
-function liveWorld(dispatchStatus = 204, failComments = 0, base: FakeGitHub = fakeWorld()): FakeGitHub & { comments: Map<number, string[]> } {
-  const gh = base as FakeGitHub & { comments: Map<number, string[]> };
+type LiveWorld = ProjectWorld & { comments: Map<number, string[]>; closed: number[]; removed: string[]; statusUpdates: unknown[]; failClose: number };
+
+function liveWorld(dispatchStatus = 204, failComments = 0, base: ProjectWorld = fakeWorld()): LiveWorld {
+  const gh = base as LiveWorld;
   gh.comments = new Map();
+  gh.closed = [];
+  gh.removed = [];
+  gh.statusUpdates = [];
+  gh.failClose = 0;
+  gh.addRoute('DELETE', new RegExp(`^/repos/${REPO}/issues/\\d+/labels/[^/]+$`), (path) => {
+    gh.removed.push(decodeURIComponent(path.replace(`/repos/${REPO}/issues/`, '#').replace('/labels/', ' ')));
+    return { data: [] };
+  });
+  gh.addRoute('PATCH', new RegExp(`^/repos/${REPO}/issues/\\d+$`), (path) => {
+    if (gh.failClose > 0) {
+      gh.failClose--;
+      return { status: 502, data: null };
+    }
+    gh.closed.push(Number(path.split('/').pop()));
+    return { data: {} };
+  });
+  // Project status updates first; every other GraphQL request goes to fakeWorld's route.
+  const graphqlRoute = gh.routes.find((r) => r.method === 'POST' && r.path.source === '^\\/graphql$')!;
+  gh.routes.unshift({
+    method: 'POST',
+    path: /^\/graphql$/,
+    handler: (p, body) => {
+      if ((body as { query?: unknown }).query !== PROJECT_STATUS_MUTATION) return graphqlRoute.handler(p, body);
+      gh.statusUpdates.push((body as { variables: unknown }).variables);
+      return { data: { data: { updateProjectV2ItemFieldValue: { projectV2Item: { id: 'x' } } } } };
+    },
+  });
   let failures = failComments;
   gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues/\\d+/labels$`), () => ({ data: [] }));
   gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues/\\d+/comments$`), (path, body) => {
@@ -451,11 +480,25 @@ describe('write allowlist by mode', () => {
     assert.equal(allowed('live', ['POST', `/repos/other/repo/issues/45/comments`, { body: `${COMMENT_MARKER} x` }]), false);
   });
 
-  it('live still refuses merges, closes, label removal, reviews and other writes', () => {
+  it('live allows closing an issue as completed and removing factory:ready/factory:picked, nothing more', () => {
+    assert.equal(allowed('live', ['PATCH', `/repos/${REPO}/issues/45`, { state: 'closed', state_reason: 'completed' }]), true);
+    for (const l of ['factory%3Aready', 'factory%3Apicked']) assert.equal(allowed('live', ['DELETE', `/repos/${REPO}/issues/45/labels/${l}`, undefined]), true, l);
+    assert.equal(allowed('dry-run', ['PATCH', `/repos/${REPO}/issues/45`, { state: 'closed', state_reason: 'completed' }]), false);
+    assert.equal(allowed('dry-run', ['DELETE', `/repos/${REPO}/issues/45/labels/factory%3Apicked`, undefined]), false);
+  });
+
+  it('live still refuses merges, other closes and issue edits, other label removal, reviews and other writes', () => {
     const refused = [
       ['PUT', `/repos/${REPO}/pulls/21/merge`, {}],
       ['PATCH', `/repos/${REPO}/issues/45`, { state: 'closed' }],
+      ['PATCH', `/repos/${REPO}/issues/45`, { state: 'closed', state_reason: 'not_planned' }],
+      ['PATCH', `/repos/${REPO}/issues/45`, { state: 'closed', state_reason: 'completed', title: 'x' }],
+      ['PATCH', `/repos/${REPO}/issues/45`, { state: 'open', state_reason: 'completed' }],
+      ['PATCH', `/repos/${REPO}/pulls/45`, { state: 'closed', state_reason: 'completed' }],
       ['DELETE', `/repos/${REPO}/issues/45/labels/needs-human`, undefined],
+      ['DELETE', `/repos/${REPO}/issues/45/labels/factory:ready`, undefined],
+      ['DELETE', `/repos/${REPO}/issues/45/labels`, undefined],
+      ['DELETE', `/repos/other/repo/issues/45/labels/factory%3Aready`, undefined],
       ['PUT', `/repos/${REPO}/issues/45/labels`, { labels: ['needs-human'] }],
       ['POST', `/repos/${REPO}/pulls/21/reviews`, { event: 'APPROVE' }],
       ['POST', `/repos/${REPO}/issues`, { title: 'x' }],
@@ -686,7 +729,7 @@ describe('merge stage in the run (live)', () => {
     });
     const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: s }));
     const types = result.appended.map((e) => e.type);
-    assert.ok(types.includes('queued') && types.includes('merged'), types.join(','));
+    assert.ok(types.includes('queued') && types.includes('merged') && types.includes('task_done'), types.join(','));
     assert.ok(!result.decisions.some((d) => d.type === 'auto_merge'), 'a merged PR is not queued again');
   });
 });
@@ -712,5 +755,92 @@ describe('write allowlist: the enqueue mutation', () => {
     assert.equal(ok({ query: 'mutation($id: ID!) { mergePullRequest(input: {pullRequestId: $id}) { clientMutationId } }', variables: { id: 'PR_1', head: H } }), false);
     assert.equal(ok({ query: 'mutation($id: ID!) { dequeuePullRequest(input: {id: $id}) { clientMutationId } }', variables: { id: 'PR_1', head: H } }), false);
     assert.equal(ok({ query: ENQUEUE_MUTATION, variables: { id: 'PR_1', head: H }, operationName: 'x' }), false);
+  });
+});
+
+describe('task done in the run (live)', () => {
+  const T = 'en/time-unit-ago-format-parser';
+  /** The #45 situation: #54 merged, issue still open with factory:ready and factory:picked. */
+  const doneSnapshot = () =>
+    snapshot({ issues: [issue(45, T, ['factory:task', 'factory:ready', 'factory:picked'])], pulls: [mergedPull(54, T)], contractList: [contract(T)] });
+  const closeCalls = (gh: FakeGitHub) => gh.calls.filter((c) => c.method === 'DELETE' || c.method === 'PATCH').filter((c) => !c.path.includes('/git/')).map((c) => `${c.method} ${c.path}`);
+
+  it('records task_done (dry_run: false), then removes factory:ready and factory:picked, then closes the issue as completed', async () => {
+    const gh = liveWorld();
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: doneSnapshot() }));
+    const ev = result.appended.find((e) => e.type === 'task_done')!;
+    assert.deepEqual([ev.payload.reason, ev.payload.effect, ev.payload.task, ev.payload.issue, ev.payload.pr, ev.payload.dry_run], ['task_merged', 'close_task', T, 45, 54, false]);
+    assert.deepEqual(closeCalls(gh), [
+      `DELETE /repos/${REPO}/issues/45/labels/factory%3Aready`,
+      `DELETE /repos/${REPO}/issues/45/labels/factory%3Apicked`,
+      `PATCH /repos/${REPO}/issues/45`,
+    ]);
+    assert.deepEqual(gh.calls.find((c) => c.method === 'PATCH' && c.path.endsWith('/issues/45'))!.body, { state: 'closed', state_reason: 'completed' });
+    assert.deepEqual(gh.closed, [45]);
+    for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
+    assert.ok(!effectCalls(gh).some((c) => /\/labels$|\/comments$/.test(c.path)), 'no labels added, no comments');
+  });
+
+  it('a label that is already gone (404) is fine', async () => {
+    const gh = liveWorld();
+    gh.routes.unshift({ method: 'DELETE', path: /\/labels\/factory%3Aready$/, handler: () => ({ status: 404, data: null }) });
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: doneSnapshot() }));
+    assert.deepEqual(gh.closed, [45]);
+  });
+
+  it('an interrupted close (HTTP 502) fails the run; the next run finishes it without recording task_done twice', async () => {
+    const gh = liveWorld();
+    gh.failClose = 1;
+    await assert.rejects(run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: doneSnapshot() })), /HTTP 502/);
+    assert.deepEqual(gh.closed, []);
+    const second = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: doneSnapshot(), now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.deepEqual(gh.closed, [45]);
+    assert.ok(!second.appended.some((e) => e.type === 'task_done'), 'recorded once, by the first run');
+    const file = gh.fileAt(AUDIT_BRANCH, 'audit/2026/10/16.jsonl') ?? '';
+    assert.equal(file.split('"type":"task_done"').length - 1, 1);
+  });
+
+  it('dry-run and the kill switch never close or remove labels', async () => {
+    for (const env of [{ ...LIVE_ENV, FACTORY_ENABLED: undefined }, { ...LIVE_ENV, FACTORY_ENABLED: 'TRUE' }]) {
+      const gh = liveWorld();
+      const result = await run(deps(gh, { env, forceDryRun: false, snapshot: doneSnapshot() }));
+      assert.equal(result.live, false);
+      assert.deepEqual(closeCalls(gh), []);
+    }
+    const gh = liveWorld();
+    const lines: string[] = [];
+    const result = await run(deps(gh, { snapshot: doneSnapshot(), log: (l) => lines.push(l) }));
+    assert.deepEqual(closeCalls(gh), []);
+    assert.ok(lines.some((l) => l.startsWith('[dry-run] would close_task (task_done/task_merged) task=en/time-unit-ago-format-parser issue=#45 pr=#54')));
+    assert.equal(result.appended.find((e) => e.type === 'task_done')!.payload.dry_run, true);
+  });
+});
+
+describe('Project status sync in the run', () => {
+  it('live: after the effects, sets each item whose status differs (exact mutation), and reports it', async () => {
+    const gh = liveWorld();
+    await seedSpendSnapshot(gh, '2026-10-16T00:05:00Z');
+    gh.project = projectNode([
+      { item: 'PVTI_10', issue: 10, status: 'Proposed', labels: ['factory:ready'] },
+      { item: 'PVTI_12', issue: 12, status: 'Ready', labels: ['factory:ready'], task: 'en/other' },
+    ]);
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false }));
+    assert.deepEqual(gh.statusUpdates, [{ project: 'PVT_1', item: 'PVTI_10', field: 'PVTSSF_1', option: '00000001' }]);
+    assert.match(result.summary, /Project status: 1 update\(s\)/);
+    for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
+  });
+
+  it('dry-run only logs; an unreadable Project never fails the run (heartbeat still written)', async () => {
+    const gh = liveWorld();
+    gh.project = projectNode([{ item: 'PVTI_10', issue: 10, status: 'Proposed', labels: ['factory:ready'] }]);
+    const lines: string[] = [];
+    await run(deps(gh, { log: (l) => lines.push(l) }));
+    assert.deepEqual(gh.statusUpdates, []);
+    assert.ok(lines.includes('[dry-run] would set Factory status #10 en/casual-date: Proposed → Ready'));
+    const broken = liveWorld();
+    broken.project = null;
+    const result = await run(deps(broken, { env: LIVE_ENV, forceDryRun: false }));
+    assert.match(result.summary, /Project status: stopped after 0 update\(s\): project 1 not found/);
+    assert.ok(result.appended.some((e) => e.type === 'heartbeat'));
   });
 });
