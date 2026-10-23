@@ -137,6 +137,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     snapshot.factory_aic_today ??= derived.factory_aic_today;
   } else {
     const spend = await readSpendToday(client, repo, now, policies.budgets.per_run);
+    snapshot.task_spend = spend.tasks;
     if (spend.aic === null) {
       snapshot.factory_aic_today = null;
       spendNote = `unknown: ${spend.reason}`;

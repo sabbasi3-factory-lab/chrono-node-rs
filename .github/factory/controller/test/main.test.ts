@@ -423,21 +423,25 @@ describe('main: live mode (FACTORY_ENABLED=true)', () => {
     assert.deepEqual(effectCalls(gh), []);
   });
 
-  it('a repair becomes needs_human/repair_unavailable (there is no repair workflow yet)', async () => {
-    const base = { type: 'repair_dispatched', reason: 'ci_failed', effect: 'dispatch_workflow:repair', dry_run: true, task: 'en/a', issue: 3, pr: 21, attempt: 2, contract_sha: 'c'.repeat(40), run_id: 500, failure_signature: 's', source_ids: ['500/attempts/1', 'PR_21'] } as const;
-    const d = { ...base, source_ids: [...base.source_ids] };
-    assert.deepEqual([liveDecision(d).type, liveDecision(d).reason, liveDecision(d).effect], ['needs_human', 'repair_unavailable', 'label:needs-human']);
+  it('a repair is recorded first (attempt, run, signature, head), then repair.lock.yml is dispatched with exactly its inputs', async () => {
+    const d = { type: 'repair_dispatched', reason: 'ci_failed', effect: 'dispatch_workflow:repair', dry_run: true, task: 'en/a', issue: 3, pr: 21, attempt: 2, contract_sha: 'c'.repeat(40), run_id: 500, failure_signature: 'step:golden', head_sha: hex40('1'), source_ids: ['500/attempts/1', 'PR_21'] } as const;
     const calls: { method: string; path: string; body: unknown }[] = [];
-    const client = { request: async (method: string, path: string, o: { body?: unknown } = {}) => (calls.push({ method, path, body: o.body }), { status: 200, data: method === 'GET' ? [] : null, next: null }) };
-    const recorded: string[] = [];
-    await executeLive([d], { client: client as never, repo: REPO, log: () => {}, runUrl: null, isNew: () => true, validate: () => {}, record: async (ev) => void recorded.push(`${ev.type}/${String(ev.fields.reason ?? ev.fields.effect)}`) });
-    assert.deepEqual(calls.filter((c) => c.method === 'POST').map((c) => c.path), [
-      `/repos/${REPO}/issues/21/labels`,
-      `/repos/${REPO}/issues/3/labels`,
-      `/repos/${REPO}/issues/21/comments`,
-    ]);
-    assert.ok(!calls.some((c) => c.path.includes('/dispatches')));
-    assert.deepEqual(recorded, ['needs_human/repair_unavailable', 'handoff_done/label:needs-human'], 'recorded before the effect, completed after');
+    const order: string[] = [];
+    const client = { request: async (method: string, path: string, o: { body?: unknown } = {}) => (calls.push({ method, path, body: o.body }), order.push(`${method} ${path}`), { status: 204, data: null, next: null }) };
+    const recorded: Record<string, unknown>[] = [];
+    await executeLive([{ ...d, source_ids: [...d.source_ids] }], { client: client as never, repo: REPO, log: () => {}, runUrl: null, isNew: () => true, validate: () => {}, record: async (ev) => void (recorded.push(ev.fields), order.push('record')) });
+    assert.deepEqual(order, ['record', `POST /repos/${REPO}/actions/workflows/repair.lock.yml/dispatches`]);
+    assert.deepEqual(calls[0]!.body, {
+      ref: 'main',
+      inputs: { task: 'en/a', issue: '3', pr: '21', attempt: '2', contract_sha: 'c'.repeat(40), head_sha: hex40('1'), failure_signature: 'step:golden', run_id: '500' },
+    });
+    assert.deepEqual([recorded[0]!.attempt, recorded[0]!.run_id, recorded[0]!.failure_signature, recorded[0]!.head_sha], [2, 500, 'step:golden', hex40('1')]);
+    assert.doesNotThrow(() => assertAllowedRequest(REPO, 'POST', calls[0]!.path, calls[0]!.body, 'live'));
+    // A failed dispatch fails the run after the record: the planner never repairs that run again.
+    const failing = { request: async () => { throw new Error('POST dispatches: HTTP 500'); } };
+    const rec2: string[] = [];
+    await assert.rejects(executeLive([{ ...d, source_ids: [...d.source_ids] }], { client: failing as never, repo: REPO, log: () => {}, runUrl: null, isNew: () => true, validate: () => {}, record: async (ev) => void rec2.push(ev.type) }), /HTTP 500/);
+    assert.deepEqual(rec2, ['repair_dispatched']);
   });
 });
 
@@ -556,7 +560,7 @@ describe('live mode: review fixes', () => {
 });
 
 describe('live mode: what the run reports', () => {
-  it('a repair candidate is reported and recorded as the hand-off that actually happened', async () => {
+  it('a failed ci run (gates green, new signature) is repaired: repair_dispatched with attempt 2 and the dispatch', async () => {
     const c = contract('en/weekday-parser');
     const pr = pull(21, { task_id: 'en/weekday-parser', contract_sha: c.last_commit_sha });
     const s = snapshot({
@@ -570,15 +574,15 @@ describe('live mode: what the run reports', () => {
       history: { 'en/weekday-parser': history({ picked_at: '2026-10-16T10:00:00Z' }) },
     });
     const gh = liveWorld();
+    gh.addRoute('POST', new RegExp(`^/repos/${REPO}/actions/workflows/repair\\.lock\\.yml/dispatches$`), () => ({ status: 204, data: null }));
     const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, snapshot: s }));
-    assert.equal(result.live, true);
-    assert.ok(!result.decisions.some((d) => d.type === 'repair_dispatched' || d.effect === 'dispatch_workflow:repair'));
-    const d = result.decisions.find((x) => x.reason === 'repair_unavailable')!;
-    assert.deepEqual([d.type, d.effect], ['needs_human', 'label:needs-human']);
-    assert.match(result.summary, /\| needs_human \| repair_unavailable \| label:needs-human \|/);
-    assert.doesNotMatch(result.summary, /dispatch_workflow:repair/);
-    const ev = result.appended.find((e) => e.payload.reason === 'repair_unavailable')!;
-    assert.deepEqual([ev.type, ev.payload.effect, ev.payload.dry_run], ['needs_human', 'label:needs-human', false]);
+    const d = result.decisions.find((x) => x.type === 'repair_dispatched')!;
+    assert.deepEqual([d.reason, d.effect, d.attempt, d.failure_signature, d.head_sha], ['ci_failed', 'dispatch_workflow:repair', 2, 'step:golden', pr.head_sha]);
+    assert.match(result.summary, /\| repair_dispatched \| ci_failed \| dispatch_workflow:repair \|/);
+    const ev = result.appended.find((e) => e.type === 'repair_dispatched')!;
+    assert.deepEqual([ev.payload.attempt, ev.payload.dry_run], [2, false]);
+    assert.ok(gh.calls.some((c) => c.path.endsWith('/repair.lock.yml/dispatches')));
+    for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
   });
 });
 
@@ -842,5 +846,33 @@ describe('Project status sync in the run', () => {
     const result = await run(deps(broken, { env: LIVE_ENV, forceDryRun: false }));
     assert.match(result.summary, /Project status: stopped after 0 update\(s\): project 1 not found/);
     assert.ok(result.appended.some((e) => e.type === 'heartbeat'));
+  });
+});
+
+describe('write allowlist: the repair dispatch', () => {
+  const sha = hex40('a');
+  const good = { task: 'en/a', issue: '3', pr: '21', attempt: '2', contract_sha: sha, head_sha: sha, failure_signature: 'step:golden', run_id: '500' };
+  const ok = (inputs: unknown, ref = 'main', mode: 'live' | 'dry-run' = 'live') => {
+    try {
+      assertAllowedRequest(REPO, 'POST', `/repos/${REPO}/actions/workflows/repair.lock.yml/dispatches`, { ref, inputs }, mode);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  it('live allows exactly repair.lock.yml on main with its eight validated inputs (no aw_context)', () => {
+    assert.equal(ok(good), true);
+    assert.equal(ok(good, 'main', 'dry-run'), false);
+    assert.equal(ok(good, 'dev'), false);
+    const bad = [
+      { ...good, aw_context: `{"item_type":"pull_request","item_number":21,"repo":"${REPO}"}` },
+      { ...good, attempt: '1' },
+      { ...good, failure_signature: 'step:Golden Tests' },
+      { ...good, head_sha: sha.slice(0, 7) },
+      { ...good, run_id: '0' },
+      { ...good, extra: 'x' },
+      (({ run_id: _r, ...rest }) => rest)(good),
+    ];
+    for (const b of bad) assert.equal(ok(b), false, JSON.stringify(b));
   });
 });

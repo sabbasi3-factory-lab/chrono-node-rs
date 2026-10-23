@@ -335,7 +335,18 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       out.push(decide({ ...base, type: 'wait', reason: 'gates_pending', run_id: run.run_id, source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id] }));
       continue;
     }
+    // Only a plain failure is repairable (the repair workflow accepts nothing else): a timed-out
+    // or never-started run goes to a person, without spending a repair attempt.
+    if (run.conclusion !== 'failure') {
+      escalate(decide({ ...base, type: 'needs_human', reason: 'ci_not_repairable', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id] }));
+      continue;
+    }
     const sig = run.failure_signature;
+    // Per-task spend from the collector (measured + reserved, unattributed runs included), plus
+    // what this repair may cost at most: never more than budgets.per_task.max_aic. Unknown: a person.
+    const ts = s.task_spend;
+    const spent = ts ? Math.max(h.aic_spent, (ts.by_task[task] ?? 0) + ts.unattributed) : null;
+    const repairCap = p.budgets.per_run.repair + p.budgets.per_run.threat_detection;
     const failure = {
       ...base,
       run_id: run.run_id,
@@ -349,10 +360,12 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       escalate(decide({ ...failure, type: 'needs_human', reason: 'repeated_signature', effect: 'label:needs-human' }));
     } else if (h.repairs >= p.limits.task.max_repairs) {
       escalate(decide({ ...failure, type: 'needs_human', reason: 'max_repairs', effect: 'label:needs-human' }));
-    } else if (h.aic_spent >= p.budgets.per_task.max_aic) {
+    } else if (spent === null) {
+      escalate(decide({ ...failure, type: 'needs_human', reason: 'task_budget_unknown', effect: 'label:needs-human' }));
+    } else if (spent + repairCap > p.budgets.per_task.max_aic) {
       escalate(decide({ ...failure, type: 'needs_human', reason: 'task_budget_exhausted', effect: 'label:needs-human' }));
     } else {
-      repairs.push(decide({ ...failure, type: 'repair_dispatched', reason: 'ci_failed', effect: 'dispatch_workflow:repair', attempt: h.repairs + 2 }));
+      repairs.push({ ...decide({ ...failure, type: 'repair_dispatched', reason: 'ci_failed', effect: 'dispatch_workflow:repair', attempt: h.repairs + 2 }), head_sha: pr.head_sha });
     }
   }
 

@@ -349,8 +349,9 @@ describe('planner: failures', () => {
     assert.deepEqual(d.source_ids, ['500/attempts/1', 'PR_21']);
   });
 
-  it('treats timed_out as a failure and ignores success/cancelled', () => {
-    assert.ok(run(failingPrWorld('x', undefined, 'timed_out')).some((d) => d.reason === 'ci_failed'));
+  it('repairs only a plain failure; timed_out/startup_failure go to a person; ignores success/cancelled', () => {
+    // Only a plain failure is repaired; timed_out and startup_failure go to a person (no attempt spent).
+    for (const c of ['timed_out', 'startup_failure']) assert.deepEqual(reasons(run(failingPrWorld('x', undefined, c))), ['ci_not_repairable'], c);
     // A green auto-tier PR goes to the merge stage instead (here it waits: its Contract-SHA is a prefix).
     assert.deepEqual(run(failingPrWorld('x', undefined, 'success')).map((d) => `${d.type}/${d.reason}`), ['wait/merge_not_ready']);
     assert.deepEqual(run(failingPrWorld('x', undefined, 'cancelled')), []);
@@ -776,5 +777,39 @@ describe('task done: a merged task leaves the pipeline', () => {
 
   it('is deterministic: the same snapshot gives the same decision and source ids', () => {
     assert.deepEqual(run(doneWorld()), run(doneWorld()));
+  });
+});
+
+describe('repair loop: attempts, stop rules and the head', () => {
+  it('first failure → repair attempt 2 on the failed head; second (new signature) → attempt 3; then max_repairs → a person', () => {
+    const first = run(failingPrWorld('step:golden'));
+    const d1 = find(first, 'ci_failed');
+    assert.deepEqual([d1.type, d1.attempt, d1.failure_signature, d1.head_sha], ['repair_dispatched', 2, 'step:golden', hex40('1')]);
+    const afterOne = history({ picked_at: PICKED_RECENTLY, repairs: 1, failure_signatures: ['step:golden'], repaired_run_ids: [400] });
+    assert.equal(find(run(failingPrWorld('step:clippy', afterOne)), 'ci_failed').attempt, 3);
+    const afterTwo = history({ picked_at: PICKED_RECENTLY, repairs: 2, failure_signatures: ['step:golden', 'step:clippy'], repaired_run_ids: [400, 450] });
+    assert.deepEqual(reasons(run(failingPrWorld('step:fmt', afterTwo))), ['max_repairs']);
+  });
+
+  it('the same signature again → repeated_signature (a person), never a third try at the same failure', () => {
+    const afterOne = history({ picked_at: PICKED_RECENTLY, repairs: 1, failure_signatures: ['step:golden'], repaired_run_ids: [400] });
+    assert.deepEqual(reasons(run(failingPrWorld('step:golden', afterOne))), ['repeated_signature']);
+  });
+
+  it('a run already repaired is never repaired twice', () => {
+    const h = history({ picked_at: PICKED_RECENTLY, repairs: 1, failure_signatures: ['step:golden'], repaired_run_ids: [500] });
+    assert.deepEqual(reasons(run(failingPrWorld('step:golden', h))), []);
+  });
+});
+
+describe('repair loop: the per-task budget (collector spend, fail closed)', () => {
+  const withSpend = (spend: Snapshot['task_spend']) => ({ ...failingPrWorld('step:golden'), task_spend: spend });
+  it('repairs only while the task spend plus this repair cap (300 + 400) stays within per_task.max_aic (1000)', () => {
+    assert.equal(find(run(withSpend({ by_task: { 'en/weekday-parser': 290 }, unattributed: 10 })), 'ci_failed').type, 'repair_dispatched', '300 + 700 = 1000');
+    assert.deepEqual(reasons(run(withSpend({ by_task: { 'en/weekday-parser': 291 }, unattributed: 10 }))), ['task_budget_exhausted']);
+    assert.deepEqual(reasons(run(withSpend({ by_task: {}, unattributed: 301 }))), ['task_budget_exhausted'], 'unattributed spend counts against every task');
+  });
+  it('unknown task spend → needs_human/task_budget_unknown, never a repair', () => {
+    for (const ts of [null, undefined]) assert.deepEqual(reasons(run(withSpend(ts))), ['task_budget_unknown'], String(ts));
   });
 });

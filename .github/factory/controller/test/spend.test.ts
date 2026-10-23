@@ -6,7 +6,9 @@ import { jobInferred, readSpendToday, readZip, runAIC, spendSnapshotFields } fro
 import { readFileSync } from 'node:fs';
 import { NOW, REPO } from './helpers.ts';
 
-const CAPS = { implement: 500, threat_detection: 400 };
+const CAPS = { implement: 500, repair: 300, threat_detection: 400 };
+/** Today's part of a spend result (the per-task part is tested on its own). */
+const today = (r: Awaited<ReturnType<typeof readSpendToday>>) => ({ aic: r.aic, runs: r.runs });
 const r = `/repos/${REPO}`;
 
 /** A minimal ZIP writer for tests (stored or deflated entries). */
@@ -72,6 +74,8 @@ interface FakeRun {
   detection?: string | null;
   artifacts?: { id: number; name: string; expired?: boolean }[];
   zips?: Record<number, Uint8Array | { status: number }>;
+  /** The run's display_title (run-name), e.g. `Implement en/a #3 attempt 1`. */
+  title?: string;
   /** Job-level status for every job (default: none given, as for a completed run). */
   jobStatus?: string;
   /** Add the final `conclusion` job with this status. */
@@ -80,11 +84,16 @@ interface FakeRun {
   jobsStatus?: number;
 }
 
-function world(runs: FakeRun[], listStatus = 200): FakeGitHub {
+function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; status?: string }[] = [], repairListStatus = 200): FakeGitHub {
   const gh = new FakeGitHub(REPO);
+  gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/repair\\.lock\\.yml/runs$`), () =>
+    repairListStatus === 200
+      ? { data: { workflow_runs: repairRuns.map((x) => ({ id: x.id, status: x.status ?? 'in_progress', run_attempt: 1, created_at: '2026-10-16T08:00:00Z' })) } }
+      : { status: repairListStatus, data: null },
+  );
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), () =>
     listStatus === 200
-      ? { data: { workflow_runs: runs.map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z' })) } }
+      ? { data: { workflow_runs: runs.map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z', display_title: x.title ?? 'Implement one factory task' })) } }
       : { status: listStatus, data: null },
   );
   for (const x of runs) {
@@ -110,17 +119,45 @@ function world(runs: FakeRun[], listStatus = 200): FakeGitHub {
 describe('spend collector: today\'s implement spend', () => {
   it('no runs today → 0 (a measured zero, not unknown)', async () => {
     const res = await readSpendToday(world([]), REPO, NOW, CAPS);
-    assert.deepEqual(res, { aic: 0, runs: [] });
+    assert.deepEqual(today(res), { aic: 0, runs: [] });
+  });
+
+  it('per task: today and yesterday by the task in the run name; runs naming no task count against every task', async () => {
+    const res = await readSpendToday(
+      world([
+        { id: 1, title: 'Implement en/a #3 attempt 1', artifacts: [{ id: 10, name: 'usage' }], zips: { 10: usageZip(30) } },
+        { id: 2, title: 'Implement en/a #3 attempt 1', created: '2026-10-15T20:00:00Z', artifacts: [{ id: 20, name: 'usage' }], zips: { 20: usageZip(5) } },
+        { id: 3, title: 'Implement en/b #4 attempt 1', status: 'in_progress' },
+        { id: 4, title: 'Implement one factory task', artifacts: [{ id: 40, name: 'usage' }], zips: { 40: usageZip(7) } },
+        { id: 5, title: 'Implement en/a #3 attempt 1', created: '2026-10-14T20:00:00Z', status: 'in_progress' },
+      ]),
+      REPO,
+      NOW,
+      CAPS,
+    );
+    assert.equal(res.aic, 937, 'today: 30 + 900 + 7');
+    assert.deepEqual(res.tasks, { by_task: { 'en/a': 35, 'en/b': 900 }, unattributed: 7 });
+  });
+
+  it('an unreadable run from yesterday makes only the per-task spend unknown (today\'s total stands)', async () => {
+    const res = await readSpendToday(world([{ id: 1, artifacts: [{ id: 10, name: 'usage' }], zips: { 10: usageZip(30) } }, { id: 2, created: '2026-10-15T20:00:00Z', artifacts: [] }]), REPO, NOW, CAPS);
+    assert.deepEqual([res.aic, res.tasks], [30, null]);
+  });
+
+  it('repair runs count too: in flight → reserved at repair + threat detection (700); unlistable → unknown', async () => {
+    const res = await readSpendToday(world([{ id: 1, status: 'in_progress' }], 200, [{ id: 40 }]), REPO, NOW, CAPS);
+    assert.deepEqual(today(res), { aic: 1600, runs: [{ run_id: 1, status: 'reserved', aic: 900 }, { run_id: 40, status: 'reserved', aic: 700 }] });
+    for (const status of [404, 500]) assert.equal((await readSpendToday(world([], 200, [], status), REPO, NOW, CAPS)).aic, null, String(status));
   });
 
   it('a queued or in-progress run is reserved at the per-run caps (implement + threat detection)', async () => {
     const res = await readSpendToday(world([{ id: 1, status: 'in_progress' }, { id: 2, status: 'queued' }]), REPO, NOW, CAPS);
-    assert.deepEqual(res, { aic: 1800, runs: [{ run_id: 1, status: 'reserved', aic: 900 }, { run_id: 2, status: 'reserved', aic: 900 }] });
+    assert.deepEqual(today(res), { aic: 1800, runs: [{ run_id: 1, status: 'reserved', aic: 900 }, { run_id: 2, status: 'reserved', aic: 900 }] });
   });
 
   it('a run still reported in progress whose jobs all completed, including conclusion, is measured (stale run status)', async () => {
     const gh = world([{ id: 9, status: 'in_progress', jobStatus: 'completed', conclusion: 'completed', detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(30, [2]) } }]);
-    assert.deepEqual(await readSpendToday(gh, REPO, NOW, CAPS), { aic: 32, runs: [{ run_id: 9, status: 'measured', aic: 32 }] });
+    assert.deepEqual(today(await readSpendToday(gh, REPO, NOW, CAPS)), { aic: 32, runs: [{ run_id: 9, status: 'measured', aic: 32 }] });
   });
 
   it('stays reserved while any job is unfinished, the conclusion job is missing or unfinished, or the jobs can\'t be listed', async () => {
@@ -132,7 +169,7 @@ describe('spend collector: today\'s implement spend', () => {
       { id: 14, status: 'in_progress', jobStatus: 'completed', conclusion: 'completed', agent: null, detection: null, jobsStatus: 404 },
     ];
     for (const c of cases) {
-      assert.deepEqual(await readSpendToday(world([c]), REPO, NOW, CAPS), { aic: 900, runs: [{ run_id: c.id, status: 'reserved', aic: 900 }] }, String(c.id));
+      assert.deepEqual(today(await readSpendToday(world([c]), REPO, NOW, CAPS)), { aic: 900, runs: [{ run_id: c.id, status: 'reserved', aic: 900 }] }, String(c.id));
     }
   });
 
@@ -144,13 +181,13 @@ describe('spend collector: today\'s implement spend', () => {
   it('a completed run is measured from its usage artifact: agent ai_credits + detection responses', async () => {
     const gh = world([{ id: 3, detection: 'success', artifacts: [{ id: 30, name: 'usage' }, { id: 31, name: 'agent' }], zips: { 30: usageZip(123.456, [1.5, 0.25]) } }]);
     const res = await readSpendToday(gh, REPO, NOW, CAPS);
-    assert.deepEqual(res, { aic: 125.206, runs: [{ run_id: 3, status: 'measured', aic: 125.206 }] });
+    assert.deepEqual(today(res), { aic: 125.206, runs: [{ run_id: 3, status: 'measured', aic: 125.206 }] });
     assert.ok(gh.calls.some((c) => c.path === `${r}/actions/artifacts/30/zip`));
   });
 
   it('a run whose Execute steps were skipped (e.g. validation failed) made no model calls → 0, without an artifact', async () => {
     const res = await readSpendToday(world([{ id: 4, agent: 'skipped' }, { id: 5, agent: null }]), REPO, NOW, CAPS);
-    assert.deepEqual(res, { aic: 0, runs: [{ run_id: 4, status: 'no_inference', aic: 0 }, { run_id: 5, status: 'no_inference', aic: 0 }] });
+    assert.deepEqual(today(res), { aic: 0, runs: [{ run_id: 4, status: 'no_inference', aic: 0 }, { run_id: 5, status: 'no_inference', aic: 0 }] });
   });
 
   it('measured + reserved add up; runs created before today are not counted', async () => {
