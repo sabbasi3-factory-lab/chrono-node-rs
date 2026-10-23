@@ -788,7 +788,7 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
   const plan2 = (s: Snapshot, env: PlannerEnv = ON, now = NOW) => plan(s, strict, env, now);
   const DISPATCHED = '2026-10-16T11:30:00Z';
   const check = (over: Partial<ReviewCheckSnap> = {}): ReviewCheckSnap => ({ id: 77, head_sha: hex40('1'), status: 'completed', conclusion: 'success', started_at: '2026-10-16T11:40:00Z', reviewed_head: hex40('1'), ...over });
-  const world = (o: { reviews?: { pr: number; head: string; at: string }[]; checks?: ReviewCheckSnap[]; contract?: Partial<ReturnType<typeof contract>>; pr?: Partial<ReturnType<typeof pull>> } = {}): Snapshot => {
+  const world = (o: { reviews?: { pr: number; head: string; contract: string | null; at: string }[]; checks?: ReviewCheckSnap[]; contract?: Partial<ReturnType<typeof contract>>; pr?: Partial<ReturnType<typeof pull>> } = {}): Snapshot => {
     const c = contract(T, { tier: 'auto-strict', scope: ['src/core/results.rs'], ...(o.contract ?? {}) });
     const pr = pull(21, { task_id: c.id!, contract_sha: c.last_commit_sha, mergeable: 'MERGEABLE', in_merge_queue: false, ...(o.pr ?? {}) });
     return snapshot({
@@ -803,7 +803,7 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
       review_checks: o.checks ?? [],
     });
   };
-  const asked = [{ pr: 21, head: hex40('1'), at: DISPATCHED }];
+  const asked = [{ pr: 21, head: hex40('1'), contract: commitSha(T), at: DISPATCHED }];
   const kinds = (ds: Decision[]) => ds.map((d) => `${d.type}/${d.reason}`);
 
   it('before the promotion (start_as: human) nothing happens: no review, no merge', () => {
@@ -855,8 +855,16 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
   });
 
   it('a review of an older head never counts for a new head: the new head gets its own review', () => {
-    const old = [{ pr: 21, head: hex40('9'), at: DISPATCHED }];
+    const old = [{ pr: 21, head: hex40('9'), contract: commitSha(T), at: DISPATCHED }];
     assert.deepEqual(kinds(plan2(world({ reviews: old, checks: [check({ head_sha: hex40('9'), reviewed_head: hex40('9') })] }))), ['review_dispatched/review_needed']);
+  });
+
+  it('a review of this head against another (or an unknown) contract never counts: needs_human/review_contract_changed, no second review', () => {
+    for (const contract of [hex40('c'), null]) {
+      const ds = plan2(world({ reviews: [{ pr: 21, head: hex40('1'), contract, at: DISPATCHED }], checks: [check()] }));
+      assert.deepEqual(kinds(ds), ['needs_human/review_contract_changed'], String(contract));
+      assert.deepEqual(ds[0]!.source_ids, ['PR_21', hex40('1'), `contract:${commitSha(T)}`]);
+    }
   });
 
   it('auto-tier (locale) PRs never need a review', () => {

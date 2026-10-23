@@ -53,7 +53,8 @@ export function deriveState(events: AuditEvent[], now: Date): DerivedState {
         const pr = e.payload.pr;
         const head = e.payload.head_sha;
         if (!task || typeof pr !== 'number' || typeof head !== 'string' || !/^[0-9a-f]{40}$/.test(head)) break;
-        (entry(task).reviews ??= []).push({ pr, head, at: e.timestamp });
+        const contract = typeof e.payload.contract_sha === 'string' && /^[0-9a-f]{40}$/.test(e.payload.contract_sha) ? e.payload.contract_sha : null;
+        (entry(task).reviews ??= []).push({ pr, head, contract, at: e.timestamp });
         break;
       }
       case 'run_finished': {

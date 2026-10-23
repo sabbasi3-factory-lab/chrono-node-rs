@@ -164,6 +164,7 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `auto_merge` | `auto_merge_ready` | a green auto-tier agent PR, or an auto-strict one the reviewer agent passed (see **Merge stage**) | `enqueue_merge` |
 | `review_dispatched` | `review_needed` | an auto-strict PR that meets every merge condition and has no review for its head yet; gated like a repair (kill switch, budget, Actions load) | `dispatch_workflow:review` |
 | `needs_human` | `review_objected` | the reviewer App's `factory-review` check on this head finished with anything but `success` | `label:needs-human` |
+| `needs_human` | `review_contract_changed` | this head was reviewed, but against another (or an unknown) contract version than the current one; no second review is sent automatically | `label:needs-human` |
 | `needs_human` | `review_timeout` | no reviewer verdict on this head within 60 minutes of the dispatch (the run failed, was flagged by detection, or posted nothing) | `label:needs-human` |
 | `wait` | `review_pending` | the review was dispatched for this head and its verdict isn't in yet | nothing (logged, **not** recorded) |
 | `task_done` | `task_merged` | an open issue with a valid task marker whose task has a merged PR (the first one, `pr`). Planned on every poll while the issue is open; gated only by the kill switch (no escalation holds it back). A leftover open PR for a task that's already merged gets no decision at all | `close_task` |
@@ -215,11 +216,13 @@ on the merge group, and GitHub merges. The controller never merges directly. `qu
 controller dispatches `review.lock.yml` (gh-aw, `gpt-6.1-sol`: a different model family from the
 implementer) for that PR head, and records `review_dispatched` with the head **before** dispatching.
 The reviewer reads the contract, the upstream source and the change (laid out as files by trusted
-steps; nothing from the PR runs), with read-only tools and no network. Its only output is one
+steps; nothing from the PR runs), with read-only tools, native file editing off (`edit: false`) and no network. Its only output is one
 `factory-review` check run, posted by the **reviewer App**. A verdict counts only if:
 - the check run's App id is `FACTORY_REVIEWER_APP_ID` (unset: nothing counts), and its name is `factory-review`
 - it's on the PR's current head, and its summary's first line is `Reviewed-Head: <that head>`
 - it started after the dispatch for that head (an older review never counts for a new head)
+- that dispatch was for the **current contract** (`review_dispatched` records `contract_sha`). A review
+  of this head against another contract version → `needs_human/review_contract_changed`
 
 `success` → the merge stage goes on (`enqueue_merge`). Anything else → `needs_human/review_objected`.
 No verdict 60 minutes after the dispatch → `needs_human/review_timeout`. A failed dispatch isn't

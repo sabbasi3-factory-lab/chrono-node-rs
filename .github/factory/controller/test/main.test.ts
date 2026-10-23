@@ -956,7 +956,9 @@ describe('reviewer checks and history', () => {
   it('history: live review_dispatched events give each task its reviewed heads', () => {
     const at = '2026-10-16T11:30:00Z';
     const ev = (dry: boolean) => ({ version: 1 as const, id: 'x', type: 'review_dispatched', timestamp: at, parents: [], sha: 's', payload: { task: 'core/results', pr: 21, head_sha: hex40('1'), dry_run: dry } });
-    assert.deepEqual(deriveState([ev(false)], NOW).history['core/results']!.reviews, [{ pr: 21, head: hex40('1'), at }]);
+    assert.deepEqual(deriveState([ev(false)], NOW).history['core/results']!.reviews, [{ pr: 21, head: hex40('1'), contract: null, at }]);
+    const withContract = { ...ev(false), payload: { ...ev(false).payload, contract_sha: hex40('c') } };
+    assert.deepEqual(deriveState([withContract], NOW).history['core/results']!.reviews, [{ pr: 21, head: hex40('1'), contract: hex40('c'), at }]);
     assert.equal(deriveState([ev(true)], NOW).history['core/results'], undefined, 'dry-run plans are not reviews');
   });
 });

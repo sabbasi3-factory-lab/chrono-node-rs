@@ -345,7 +345,14 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       // ---- reviewer agent (auto-strict only): a pass from the reviewer App on this exact head,
       // posted after the controller asked for it, is required. Anything else fails closed.
       if (mergeTier(c, p) === 'auto-strict') {
-        const asked = (history(task).reviews ?? []).filter((r) => r.pr === pr.number && r.head === pr.head_sha).sort((a, b) => a.at.localeCompare(b.at));
+        const forHead = (history(task).reviews ?? []).filter((r) => r.pr === pr.number && r.head === pr.head_sha).sort((a, b) => a.at.localeCompare(b.at));
+        const asked = forHead.filter((r) => r.contract === c.last_commit_sha);
+        // A review of this head against another (or an unknown) contract never counts, and a second
+        // paid review of the same head isn't sent automatically: a person decides.
+        if (asked.length === 0 && forHead.length > 0) {
+          escalate(decide({ ...base, type: 'needs_human', reason: 'review_contract_changed', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha, `contract:${c.last_commit_sha}`] }));
+          continue;
+        }
         const since = asked[0]?.at;
         if (!since) {
           reviews.push({ ...decide({ ...base, type: 'review_dispatched', reason: 'review_needed', effect: 'dispatch_workflow:review', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha, 'review'] }), head_sha: pr.head_sha });

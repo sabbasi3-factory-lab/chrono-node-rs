@@ -56,8 +56,11 @@ max-daily-ai-credits: 1000
 network:
   allowed: []
 
-# Read-only: the reviewer reads, it never edits, builds or runs anything from the PR.
+# Read-only: the reviewer reads, it never edits, builds or runs anything from the PR. Native file
+# editing is off (`edit: false`), and no listed command can execute or modify files (no `find`:
+# its -exec/-delete actions could run or remove PR-supplied files).
 tools:
+  edit: false
   github:
     toolsets: [repos, pull_requests]
     allowed-repos: [sabbasi3-factory-lab/chrono-node-rs]
@@ -69,7 +72,6 @@ tools:
     - "tail"
     - "grep"
     - "ls"
-    - "find"
     - "wc"
     - "diff"
     - "sort"
@@ -102,7 +104,8 @@ steps:
       [ "$(jq -r .state <<<"$pr_json")" = "open" ] || { echo "::error::PR #${PR} is not open"; exit 1; }
       [ "$(jq -r .base.ref <<<"$pr_json")" = "main" ] || { echo "::error::PR #${PR} does not target main"; exit 1; }
       [ "$(jq -r .head.sha <<<"$pr_json")" = "$HEAD_SHA" ] || { echo "::error::PR #${PR} head moved; the controller re-plans"; exit 1; }
-      body=$(jq -r '.body // ""' <<<"$pr_json")
+      # CRLF bodies are normalized, as the controller does (tasks.ts), so their trailers match.
+      body=$(jq -r '(.body // "") | gsub("\r"; "")' <<<"$pr_json")
       grep -qxF "Factory-Task: ${TASK}" <<<"$body" || { echo "::error::PR #${PR} is not for ${TASK}"; exit 1; }
       grep -qxF "Contract-SHA: ${CONTRACT_SHA}" <<<"$body" || { echo "::error::PR #${PR} has a different Contract-SHA"; exit 1; }
       echo "PR #${PR} at ${HEAD_SHA} for ${TASK} (contract ${CONTRACT_SHA})"

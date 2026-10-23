@@ -171,8 +171,8 @@ export interface TaskHistory {
   aic_spent: number;
   /** Live merge-queue enqueues by the controller (from `auto_merge` events): which head, when. */
   enqueued?: { pr: number; head: string; at: string }[];
-  /** Live reviewer-agent dispatches (from `review_dispatched` events): which PR head, when. */
-  reviews?: { pr: number; head: string; at: string }[];
+  /** Live reviewer-agent dispatches (from `review_dispatched` events): which PR head, against which contract, when. */
+  reviews?: { pr: number; head: string; contract: string | null; at: string }[];
 }
 
 /**
@@ -248,6 +248,7 @@ export type ReasonCode =
   | 'review_needed'
   | 'review_objected'
   | 'review_timeout'
+  | 'review_contract_changed'
   | 'task_merged'
   | 'merge_queue_rejected'
   | 'enqueue_failed'

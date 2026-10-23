@@ -122,6 +122,7 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   task_timeout: 'The task has been in progress longer than the time limit.',
   pick_time_unknown: 'The issue is marked picked, but the audit log has no pick time for it.',
   repair_unavailable: 'CI failed. There is no repair workflow yet, so a person decides what to do.',
+  review_contract_changed: 'This head was reviewed against a different contract version than the current one. A person decides (no second review is sent automatically).',
   review_objected: 'The reviewer agent (a second model) objected to this change: see the `factory-review` check. A person decides.',
   review_timeout: 'No verdict from the reviewer agent in time (the review run failed, was flagged or posted nothing). A person decides.',
   merge_queue_rejected: 'This PR left the merge queue without merging (the merge-group checks failed, or it was removed). It is not re-queued automatically.',
