@@ -473,10 +473,10 @@ describe('write allowlist by mode', () => {
     assert.equal(allowed('live', dispatch({ ...good, issue: '0' })), false);
   });
 
-  it('live adds only the four controller labels, and comments only from the template', () => {
+  it('live adds only the controller labels (factory:ready only via auto-ready), and comments only from the template', () => {
     const labels = (l: unknown) => ['POST', `/repos/${REPO}/issues/45/labels`, { labels: l }] as const;
-    for (const l of ['factory:picked', 'needs-human', 'blocked', 'stale-contract']) assert.equal(allowed('live', labels([l])), true, l);
-    for (const l of [['factory:ready'], ['tier:auto'], [], ['needs-human', 'factory:ready'], 'needs-human']) assert.equal(allowed('live', labels(l)), false, JSON.stringify(l));
+    for (const l of ['factory:picked', 'factory:ready', 'needs-human', 'blocked', 'stale-contract']) assert.equal(allowed('live', labels([l])), true, l);
+    for (const l of [['tier:auto'], ['factory:task'], [], ['needs-human', 'tier:auto'], 'needs-human']) assert.equal(allowed('live', labels(l)), false, JSON.stringify(l));
     assert.equal(allowed('live', ['POST', `/repos/${REPO}/issues/45/comments`, { body: 'hello' }]), false);
     assert.equal(allowed('live', ['POST', `/repos/${REPO}/issues/45/comments`, { body: `${COMMENT_MARKER} ${'x'.repeat(2000)}` }]), false);
     assert.equal(allowed('live', ['POST', `/repos/other/repo/issues/45/comments`, { body: `${COMMENT_MARKER} x` }]), false);
@@ -959,5 +959,36 @@ describe('reviewer checks and history', () => {
     const withContract = { ...ev(false), payload: { ...ev(false).payload, contract_sha: hex40('c') } };
     assert.deepEqual(deriveState([withContract], NOW).history['core/results']!.reviews, [{ pr: 21, head: hex40('1'), contract: hex40('c'), at }]);
     assert.equal(deriveState([ev(true)], NOW).history['core/results'], undefined, 'dry-run plans are not reviews');
+  });
+});
+
+describe('auto-ready in the run (live)', () => {
+  const T = 'en/next-parser';
+  const on: typeof policies = structuredClone(policies);
+  on.limits.auto_ready = true;
+  const readySnapshot = () => snapshot({ issues: [issue(38, T, ['factory:task', 'tier:auto'])], contractList: [contract(T)] });
+
+  it('records auto_ready first, then adds factory:ready to the issue; a retry re-applies the label without recording twice', async () => {
+    const gh = liveWorld();
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: on, snapshot: readySnapshot() }));
+    const ev = result.appended.find((e) => e.type === 'auto_ready')!;
+    assert.deepEqual([ev.payload.reason, ev.payload.effect, ev.payload.task, ev.payload.issue, ev.payload.dry_run], ['deps_merged', 'label:ready', T, 38, false]);
+    assert.deepEqual(effectCalls(gh).map((c) => [c.path, c.body]), [[`/repos/${REPO}/issues/38/labels`, { labels: ['factory:ready'] }]]);
+    for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
+    gh.calls.length = 0;
+    const second = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: on, snapshot: readySnapshot(), now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.ok(!second.appended.some((e) => e.type === 'auto_ready'));
+    assert.deepEqual(effectCalls(gh).map((c) => c.path), [`/repos/${REPO}/issues/38/labels`]);
+  });
+
+  it('switched off (the default), or dry-run: nothing is labelled', async () => {
+    const off = liveWorld();
+    await run(deps(off, { env: LIVE_ENV, forceDryRun: false, snapshot: readySnapshot() }));
+    assert.deepEqual(effectCalls(off), []);
+    const dry = liveWorld();
+    const lines: string[] = [];
+    await run(deps(dry, { policies: on, snapshot: readySnapshot(), log: (l) => lines.push(l) }));
+    assert.deepEqual(effectCalls(dry), []);
+    assert.ok(lines.some((l) => l.startsWith('[dry-run] would label:ready (auto_ready/deps_merged) task=en/next-parser issue=#38')));
   });
 });

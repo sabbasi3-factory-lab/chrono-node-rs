@@ -59,8 +59,11 @@ export const REVIEW_WORKFLOW = 'review.lock.yml';
 export const REVIEWER_APP_ID = 5444751;
 /** The reviewer agent's check run (review.md `safe-outputs.create-check-run.name`). */
 export const REVIEW_CHECK_NAME = 'factory-review';
-/** The only labels live mode may add. It never adds `factory:ready`. */
-export const LIVE_LABELS: readonly string[] = ['factory:picked', 'needs-human', 'blocked', 'stale-contract'];
+/**
+ * The only labels live mode may add. `factory:ready` only through auto-ready (planner: only with
+ * limits.yaml `auto_ready: true`, only on unblocked autonomous-tier task issues).
+ */
+export const LIVE_LABELS: readonly string[] = ['factory:picked', 'factory:ready', 'needs-human', 'blocked', 'stale-contract'];
 /** The only labels live mode may remove, and only from a finished task's issue (close_task). */
 export const DONE_REMOVED_LABELS: readonly string[] = ['factory:ready', 'factory:picked'];
 /** The only issue update live mode may send: close a finished task's issue as completed. */

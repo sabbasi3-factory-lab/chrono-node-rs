@@ -19,8 +19,10 @@ on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
+  # `closed`: a task_done close runs the controller again at once, so auto-ready marks the next
+  # unblocked tasks right after a merge instead of waiting for cron (and `labeled` then dispatches).
   issues:
-    types: [labeled, unlabeled]
+    types: [labeled, unlabeled, closed]
   workflow_run:
     workflows: ["ci", "gates", "Review one factory PR"]
     types: [completed]
