@@ -926,6 +926,15 @@ describe('auto-ready: unblocked autonomous tasks become ready, within the dispat
     assert.deepEqual(kinds(plan3(s)).filter((k) => k.startsWith('auto_ready')), ['auto_ready/deps_merged#2']);
   });
 
+  it('a ready issue blocked on its dependencies holds no slot or area (its prerequisite becomes ready)', () => {
+    // B (ready) depends on A (not ready); both in area x, nothing in flight.
+    const s = snapshot({
+      issues: [t(1, 'en/a'), t(2, 'en/b', ['factory:task', 'factory:ready'])],
+      contractList: [contract('en/a', { area: 'x' }), contract('en/b', { area: 'x', depends_on: ['en/a'] })],
+    });
+    assert.deepEqual(kinds(plan3(s)).filter((k) => k.startsWith('auto_ready')), ['auto_ready/deps_merged#1']);
+  });
+
   it('respects area locks (skips to the next candidate) and counts this run\'s dispatches', () => {
     const s = snapshot({
       issues: [t(1, 'en/a'), t(2, 'en/b'), t(3, 'en/go', ['factory:task', 'factory:ready'])],

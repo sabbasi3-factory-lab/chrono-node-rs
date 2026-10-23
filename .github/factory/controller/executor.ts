@@ -32,7 +32,8 @@
 //                                 needs_human/repair_unavailable (label + comment)
 //   alert:owner, pause_dispatch, none → no GitHub effect; recorded in the audit log only
 // It never merges directly (only the merge queue merges), closes anything but a finished task's
-// issue, removes any other label, adds `factory:ready`, or dispatches anything else.
+// issue, removes any other label, adds `factory:ready` except by auto-ready to an open task issue,
+// or dispatches anything else.
 // main.ts then syncs the Project "Factory status" field (project.ts), best-effort.
 //
 // Each decision's effect runs only if its LIVE audit event is new. Live events carry `mode:live`
@@ -241,7 +242,15 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
         await deps.record(ev);
       }
       deps.log(describe(d, true));
-      await addLabel(deps, d.issue, LABEL_READY);
+      // Only an open factory task issue gets `factory:ready` (read it now: the plan may be stale).
+      const issue = (await deps.client.request('GET', `/repos/${deps.repo}/issues/${d.issue}`)).data as { state?: unknown; pull_request?: unknown; labels?: { name?: unknown }[] } | null;
+      const names = (issue?.labels ?? []).map((l) => l.name);
+      if (issue?.state !== 'open' || issue.pull_request !== undefined || !names.includes('factory:task')) {
+        deps.log(`[live] issue #${d.issue} is not an open factory task any more: not marked ready`);
+        ran++;
+        continue;
+      }
+      if (!names.includes(LABEL_READY)) await addLabel(deps, d.issue, LABEL_READY);
       ran++;
       continue;
     }

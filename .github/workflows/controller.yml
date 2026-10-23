@@ -45,7 +45,8 @@ permissions:
 
 jobs:
   controller:
-    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs'
+    # Issue events only for factory task issues (other issues can't change what the controller does).
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && (github.event_name != 'issues' || contains(github.event.issue.labels.*.name, 'factory:task'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:

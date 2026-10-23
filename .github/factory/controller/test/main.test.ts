@@ -476,7 +476,7 @@ describe('write allowlist by mode', () => {
   it('live adds only the controller labels (factory:ready only via auto-ready), and comments only from the template', () => {
     const labels = (l: unknown) => ['POST', `/repos/${REPO}/issues/45/labels`, { labels: l }] as const;
     for (const l of ['factory:picked', 'factory:ready', 'needs-human', 'blocked', 'stale-contract']) assert.equal(allowed('live', labels([l])), true, l);
-    for (const l of [['tier:auto'], ['factory:task'], [], ['needs-human', 'tier:auto'], 'needs-human']) assert.equal(allowed('live', labels(l)), false, JSON.stringify(l));
+    for (const l of [['tier:auto'], ['factory:task'], [], ['needs-human', 'tier:auto'], ['factory:ready', 'factory:picked'], ['needs-human', 'factory:ready'], 'needs-human']) assert.equal(allowed('live', labels(l)), false, JSON.stringify(l));
     assert.equal(allowed('live', ['POST', `/repos/${REPO}/issues/45/comments`, { body: 'hello' }]), false);
     assert.equal(allowed('live', ['POST', `/repos/${REPO}/issues/45/comments`, { body: `${COMMENT_MARKER} ${'x'.repeat(2000)}` }]), false);
     assert.equal(allowed('live', ['POST', `/repos/other/repo/issues/45/comments`, { body: `${COMMENT_MARKER} x` }]), false);
@@ -967,9 +967,15 @@ describe('auto-ready in the run (live)', () => {
   const on: typeof policies = structuredClone(policies);
   on.limits.auto_ready = true;
   const readySnapshot = () => snapshot({ issues: [issue(38, T, ['factory:task', 'tier:auto'])], contractList: [contract(T)] });
+  /** liveWorld + the issue as GitHub has it now (read by the executor before labelling). */
+  const readyWorld = (issueNow: Record<string, unknown> = { state: 'open', labels: [{ name: 'factory:task' }] }) => {
+    const gh = liveWorld();
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/38$`), () => ({ data: { number: 38, ...issueNow } }));
+    return gh;
+  };
 
   it('records auto_ready first, then adds factory:ready to the issue; a retry re-applies the label without recording twice', async () => {
-    const gh = liveWorld();
+    const gh = readyWorld();
     const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: on, snapshot: readySnapshot() }));
     const ev = result.appended.find((e) => e.type === 'auto_ready')!;
     assert.deepEqual([ev.payload.reason, ev.payload.effect, ev.payload.task, ev.payload.issue, ev.payload.dry_run], ['deps_merged', 'label:ready', T, 38, false]);
@@ -979,6 +985,14 @@ describe('auto-ready in the run (live)', () => {
     const second = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: on, snapshot: readySnapshot(), now: new Date(NOW.getTime() + 5 * 60_000) }));
     assert.ok(!second.appended.some((e) => e.type === 'auto_ready'));
     assert.deepEqual(effectCalls(gh).map((c) => c.path), [`/repos/${REPO}/issues/38/labels`]);
+  });
+
+  it('the executor re-reads the issue: closed, a PR, or not a factory task → recorded but never labelled', async () => {
+    for (const now of [{ state: 'closed', labels: [{ name: 'factory:task' }] }, { state: 'open', labels: [] }, { state: 'open', labels: [{ name: 'factory:task' }], pull_request: {} }]) {
+      const gh = readyWorld(now);
+      await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: on, snapshot: readySnapshot() }));
+      assert.ok(!effectCalls(gh).some((c) => c.path.endsWith('/labels')), JSON.stringify(now));
+    }
   });
 
   it('switched off (the default), or dry-run: nothing is labelled', async () => {

@@ -556,12 +556,13 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     let strictN = core;
     for (const i of openIssues) {
       if (!i.task_id || !i.labels.includes(LABEL_READY) || i.labels.includes(LABEL_PICKED) || admittedNow.has(i.task_id) || inFlight.has(i.task_id) || mergedTasks.has(i.task_id)) continue;
-      slots++;
+      // Only a ready issue that could actually be dispatched holds a slot: one blocked on its
+      // dependencies, or without a usable contract, would otherwise starve its own prerequisites.
       const c = contractOf(s, i.task_id);
-      if (c) {
-        reserved.push(c);
-        if (isCoreTask(c, p.tiers)) strictN++;
-      }
+      if (!c || !c.valid || !c.depends_on.every((d) => mergedTasks.has(d))) continue;
+      slots++;
+      reserved.push(c);
+      if (isCoreTask(c, p.tiers)) strictN++;
     }
     const candidates: { issue: IssueSnap; contract: ContractSnap }[] = [];
     const seen = new Set<string>();
