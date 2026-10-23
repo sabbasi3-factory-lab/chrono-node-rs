@@ -516,14 +516,17 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     if (c) active.push(c);
   }
   let wip = inFlight.size;
-  let core = active.filter((c) => isCoreTask(c, p.tiers)).length;
+  // Strict lane (limits.wip.core_area, factory-wide): core paths and every task whose effective
+  // tier is auto-strict (by its paths or its contract), so at most that many are in flight at once.
+  const strictLane = (c: ContractSnap): boolean => isCoreTask(c, p.tiers) || taskTier(c, p.tiers) === 'auto-strict';
+  let core = active.filter(strictLane).length;
   let humanItems = humanQueue.size;
 
   for (const a of admissible) {
     const d = a.decision;
     let gate = globalGate();
     const tier = taskTier(a.contract, p.tiers);
-    const isCore = isCoreTask(a.contract, p.tiers);
+    const isCore = strictLane(a.contract);
     if (!gate && wip >= wipLimit) gate = 'wip_full';
     if (!gate && tier === 'human' && humanItems > p.limits.human_queue.max_items) gate = 'human_queue_full';
     if (!gate && isCore && core >= p.limits.wip.core_area) gate = 'core_area_busy';
