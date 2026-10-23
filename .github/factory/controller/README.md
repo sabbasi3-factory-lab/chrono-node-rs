@@ -178,7 +178,9 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `needs_human` | `max_repairs` | repairs ≥ `limits.task.max_repairs` | `label:needs-human` |
 | `needs_human` | `missing_heldout_seed` | the newest `ci` run on the PR head finished (`success`/`failure`) without a trusted held-out seed (see "Held-out seed" below); checked before any repair | `label:needs-human` |
 | `needs_human` | `missing_failure_signature` | failed run whose signature can't be derived from the `checks` job's step results (fail closed) | `label:needs-human` |
-| `needs_human` | `task_budget_exhausted` | task AIC ≥ `budgets.per_task.max_aic` | `label:needs-human` |
+| `needs_human` | `task_budget_exhausted` | the task's spend (spend collector, today and yesterday: measured runs plus reservations, attributed by run name; runs naming no task count against every task) plus this repair's cap (`per_run.repair + per_run.threat_detection`) would exceed `budgets.per_task.max_aic` | `label:needs-human` |
+| `needs_human` | `task_budget_unknown` | a repair is due but the task's spend can't be read: no repair is paid for | `label:needs-human` |
+| `needs_human` | `ci_not_repairable` | the newest `ci` run on the PR head ended `timed_out` or `startup_failure`: only a plain `failure` is repaired | `label:needs-human` |
 | `needs_human` | `task_timeout` | picked > `max_wall_clock_hours` ago and not merged | `label:needs-human` |
 | `needs_human` | `pick_time_unknown` | issue has `factory:picked` but no pick time in the history window, so it could never time out (fail closed) | `label:needs-human` |
 | `stale_contract` | `contract_changed` | PR `Contract-SHA:` isn't a ≥7-hex prefix of the contract's last commit SHA on main | `label:stale-contract` |
@@ -287,6 +289,16 @@ The planner picks the newest run for the PR head: the highest `run_id`, then `ru
 - **Too many open PRs:** heads beyond `MAX_HEAD_LOOKUPS` are not looked up, so their PRs wait
   (`check_runs_incomplete`) instead of acting on a possibly stale run.
 - **`merge_group` runs** are recorded as `check_result` but never trigger repairs.
+- **The repair workflow** (`repair.md`, gh-aw, the implementer's pinned model, `max-ai-credits: 300`
+  from `budgets.per_run.repair`): trusted steps first prove the dispatch is the failed head of that
+  open agent PR (same-repo branch, trailers, contract on main, the failed `ci` run on that head, an
+  empty `aw_context`), check out exactly that head on the PR's branch name (gh-aw's own PR checkout
+  refuses App dispatchers), and give the agent one file, `failure.txt`: the trusted signature and the
+  `checks` job's step results, then error lines from its log (printed by PR code, so untrusted). The agent fixes
+  the scope file offline and pushes one commit to the same PR branch (`push-to-pull-request-branch`:
+  `[factory] ` title prefix required, protected files blocked, no fallback PR), or explains on the
+  issue why it can't. CI then runs on the new head, and the loop continues: at most
+  `max_repairs` (2), stopping on a repeated signature; `gates` failures are never repaired.
 
 **One terminal decision per task per run**
 
@@ -311,7 +323,8 @@ v1's own dry-run decisions never count as real work.
 
 | Run | Counted as |
 |---|---|
-| queued / in progress | **reserved** at the per-run caps: implement runs `budgets.per_run.implement + per_run.threat_detection` (500 + 400); reviewer runs (`review.lock.yml`) `per_run.reviewer_agent + per_run.threat_detection` (200 + 400). If either workflow's runs can't be listed, spend is unknown |
+| queued / in progress | **reserved** at the per-run caps: implement runs `budgets.per_run.implement + per_run.threat_detection` (500 + 400); reviewer runs (`review.lock.yml`) `per_run.reviewer_agent + per_run.threat_detection` (200 + 400); repair runs (`repair.lock.yml`) `per_run.repair + per_run.threat_detection` (300 + 400). If either workflow's runs can't be listed, spend is unknown |
+| per task | runs from today **and yesterday**, attributed by run name (`Implement <task> #<issue> attempt <n>`, `Repair …`); runs naming no task count against every task. An unreadable run from yesterday makes only the per-task spend unknown (repairs fail closed) |
 | queued / in progress, but every job completed including the final `conclusion` job | **measured** like a completed run (GitHub's run-level status can lag long after the jobs end; seen on run 39832616767). If the jobs can't be listed, it stays reserved |
 | completed, no job's `Execute …` step ran (e.g. dispatch validation failed) | **0** (`no_inference`): no model calls were made |
 | completed, with model calls | **measured** from gh-aw's `usage` artifact: the agent from `agent_usage.json` → `ai_credits`; every other job whose `Execute …` step ran (detection, and evals or others if gh-aw adds them) from the sum of `ai_credits_this_response` in `<job>/token_usage.jsonl` |
@@ -346,7 +359,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
 | `label:needs-human` | add `needs-human` to the PR and/or issue, then one templated comment on the PR (or the issue) |
 | `label:blocked` | add `blocked`, then one templated comment |
 | `label:stale-contract` | add `stale-contract`, then one templated comment |
-| `dispatch_workflow:repair` | there is no repair workflow yet, so it becomes `needs_human`/`repair_unavailable`: label + comment |
+| `dispatch_workflow:repair` | record `repair_dispatched` first (attempt, failed run, failure signature, failed head: the attempt counter is in the audit log), then dispatch `repair.lock.yml` on `main` with exactly `{task, issue, pr, attempt, contract_sha, head_sha, failure_signature, run_id}` (no `aw_context`: the workflow checks out the failed head itself). A failed dispatch isn't retried (that run counts as repaired); the next failure or the task time limit hands it on |
 | `enqueue_merge` | GraphQL `enqueuePullRequest` for the PR with `expectedHeadOid` = the planned head (exact mutation), then record `auto_merge` with its head. If GitHub refuses (GraphQL error or HTTP 4xx): re-read the PR head. If it moved, the plan is stale, nothing is recorded, and the next poll re-plans. Otherwise `needs_human`/`enqueue_failed` (label + comment). Once that failure is recorded, that PR and head are never sent to GitHub again, even if the hand-off was interrupted. HTTP 5xx fails the run, and the next poll retries. |
 | `dispatch_workflow:review` | record `review_dispatched` (with the head) first, then dispatch `review.lock.yml` on `main` with `{task, pr, head_sha, contract_sha}` (full SHAs). A failed dispatch is never retried; the review times out to a person |
 | `label:ready` | record `auto_ready` (once), then add `factory:ready` to the issue (re-applied whenever it's planned again, so an interrupted label is finished next poll). The next run (triggered by the `labeled` event) dispatches it as usual |
@@ -369,7 +382,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
   sentence per reason code, the label, and the run link. No text from issues, PRs or agents.
 - **The client's allowlist** (`assertAllowedRequest(…, 'live')`) independently allows only:
   `POST actions/workflows/implement.lock.yml/dispatches` with `ref: main` and exactly the four
-  validated string inputs (no `aw_context`); the same for `review.lock.yml` with exactly `{task, pr, head_sha, contract_sha}`; `POST issues/<n>/labels` with labels from
+  validated string inputs (no `aw_context`); the same for `review.lock.yml` with exactly `{task, pr, head_sha, contract_sha}`; `repair.lock.yml` with exactly its eight validated inputs (no `aw_context`); `POST issues/<n>/labels` with labels from
   `factory:picked`, `factory:ready` (auto-ready only), `needs-human`, `blocked`, `stale-contract`; `POST issues/<n>/comments` with a body
   starting with the template marker (≤ 2,000 chars); and the exact `enqueuePullRequest` GraphQL
   mutation with one `PR_…` node id and a 40-hex `expectedHeadOid` (no other variables, no queue jumping);
@@ -403,7 +416,7 @@ on every item that is an issue of this repo with a task marker, when its current
 | `Proposed` | none of the above |
 
 Issues closed without their task merged, items without a task marker, and other repos' items are
-left alone. It never adds or removes items, and `Repairing` isn't used (there's no repair workflow).
+left alone. It never adds or removes items, and `Repairing` isn't used yet.
 Live only; dry-run logs `[dry-run] would set Factory status …`. It's a projection for people, not a
 record, so it writes no audit events, and it's **best-effort**: an unreadable Project, a missing
 option or a refused update stops the sync, shows in the run summary (`Project status: stopped …`),

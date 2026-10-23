@@ -2,9 +2,9 @@
 // measures today's (UTC) factory spend from the implement workflow's own accounting, and
 // records it as a `spend_snapshot`. Plain code, no AI, read-only API calls.
 //
-// Per run of the AI workflows (implement, and the reviewer agent's review) created today (UTC):
-//   - queued / in progress  → reserved at the per-run caps (implement or reviewer_agent, plus
-//                             threat detection), unless every job has finished (see below)
+// Per run of the AI workflows (implement, repair, and the reviewer agent's review) created today (UTC):
+//   - queued / in progress  → reserved at the per-run caps (implement + threat detection),
+//                             unless every job has finished (see below)
 //   - completed             → measured from gh-aw's `usage` artifact, for every job whose
 //                             `Execute …` step ran (made model calls):
 //       agent:       `agent_usage.json` → `ai_credits`
@@ -24,6 +24,7 @@ import { paginate } from './github.ts';
 import type { GitHubClient, JsonObject } from './types.ts';
 
 export const IMPLEMENT_WORKFLOW_FILE = 'implement.lock.yml';
+export const REPAIR_WORKFLOW_FILE = 'repair.lock.yml';
 export const REVIEW_WORKFLOW_FILE = 'review.lock.yml';
 export const USAGE_ARTIFACT = 'usage';
 /** The implement workflow's last job: it needs every other job. */
@@ -38,11 +39,19 @@ export interface RunSpend {
   aic: number;
 }
 
-export type SpendResult = { aic: number; runs: RunSpend[] } | { aic: null; runs: RunSpend[]; reason: string };
+/** Per-task AIC (today and yesterday): by task id, plus runs that name no task (count against every task). */
+export interface TaskSpend {
+  by_task: Record<string, number>;
+  unattributed: number;
+}
+
+export type SpendResult = { aic: number; runs: RunSpend[]; tasks: TaskSpend | null } | { aic: null; runs: RunSpend[]; reason: string; tasks: null };
 
 export interface SpendCaps {
   /** budgets.yaml per_run.implement */
   implement: number;
+  /** budgets.yaml per_run.repair */
+  repair: number;
   /** budgets.yaml per_run.reviewer_agent */
   reviewer_agent: number;
   /** budgets.yaml per_run.threat_detection */
@@ -169,15 +178,30 @@ export function allJobsFinished(jobs: readonly unknown[]): boolean {
 
 const round = (n: number): number => Math.round(n * 1e6) / 1e6;
 
-/** Today's (UTC) spend of the AI workflows. Never throws for unreadable data: that's { aic: null }. */
+/** Today's (UTC) implement spend. Never throws for unreadable data: that's { aic: null }. */
+/** The task in an AI workflow run's name (`Implement <task> #<issue> attempt <n>`, `Repair …`), or null. */
+export function taskOfRun(run: Rec): string | null {
+  const title = typeof run.display_title === 'string' ? run.display_title : '';
+  const m = /^(?:Implement|Repair) ([a-z0-9-]+(?:\/[a-z0-9-]+)+) #[1-9][0-9]{0,8} attempt [1-9][0-9]?$/.exec(title);
+  return m ? m[1]! : null;
+}
+
+/**
+ * Spend of the AI workflows: today's (UTC) total (the daily budget), and per task over today and
+ * yesterday (the per-task budget; a task lives at most max_wall_clock_hours). Never throws for
+ * unreadable data: today's total is then { aic: null }; an unreadable run from yesterday only makes
+ * the per-task spend unknown (`tasks: null`), so repairs fail closed while dispatch goes on.
+ */
 export async function readSpendToday(client: GitHubClient, repo: string, now: Date, caps: SpendCaps): Promise<SpendResult> {
   const day = now.toISOString().slice(0, 10);
+  const yesterday = new Date(Date.parse(`${day}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
   const runs: RunSpend[] = [];
-  const unknown = (reason: string): SpendResult => ({ aic: null, runs, reason });
+  const unknown = (reason: string): SpendResult => ({ aic: null, runs, reason, tasks: null });
   // Every AI workflow with its in-flight reservation. A workflow whose runs can't be listed
-  // (including a missing workflow file) makes today's spend unknown.
+  // (including a missing workflow file) makes spend unknown.
   const workflows = [
     { file: IMPLEMENT_WORKFLOW_FILE, reserve: caps.implement + caps.threat_detection },
+    { file: REPAIR_WORKFLOW_FILE, reserve: caps.repair + caps.threat_detection },
     { file: REVIEW_WORKFLOW_FILE, reserve: caps.reviewer_agent + caps.threat_detection },
   ];
   const list: Rec[] = [];
@@ -185,7 +209,7 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   for (const w of workflows) {
     try {
       const found = (
-        await paginate(client, `/repos/${repo}/actions/workflows/${w.file}/runs?created=%3E%3D${day}&per_page=100`, (d) =>
+        await paginate(client, `/repos/${repo}/actions/workflows/${w.file}/runs?created=%3E%3D${yesterday}&per_page=100`, (d) =>
           Array.isArray(rec(d).workflow_runs) ? (rec(d).workflow_runs as unknown[]) : [],
         )
       ).map(rec);
@@ -195,52 +219,65 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
       return unknown(`${w.file} runs could not be listed (${(err as Error).message})`);
     }
   }
+  const byTask: Record<string, number> = {};
+  let unattributed = 0;
+  let taskUnknown = false;
   for (const run of list) {
     const id = run.id;
     if (typeof id !== 'number' || !Number.isSafeInteger(id) || id <= 0) return unknown('a run has no id');
-    if (typeof run.created_at !== 'string' || !run.created_at.startsWith(day)) continue;
-    // A re-run (even one still queued or running) carries earlier attempts' spend: unknown.
-    if (run.run_attempt !== 1) return unknown(`run ${id} was re-run (attempt ${String(run.run_attempt)})`);
-    const listJobs = async (): Promise<Rec[]> =>
-      (await paginate(client, `/repos/${repo}/actions/runs/${id}/attempts/1/jobs?per_page=100`, (d) => (Array.isArray(rec(d).jobs) ? (rec(d).jobs as unknown[]) : []))).map(rec);
-    let jobs: Rec[] | null = null;
-    if (run.status !== 'completed') {
-      try {
-        jobs = await listJobs();
-      } catch {
-        jobs = null; // can't tell: keep the reservation
-      }
-      if (!jobs || !allJobsFinished(jobs)) {
-        runs.push({ run_id: id, status: 'reserved', aic: reserveOf.get(run)! });
-        continue;
-      }
+    const created = typeof run.created_at === 'string' ? run.created_at : '';
+    const isToday = created.startsWith(day);
+    if (!isToday && !created.startsWith(yesterday)) continue;
+    const r = await measureRun(client, repo, run, id, reserveOf.get(run)!);
+    if (typeof r === 'string') {
+      if (isToday) return unknown(r);
+      taskUnknown = true; // yesterday's run: only the per-task spend is unknown
+      continue;
     }
-    try {
-      jobs ??= await listJobs();
-      const inferred = jobs.filter(jobInferred).map((j) => String(j.name));
-      const bad = inferred.find((n) => !JOB_NAME.test(n));
-      if (bad !== undefined) return unknown(`run ${id} has a job with an unexpected name`);
-      if (inferred.length === 0) {
-        runs.push({ run_id: id, status: 'no_inference', aic: 0 });
-        continue;
-      }
-      const artifacts = (
-        await paginate(client, `/repos/${repo}/actions/runs/${id}/artifacts?per_page=100`, (d) => (Array.isArray(rec(d).artifacts) ? (rec(d).artifacts as unknown[]) : []))
-      ).map(rec);
-      const usage = artifacts.filter((a) => a.name === USAGE_ARTIFACT);
-      if (usage.length !== 1) return unknown(`run ${id} has ${usage.length} usage artifacts`);
-      const a = usage[0]!;
-      if (a.expired !== false || typeof a.id !== 'number' || !Number.isSafeInteger(a.id)) return unknown(`run ${id}'s usage artifact is expired or has no id`);
-      if (typeof a.size_in_bytes === 'number' && a.size_in_bytes > MAX_ARTIFACT_BYTES) return unknown(`run ${id}'s usage artifact is too large`);
-      const res = await client.request('GET', `/repos/${repo}/actions/artifacts/${a.id}/zip`, { accept: 'binary' });
-      if (!(res.data instanceof Uint8Array)) return unknown(`run ${id}'s usage artifact could not be downloaded`);
-      const aic = runAIC(readZip(res.data, inferred.map(usageFileFor)), inferred);
-      runs.push({ run_id: id, status: 'measured', aic: round(aic) });
-    } catch (err) {
-      return unknown(`run ${id}'s spend could not be read (${(err as Error).message})`);
-    }
+    if (isToday) runs.push(r);
+    const task = taskOfRun(run);
+    if (task) byTask[task] = round((byTask[task] ?? 0) + r.aic);
+    else unattributed = round(unattributed + r.aic); // counts against every task
   }
-  return { aic: round(runs.reduce((s, r) => s + r.aic, 0)), runs };
+  return { aic: round(runs.reduce((s, r) => s + r.aic, 0)), runs, tasks: taskUnknown ? null : { by_task: byTask, unattributed } };
+}
+
+/** One run's spend (reserved, measured, no inference), or the reason it can't be read. */
+async function measureRun(client: GitHubClient, repo: string, run: Rec, id: number, reserve: number): Promise<RunSpend | string> {
+  // A re-run (even one still queued or running) carries earlier attempts' spend: unknown.
+  if (run.run_attempt !== 1) return `run ${id} was re-run (attempt ${String(run.run_attempt)})`;
+  const listJobs = async (): Promise<Rec[]> =>
+    (await paginate(client, `/repos/${repo}/actions/runs/${id}/attempts/1/jobs?per_page=100`, (d) => (Array.isArray(rec(d).jobs) ? (rec(d).jobs as unknown[]) : []))).map(rec);
+  let jobs: Rec[] | null = null;
+  if (run.status !== 'completed') {
+    try {
+      jobs = await listJobs();
+    } catch {
+      jobs = null; // can't tell: keep the reservation
+    }
+    if (!jobs || !allJobsFinished(jobs)) return { run_id: id, status: 'reserved', aic: reserve };
+  }
+  try {
+    jobs ??= await listJobs();
+    const inferred = jobs.filter(jobInferred).map((j) => String(j.name));
+    const bad = inferred.find((n) => !JOB_NAME.test(n));
+    if (bad !== undefined) return `run ${id} has a job with an unexpected name`;
+    if (inferred.length === 0) return { run_id: id, status: 'no_inference', aic: 0 };
+    const artifacts = (
+      await paginate(client, `/repos/${repo}/actions/runs/${id}/artifacts?per_page=100`, (d) => (Array.isArray(rec(d).artifacts) ? (rec(d).artifacts as unknown[]) : []))
+    ).map(rec);
+    const usage = artifacts.filter((a) => a.name === USAGE_ARTIFACT);
+    if (usage.length !== 1) return `run ${id} has ${usage.length} usage artifacts`;
+    const a = usage[0]!;
+    if (a.expired !== false || typeof a.id !== 'number' || !Number.isSafeInteger(a.id)) return `run ${id}'s usage artifact is expired or has no id`;
+    if (typeof a.size_in_bytes === 'number' && a.size_in_bytes > MAX_ARTIFACT_BYTES) return `run ${id}'s usage artifact is too large`;
+    const res = await client.request('GET', `/repos/${repo}/actions/artifacts/${a.id}/zip`, { accept: 'binary' });
+    if (!(res.data instanceof Uint8Array)) return `run ${id}'s usage artifact could not be downloaded`;
+    const aic = runAIC(readZip(res.data, inferred.map(usageFileFor)), inferred);
+    return { run_id: id, status: 'measured', aic: round(aic) };
+  } catch (err) {
+    return `run ${id}'s spend could not be read (${(err as Error).message})`;
+  }
 }
 
 /** The `spend_snapshot` audit event fields (sources listed by run id, at most 50). */

@@ -59,6 +59,7 @@ export const REVIEW_WORKFLOW = 'review.lock.yml';
 export const REVIEWER_APP_ID = 5444751;
 /** The reviewer agent's check run (review.md `safe-outputs.create-check-run.name`). */
 export const REVIEW_CHECK_NAME = 'factory-review';
+export const REPAIR_WORKFLOW = 'repair.lock.yml';
 /**
  * The only labels live mode may add. `factory:ready` only through auto-ready (planner: only with
  * limits.yaml `auto_ready: true`, only on unblocked autonomous-tier task issues).
@@ -111,6 +112,21 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
       typeof i.pr === 'string' && /^[1-9][0-9]{0,8}$/.test(i.pr) &&
       typeof i.head_sha === 'string' && HEX40.test(i.head_sha) &&
       typeof i.contract_sha === 'string' && HEX40.test(i.contract_sha)
+    );
+  }
+  if (p === `/repos/${repo}/actions/workflows/${REPAIR_WORKFLOW}/dispatches`) {
+    if (!exactKeys(b, ['ref', 'inputs']) || b.ref !== 'main') return false;
+    const i = b.inputs;
+    return (
+      exactKeys(i, ['task', 'issue', 'pr', 'attempt', 'contract_sha', 'head_sha', 'failure_signature', 'run_id']) &&
+      isTaskId(i.task) &&
+      typeof i.issue === 'string' && /^[1-9][0-9]{0,8}$/.test(i.issue) &&
+      typeof i.pr === 'string' && /^[1-9][0-9]{0,8}$/.test(i.pr) &&
+      typeof i.attempt === 'string' && /^[2-9]$/.test(i.attempt) &&
+      typeof i.contract_sha === 'string' && HEX40.test(i.contract_sha) &&
+      typeof i.head_sha === 'string' && HEX40.test(i.head_sha) &&
+      typeof i.failure_signature === 'string' && /^(step|job):[a-z0-9_-]{1,100}$/.test(i.failure_signature) &&
+      typeof i.run_id === 'string' && /^[1-9][0-9]{0,19}$/.test(i.run_id)
     );
   }
   if (p === `/repos/${repo}/actions/workflows/${IMPLEMENT_WORKFLOW}/dispatches`) {

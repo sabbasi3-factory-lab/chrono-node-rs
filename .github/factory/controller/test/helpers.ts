@@ -115,6 +115,7 @@ export function snapshot(over: SnapshotOverrides = {}): Snapshot {
     busy_jobs: 0,
     factory_aic_today: 0,
     history: {},
+    task_spend: { by_task: {}, unattributed: 0 },
     ...rest,
   };
 }

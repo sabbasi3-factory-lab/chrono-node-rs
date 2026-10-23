@@ -24,6 +24,10 @@ on:
         required: true
         type: string
 
+# The task in the run name lets the controller's spend collector attribute AIC to tasks
+# (per-task budget, budgets.yaml per_task.max_aic). Keep the format.
+run-name: "Implement ${{ github.event.inputs.task }} #${{ github.event.inputs.issue }} attempt ${{ github.event.inputs.attempt }}"
+
 permissions:
   contents: read
   issues: read
