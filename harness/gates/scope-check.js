@@ -120,6 +120,10 @@ async function main() {
         strict = contract
             ? needsFullRegression({ changed: changedPaths, autoStrictGlobs, contractTier: contract.tier || null, contractScope: contract.scope })
             : true;
+    } else if (process.env.GITHUB_EVENT_NAME === "push") {
+        // Post-merge check on main: the merged PR's task and contract aren't known here, so run the
+        // full regression on every main commit (conservative: it ran before merging too).
+        strict = true;
     } else {
         strict = needsFullRegression({ changed: changedPaths, autoStrictGlobs, contractTier: null });
     }

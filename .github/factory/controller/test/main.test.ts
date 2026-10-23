@@ -973,7 +973,7 @@ describe('auto-revert in the run (live)', () => {
     snapshot({
       pulls: [{ ...mergedPull(21, T), merge_commit_sha: MERGE }],
       contractList: [contract(T, { tier: 'auto-strict', scope: ['src/core/results.rs'] })],
-      check_runs: [checkRun(900, { event: 'push', head_sha: MERGE, candidate_sha: MERGE, conclusion: 'failure' })],
+      check_runs: [checkRun(900, { event: 'push', head_sha: MERGE, candidate_sha: MERGE, conclusion: 'failure', run_attempt: 2, failure_signature: 'step:golden', first_attempt_signature: 'step:golden' })],
       main_sha: MERGE,
       history: { [T]: history({ enqueued: [{ pr: 21, head: hex40('1'), at: '2026-10-15T07:30:00Z' }] }) },
     });
@@ -1050,5 +1050,49 @@ describe('write allowlist: auto-revert', () => {
     for (const b of [{ ...pr, title: 'Revert #22 (factory auto-revert)' }, { ...pr, head: 'feature' }, { ...pr, base: 'dev' }, { ...pr, body: 'hi' }, { ...pr, draft: true }]) {
       assert.equal(ok('POST', `/repos/${REPO}/pulls`, b), false, JSON.stringify(b));
     }
+  });
+});
+
+describe('post-merge confirmation re-run (live)', () => {
+  const T = 'core/results';
+  const strict: typeof policies = structuredClone(policies);
+  delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  it('records main_ci_rerun first, then re-runs that run once (no body); a second poll does nothing', async () => {
+    const MERGE = hex40('f');
+    const s = () => snapshot({
+      pulls: [{ ...mergedPull(21, T), merge_commit_sha: MERGE }],
+      contractList: [contract(T, { tier: 'auto-strict', scope: ['src/core/results.rs'] })],
+      check_runs: [checkRun(900, { event: 'push', head_sha: MERGE, candidate_sha: MERGE, conclusion: 'failure', failure_signature: 'step:golden' })],
+      main_sha: MERGE,
+      history: { [T]: history({ enqueued: [{ pr: 21, head: hex40('1'), at: '2026-10-15T07:30:00Z' }] }) },
+    });
+    const gh = liveWorld();
+    gh.addRoute('POST', new RegExp(`^/repos/${REPO}/actions/runs/900/rerun$`), () => ({ status: 201, data: null }));
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: s() }));
+    const ev = result.appended.find((e) => e.type === 'main_ci_rerun')!;
+    assert.deepEqual([ev.payload.reason, ev.payload.effect, ev.payload.run_id], ['confirm_regression', 'rerun_ci', 900]);
+    const reruns = gh.calls.filter((c) => c.path.endsWith('/rerun'));
+    assert.deepEqual(reruns.map((c) => [c.method, c.path, c.body]), [['POST', `/repos/${REPO}/actions/runs/900/rerun`, undefined]]);
+    assert.ok(!gh.calls.some((c) => c.path.includes('/labels')), 'no hand-off before confirmation');
+    for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
+    gh.calls.length = 0;
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: s(), now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.ok(!gh.calls.some((c) => c.path.endsWith('/rerun')), 'one re-run per failed run');
+  });
+
+  it('allowlist: a re-run of one run with no body, live only', () => {
+    const ok = (path: string, body: unknown, mode: 'live' | 'dry-run' = 'live') => {
+      try {
+        assertAllowedRequest(REPO, 'POST', path, body, mode);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    assert.equal(ok(`/repos/${REPO}/actions/runs/900/rerun`, undefined), true);
+    assert.equal(ok(`/repos/${REPO}/actions/runs/900/rerun`, undefined, 'dry-run'), false);
+    assert.equal(ok(`/repos/${REPO}/actions/runs/900/rerun`, { enable_debug_logging: true }), false);
+    assert.equal(ok(`/repos/${REPO}/actions/runs/900/rerun-failed-jobs`, undefined), false);
+    assert.equal(ok(`/repos/other/repo/actions/runs/900/rerun`, undefined), false);
   });
 });

@@ -110,6 +110,8 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
     return new RegExp(`${issue}$`).test(p) && exactKeys(b, ['state', 'state_reason']) && b.state === CLOSE_COMPLETED.state && b.state_reason === CLOSE_COMPLETED.state_reason;
   }
   if (method !== 'POST') return false;
+  // Confirming a post-merge failure: re-run one workflow run, with no options.
+  if (new RegExp(`^/repos/${escapeRe(repo)}/actions/runs/[1-9][0-9]{0,19}/rerun$`).test(p)) return b === undefined;
   // Auto-revert: create the revert branch (only `factory/revert-<n>`), and open its PR from the template.
   if (p === `/repos/${repo}/git/refs`) {
     return exactKeys(b, ['ref', 'sha']) && typeof b.ref === 'string' && REVERT_BRANCH_RE.test(b.ref.replace(/^refs\/heads\//, '')) && b.ref.startsWith('refs/heads/') && typeof b.sha === 'string' && HEX40.test(b.sha);
@@ -412,11 +414,12 @@ export const PULLS_QUERY = `query($owner: String!, $name: String!, $cursor: Stri
         author { login __typename }
         labels(first: 100) { pageInfo { hasNextPage } nodes { name } }
         reviews(last: 100) { nodes { id state submittedAt author { login __typename } } }
-        timelineItems(last: 100, itemTypes: [ADDED_TO_MERGE_QUEUE_EVENT, REMOVED_FROM_MERGE_QUEUE_EVENT]) {
+        timelineItems(last: 100, itemTypes: [ADDED_TO_MERGE_QUEUE_EVENT, REMOVED_FROM_MERGE_QUEUE_EVENT, LABELED_EVENT]) {
           nodes {
             __typename
             ... on AddedToMergeQueueEvent { id createdAt actor { login __typename } }
             ... on RemovedFromMergeQueueEvent { id createdAt reason actor { login __typename } }
+            ... on LabeledEvent { createdAt label { name } actor { login __typename } }
           }
         }
       }
@@ -445,8 +448,15 @@ export function mapPull(node: unknown): PullSnap {
     };
   });
   const mq: MergeQueueEventSnap[] = [];
+  const labeled: NonNullable<PullSnap['labeled_events']> = [];
   for (const t of asArr(asRec(n.timelineItems).nodes)) {
     const ev = asRec(t);
+    if (ev.__typename === 'LabeledEvent') {
+      const name = asStr(asRec(ev.label).name);
+      const a = login(ev.actor);
+      if (name) labeled.push({ label: name, actor: a.login, actor_is_bot: a.bot, at: asStr(ev.createdAt) ?? '' });
+      continue;
+    }
     const kind =
       ev.__typename === 'AddedToMergeQueueEvent' ? 'queued' : ev.__typename === 'RemovedFromMergeQueueEvent' ? 'dequeued' : null;
     if (!kind) continue;
@@ -480,6 +490,7 @@ export function mapPull(node: unknown): PullSnap {
     mergeable: asStr(n.mergeable),
     in_merge_queue: n.isInMergeQueue === true,
     head_ref: asStr(n.headRefName),
+    labeled_events: labeled,
   };
 }
 
@@ -648,6 +659,8 @@ export async function readCheckRuns(
       heldout_seed: null,
       failure_signature: null,
     };
+    // A re-run of a post-merge check: attempt 1's recorded signature, to confirm a regression.
+    if (event === 'push' && snap.run_attempt > 1) snap.first_attempt_signature = recorded.get(`${snap.run_id}/attempts/1`)?.failure_signature ?? null;
     const inWindow = Date.parse(snap.updated_at) >= windowStart;
     const forOpenPr = (candidate !== null && openHeads.has(candidate)) || openHeads.has(headSha);
     if (!inWindow && !forOpenPr) continue;

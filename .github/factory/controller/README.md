@@ -168,10 +168,12 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `needs_human` | `review_contract_changed` | this head was reviewed, but against another (or an unknown) contract version than the current one; no second review is sent automatically | `label:needs-human` |
 | `needs_human` | `review_timeout` | no reviewer verdict on this head within 60 minutes of the dispatch (the run failed, was flagged by detection, or posted nothing) | `label:needs-human` |
 | `wait` | `review_pending` | the review was dispatched for this head and its verdict isn't in yet | nothing (logged, **not** recorded) |
-| `needs_human` | `main_regressed` | `ci` (on push to main) failed on a factory PR's merge commit: label and comment on the merged PR | `label:needs-human` |
-| `auto_revert` | `main_regressed` | …and it was an auto-strict PR the controller merged, it's still main's tip, and every earlier auto-revert PR has `factory:revert-reviewed` (gated by the kill switch) | `open_revert` |
+| `main_ci_rerun` | `confirm_regression` | the first `ci` attempt on main failed at the merge commit of an auto-strict PR the controller merged (that head), or of a controller revert PR: re-run it once to rule out a flake (gated by the kill switch) | `rerun_ci` |
+| `needs_human` | `main_regressed` | the re-run failed too: label and comment on the merged PR, **once** per PR. Only for those PRs (other merges get nothing: dormant until the promotion) | `label:needs-human` |
+| `auto_revert` | `main_regressed` | …confirmed (attempt 2 failed with the **same** trusted signature as attempt 1), an auto-strict PR the controller merged, still main's tip, and every earlier controller revert PR has `factory:revert-reviewed` **added by a person** (gated by the kill switch) | `open_revert` |
 | `needs_human` | `revert_limit` / `revert_not_safe` | an earlier auto-revert isn't marked reviewed by a person, or main moved on since the merge: no revert (the `main_regressed` hand-off already told a person) | none (recorded) |
-| `auto_merge` | `revert_ready` | the controller's own `factory/revert-<n>` PR with green `ci` and `gates` and `MERGEABLE` | `enqueue_merge` |
+| `auto_merge` | `revert_ready` | the controller's own `factory/revert-<n>` PR whose head is **exactly the recorded revert commit**, with green `ci` and `gates` and `MERGEABLE` | `enqueue_merge` |
+| `needs_human` | `revert_head_changed` | a controller revert PR whose head isn't the recorded revert commit (someone pushed to it, or the record is gone): never queued | `label:needs-human` |
 | `needs_human` | `revert_checks_failed` | a revert PR's `ci` or `gates` failed (never queued) | `label:needs-human` |
 | `task_done` | `task_merged` | an open issue with a valid task marker whose task has a merged PR (the first one, `pr`). Planned on every poll while the issue is open; gated only by the kill switch (no escalation holds it back). A leftover open PR for a task that's already merged gets no decision at all | `close_task` |
 | `needs_human` | `merge_queue_rejected` | the PR left the merge queue without merging after its head went green; never re-queued automatically | `label:needs-human` |
@@ -228,14 +230,23 @@ leaves `.github/` alone), records it on `check_result` as `full_regression`, and
 before any review or merge. Anything else → `needs_human/full_regression_missing`.
 
 **Auto-revert (auto-strict only).** `ci` also runs on every push to `main` (one concurrency group
-per commit, so no post-merge run is cancelled), and the controller records those runs. If the run on
-a factory PR's merge commit fails, a person is told on that PR (`needs_human/main_regressed`). If
-it was an auto-strict PR the controller merged and it's still main's tip, the controller also opens
-`factory/revert-<pr>` (the parent's tree on top of the merge) with a templated PR, records
-`auto_revert`, and enqueues the revert PR once its own `ci` and `gates` pass. A reverted PR no longer
-counts as merged, so its task's dependents wait. **Never twice without a person:** while any earlier
-revert PR lacks the `factory:revert-reviewed` label (which only a person adds), every later regression
-gets only the hand-off (`revert_limit`).
+per commit, so no post-merge run is cancelled; every main commit gets the full regression), and the
+controller records those runs. It watches only the merge commits of auto-strict PRs it merged itself
+(the exact head it queued) and of its own revert PRs:
+- **Confirm:** a first failed attempt is re-run once (`rerun_ci`). Only a second failed attempt with
+  the **same** trusted failure signature is a regression; a passing re-run is a flake (nothing), and a
+  different signature goes to a person.
+- **Hand off:** a person is told on the merged PR (`needs_human/main_regressed`), once.
+- **Revert:** if it's still main's tip, the controller opens `factory/revert-<pr>` (the parent's tree
+  on top of the merge) with a templated PR and records `auto_revert` with the revert commit. The revert
+  PR is queued only while its head is exactly that commit (`revert_head_changed` otherwise) and its own
+  `ci` and `gates` pass. A revert PR that breaks main is only handed off.
+- **Never twice without a person:** while any controller revert PR lacks `factory:revert-reviewed`
+  added by a person (timeline: a non-bot actor), later regressions get only the hand-off
+  (`revert_limit`).
+- **Durable:** the revert ledger comes from the controller's revert PRs (any age) plus recorded
+  events, so it outlives the audit window. A reverted PR no longer counts as merged, in the same poll
+  too, so its task's dependents wait.
 
 **Reviewer agent (auto-strict only).** Once an auto-strict PR meets every condition above, the
 controller dispatches `review.lock.yml` (gh-aw, `gpt-6.1-sol`: a different model family from the

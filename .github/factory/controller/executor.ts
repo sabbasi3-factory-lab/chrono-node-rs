@@ -31,6 +31,9 @@
 //                                 retry never duplicates), then record `auto_revert`. The planner
 //                                 enqueues the revert PR once its own ci and gates pass. The
 //                                 `needs_human/main_regressed` hand-off is a separate decision.
+//   rerun_ci                    → a first post-merge ci failure on main: record, then re-run that
+//                                 run once (POST actions/runs/<id>/rerun). Only a second failed
+//                                 attempt with the same signature confirms a regression.
 //   dispatch_workflow:repair    → no repair workflow exists yet: escalated instead to
 //                                 needs_human/repair_unavailable (label + comment)
 //   alert:owner, pause_dispatch, none → no GitHub effect; recorded in the audit log only
@@ -131,6 +134,7 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   full_regression_missing: "This auto-strict change has no successful full regression (the `checks` job's 10,000-phrase held-out step) on its head. A person decides.",
   review_contract_changed: 'This head was reviewed against a different contract version than the current one. A person decides (no second review is sent automatically).',
   main_regressed: '`ci` failed on main at this merge commit (the post-merge check). If this was an auto-strict change merged by the controller, a revert PR is opened and queued automatically; otherwise a person decides.',
+  revert_head_changed: "This auto-revert PR's head is no longer the revert commit the controller created (someone pushed to it, or the record is gone). It is not queued automatically. A person decides.",
   revert_checks_failed: 'The checks failed on this auto-revert PR, so it is not queued. A person decides.',
   review_objected: 'The reviewer agent (a second model) objected to this change: see the `factory-review` check. A person decides.',
   review_timeout: 'No verdict from the reviewer agent in time (the review run failed, was flagged or posted nothing). A person decides.',
@@ -363,6 +367,10 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
       await deps.client.request('POST', `/repos/${deps.repo}/actions/workflows/${REVIEW_WORKFLOW}/dispatches`, {
         body: { ref: 'main', inputs: { task: d.task, pr: String(d.pr), head_sha: head, contract_sha: d.contract_sha } },
       });
+    } else if (d.effect === 'rerun_ci') {
+      if (d.run_id === null) throw new Error('rerun decision has no run');
+      await deps.record(ev); // first: one re-run per failed run, never retried
+      await deps.client.request('POST', `/repos/${deps.repo}/actions/runs/${d.run_id}/rerun`);
     } else if (d.effect === 'open_revert') {
       const merge = d.merge_commit_sha;
       if (d.pr === null || typeof merge !== 'string' || !/^[0-9a-f]{40}$/.test(merge)) throw new Error('revert decision has no PR or merge commit');
