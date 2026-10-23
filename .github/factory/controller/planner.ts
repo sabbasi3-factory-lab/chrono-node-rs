@@ -359,7 +359,8 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
           continue;
         }
         const verdict = (s.review_checks ?? [])
-          .filter((k) => k.head_sha === pr.head_sha && k.reviewed_head === pr.head_sha && k.started_at >= since)
+          // A verdict counts only if it started within the review window after the dispatch.
+          .filter((k) => k.head_sha === pr.head_sha && k.reviewed_head === pr.head_sha && k.started_at >= since && Date.parse(k.started_at) <= Date.parse(since) + REVIEW_TIMEOUT_MINUTES * 60_000)
           .sort((a, b) => b.id - a.id)[0];
         if (verdict && verdict.status === 'completed') {
           if (verdict.conclusion !== 'success') {

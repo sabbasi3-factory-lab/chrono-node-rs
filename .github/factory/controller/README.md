@@ -220,7 +220,7 @@ steps; nothing from the PR runs), with read-only tools, native file editing off 
 `factory-review` check run, posted by the **reviewer App**. A verdict counts only if:
 - the check run's App id is the reviewer App's, **5444751** (`REVIEWER_APP_ID`, pinned in code so no variable can redirect it), and its name is `factory-review`
 - it's on the PR's current head, and its summary's first line is `Reviewed-Head: <that head>`
-- it started after the dispatch for that head (an older review never counts for a new head)
+- it started after the dispatch for that head, and at most 60 minutes after it (an older review never counts for a new head)
 - that dispatch was for the **current contract** (`review_dispatched` records `contract_sha`). A review
   of this head against another contract version → `needs_human/review_contract_changed`
 

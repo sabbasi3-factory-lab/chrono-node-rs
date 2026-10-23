@@ -58,7 +58,9 @@ network:
 
 # Read-only: the reviewer reads, it never edits, builds or runs anything from the PR. Native file
 # editing is off (`edit: false`), and no listed command can execute or modify files (no `find`:
-# its -exec/-delete actions could run or remove PR-supplied files).
+# its -exec/-delete actions could run or remove PR-supplied files; no `sort`: --compress-program
+# runs a program, -o writes a file; gh-aw v0.92.0 still adds its own default set, which includes
+# `sort`, and can't be turned off: `bash: false` doesn't compile).
 tools:
   edit: false
   github:
@@ -74,7 +76,6 @@ tools:
     - "ls"
     - "wc"
     - "diff"
-    - "sort"
     - "pwd"
 
 # Outside the firewall, before any inference: check the dispatch against GitHub, then lay out

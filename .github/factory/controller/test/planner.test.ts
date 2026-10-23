@@ -839,8 +839,8 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
     }
   });
 
-  it('ignored as a verdict: another head, a wrong Reviewed-Head marker, or a check from before the dispatch', () => {
-    for (const c of [check({ head_sha: hex40('9') }), check({ reviewed_head: hex40('9') }), check({ reviewed_head: null }), check({ started_at: '2026-10-16T11:00:00Z' })]) {
+  it('ignored as a verdict: another head, a wrong Reviewed-Head marker, a check from before the dispatch or started more than 60 minutes after it', () => {
+    for (const c of [check({ head_sha: hex40('9') }), check({ reviewed_head: hex40('9') }), check({ reviewed_head: null }), check({ started_at: '2026-10-16T11:00:00Z' }), check({ started_at: '2026-10-16T12:31:00Z' })]) {
       assert.deepEqual(kinds(plan2(world({ reviews: asked, checks: [c] }))), ['wait/review_pending'], JSON.stringify(c));
     }
   });
