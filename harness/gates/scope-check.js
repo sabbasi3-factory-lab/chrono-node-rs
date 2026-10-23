@@ -16,13 +16,13 @@
 //   pinned factory version in the trusted .github/factory/factory-version). Diffs use
 //   --no-renames, so a moved file counts as a deletion plus an addition. Agent PRs without a task
 //   fail.
-// Writes kind, golden_areas, golden_step, differential_seed and differential_phrases to
-// $GITHUB_OUTPUT.
+// Writes kind, golden_areas, golden_step, differential_seed, differential_phrases and strict (the
+// change needs the auto-strict full regression) to $GITHUB_OUTPUT.
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const YAML = require("yaml");
-const { evaluate } = require("./scope");
+const { evaluate, needsFullRegression } = require("./scope");
 
 // The trusted checkout (this file's repo); the candidate commit must already be fetched into it.
 const REPO = path.resolve(__dirname, "../..");
@@ -48,7 +48,8 @@ async function loadPolicyProtected() {
     const tiers = YAML.parse(await res.text());
     const list = tiers && tiers.protected_from_agents;
     if (!Array.isArray(list) || list.length === 0) throw new Error("tiers.yaml has no protected_from_agents");
-    return { version, protectedGlobs: list };
+    const strict = tiers && tiers.tiers && tiers.tiers["auto-strict"] && tiers.tiers["auto-strict"].paths;
+    return { version, protectedGlobs: list, autoStrictGlobs: Array.isArray(strict) ? strict : [] };
 }
 
 const changedPaths = (from, to) => git("diff", "--name-only", "--no-renames", from, to);
@@ -96,12 +97,30 @@ function loadContractAt(base) {
 async function main() {
     const { pr, head, contractBase, changed } = await context();
     const changedPaths = changed ? changed.split("\n").filter(Boolean) : [];
-    const { version, protectedGlobs } = await loadPolicyProtected();
+    const { version, protectedGlobs, autoStrictGlobs } = await loadPolicyProtected();
     const isAgent = pr.user && pr.user.login === AGENT_LOGIN;
-    const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract: loadContractAt(contractBase) });
+    const loadContract = loadContractAt(contractBase);
+    const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract });
+    // A factory PR's contract decides too (its tier and every scope path). A missing or unreadable
+    // contract fails closed: run the full regression.
+    let strict;
+    if (result.task) {
+        let contract = null;
+        try {
+            contract = loadContract(result.task);
+        } catch {
+            contract = null;
+        }
+        strict = contract
+            ? needsFullRegression({ changed: changedPaths, autoStrictGlobs, contractTier: contract.tier || null, contractScope: contract.scope })
+            : true;
+    } else {
+        strict = needsFullRegression({ changed: changedPaths, autoStrictGlobs, contractTier: null });
+    }
 
     console.log(`mode ${MODE}; factory policies at ${version}; candidate ${head}; contracts from ${contractBase}`);
     console.log(`PR #${pr.number} by ${pr.user && pr.user.login}: ${result.kind}${result.task ? ` task ${result.task}` : ""}`);
+    console.log(`full regression (auto-strict): ${strict ? "yes" : "no"}`);
     console.log(`changed paths (${changedPaths.length}):`);
     for (const p of changedPaths) console.log(`  ${p}`);
     if (process.env.GITHUB_OUTPUT) {
@@ -114,6 +133,7 @@ async function main() {
                 `golden_step=${result.goldenStep || ""}`,
                 `differential_seed=${d.seed}`,
                 `differential_phrases=${d.phrases}`,
+                `strict=${strict ? "true" : "false"}`,
             ].join("\n") + "\n"
         );
     }

@@ -110,7 +110,7 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | type | source IDs (dedupe) | payload (besides the common fields) |
 |---|---|---|
 | `pr_opened` | PR node id | `pr`, `head_sha` (head at observation time), `author`, `opened_at` |
-| `check_result` | `<run_id>/attempts/<attempt>` | `workflow`, `run_id`, `run_attempt`, `event` (`pull_request`/`pull_request_target`/`merge_group`), `head_sha`, `prs`, `conclusion`, `completed_at`, and `heldout_seed` / `failure_signature` when CI printed them |
+| `check_result` | `<run_id>/attempts/<attempt>` | `workflow`, `run_id`, `run_attempt`, `event` (`pull_request`/`pull_request_target`/`merge_group`), `head_sha`, `prs`, `conclusion`, `completed_at`, and `heldout_seed` / `failure_signature` / `full_regression` when known |
 | `queued` / `dequeued` | timeline event node id | `pr`, `actor`, `at` |
 | `merged` | PR node id | `pr`, `merge_commit_sha`, `merged_at`, `task` |
 | `human_action` | review node id | `action: review`, `pr`, `reviewer`, `state`, `submitted_at` (non-bot reviewers only) |
@@ -163,6 +163,7 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 |---|---|---|---|
 | `auto_merge` | `auto_merge_ready` | a green auto-tier agent PR, or an auto-strict one the reviewer agent passed (see **Merge stage**) | `enqueue_merge` |
 | `review_dispatched` | `review_needed` | an auto-strict PR that meets every merge condition and has no review for its head yet; gated like a repair (kill switch, budget, Actions load) | `dispatch_workflow:review` |
+| `needs_human` | `full_regression_missing` | an auto-strict PR whose newest `ci` run passed without a successful full-regression step (`FULL_REGRESSION_STEP`: skipped, missing or untrusted); checked before any review | `label:needs-human` |
 | `needs_human` | `review_objected` | the reviewer App's `factory-review` check on this head finished with anything but `success` | `label:needs-human` |
 | `needs_human` | `review_contract_changed` | this head was reviewed, but against another (or an unknown) contract version than the current one; no second review is sent automatically | `label:needs-human` |
 | `needs_human` | `review_timeout` | no reviewer verdict on this head within 60 minutes of the dispatch (the run failed, was flagged by detection, or posted nothing) | `label:needs-human` |
@@ -211,6 +212,15 @@ It's gated only by the kill switch (`FACTORY_ENABLED`); merging spends no AI cre
 waited for: a Copilot review is a signal, not a gate. The merge queue then runs `checks` and `gates`
 on the merge group, and GitHub merges. The controller never merges directly. `queued`, `dequeued` and
 `merged` are recorded as observed facts.
+
+**Full regression (auto-strict only).** For a change that touches an auto-strict path or whose
+contract says `tier: auto-strict`, `scope-check.js` outputs `strict=true` (fail-closed: true when the
+policy lists no auto-strict paths or the contract can't be read). The `checks` job then runs
+`Full regression (auto-strict) - held-out comparison, 10000 phrases` with the trusted fresh seed, on
+top of the whole-crate golden suite (every ported case, every configuration). The controller reads
+that step's conclusion from the jobs API (runner metadata, never log text, and only when the change
+leaves `.github/` alone), records it on `check_result` as `full_regression`, and requires `success`
+before any review or merge. Anything else → `needs_human/full_regression_missing`.
 
 **Reviewer agent (auto-strict only).** Once an auto-strict PR meets every condition above, the
 controller dispatches `review.lock.yml` (gh-aw, `gpt-6.1-sol`: a different model family from the

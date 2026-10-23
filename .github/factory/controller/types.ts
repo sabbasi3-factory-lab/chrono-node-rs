@@ -161,6 +161,12 @@ export interface CheckRunSnap {
   heldout_seed: string | null;
   /** `step:<first failed step>` or `job:<conclusion>`, from runner-reported step results (never log text). */
   failure_signature: string | null;
+  /**
+   * Runner-reported conclusion of the `checks` job's full-regression step (auto-strict:
+   * FULL_REGRESSION_STEP), e.g. `success` or `skipped`; null when the step isn't in the job or the
+   * run's signals aren't trusted (a `.github/` change).
+   */
+  full_regression?: string | null;
 }
 
 export interface TaskHistory {
@@ -249,6 +255,7 @@ export type ReasonCode =
   | 'review_objected'
   | 'review_timeout'
   | 'review_contract_changed'
+  | 'full_regression_missing'
   | 'task_merged'
   | 'merge_queue_rejected'
   | 'enqueue_failed'
