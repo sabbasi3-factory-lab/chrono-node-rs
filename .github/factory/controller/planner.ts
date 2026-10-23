@@ -520,6 +520,8 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   // tier is auto-strict (by its paths or its contract), so at most that many are in flight at once.
   const strictLane = (c: ContractSnap): boolean => isCoreTask(c, p.tiers) || taskTier(c, p.tiers) === 'auto-strict';
   let core = active.filter(strictLane).length;
+  // Hard cap: never more than one auto-strict task in flight, whatever limits.yaml says.
+  const strictLaneLimit = Math.min(1, p.limits.wip.core_area);
   let humanItems = humanQueue.size;
 
   for (const a of admissible) {
@@ -529,7 +531,7 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     const isCore = strictLane(a.contract);
     if (!gate && wip >= wipLimit) gate = 'wip_full';
     if (!gate && tier === 'human' && humanItems > p.limits.human_queue.max_items) gate = 'human_queue_full';
-    if (!gate && isCore && core >= p.limits.wip.core_area) gate = 'core_area_busy';
+    if (!gate && isCore && core >= strictLaneLimit) gate = 'core_area_busy';
     if (!gate && active.some((c) => sameArea(c, a.contract))) gate = 'area_locked';
     if (route(d, gate)) {
       out.push(d);

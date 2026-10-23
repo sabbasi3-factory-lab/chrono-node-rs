@@ -263,6 +263,11 @@ describe('planner: schedule', () => {
     const other = contract('en/strict2', { tier: 'auto-strict', scope: ['src/locales/en/parsers/strict2.rs'] });
     s = snapshot({ issues: [issue(1, 'en/strict'), issue(2, 'en/strict2')], contractList: [strictOnLocale, other] });
     assert.deepEqual(reasons(run(s)), ['would_dispatch', 'core_area_busy']);
+    // A policy asking for more is capped at 1.
+    const loose: typeof policies = structuredClone(policies);
+    loose.limits.wip.core_area = 3;
+    s = snapshot({ issues: [issue(1, 'en/strict'), issue(2, 'en/strict2')], contractList: [strictOnLocale, other] });
+    assert.deepEqual(reasons(plan(s, loose, ON, NOW)), ['would_dispatch', 'core_area_busy']);
     // Auto-tier tasks are not in the strict lane.
     s = snapshot({ issues: [issue(1, 'en/strict', ['factory:picked']), issue(2, 'en/plain')], contractList: [strictOnLocale, contract('en/plain')], history: pickedRecently(['en/strict']) });
     assert.deepEqual(reasons(run(s)), ['would_dispatch']);
