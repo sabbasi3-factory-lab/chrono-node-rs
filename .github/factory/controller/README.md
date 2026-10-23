@@ -167,6 +167,7 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `needs_human` | `review_contract_changed` | this head was reviewed, but against another (or an unknown) contract version than the current one; no second review is sent automatically | `label:needs-human` |
 | `needs_human` | `review_timeout` | no reviewer verdict on this head within 60 minutes of the dispatch (the run failed, was flagged by detection, or posted nothing) | `label:needs-human` |
 | `wait` | `review_pending` | the review was dispatched for this head and its verdict isn't in yet | nothing (logged, **not** recorded) |
+| `auto_ready` | `deps_merged` | limits.yaml `auto_ready: true` only: an open `factory:task` issue (valid marker and contract, not ready or picked, no `needs-human`/`stale-contract`/`blocked`, not merged) whose `depends_on` are all merged and whose tier may run without a person (`auto` outside core; `auto-strict` only after the promotion). Only as many as the WIP, area-lock and core limits leave room for after this run's dispatches, counting ready issues still waiting; ordered by dependency depth, then priority, then issue number. Gated by the kill switch | `label:ready` |
 | `task_done` | `task_merged` | an open issue with a valid task marker whose task has a merged PR (the first one, `pr`). Planned on every poll while the issue is open; gated only by the kill switch (no escalation holds it back). A leftover open PR for a task that's already merged gets no decision at all | `close_task` |
 | `needs_human` | `merge_queue_rejected` | the PR left the merge queue without merging after its head went green; never re-queued automatically | `label:needs-human` |
 | `wait` | `merge_not_ready` | an auto-tier PR with green checks but an unmet merge condition (named in `source_ids` as `blocker:<why>`) | nothing (logged, **not** recorded) |
@@ -348,6 +349,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
 | `dispatch_workflow:repair` | there is no repair workflow yet, so it becomes `needs_human`/`repair_unavailable`: label + comment |
 | `enqueue_merge` | GraphQL `enqueuePullRequest` for the PR with `expectedHeadOid` = the planned head (exact mutation), then record `auto_merge` with its head. If GitHub refuses (GraphQL error or HTTP 4xx): re-read the PR head. If it moved, the plan is stale, nothing is recorded, and the next poll re-plans. Otherwise `needs_human`/`enqueue_failed` (label + comment). Once that failure is recorded, that PR and head are never sent to GitHub again, even if the hand-off was interrupted. HTTP 5xx fails the run, and the next poll retries. |
 | `dispatch_workflow:review` | record `review_dispatched` (with the head) first, then dispatch `review.lock.yml` on `main` with `{task, pr, head_sha, contract_sha}` (full SHAs). A failed dispatch is never retried; the review times out to a person |
+| `label:ready` | record `auto_ready` (once), then add `factory:ready` to the issue (re-applied whenever it's planned again, so an interrupted label is finished next poll). The next run (triggered by the `labeled` event) dispatches it as usual |
 | `close_task` | record `task_done` (once), then remove `factory:ready` and `factory:picked` from the issue (a 404 for a label that's already gone is fine), then close it with `state_reason: completed`. The effect re-runs whenever it's planned (the issue is still open), so an interrupted close finishes on the next poll; the event isn't recorded twice. This also backfills tasks merged before this stage existed (#45). |
 | `alert:owner`, `pause_dispatch`, `none` | no GitHub effect; recorded in the audit log only |
 
@@ -368,14 +370,14 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
 - **The client's allowlist** (`assertAllowedRequest(…, 'live')`) independently allows only:
   `POST actions/workflows/implement.lock.yml/dispatches` with `ref: main` and exactly the four
   validated string inputs (no `aw_context`); the same for `review.lock.yml` with exactly `{task, pr, head_sha, contract_sha}`; `POST issues/<n>/labels` with labels from
-  `factory:picked`, `needs-human`, `blocked`, `stale-contract`; `POST issues/<n>/comments` with a body
+  `factory:picked`, `factory:ready` (auto-ready only), `needs-human`, `blocked`, `stale-contract`; `POST issues/<n>/comments` with a body
   starting with the template marker (≤ 2,000 chars); and the exact `enqueuePullRequest` GraphQL
   mutation with one `PR_…` node id and a 40-hex `expectedHeadOid` (no other variables, no queue jumping);
   `PATCH issues/<n>` with exactly `{state: closed, state_reason: completed}`; `DELETE
   issues/<n>/labels/<factory:ready|factory:picked>` (no body); and the exact
   `updateProjectV2ItemFieldValue` mutation with `PVT_`/`PVTI_`/`PVTSSF_` ids and one option id. It
   still refuses direct merges, dequeues, other closes or issue edits, removing any other label, adding
-  `factory:ready`, reviews, other workflows, other refs and every other GraphQL mutation.
+  any other label, reviews, other workflows, other refs and every other GraphQL mutation.
 - The workflow requests `actions`, `issues`, `pull-requests` and `organization-projects` **write** only when
   `vars.FACTORY_ENABLED` is exactly `true`, checked case-sensitively in a shell step (Actions
   expressions compare strings case-insensitively). The controller applies the same rule.

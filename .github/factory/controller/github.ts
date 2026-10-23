@@ -1,6 +1,6 @@
 // Thin GitHub REST/GraphQL client (built-in fetch) and the snapshot reader.
-// The client refuses every mutating request except the Git Data API writes
-// to the audit branch: controller v1 is dry-run only.
+// The client refuses every mutating request except the Git Data API writes to the audit branch,
+// plus, in live mode only, the exact writes in liveWriteAllowed (executor.ts lists the effects).
 
 import { createHash } from 'node:crypto';
 import { AUDIT_BRANCH, isoSeconds } from './audit.ts';
@@ -59,10 +59,14 @@ export const REVIEW_WORKFLOW = 'review.lock.yml';
 export const REVIEWER_APP_ID = 5444751;
 /** The reviewer agent's check run (review.md `safe-outputs.create-check-run.name`). */
 export const REVIEW_CHECK_NAME = 'factory-review';
-/** The only labels live mode may add. It never adds `factory:ready`. */
-export const LIVE_LABELS: readonly string[] = ['factory:picked', 'needs-human', 'blocked', 'stale-contract'];
+/**
+ * The only labels live mode may add. `factory:ready` only through auto-ready (planner: only with
+ * limits.yaml `auto_ready: true`, only on unblocked autonomous-tier task issues).
+ */
+export const LIVE_LABELS: readonly string[] = ['factory:picked', 'factory:ready', 'needs-human', 'blocked', 'stale-contract'];
 /** The only labels live mode may remove, and only from a finished task's issue (close_task). */
 export const DONE_REMOVED_LABELS: readonly string[] = ['factory:ready', 'factory:picked'];
+const LABEL_READY_NAME = 'factory:ready';
 /** The only issue update live mode may send: close a finished task's issue as completed. */
 export const CLOSE_COMPLETED = { state: 'closed', state_reason: 'completed' } as const;
 
@@ -121,7 +125,11 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
     );
   }
   if (new RegExp(`^/repos/${escapeRe(repo)}/issues/[1-9][0-9]{0,8}/labels$`).test(p)) {
-    return exactKeys(b, ['labels']) && Array.isArray(b.labels) && b.labels.length > 0 && b.labels.every((l) => typeof l === 'string' && LIVE_LABELS.includes(l));
+    if (!exactKeys(b, ['labels']) || !Array.isArray(b.labels) || b.labels.length === 0) return false;
+    // `factory:ready` only on its own (auto-ready adds nothing else with it); the executor checks
+    // the issue is an open factory task first.
+    if (b.labels.includes(LABEL_READY_NAME)) return b.labels.length === 1;
+    return b.labels.every((l) => typeof l === 'string' && LIVE_LABELS.includes(l));
   }
   if (new RegExp(`^/repos/${escapeRe(repo)}/issues/[1-9][0-9]{0,8}/comments$`).test(p)) {
     return exactKeys(b, ['body']) && typeof b.body === 'string' && b.body.startsWith(COMMENT_MARKER) && b.body.length <= MAX_COMMENT_LENGTH;

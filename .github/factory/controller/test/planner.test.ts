@@ -872,3 +872,88 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
     assert.deepEqual(kinds(ds), ['auto_merge/auto_merge_ready']);
   });
 });
+
+describe('auto-ready: unblocked autonomous tasks become ready, within the dispatch limits', () => {
+  const on: typeof policies = structuredClone(policies);
+  on.limits.auto_ready = true;
+  const plan3 = (s: Snapshot, env: PlannerEnv = ON) => plan(s, on, env, NOW);
+  const t = (n: number, task: string, labels: string[] = ['factory:task']) => issue(n, task, labels);
+  const kinds = (ds: Decision[]) => ds.map((d) => `${d.type}/${d.reason}${d.issue !== null ? `#${d.issue}` : ''}`);
+
+  it('off by default: nothing', () => {
+    assert.deepEqual(kinds(run(snapshot({ issues: [t(1, 'en/a')], contractList: [contract('en/a')] }))), []);
+  });
+
+  it('an unblocked auto-tier task → auto_ready/deps_merged (label:ready), keyed on the issue and contract', () => {
+    const ds = plan3(snapshot({ issues: [t(1, 'en/a')], contractList: [contract('en/a')] }));
+    assert.deepEqual(kinds(ds), ['auto_ready/deps_merged#1']);
+    assert.deepEqual([ds[0]!.effect, ds[0]!.task, ds[0]!.source_ids], ['label:ready', 'en/a', ['I_1', commitSha('en/a')]]);
+  });
+
+  it('never: blocked deps, human or core tier, hand-off labels, already ready or picked, merged, no factory:task label, invalid contract', () => {
+    const cases: [string, Snapshot][] = [
+      ['deps', snapshot({ issues: [t(1, 'en/a')], contractList: [contract('en/a', { depends_on: ['core/x'] })] })],
+      ['human', snapshot({ issues: [t(1, 'en/a')], contractList: [contract('en/a', { tier: 'human' })] })],
+      ['core', snapshot({ issues: [t(1, 'core/a')], contractList: [contract('core/a', { scope: ['src/core/a.rs'] })] })],
+      ['needs-human', snapshot({ issues: [t(1, 'en/a', ['factory:task', 'needs-human'])], contractList: [contract('en/a')] })],
+      ['stale-contract', snapshot({ issues: [t(1, 'en/a', ['factory:task', 'stale-contract'])], contractList: [contract('en/a')] })],
+      ['blocked', snapshot({ issues: [t(1, 'en/a', ['factory:task', 'blocked'])], contractList: [contract('en/a')] })],
+      ['merged', snapshot({ issues: [t(1, 'en/a')], pulls: [mergedPull(9, 'en/a')], contractList: [contract('en/a')] })],
+      ['no task label', snapshot({ issues: [t(1, 'en/a', [])], contractList: [contract('en/a')] })],
+      ['invalid', snapshot({ issues: [t(1, 'en/a')], contractList: [contract('en/a', { valid: false })] })],
+    ];
+    for (const [what, s] of cases) assert.ok(!kinds(plan3(s)).some((k) => k.startsWith('auto_ready')), what);
+  });
+
+  it('a dependency merged (this run sees the merge) → its dependent becomes ready', () => {
+    const s = snapshot({ issues: [t(2, 'en/b')], pulls: [mergedPull(9, 'en/a')], contractList: [contract('en/a'), contract('en/b', { depends_on: ['en/a'] })] });
+    assert.deepEqual(kinds(plan3(s)), ['auto_ready/deps_merged#2']);
+  });
+
+  it('fills only free WIP slots, in dependency-depth then priority order; in-flight and waiting-ready tasks hold slots', () => {
+    const contracts = [
+      contract('en/a', { priority: 2, area: 'a' }),
+      contract('en/b', { priority: 1, area: 'b' }),
+      contract('en/c', { priority: 3, area: 'c' }),
+      contract('en/d', { area: 'd' }),
+      contract('en/run', { area: 'r' }),
+    ];
+    // One task in flight: 2 free slots (WIP 3). b (priority 1) then a (priority 2).
+    let s = snapshot({ issues: [t(1, 'en/a'), t(2, 'en/b'), t(3, 'en/c'), t(4, 'en/run', ['factory:task', 'factory:picked'])], contractList: contracts, history: pickedRecently(['en/run']) });
+    assert.deepEqual(kinds(plan3(s)), ['auto_ready/deps_merged#2', 'auto_ready/deps_merged#1']);
+    // A ready issue still waiting (here: no budget known) holds a slot too: only one more.
+    s = snapshot({ issues: [t(1, 'en/a'), t(2, 'en/b'), t(4, 'en/run', ['factory:task', 'factory:picked']), t(5, 'en/d', ['factory:task', 'factory:ready'])], contractList: contracts, history: pickedRecently(['en/run']), factory_aic_today: null });
+    assert.deepEqual(kinds(plan3(s)).filter((k) => k.startsWith('auto_ready')), ['auto_ready/deps_merged#2']);
+  });
+
+  it('a ready issue blocked on its dependencies holds no slot or area (its prerequisite becomes ready)', () => {
+    // B (ready) depends on A (not ready); both in area x, nothing in flight.
+    const s = snapshot({
+      issues: [t(1, 'en/a'), t(2, 'en/b', ['factory:task', 'factory:ready'])],
+      contractList: [contract('en/a', { area: 'x' }), contract('en/b', { area: 'x', depends_on: ['en/a'] })],
+    });
+    assert.deepEqual(kinds(plan3(s)).filter((k) => k.startsWith('auto_ready')), ['auto_ready/deps_merged#1']);
+  });
+
+  it('respects area locks (skips to the next candidate) and counts this run\'s dispatches', () => {
+    const s = snapshot({
+      issues: [t(1, 'en/a'), t(2, 'en/b'), t(3, 'en/go', ['factory:task', 'factory:ready'])],
+      contractList: [contract('en/a', { area: 'x', priority: 1 }), contract('en/b', { area: 'y', priority: 2 }), contract('en/go', { area: 'x' })],
+    });
+    const ds = kinds(plan3(s));
+    assert.ok(ds.includes('dispatched/would_dispatch#3'));
+    assert.deepEqual(ds.filter((k) => k.startsWith('auto_ready')), ['auto_ready/deps_merged#2'], 'en/a shares area x with the task dispatched now');
+  });
+
+  it('the kill switch holds it', () => {
+    assert.deepEqual(kinds(plan3(snapshot({ issues: [t(1, 'en/a')], contractList: [contract('en/a')] }), { FACTORY_ENABLED: undefined })), ['kill_switch/kill_switch']);
+  });
+
+  it('auto-strict tasks only after the promotion (no start_as: human)', () => {
+    const s = snapshot({ issues: [t(1, 'core/a')], contractList: [contract('core/a', { tier: 'auto-strict', scope: ['src/core/a.rs'] })] });
+    assert.deepEqual(kinds(plan3(s)), []);
+    const promoted: typeof policies = structuredClone(on);
+    delete (promoted.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+    assert.deepEqual(kinds(plan(s, promoted, ON, NOW)), ['auto_ready/deps_merged#1']);
+  });
+});

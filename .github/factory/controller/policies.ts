@@ -117,6 +117,8 @@ export function parsePolicies(texts: PolicyTexts): Policies {
     },
     human_queue: { max_items: num(l, 'limits', 'human_queue.max_items') },
     fail_closed: bool(l, 'limits', 'fail_closed'),
+    // Optional switch (default off): only an explicit `true` turns auto-ready on.
+    auto_ready: get(l, 'auto_ready') === true,
   };
   if (limits.wip.start > limits.wip.max) throw new Error('policy limits: wip.start > wip.max');
   if (!limits.fail_closed) throw new Error('policy limits: controller v1 requires fail_closed: true');
