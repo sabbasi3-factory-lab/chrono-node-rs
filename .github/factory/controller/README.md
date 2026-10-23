@@ -172,7 +172,9 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `needs_human` | `max_repairs` | repairs ≥ `limits.task.max_repairs` | `label:needs-human` |
 | `needs_human` | `missing_heldout_seed` | the newest `ci` run on the PR head finished (`success`/`failure`) without a trusted held-out seed (see "Held-out seed" below); checked before any repair | `label:needs-human` |
 | `needs_human` | `missing_failure_signature` | failed run whose signature can't be derived from the `checks` job's step results (fail closed) | `label:needs-human` |
-| `needs_human` | `task_budget_exhausted` | task AIC ≥ `budgets.per_task.max_aic` | `label:needs-human` |
+| `needs_human` | `task_budget_exhausted` | the task's spend (spend collector, today and yesterday: measured runs plus reservations, attributed by run name; runs naming no task count against every task) plus this repair's cap (`per_run.repair + per_run.threat_detection`) would exceed `budgets.per_task.max_aic` | `label:needs-human` |
+| `needs_human` | `task_budget_unknown` | a repair is due but the task's spend can't be read: no repair is paid for | `label:needs-human` |
+| `needs_human` | `ci_not_repairable` | the newest `ci` run on the PR head ended `timed_out` or `startup_failure`: only a plain `failure` is repaired | `label:needs-human` |
 | `needs_human` | `task_timeout` | picked > `max_wall_clock_hours` ago and not merged | `label:needs-human` |
 | `needs_human` | `pick_time_unknown` | issue has `factory:picked` but no pick time in the history window, so it could never time out (fail closed) | `label:needs-human` |
 | `stale_contract` | `contract_changed` | PR `Contract-SHA:` isn't a ≥7-hex prefix of the contract's last commit SHA on main | `label:stale-contract` |
@@ -296,6 +298,7 @@ v1's own dry-run decisions never count as real work.
 | Run | Counted as |
 |---|---|
 | queued / in progress | **reserved** at the per-run caps: implement runs `budgets.per_run.implement + per_run.threat_detection` (500 + 400); repair runs (`repair.lock.yml`) `per_run.repair + per_run.threat_detection` (300 + 400). If either workflow's runs can't be listed, spend is unknown |
+| per task | runs from today **and yesterday**, attributed by run name (`Implement <task> #<issue> attempt <n>`, `Repair …`); runs naming no task count against every task. An unreadable run from yesterday makes only the per-task spend unknown (repairs fail closed) |
 | queued / in progress, but every job completed including the final `conclusion` job | **measured** like a completed run (GitHub's run-level status can lag long after the jobs end; seen on run 39832616767). If the jobs can't be listed, it stays reserved |
 | completed, no job's `Execute …` step ran (e.g. dispatch validation failed) | **0** (`no_inference`): no model calls were made |
 | completed, with model calls | **measured** from gh-aw's `usage` artifact: the agent from `agent_usage.json` → `ai_credits`; every other job whose `Execute …` step ran (detection, and evals or others if gh-aw adds them) from the sum of `ai_credits_this_response` in `<job>/token_usage.jsonl` |

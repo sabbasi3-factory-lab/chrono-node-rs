@@ -22,8 +22,8 @@
 //                                 on the next poll.
 //   dispatch_workflow:repair    → record `repair_dispatched` (attempt, run, signature, head) first,
 //                                 then dispatch repair.lock.yml on main with the task, issue, PR,
-//                                 attempt, contract SHA, failed head, failure signature, failed run
-//                                 and the canonical aw_context for that PR. A failed dispatch isn't
+//                                 attempt, contract SHA, failed head, failure signature and failed
+//                                 run (no aw_context: the workflow checks out the head). A failed dispatch isn't
 //                                 retried (the run is recorded as repaired); the next ci failure or
 //                                 the task time limit hands it on (fail closed, never double spend).
 //   alert:owner, pause_dispatch, none → no GitHub effect; recorded in the audit log only
@@ -44,7 +44,7 @@
 //   is posted only if no comment with its marker exists yet.
 
 import { dedupeKey } from './audit.ts';
-import { REPAIR_WORKFLOW, repairAwContext, CLOSE_COMPLETED, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate } from './github.ts';
+import { REPAIR_WORKFLOW, CLOSE_COMPLETED, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate } from './github.ts';
 import { isRecorded, LABEL_NEEDS_HUMAN, LABEL_PICKED } from './planner.ts';
 import type { AuditEvent, Decision, GitHubClient, JsonObject, PendingEvent, PlannerEnv, ReasonCode } from './types.ts';
 
@@ -119,6 +119,8 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   task_budget_exhausted: "The task has used its AI budget.",
   task_timeout: 'The task has been in progress longer than the time limit.',
   pick_time_unknown: 'The issue is marked picked, but the audit log has no pick time for it.',
+  ci_not_repairable: 'CI did not finish normally on this PR (timed out, or never started). That is not repaired automatically: a person decides.',
+  task_budget_unknown: "CI failed, but this task's AI spend can't be read, so no repair is paid for.",
   repair_unavailable: 'CI failed. There is no repair workflow yet, so a person decides what to do.',
   merge_queue_rejected: 'This PR left the merge queue without merging (the merge-group checks failed, or it was removed). It is not re-queued automatically.',
   enqueue_failed: 'Every check passed, but GitHub refused to add this PR to the merge queue.',
@@ -314,7 +316,6 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
             head_sha: head,
             failure_signature: d.failure_signature,
             run_id: String(d.run_id),
-            aw_context: repairAwContext(deps.repo, d.pr),
           },
         },
       });

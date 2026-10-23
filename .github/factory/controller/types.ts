@@ -197,6 +197,12 @@ export interface Snapshot {
   factory_aic_today: number | null;
   /** Per task id, derived from non-dry-run audit events. */
   history: Record<string, TaskHistory>;
+  /**
+   * Per-task AIC over today and yesterday from the spend collector (measured runs plus
+   * reservations for runs in flight; runs naming no task count against every task). Null or
+   * missing: unknown, so no repair is paid for (fail closed).
+   */
+  task_spend?: { by_task: Record<string, number>; unattributed: number } | null;
 }
 
 // ---------------------------------------------------------------- decisions
@@ -225,6 +231,8 @@ export type ReasonCode =
   | 'pick_time_unknown'
   | 'missing_heldout_seed'
   | 'repair_unavailable'
+  | 'ci_not_repairable'
+  | 'task_budget_unknown'
   | 'auto_merge_ready'
   | 'task_merged'
   | 'merge_queue_rejected'

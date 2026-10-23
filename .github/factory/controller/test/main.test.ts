@@ -433,7 +433,7 @@ describe('main: live mode (FACTORY_ENABLED=true)', () => {
     assert.deepEqual(order, ['record', `POST /repos/${REPO}/actions/workflows/repair.lock.yml/dispatches`]);
     assert.deepEqual(calls[0]!.body, {
       ref: 'main',
-      inputs: { task: 'en/a', issue: '3', pr: '21', attempt: '2', contract_sha: 'c'.repeat(40), head_sha: hex40('1'), failure_signature: 'step:golden', run_id: '500', aw_context: `{"item_type":"pull_request","item_number":21,"repo":"${REPO}"}` },
+      inputs: { task: 'en/a', issue: '3', pr: '21', attempt: '2', contract_sha: 'c'.repeat(40), head_sha: hex40('1'), failure_signature: 'step:golden', run_id: '500' },
     });
     assert.deepEqual([recorded[0]!.attempt, recorded[0]!.run_id, recorded[0]!.failure_signature, recorded[0]!.head_sha], [2, 500, 'step:golden', hex40('1')]);
     assert.doesNotThrow(() => assertAllowedRequest(REPO, 'POST', calls[0]!.path, calls[0]!.body, 'live'));
@@ -851,8 +851,7 @@ describe('Project status sync in the run', () => {
 
 describe('write allowlist: the repair dispatch', () => {
   const sha = hex40('a');
-  const aw = (pr: number) => `{"item_type":"pull_request","item_number":${pr},"repo":"${REPO}"}`;
-  const good = { task: 'en/a', issue: '3', pr: '21', attempt: '2', contract_sha: sha, head_sha: sha, failure_signature: 'step:golden', run_id: '500', aw_context: aw(21) };
+  const good = { task: 'en/a', issue: '3', pr: '21', attempt: '2', contract_sha: sha, head_sha: sha, failure_signature: 'step:golden', run_id: '500' };
   const ok = (inputs: unknown, ref = 'main', mode: 'live' | 'dry-run' = 'live') => {
     try {
       assertAllowedRequest(REPO, 'POST', `/repos/${REPO}/actions/workflows/repair.lock.yml/dispatches`, { ref, inputs }, mode);
@@ -861,20 +860,18 @@ describe('write allowlist: the repair dispatch', () => {
       return false;
     }
   };
-  it('live allows exactly repair.lock.yml on main with nine validated inputs and the canonical aw_context for that PR', () => {
+  it('live allows exactly repair.lock.yml on main with its eight validated inputs (no aw_context)', () => {
     assert.equal(ok(good), true);
     assert.equal(ok(good, 'main', 'dry-run'), false);
     assert.equal(ok(good, 'dev'), false);
     const bad = [
-      { ...good, aw_context: aw(22) },
-      { ...good, aw_context: `{"item_type":"pull_request","item_number":21}` },
-      { ...good, aw_context: `{"item_number":21,"item_type":"pull_request","repo":"${REPO}"}` },
+      { ...good, aw_context: `{"item_type":"pull_request","item_number":21,"repo":"${REPO}"}` },
       { ...good, attempt: '1' },
       { ...good, failure_signature: 'step:Golden Tests' },
       { ...good, head_sha: sha.slice(0, 7) },
       { ...good, run_id: '0' },
       { ...good, extra: 'x' },
-      (({ aw_context: _a, ...rest }) => rest)(good),
+      (({ run_id: _r, ...rest }) => rest)(good),
     ];
     for (const b of bad) assert.equal(ok(b), false, JSON.stringify(b));
   });

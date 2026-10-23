@@ -51,12 +51,6 @@ export const ENQUEUE_MUTATION = 'mutation($id: ID!, $head: GitObjectID!) { enque
 /** The workflows live mode may dispatch, on `main` only. */
 export const IMPLEMENT_WORKFLOW = 'implement.lock.yml';
 export const REPAIR_WORKFLOW = 'repair.lock.yml';
-
-/**
- * The gh-aw `aw_context` for a repair: it makes gh-aw check out exactly this PR. The repair
- * workflow rejects any other value, and the allowlist sends only this one.
- */
-export const repairAwContext = (repo: string, pr: number): string => JSON.stringify({ item_type: 'pull_request', item_number: pr, repo });
 /** The only labels live mode may add. It never adds `factory:ready`. */
 export const LIVE_LABELS: readonly string[] = ['factory:picked', 'needs-human', 'blocked', 'stale-contract'];
 /** The only labels live mode may remove, and only from a finished task's issue (close_task). */
@@ -100,7 +94,7 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
     if (!exactKeys(b, ['ref', 'inputs']) || b.ref !== 'main') return false;
     const i = b.inputs;
     return (
-      exactKeys(i, ['task', 'issue', 'pr', 'attempt', 'contract_sha', 'head_sha', 'failure_signature', 'run_id', 'aw_context']) &&
+      exactKeys(i, ['task', 'issue', 'pr', 'attempt', 'contract_sha', 'head_sha', 'failure_signature', 'run_id']) &&
       isTaskId(i.task) &&
       typeof i.issue === 'string' && /^[1-9][0-9]{0,8}$/.test(i.issue) &&
       typeof i.pr === 'string' && /^[1-9][0-9]{0,8}$/.test(i.pr) &&
@@ -108,8 +102,7 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
       typeof i.contract_sha === 'string' && HEX40.test(i.contract_sha) &&
       typeof i.head_sha === 'string' && HEX40.test(i.head_sha) &&
       typeof i.failure_signature === 'string' && /^(step|job):[a-z0-9_-]{1,100}$/.test(i.failure_signature) &&
-      typeof i.run_id === 'string' && /^[1-9][0-9]{0,19}$/.test(i.run_id) &&
-      i.aw_context === repairAwContext(repo, Number(i.pr))
+      typeof i.run_id === 'string' && /^[1-9][0-9]{0,19}$/.test(i.run_id)
     );
   }
   if (p === `/repos/${repo}/actions/workflows/${IMPLEMENT_WORKFLOW}/dispatches`) {
