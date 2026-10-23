@@ -3,7 +3,8 @@
 // records it as a `spend_snapshot`. Plain code, no AI, read-only API calls.
 //
 // Per implement run created today (UTC):
-//   - queued / in progress  → reserved at the per-run caps (implement + threat detection)
+//   - queued / in progress  → reserved at the per-run caps (implement + threat detection),
+//                             unless every job has finished (see below)
 //   - completed             → measured from gh-aw's `usage` artifact, for every job whose
 //                             `Execute …` step ran (made model calls):
 //       agent:       `agent_usage.json` → `ai_credits`
@@ -11,6 +12,10 @@
 //                    (detection today; evals or others if gh-aw adds them)
 //     A job whose `Execute …` step was skipped (for example, the dispatch validation failed)
 //     made no model calls: 0, provably. A run where none ran needs no artifact.
+// A run GitHub still reports as queued/in progress, but whose jobs have all completed including
+// the final `conclusion` job (it needs every other job, so nothing can start after it), is
+// treated as completed and measured: the run-level status sometimes lags for a long time. If its
+// jobs can't be listed, it stays reserved.
 // If any completed run's spend can't be read (no artifact, expired, malformed, a re-run, an API
 // error), today's spend is UNKNOWN and the planner dispatches nothing (fail closed). No runs → 0.
 
@@ -20,6 +25,8 @@ import type { GitHubClient, JsonObject } from './types.ts';
 
 export const IMPLEMENT_WORKFLOW_FILE = 'implement.lock.yml';
 export const USAGE_ARTIFACT = 'usage';
+/** The implement workflow's last job: it needs every other job. */
+export const FINAL_JOB = 'conclusion';
 export const MAX_ARTIFACT_BYTES = 20 * 1024 * 1024;
 const MAX_ENTRIES = 1000;
 const JOB_NAME = /^[a-z][a-z0-9_]{0,39}$/;
@@ -152,6 +159,11 @@ export function jobInferred(job: unknown): boolean {
   return steps.some((s) => /^Execute /.test(String(rec(s).name ?? '')) && rec(s).conclusion !== 'skipped');
 }
 
+/** Every job completed, and the final job (which needs all the others) is among them. */
+export function allJobsFinished(jobs: readonly unknown[]): boolean {
+  return jobs.length > 0 && jobs.every((j) => rec(j).status === 'completed') && jobs.some((j) => rec(j).name === FINAL_JOB);
+}
+
 const round = (n: number): number => Math.round(n * 1e6) / 1e6;
 
 /** Today's (UTC) implement spend. Never throws for unreadable data: that's { aic: null }. */
@@ -175,14 +187,22 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
     if (typeof run.created_at !== 'string' || !run.created_at.startsWith(day)) continue;
     // A re-run (even one still queued or running) carries earlier attempts' spend: unknown.
     if (run.run_attempt !== 1) return unknown(`run ${id} was re-run (attempt ${String(run.run_attempt)})`);
+    const listJobs = async (): Promise<Rec[]> =>
+      (await paginate(client, `/repos/${repo}/actions/runs/${id}/attempts/1/jobs?per_page=100`, (d) => (Array.isArray(rec(d).jobs) ? (rec(d).jobs as unknown[]) : []))).map(rec);
+    let jobs: Rec[] | null = null;
     if (run.status !== 'completed') {
-      runs.push({ run_id: id, status: 'reserved', aic: caps.implement + caps.threat_detection });
-      continue;
+      try {
+        jobs = await listJobs();
+      } catch {
+        jobs = null; // can't tell: keep the reservation
+      }
+      if (!jobs || !allJobsFinished(jobs)) {
+        runs.push({ run_id: id, status: 'reserved', aic: caps.implement + caps.threat_detection });
+        continue;
+      }
     }
     try {
-      const jobs = (
-        await paginate(client, `/repos/${repo}/actions/runs/${id}/attempts/1/jobs?per_page=100`, (d) => (Array.isArray(rec(d).jobs) ? (rec(d).jobs as unknown[]) : []))
-      ).map(rec);
+      jobs ??= await listJobs();
       const inferred = jobs.filter(jobInferred).map((j) => String(j.name));
       const bad = inferred.find((n) => !JOB_NAME.test(n));
       if (bad !== undefined) return unknown(`run ${id} has a job with an unexpected name`);

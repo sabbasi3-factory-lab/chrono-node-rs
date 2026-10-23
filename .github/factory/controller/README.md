@@ -287,6 +287,7 @@ v1's own dry-run decisions never count as real work.
 | Run | Counted as |
 |---|---|
 | queued / in progress | **reserved** at the per-run caps: `budgets.per_run.implement + per_run.threat_detection` (500 + 400) |
+| queued / in progress, but every job completed including the final `conclusion` job | **measured** like a completed run (GitHub's run-level status can lag long after the jobs end; seen on run 39832616767). If the jobs can't be listed, it stays reserved |
 | completed, no job's `Execute …` step ran (e.g. dispatch validation failed) | **0** (`no_inference`): no model calls were made |
 | completed, with model calls | **measured** from gh-aw's `usage` artifact: the agent from `agent_usage.json` → `ai_credits`; every other job whose `Execute …` step ran (detection, and evals or others if gh-aw adds them) from the sum of `ai_credits_this_response` in `<job>/token_usage.jsonl` |
 

@@ -72,6 +72,12 @@ interface FakeRun {
   detection?: string | null;
   artifacts?: { id: number; name: string; expired?: boolean }[];
   zips?: Record<number, Uint8Array | { status: number }>;
+  /** Job-level status for every job (default: none given, as for a completed run). */
+  jobStatus?: string;
+  /** Add the final `conclusion` job with this status. */
+  conclusion?: string;
+  /** HTTP status for the jobs list (default 200). */
+  jobsStatus?: number;
 }
 
 function world(runs: FakeRun[], listStatus = 200): FakeGitHub {
@@ -82,12 +88,14 @@ function world(runs: FakeRun[], listStatus = 200): FakeGitHub {
       : { status: listStatus, data: null },
   );
   for (const x of runs) {
-    gh.addRoute('GET', new RegExp(`^${r}/actions/runs/${x.id}/attempts/1/jobs$`), () => ({
+    const st = x.jobStatus === undefined ? {} : { status: x.jobStatus };
+    gh.addRoute('GET', new RegExp(`^${r}/actions/runs/${x.id}/attempts/1/jobs$`), () => x.jobsStatus ? { status: x.jobsStatus, data: null } : ({
       data: {
         jobs: [
-          { name: 'activation', steps: [] },
-          ...(x.agent === null ? [] : [{ name: 'agent', ...executed(x.agent ?? 'success') }]),
-          ...(x.detection === null || x.detection === undefined ? [] : [{ name: 'detection', ...executed(x.detection) }]),
+          { name: 'activation', steps: [], ...st },
+          ...(x.agent === null ? [] : [{ name: 'agent', ...executed(x.agent ?? 'success'), ...st }]),
+          ...(x.detection === null || x.detection === undefined ? [] : [{ name: 'detection', ...executed(x.detection), ...st }]),
+          ...(x.conclusion === undefined ? [] : [{ name: 'conclusion', steps: [], status: x.conclusion }]),
         ],
       },
     }));
@@ -108,6 +116,29 @@ describe('spend collector: today\'s implement spend', () => {
   it('a queued or in-progress run is reserved at the per-run caps (implement + threat detection)', async () => {
     const res = await readSpendToday(world([{ id: 1, status: 'in_progress' }, { id: 2, status: 'queued' }]), REPO, NOW, CAPS);
     assert.deepEqual(res, { aic: 1800, runs: [{ run_id: 1, status: 'reserved', aic: 900 }, { run_id: 2, status: 'reserved', aic: 900 }] });
+  });
+
+  it('a run still reported in progress whose jobs all completed, including conclusion, is measured (stale run status)', async () => {
+    const gh = world([{ id: 9, status: 'in_progress', jobStatus: 'completed', conclusion: 'completed', detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(30, [2]) } }]);
+    assert.deepEqual(await readSpendToday(gh, REPO, NOW, CAPS), { aic: 32, runs: [{ run_id: 9, status: 'measured', aic: 32 }] });
+  });
+
+  it('stays reserved while any job is unfinished, the conclusion job is missing or unfinished, or the jobs can\'t be listed', async () => {
+    const cases: FakeRun[] = [
+      { id: 10, status: 'in_progress', jobStatus: 'in_progress', conclusion: 'queued' },
+      { id: 11, status: 'in_progress', jobStatus: 'completed' },
+      { id: 12, status: 'in_progress', jobStatus: 'completed', conclusion: 'in_progress' },
+      { id: 13, status: 'queued', jobsStatus: 500 },
+      { id: 14, status: 'in_progress', jobStatus: 'completed', conclusion: 'completed', agent: null, detection: null, jobsStatus: 404 },
+    ];
+    for (const c of cases) {
+      assert.deepEqual(await readSpendToday(world([c]), REPO, NOW, CAPS), { aic: 900, runs: [{ run_id: c.id, status: 'reserved', aic: 900 }] }, String(c.id));
+    }
+  });
+
+  it('a finished-but-stale run whose usage can\'t be read is unknown, as for a completed run (fail closed)', async () => {
+    const res = await readSpendToday(world([{ id: 15, status: 'in_progress', jobStatus: 'completed', conclusion: 'completed', artifacts: [] }]), REPO, NOW, CAPS);
+    assert.equal(res.aic, null);
   });
 
   it('a completed run is measured from its usage artifact: agent ai_credits + detection responses', async () => {
