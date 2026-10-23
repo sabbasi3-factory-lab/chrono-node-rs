@@ -6,7 +6,7 @@ import { jobInferred, readSpendToday, readZip, runAIC, spendSnapshotFields } fro
 import { readFileSync } from 'node:fs';
 import { NOW, REPO } from './helpers.ts';
 
-const CAPS = { implement: 500, threat_detection: 400 };
+const CAPS = { implement: 500, reviewer_agent: 200, threat_detection: 400 };
 const r = `/repos/${REPO}`;
 
 /** A minimal ZIP writer for tests (stored or deflated entries). */
@@ -80,8 +80,18 @@ interface FakeRun {
   jobsStatus?: number;
 }
 
-function world(runs: FakeRun[], listStatus = 200): FakeGitHub {
+function world(runs: FakeRun[], listStatus = 200, reviewRuns: FakeRun[] = [], reviewListStatus = 200): FakeGitHub {
   const gh = new FakeGitHub(REPO);
+  gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/review\\.lock\\.yml/runs$`), () =>
+    reviewListStatus === 200
+      ? { data: { workflow_runs: reviewRuns.map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z' })) } }
+      : { status: reviewListStatus, data: null },
+  );
+  for (const x of reviewRuns) {
+    gh.addRoute('GET', new RegExp(`^${r}/actions/runs/${x.id}/attempts/1/jobs$`), () => ({ data: { jobs: [{ name: 'agent', ...executed(x.agent ?? 'success') }] } }));
+    gh.addRoute('GET', new RegExp(`^${r}/actions/runs/${x.id}/artifacts$`), () => ({ data: { artifacts: (x.artifacts ?? []).map((a) => ({ expired: false, ...a })) } }));
+    for (const [aid, z] of Object.entries(x.zips ?? {})) gh.addRoute('GET', new RegExp(`^${r}/actions/artifacts/${aid}/zip$`), () => (z instanceof Uint8Array ? { data: z } : { status: z.status, data: null }));
+  }
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), () =>
     listStatus === 200
       ? { data: { workflow_runs: runs.map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z' })) } }
@@ -139,6 +149,19 @@ describe('spend collector: today\'s implement spend', () => {
   it('a finished-but-stale run whose usage can\'t be read is unknown, as for a completed run (fail closed)', async () => {
     const res = await readSpendToday(world([{ id: 15, status: 'in_progress', jobStatus: 'completed', conclusion: 'completed', artifacts: [] }]), REPO, NOW, CAPS);
     assert.equal(res.aic, null);
+  });
+
+  it('reviewer-agent runs count too: in flight → reserved at reviewer_agent + threat detection (600), completed → measured', async () => {
+    const res = await readSpendToday(world([{ id: 1, status: 'in_progress' }], 200, [{ id: 20, status: 'queued' }, { id: 21, artifacts: [{ id: 210, name: 'usage' }], zips: { 210: usageZip(12.5) } }]), REPO, NOW, CAPS);
+    assert.deepEqual(res, { aic: 1512.5, runs: [{ run_id: 1, status: 'reserved', aic: 900 }, { run_id: 20, status: 'reserved', aic: 600 }, { run_id: 21, status: 'measured', aic: 12.5 }] });
+  });
+
+  it('reviewer runs that can\'t be listed (or the workflow is missing) make spend unknown', async () => {
+    for (const status of [404, 500]) {
+      const res = await readSpendToday(world([], 200, [], status), REPO, NOW, CAPS);
+      assert.equal(res.aic, null, String(status));
+      assert.match((res as { reason: string }).reason, /review\.lock\.yml runs could not be listed/);
+    }
   });
 
   it('a completed run is measured from its usage artifact: agent ai_credits + detection responses', async () => {

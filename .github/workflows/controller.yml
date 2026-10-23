@@ -22,7 +22,7 @@ on:
   issues:
     types: [labeled, unlabeled]
   workflow_run:
-    workflows: ["ci", "gates"]
+    workflows: ["ci", "gates", "Review one factory PR"]
     types: [completed]
   pull_request_target:
     types: [opened, reopened, closed, enqueued, dequeued, ready_for_review]
@@ -99,6 +99,8 @@ jobs:
           permission-pull-requests: ${{ steps.mode.outputs.scope }}
           # Project #1 "Factory status" (org-level Projects; read in dry-run).
           permission-organization-projects: ${{ steps.mode.outputs.scope }}
+          # The reviewer agent's `factory-review` check runs (read only, in both modes).
+          permission-checks: read
 
       - name: Run controller (${{ steps.mode.outputs.mode }})
         run: node main.ts
@@ -108,3 +110,5 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          # Only check runs from this App count as the reviewer's verdict (unset: none do).
+          FACTORY_REVIEWER_APP_ID: ${{ vars.FACTORY_REVIEWER_APP_ID }}

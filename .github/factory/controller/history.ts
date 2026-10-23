@@ -49,6 +49,13 @@ export function deriveState(events: AuditEvent[], now: Date): DerivedState {
         (entry(task).enqueued ??= []).push({ pr, head, at: e.timestamp });
         break;
       }
+      case 'review_dispatched': {
+        const pr = e.payload.pr;
+        const head = e.payload.head_sha;
+        if (!task || typeof pr !== 'number' || typeof head !== 'string' || !/^[0-9a-f]{40}$/.test(head)) break;
+        (entry(task).reviews ??= []).push({ pr, head, at: e.timestamp });
+        break;
+      }
       case 'run_finished': {
         const aic = e.payload.aic;
         if (typeof aic !== 'number' || !Number.isFinite(aic) || aic < 0) break;

@@ -32,6 +32,14 @@ export interface RunEnv {
   FACTORY_ENABLED?: string | undefined;
   GITHUB_RUN_ID?: string | undefined;
   GITHUB_EVENT_NAME?: string | undefined;
+  /** The reviewer App's id: only its `factory-review` check runs count. Unset → none do. */
+  FACTORY_REVIEWER_APP_ID?: string | undefined;
+}
+
+/** A positive integer App id, or null (no reviewer verdict is accepted: fail closed). */
+export function reviewerAppId(env: RunEnv): number | null {
+  const raw = env.FACTORY_REVIEWER_APP_ID ?? '';
+  return /^[1-9][0-9]{0,11}$/.test(raw) ? Number(raw) : null;
 }
 
 export interface RunDeps {
@@ -127,6 +135,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         recordedChecks: recordedChecks(audit.events),
         historyTasks: Object.keys(derived.history),
         needBusyJobs: factoryEnabled,
+        reviewerAppId: reviewerAppId(deps.env),
       });
   snapshot.history = { ...derived.history, ...snapshot.history };
 
@@ -283,6 +292,7 @@ async function cli(): Promise<void> {
         FACTORY_ENABLED: process.env.FACTORY_ENABLED,
         GITHUB_RUN_ID: process.env.GITHUB_RUN_ID,
         GITHUB_EVENT_NAME: process.env.GITHUB_EVENT_NAME,
+        FACTORY_REVIEWER_APP_ID: process.env.FACTORY_REVIEWER_APP_ID,
       },
       now: new Date(),
       log,

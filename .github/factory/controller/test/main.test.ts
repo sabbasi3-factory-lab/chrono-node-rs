@@ -7,7 +7,9 @@ import { assertAllowedRequest, COMMENT_MARKER, ENQUEUE_MUTATION, PROJECT_STATUS_
 import { AUDIT_BRANCH, splitLines, verify } from '../audit.ts';
 import { decisionEvent, describe as describeDecision, execute, executeLive, isLive, liveDecision, pendingHandoffs } from '../executor.ts';
 import { FakeGitHub, type RecordedCall } from '../fake.ts';
-import { parseArgs, run, type RunDeps } from '../main.ts';
+import { parseArgs, reviewerAppId, run, type RunDeps } from '../main.ts';
+import { deriveState } from '../history.ts';
+import { readReviewChecks } from '../github.ts';
 import type { Snapshot } from '../types.ts';
 import { checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
 import { dedupeKey } from '../audit.ts';
@@ -842,5 +844,119 @@ describe('Project status sync in the run', () => {
     const result = await run(deps(broken, { env: LIVE_ENV, forceDryRun: false }));
     assert.match(result.summary, /Project status: stopped after 0 update\(s\): project 1 not found/);
     assert.ok(result.appended.some((e) => e.type === 'heartbeat'));
+  });
+});
+
+describe('reviewer agent in the run (live)', () => {
+  const T = 'core/results';
+  const strict: typeof policies = structuredClone(policies);
+  delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  const reviewSnapshot = () => {
+    const c = contract(T, { tier: 'auto-strict', scope: ['src/core/results.rs'] });
+    const pr = pull(21, { task_id: T, contract_sha: c.last_commit_sha, mergeable: 'MERGEABLE', in_merge_queue: false });
+    return snapshot({
+      issues: [issue(1, T, ['factory:ready', 'factory:picked'])],
+      pulls: [pr],
+      contractList: [c],
+      check_runs: [
+        checkRun(490, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, conclusion: 'success' }),
+        checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'success' }),
+      ],
+      history: { [T]: history({ picked_at: '2026-10-16T10:00:00Z' }) },
+    });
+  };
+  const DISPATCH = `/repos/${REPO}/actions/workflows/review.lock.yml/dispatches`;
+
+  it('records review_dispatched (with the head) first, then dispatches review.lock.yml on main with exactly the four inputs', async () => {
+    const gh = liveWorld();
+    gh.addRoute('POST', new RegExp(`^${DISPATCH}$`), () => ({ status: 204, data: null }));
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: reviewSnapshot() }));
+    const ev = result.appended.find((e) => e.type === 'review_dispatched')!;
+    assert.deepEqual([ev.payload.reason, ev.payload.effect, ev.payload.pr, ev.payload.head_sha, ev.payload.dry_run], ['review_needed', 'dispatch_workflow:review', 21, hex40('1'), false]);
+    const calls = gh.calls.filter((c) => c.method === 'POST' && !c.path.includes('/git/') && c.path !== '/graphql');
+    assert.deepEqual(calls.map((c) => [c.path, c.body]), [[DISPATCH, { ref: 'main', inputs: { task: T, pr: '21', head_sha: hex40('1'), contract_sha: commitSha(T) } }]]);
+    for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
+    // The next run sees the record (history.reviews) and doesn't ask again.
+    gh.calls.length = 0;
+    const history2 = deriveState(result.appended, NOW).history[T]!;
+    const s2 = { ...reviewSnapshot(), history: { [T]: { ...history2, picked_at: '2026-10-16T10:00:00Z' } } };
+    const second = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: s2, now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.ok(!gh.calls.some((c) => c.path === DISPATCH));
+    assert.ok(second.decisions.some((d) => d.reason === 'review_pending'));
+  });
+
+  it('a failed dispatch fails the run after the record: never a second review (the timeout hands it to a person)', async () => {
+    const gh = liveWorld();
+    gh.addRoute('POST', new RegExp(`^${DISPATCH}$`), () => ({ status: 500, data: null }));
+    await assert.rejects(run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: reviewSnapshot() })), /dispatches: HTTP 500/);
+    const file = gh.fileAt(AUDIT_BRANCH, 'audit/2026/10/16.jsonl') ?? '';
+    assert.ok(file.includes('"type":"review_dispatched"'), 'recorded before the dispatch');
+  });
+
+  it('dry-run never dispatches a review', async () => {
+    const gh = liveWorld();
+    const lines: string[] = [];
+    await run(deps(gh, { policies: strict, snapshot: reviewSnapshot(), log: (l) => lines.push(l) }));
+    assert.ok(!gh.calls.some((c) => c.path === DISPATCH));
+    assert.ok(lines.some((l) => l.startsWith('[dry-run] would dispatch_workflow:review (review_dispatched/review_needed) task=core/results issue=#1 pr=#21')));
+  });
+});
+
+describe('write allowlist: the review dispatch', () => {
+  const sha = hex40('a');
+  const good = { task: 'core/results', pr: '21', head_sha: sha, contract_sha: sha };
+  const req = (inputs: unknown, ref = 'main', file = 'review.lock.yml') => ['POST', `/repos/${REPO}/actions/workflows/${file}/dispatches`, { ref, inputs }] as const;
+  const ok = (r: readonly [string, string, unknown], mode: 'live' | 'dry-run' = 'live') => {
+    try {
+      assertAllowedRequest(REPO, r[0] as 'POST', r[1], r[2], mode);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  it('live allows exactly review.lock.yml on main with the four validated string inputs', () => {
+    assert.equal(ok(req(good)), true);
+    assert.equal(ok(req(good), 'dry-run'), false);
+    assert.equal(ok(req(good, 'dev')), false);
+    for (const bad of [{ ...good, pr: 21 }, { ...good, pr: '0' }, { ...good, head_sha: sha.slice(0, 7) }, { ...good, contract_sha: 'x' }, { ...good, task: '../x' }, { ...good, aw_context: '{}' }, { task: good.task, pr: good.pr, head_sha: sha }]) {
+      assert.equal(ok(req(bad)), false, JSON.stringify(bad));
+    }
+  });
+});
+
+describe('reviewer checks and history', () => {
+  const APP = 5400001;
+  it('readReviewChecks keeps only factory-review check runs from the reviewer App on that exact head, and parses Reviewed-Head', async () => {
+    const gh = new FakeGitHub(REPO);
+    const head = hex40('1');
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/commits/${head}/check-runs$`), (path) => {
+      assert.match(path, /check_name=factory-review/);
+      const base = { name: 'factory-review', head_sha: head, status: 'completed', conclusion: 'success', started_at: '2026-10-16T11:40:00Z', app: { id: APP }, output: { summary: `Reviewed-Head: ${head}\nNo divergence` } };
+      return {
+        data: {
+          check_runs: [
+            { id: 1, ...base },
+            { id: 2, ...base, app: { id: 15368, slug: 'github-actions' } },
+            { id: 3, ...base, name: 'other' },
+            { id: 4, ...base, head_sha: hex40('2') },
+            { id: 5, ...base, output: { summary: 'Reviewed-Head: nope' } },
+          ],
+        },
+      };
+    });
+    const checks = await readReviewChecks(gh, REPO, [head, 'not-a-sha'], APP);
+    assert.deepEqual(checks.map((c) => [c.id, c.reviewed_head]), [[1, head], [5, null]]);
+  });
+
+  it('reviewerAppId: only a positive integer; anything else means no verdict is accepted', () => {
+    assert.equal(reviewerAppId({ FACTORY_REVIEWER_APP_ID: '5400001' }), 5400001);
+    for (const v of [undefined, '', '0', '-1', 'abc', '12x', ' 5']) assert.equal(reviewerAppId({ FACTORY_REVIEWER_APP_ID: v }), null, String(v));
+  });
+
+  it('history: live review_dispatched events give each task its reviewed heads', () => {
+    const at = '2026-10-16T11:30:00Z';
+    const ev = (dry: boolean) => ({ version: 1 as const, id: 'x', type: 'review_dispatched', timestamp: at, parents: [], sha: 's', payload: { task: 'core/results', pr: 21, head_sha: hex40('1'), dry_run: dry } });
+    assert.deepEqual(deriveState([ev(false)], NOW).history['core/results']!.reviews, [{ pr: 21, head: hex40('1'), at }]);
+    assert.equal(deriveState([ev(true)], NOW).history['core/results'], undefined, 'dry-run plans are not reviews');
   });
 });
