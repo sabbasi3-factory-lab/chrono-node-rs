@@ -6,7 +6,7 @@ import { jobInferred, readSpendToday, readZip, runAIC, spendSnapshotFields } fro
 import { readFileSync } from 'node:fs';
 import { NOW, REPO } from './helpers.ts';
 
-const CAPS = { implement: 500, threat_detection: 400 };
+const CAPS = { implement: 500, repair: 300, threat_detection: 400 };
 const r = `/repos/${REPO}`;
 
 /** A minimal ZIP writer for tests (stored or deflated entries). */
@@ -80,8 +80,13 @@ interface FakeRun {
   jobsStatus?: number;
 }
 
-function world(runs: FakeRun[], listStatus = 200): FakeGitHub {
+function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; status?: string }[] = [], repairListStatus = 200): FakeGitHub {
   const gh = new FakeGitHub(REPO);
+  gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/repair\\.lock\\.yml/runs$`), () =>
+    repairListStatus === 200
+      ? { data: { workflow_runs: repairRuns.map((x) => ({ id: x.id, status: x.status ?? 'in_progress', run_attempt: 1, created_at: '2026-10-16T08:00:00Z' })) } }
+      : { status: repairListStatus, data: null },
+  );
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), () =>
     listStatus === 200
       ? { data: { workflow_runs: runs.map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z' })) } }
@@ -111,6 +116,12 @@ describe('spend collector: today\'s implement spend', () => {
   it('no runs today → 0 (a measured zero, not unknown)', async () => {
     const res = await readSpendToday(world([]), REPO, NOW, CAPS);
     assert.deepEqual(res, { aic: 0, runs: [] });
+  });
+
+  it('repair runs count too: in flight → reserved at repair + threat detection (700); unlistable → unknown', async () => {
+    const res = await readSpendToday(world([{ id: 1, status: 'in_progress' }], 200, [{ id: 40 }]), REPO, NOW, CAPS);
+    assert.deepEqual(res, { aic: 1600, runs: [{ run_id: 1, status: 'reserved', aic: 900 }, { run_id: 40, status: 'reserved', aic: 700 }] });
+    for (const status of [404, 500]) assert.equal((await readSpendToday(world([], 200, [], status), REPO, NOW, CAPS)).aic, null, String(status));
   });
 
   it('a queued or in-progress run is reserved at the per-run caps (implement + threat detection)', async () => {

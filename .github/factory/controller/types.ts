@@ -31,7 +31,7 @@ export interface BudgetsPolicy {
   per_task: { max_aic: number };
   factory_per_day: { max_aic: number; alert_at_pct: number; pause_at_pct: number };
   /** Per-run caps (gh-aw max-ai-credits); used to reserve spend for runs still going. */
-  per_run: { implement: number; threat_detection: number };
+  per_run: { implement: number; repair: number; threat_detection: number };
 }
 
 export type Tier = 'auto' | 'auto-strict' | 'human';

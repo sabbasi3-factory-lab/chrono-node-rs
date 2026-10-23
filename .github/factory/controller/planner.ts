@@ -352,7 +352,7 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     } else if (h.aic_spent >= p.budgets.per_task.max_aic) {
       escalate(decide({ ...failure, type: 'needs_human', reason: 'task_budget_exhausted', effect: 'label:needs-human' }));
     } else {
-      repairs.push(decide({ ...failure, type: 'repair_dispatched', reason: 'ci_failed', effect: 'dispatch_workflow:repair', attempt: h.repairs + 2 }));
+      repairs.push({ ...decide({ ...failure, type: 'repair_dispatched', reason: 'ci_failed', effect: 'dispatch_workflow:repair', attempt: h.repairs + 2 }), head_sha: pr.head_sha });
     }
   }
 

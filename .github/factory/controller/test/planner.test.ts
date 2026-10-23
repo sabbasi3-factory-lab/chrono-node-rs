@@ -778,3 +778,25 @@ describe('task done: a merged task leaves the pipeline', () => {
     assert.deepEqual(run(doneWorld()), run(doneWorld()));
   });
 });
+
+describe('repair loop: attempts, stop rules and the head', () => {
+  it('first failure → repair attempt 2 on the failed head; second (new signature) → attempt 3; then max_repairs → a person', () => {
+    const first = run(failingPrWorld('step:golden'));
+    const d1 = find(first, 'ci_failed');
+    assert.deepEqual([d1.type, d1.attempt, d1.failure_signature, d1.head_sha], ['repair_dispatched', 2, 'step:golden', hex40('1')]);
+    const afterOne = history({ picked_at: PICKED_RECENTLY, repairs: 1, failure_signatures: ['step:golden'], repaired_run_ids: [400] });
+    assert.equal(find(run(failingPrWorld('step:clippy', afterOne)), 'ci_failed').attempt, 3);
+    const afterTwo = history({ picked_at: PICKED_RECENTLY, repairs: 2, failure_signatures: ['step:golden', 'step:clippy'], repaired_run_ids: [400, 450] });
+    assert.deepEqual(reasons(run(failingPrWorld('step:fmt', afterTwo))), ['max_repairs']);
+  });
+
+  it('the same signature again → repeated_signature (a person), never a third try at the same failure', () => {
+    const afterOne = history({ picked_at: PICKED_RECENTLY, repairs: 1, failure_signatures: ['step:golden'], repaired_run_ids: [400] });
+    assert.deepEqual(reasons(run(failingPrWorld('step:golden', afterOne))), ['repeated_signature']);
+  });
+
+  it('a run already repaired is never repaired twice', () => {
+    const h = history({ picked_at: PICKED_RECENTLY, repairs: 1, failure_signatures: ['step:golden'], repaired_run_ids: [500] });
+    assert.deepEqual(reasons(run(failingPrWorld('step:golden', h))), []);
+  });
+});
