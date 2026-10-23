@@ -125,6 +125,18 @@ jobs:
           seed=$(cat "$RUNNER_TEMP/factory-heldout/seed")
           node compare/compare.js --seed "$seed" --phrases 2000 --rust ../target/debug/chrono-rs-json
 
+      # Auto-strict (core, common, calculation, dependencies, or a contract with tier auto-strict):
+      # the full regression. The whole-crate golden suite above already checks every ported case
+      # in every configuration; this adds a 10,000-phrase held-out comparison with the same trusted
+      # fresh seed. The controller reads this step's result from the jobs API (runner metadata, not
+      # log text) and won't enqueue an auto-strict PR unless it succeeded. Keep the name exact.
+      - name: Full regression (auto-strict) - held-out comparison, 10000 phrases
+        if: steps.scope.outputs.strict == 'true'
+        working-directory: harness
+        run: |
+          seed=$(cat "$RUNNER_TEMP/factory-heldout/seed")
+          node compare/compare.js --seed "$seed" --phrases 10000 --rust ../target/debug/chrono-rs-json
+
       # After the run (even if it failed): reveal the seed and salt for the commitment above.
       - name: Reveal the held-out seed
         if: always()

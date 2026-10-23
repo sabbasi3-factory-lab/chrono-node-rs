@@ -359,6 +359,13 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       // ---- reviewer agent (auto-strict only): a pass from the reviewer App on this exact head,
       // posted after the controller asked for it, is required. Anything else fails closed.
       if (mergeTier(c, p) === 'auto-strict') {
+        // Full regression first (DESIGN §9 strict gates): the `checks` job's auto-strict step
+        // must have succeeded on this head. The run is finished, so a skipped or missing step
+        // won't change: a person decides (never a review or a merge without it).
+        if (run.full_regression !== 'success') {
+          escalate(decide({ ...base, type: 'needs_human', reason: 'full_regression_missing', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id, 'full_regression'] }));
+          continue;
+        }
         const forHead = (history(task).reviews ?? []).filter((r) => r.pr === pr.number && r.head === pr.head_sha).sort((a, b) => a.at.localeCompare(b.at));
         const asked = forHead.filter((r) => r.contract === c.last_commit_sha);
         // A review of this head against another (or an unknown) contract never counts, and a second

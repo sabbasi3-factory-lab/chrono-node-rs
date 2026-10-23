@@ -864,7 +864,7 @@ describe('reviewer agent in the run (live)', () => {
       contractList: [c],
       check_runs: [
         checkRun(490, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, conclusion: 'success' }),
-        checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'success' }),
+        checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'success', full_regression: 'success' }),
       ],
       history: { [T]: history({ picked_at: '2026-10-16T10:00:00Z' }) },
     });
