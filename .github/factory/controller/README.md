@@ -266,9 +266,10 @@ The planner picks the newest run for the PR head: the highest `run_id`, then `ru
 - **`merge_group` runs** are recorded as `check_result` but never trigger repairs.
 - **The repair workflow** (`repair.md`, gh-aw, the implementer's pinned model, `max-ai-credits: 300`
   from `budgets.per_run.repair`): trusted steps first prove the dispatch is the failed head of that
-  open agent PR (same-repo branch, trailers, contract on main, the failed `ci` run on that head, the
-  canonical `aw_context`), and lay out the failure as data (the trusted signature, the `checks` job's
-  step results, and error lines from its log, which PR code printed, so untrusted). The agent fixes
+  open agent PR (same-repo branch, trailers, contract on main, the failed `ci` run on that head, an
+  empty `aw_context`), check out exactly that head on the PR's branch name (gh-aw's own PR checkout
+  refuses App dispatchers), and give the agent one file, `failure.txt`: the trusted signature and the
+  `checks` job's step results, then error lines from its log (printed by PR code, so untrusted). The agent fixes
   the scope file offline and pushes one commit to the same PR branch (`push-to-pull-request-branch`:
   `[factory] ` title prefix required, protected files blocked, no fallback PR), or explains on the
   issue why it can't. CI then runs on the new head, and the loop continues: at most
@@ -333,7 +334,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
 | `label:needs-human` | add `needs-human` to the PR and/or issue, then one templated comment on the PR (or the issue) |
 | `label:blocked` | add `blocked`, then one templated comment |
 | `label:stale-contract` | add `stale-contract`, then one templated comment |
-| `dispatch_workflow:repair` | record `repair_dispatched` first (attempt, failed run, failure signature, failed head: the attempt counter is in the audit log), then dispatch `repair.lock.yml` on `main` with `{task, issue, pr, attempt, contract_sha, head_sha, failure_signature, run_id, aw_context}`. `aw_context` is exactly `{"item_type":"pull_request","item_number":<pr>,"repo":"<repo>"}`: it makes gh-aw check out that PR, and the repair workflow rejects any other value. A failed dispatch isn't retried (that run counts as repaired); the next failure or the task time limit hands it on |
+| `dispatch_workflow:repair` | record `repair_dispatched` first (attempt, failed run, failure signature, failed head: the attempt counter is in the audit log), then dispatch `repair.lock.yml` on `main` with exactly `{task, issue, pr, attempt, contract_sha, head_sha, failure_signature, run_id}` (no `aw_context`: the workflow checks out the failed head itself). A failed dispatch isn't retried (that run counts as repaired); the next failure or the task time limit hands it on |
 | `enqueue_merge` | GraphQL `enqueuePullRequest` for the PR with `expectedHeadOid` = the planned head (exact mutation), then record `auto_merge` with its head. If GitHub refuses (GraphQL error or HTTP 4xx): re-read the PR head. If it moved, the plan is stale, nothing is recorded, and the next poll re-plans. Otherwise `needs_human`/`enqueue_failed` (label + comment). Once that failure is recorded, that PR and head are never sent to GitHub again, even if the hand-off was interrupted. HTTP 5xx fails the run, and the next poll retries. |
 | `close_task` | record `task_done` (once), then remove `factory:ready` and `factory:picked` from the issue (a 404 for a label that's already gone is fine), then close it with `state_reason: completed`. The effect re-runs whenever it's planned (the issue is still open), so an interrupted close finishes on the next poll; the event isn't recorded twice. This also backfills tasks merged before this stage existed (#45). |
 | `alert:owner`, `pause_dispatch`, `none` | no GitHub effect; recorded in the audit log only |
@@ -354,7 +355,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
   sentence per reason code, the label, and the run link. No text from issues, PRs or agents.
 - **The client's allowlist** (`assertAllowedRequest(…, 'live')`) independently allows only:
   `POST actions/workflows/implement.lock.yml/dispatches` with `ref: main` and exactly the four
-  validated string inputs (no `aw_context`); `repair.lock.yml` with exactly its nine validated inputs, including the canonical `aw_context` for that PR; `POST issues/<n>/labels` with labels from
+  validated string inputs (no `aw_context`); `repair.lock.yml` with exactly its eight validated inputs (no `aw_context`); `POST issues/<n>/labels` with labels from
   `factory:picked`, `needs-human`, `blocked`, `stale-contract`; `POST issues/<n>/comments` with a body
   starting with the template marker (≤ 2,000 chars); and the exact `enqueuePullRequest` GraphQL
   mutation with one `PR_…` node id and a 40-hex `expectedHeadOid` (no other variables, no queue jumping);
