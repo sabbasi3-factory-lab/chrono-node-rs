@@ -20,6 +20,8 @@ import {
   RECENT_RUN_PAGES,
   readSnapshot,
   uncheckedHeads,
+  FULL_REGRESSION_STEP,
+  stepConclusion,
 } from '../github.ts';
 import { FakeGitHub } from '../fake.ts';
 import type { RecordedCheck } from '../github.ts';
@@ -357,7 +359,7 @@ describe('readChecksJobLog (trusted sources only)', () => {
       },
     }));
     const r = await readChecksJobLog(gh, REPO, 7, 1);
-    assert.deepEqual(r, { heldout_seed: null, failure_signature: 'step:cargo-clippy-d-warnings' });
+    assert.deepEqual(r, { heldout_seed: null, failure_signature: 'step:cargo-clippy-d-warnings', full_regression: null });
     assert.ok(!gh.calls.some((c) => c.path.includes('/logs')), 'no log read without the trusted step');
   });
 });
@@ -399,5 +401,39 @@ describe('CI signals only when the change leaves .github/ alone (review #22)', (
     const gh = fakeWorld();
     assert.equal(await leavesGithubDirAlone(gh, REPO, hex40('1'), hex40('1')), true);
     assert.equal(await leavesGithubDirAlone(gh, REPO, 'main', hex40('1')), false);
+  });
+});
+
+describe('full regression step (auto-strict evidence, runner metadata only)', () => {
+  it('stepConclusion: the exactly named step, or null when missing or ambiguous', () => {
+    const st = (name: string, conclusion: string) => ({ number: 1, name, conclusion });
+    assert.equal(stepConclusion([st('a', 'success'), st(FULL_REGRESSION_STEP, 'success')], FULL_REGRESSION_STEP), 'success');
+    assert.equal(stepConclusion([st(FULL_REGRESSION_STEP, 'skipped')], FULL_REGRESSION_STEP), 'skipped');
+    assert.equal(stepConclusion([st('Full regression', 'success')], FULL_REGRESSION_STEP), null, 'a similar name is not the step');
+    assert.equal(stepConclusion([st(FULL_REGRESSION_STEP, 'success'), st(FULL_REGRESSION_STEP, 'success')], FULL_REGRESSION_STEP), null, 'two steps with the name: not trusted');
+    assert.equal(stepConclusion([], FULL_REGRESSION_STEP), null);
+  });
+
+  it('readChecksJobLog reports the step from the checks job, even when the seed is not trusted', async () => {
+    const gh = new FakeGitHub(REPO);
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/actions/runs/7/attempts/1/jobs$`), () => ({
+      data: { jobs: [{ id: 70, name: 'checks', conclusion: 'success', steps: [{ number: 1, name: 'Set up job', conclusion: 'success' }, { number: 2, name: 'something else first', conclusion: 'success' }, { number: 9, name: FULL_REGRESSION_STEP, conclusion: 'success' }] }] },
+    }));
+    const r = await readChecksJobLog(gh, REPO, 7, 1);
+    assert.deepEqual(r, { heldout_seed: null, failure_signature: null, full_regression: 'success' });
+  });
+});
+
+describe('full regression: recorded once, then reused', () => {
+  it('a recorded run reuses its full_regression (no second read of the jobs)', async () => {
+    const recorded = new Map<string, RecordedCheck>([['4242/attempts/1', { heldout_seed: '9', failure_signature: null, full_regression: 'success' }]]);
+    const runs = await readCheckRuns(fakeWorld(), REPO, NOW, 24, recorded, new Set([hex40('1')]), MAIN_SHA);
+    assert.equal(runs.find((r) => r.run_id === 4242)!.full_regression, 'success');
+  });
+
+  it('recordedChecks restores it from check_result events', async () => {
+    const { recordedChecks } = await import('../main.ts');
+    const ev = { version: 1 as const, id: 'x', type: 'check_result', timestamp: '2026-10-16T11:10:00Z', parents: [], sha: 's', payload: { run_id: 5, run_attempt: 1, full_regression: 'success', dry_run: false } };
+    assert.equal(recordedChecks([ev]).get('5/attempts/1')!.full_regression, 'success');
   });
 });

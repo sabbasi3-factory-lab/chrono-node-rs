@@ -76,6 +76,7 @@ export function observe(s: Snapshot, now: Date, windowHours = OBSERVE_WINDOW_HOU
     };
     if (run.heldout_seed !== null) fields.heldout_seed = run.heldout_seed;
     if (run.failure_signature !== null) fields.failure_signature = run.failure_signature;
+    if (typeof run.full_regression === 'string') fields.full_regression = run.full_regression;
     add(run.updated_at, 'check_result', [`${run.run_id}/attempts/${run.run_attempt}`], fields);
   }
 

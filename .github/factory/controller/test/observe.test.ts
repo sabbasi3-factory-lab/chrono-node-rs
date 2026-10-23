@@ -128,3 +128,12 @@ describe('history (from audit events)', () => {
     assert.equal(d.factory_aic_today, 50);
   });
 });
+
+describe('full regression is recorded on check_result', () => {
+  it('present only when known', () => {
+    const at = '2026-10-16T11:10:00Z';
+    const evs = observe(snapshot({ check_runs: [checkRun(1, { updated_at: at, full_regression: 'success' }), checkRun(2, { updated_at: at })] }), NOW);
+    const byRun = Object.fromEntries(evs.filter((e) => e.type === 'check_result').map((e) => [e.fields.run_id, e.fields.full_regression]));
+    assert.deepEqual(byRun, { 1: 'success', 2: undefined });
+  });
+});

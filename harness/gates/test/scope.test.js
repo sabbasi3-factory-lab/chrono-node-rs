@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert");
-const { globToRegExp, evaluate, trailer } = require("../scope");
+const { globToRegExp, evaluate, trailer, needsFullRegression } = require("../scope");
 
 const PROTECTED = [".github/**", "contracts/**", "upstream/**", "tests/golden/**", "Cargo.toml", "Cargo.lock", "vendor/**"];
 const CONTRACT = {
@@ -144,4 +144,17 @@ test("with a contract, protected and out-of-scope paths and a stale SHA are all 
     assert.match(all, /out of contract scope: src\/core\/chrono.rs/);
     assert.match(all, /stale contract/);
     assert.doesNotMatch(all, /out of contract scope: contracts/); // reported once, as protected
+});
+
+test("full regression: auto-strict paths or contract tier; fail closed without the policy list", () => {
+    const STRICT = ["src/core/**", "src/calculation/**", "src/common/**", "Cargo.toml", "Cargo.lock", "vendor/**"];
+    const run = (changed, contractTier = null, autoStrictGlobs = STRICT) => needsFullRegression({ changed, autoStrictGlobs, contractTier });
+    assert.strictEqual(run(["src/locales/en/parsers/weekday.rs"]), false);
+    assert.strictEqual(run(["src/locales/en/parsers/weekday.rs", "src/core/results.rs"]), true);
+    assert.strictEqual(run(["src/common/refiners/merge.rs"]), true);
+    assert.strictEqual(run(["Cargo.lock"]), true);
+    assert.strictEqual(run(["src/locales/en/parsers/x.rs"], "auto-strict"), true, "contract tier");
+    assert.strictEqual(run(["src/locales/en/parsers/x.rs"], "auto"), false);
+    assert.strictEqual(run(["src/locales/en/parsers/x.rs"], null, []), true, "no auto-strict paths in the policy: fail closed");
+    assert.strictEqual(needsFullRegression({ changed: ["src/locales/en/parsers/x.rs"], autoStrictGlobs: undefined, contractTier: null }), true);
 });

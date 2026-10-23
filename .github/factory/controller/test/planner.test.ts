@@ -797,7 +797,7 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
       contractList: [c],
       check_runs: [
         checkRun(490, { workflow: 'gates', event: 'pull_request_target', head_sha: MAIN_TIP, candidate_sha: pr.head_sha, conclusion: 'success' }),
-        checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'success' }),
+        checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'success', full_regression: 'success' }),
       ],
       history: { [c.id!]: history({ picked_at: '2026-10-16T10:00:00Z', reviews: o.reviews ?? [] }) },
       review_checks: o.checks ?? [],
@@ -867,7 +867,17 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
     }
   });
 
-  it('auto-tier (locale) PRs never need a review', () => {
+  it('full regression first: without a successful auto-strict step on this head → needs_human/full_regression_missing, no review', () => {
+    for (const fr of ['skipped', 'failure', null, undefined]) {
+      const s = world();
+      s.check_runs = s.check_runs.map((r) => (r.workflow === 'ci' ? { ...r, full_regression: fr } : r));
+      const ds = plan2(s);
+      assert.deepEqual(kinds(ds), ['needs_human/full_regression_missing'], String(fr));
+      assert.deepEqual(ds[0]!.source_ids, ['500/attempts/1', 'PR_21', 'full_regression']);
+    }
+  });
+
+  it('auto-tier (locale) PRs never need a review or the full regression', () => {
     const ds = plan2(world({ contract: { tier: 'auto', scope: ['src/locales/en/parsers/x.rs'] } }));
     assert.deepEqual(kinds(ds), ['auto_merge/auto_merge_ready']);
   });
