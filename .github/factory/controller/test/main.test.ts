@@ -961,3 +961,138 @@ describe('reviewer checks and history', () => {
     assert.equal(deriveState([ev(true)], NOW).history['core/results'], undefined, 'dry-run plans are not reviews');
   });
 });
+
+describe('auto-revert in the run (live)', () => {
+  const T = 'core/results';
+  const strict: typeof policies = structuredClone(policies);
+  delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  const MERGE = hex40('f');
+  const PARENT = hex40('7');
+  const PARENT_TREE = hex40('8');
+  const revertSnapshot = () =>
+    snapshot({
+      pulls: [{ ...mergedPull(21, T), merge_commit_sha: MERGE }],
+      contractList: [contract(T, { tier: 'auto-strict', scope: ['src/core/results.rs'] })],
+      check_runs: [checkRun(900, { event: 'push', head_sha: MERGE, candidate_sha: MERGE, conclusion: 'failure', run_attempt: 2, failure_signature: 'step:golden', first_attempt_signature: 'step:golden' })],
+      main_sha: MERGE,
+      history: { [T]: history({ enqueued: [{ pr: 21, head: hex40('1'), at: '2026-10-15T07:30:00Z' }] }) },
+    });
+  const revertWorld = (pullsStatus = 201) => {
+    const gh = liveWorld();
+    gh.commits.set(MERGE, { tree: hex40('9'), parents: [PARENT], message: 'merge' });
+    gh.commits.set(PARENT, { tree: PARENT_TREE, parents: [], message: 'parent' });
+    let opened: number | null = null;
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/pulls$`), () => ({ data: opened === null ? [] : [{ number: opened }] }));
+    gh.addRoute('POST', new RegExp(`^/repos/${REPO}/pulls$`), () => {
+      if (pullsStatus !== 201) return { status: pullsStatus, data: null };
+      opened = 30;
+      return { status: 201, data: { number: 30 } };
+    });
+    return gh;
+  };
+
+  it('hands off on the PR, then opens factory/revert-21 (parent tree on top of the merge) and its templated PR, then records auto_revert', async () => {
+    const gh = revertWorld();
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: revertSnapshot() }));
+    const branchSha = gh.refs.get('heads/factory/revert-21')!;
+    assert.deepEqual(gh.commits.get(branchSha), { tree: PARENT_TREE, parents: [MERGE], message: `Revert #21 (factory auto-revert)\n\nci failed on main at ${MERGE} (run 900). Reverts ${MERGE}.` });
+    const pr = gh.calls.find((c) => c.method === 'POST' && c.path === `/repos/${REPO}/pulls`)!.body as Record<string, string>;
+    assert.deepEqual([pr.title, pr.head, pr.base], ['Revert #21 (factory auto-revert)', 'factory/revert-21', 'main']);
+    assert.ok(String(pr.body).startsWith(COMMENT_MARKER));
+    const ev = result.appended.find((e) => e.type === 'auto_revert')!;
+    assert.deepEqual([ev.payload.reason, ev.payload.effect, ev.payload.pr, ev.payload.revert_pr, ev.payload.revert_commit, ev.payload.merge_commit_sha, ev.payload.dry_run], ['main_regressed', 'open_revert', 21, 30, branchSha, MERGE, false]);
+    assert.ok(result.appended.findIndex((e) => e.type === 'needs_human') < result.appended.findIndex((e) => e.type === 'auto_revert'), 'a person is told first');
+    assert.deepEqual(gh.calls.find((c) => c.path === `/repos/${REPO}/issues/21/labels`)!.body, { labels: ['needs-human'] });
+    for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
+  });
+
+  it('a failed PR creation fails the run; the retry reuses the branch, opens the PR once and records once', async () => {
+    const gh = revertWorld(502);
+    await assert.rejects(run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: revertSnapshot() })), /pulls: HTTP 502/);
+    const first = gh.refs.get('heads/factory/revert-21')!;
+    const gh2 = gh as typeof gh & { routes: typeof gh.routes };
+    gh2.routes.unshift({ method: 'POST', path: new RegExp(`^/repos/${REPO}/pulls$`), handler: () => ({ status: 201, data: { number: 31 } }) });
+    const second = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: revertSnapshot(), now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.equal(gh.refs.get('heads/factory/revert-21'), first, 'the branch is reused, not recreated');
+    assert.equal(gh.calls.filter((c) => c.method === 'POST' && c.path === `/repos/${REPO}/git/refs` && (c.body as { ref: string }).ref.includes('revert')).length, 1);
+    assert.equal(second.appended.filter((e) => e.type === 'auto_revert').length, 1);
+    assert.equal(second.appended.find((e) => e.type === 'auto_revert')!.payload.revert_pr, 31);
+  });
+
+  it('a branch with that name that isn\'t exactly the revert fails closed (nothing opened or recorded)', async () => {
+    const gh = revertWorld();
+    gh.commits.set(hex40('a'), { tree: hex40('b'), parents: [MERGE], message: 'something else' });
+    gh.refs.set('heads/factory/revert-21', hex40('a'));
+    await assert.rejects(run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: revertSnapshot() })), /isn't the revert/);
+    assert.ok(!gh.calls.some((c) => c.method === 'POST' && c.path === `/repos/${REPO}/pulls`));
+  });
+});
+
+describe('write allowlist: auto-revert', () => {
+  const sha = hex40('a');
+  const ok = (method: 'POST', path: string, body: unknown, mode: 'live' | 'dry-run' = 'live') => {
+    try {
+      assertAllowedRequest(REPO, method, path, body, mode);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const body = `${COMMENT_MARKER} · auto-revert\n\nReverts #21.`;
+  it('live allows only factory/revert-<n> branches and their exactly templated PRs to main', () => {
+    assert.equal(ok('POST', `/repos/${REPO}/git/refs`, { ref: 'refs/heads/factory/revert-21', sha }), true);
+    assert.equal(ok('POST', `/repos/${REPO}/git/refs`, { ref: 'refs/heads/factory/revert-21', sha }, 'dry-run'), false);
+    for (const b of [{ ref: 'refs/heads/main', sha }, { ref: 'refs/heads/factory/revert-x', sha }, { ref: 'refs/tags/factory/revert-21', sha }, { ref: 'refs/heads/factory/revert-21', sha: 'x' }, { ref: 'refs/heads/factory/revert-21', sha, force: true }]) {
+      assert.equal(ok('POST', `/repos/${REPO}/git/refs`, b), false, JSON.stringify(b));
+    }
+    const pr = { title: 'Revert #21 (factory auto-revert)', head: 'factory/revert-21', base: 'main', body };
+    assert.equal(ok('POST', `/repos/${REPO}/pulls`, pr), true);
+    for (const b of [{ ...pr, title: 'Revert #22 (factory auto-revert)' }, { ...pr, head: 'feature' }, { ...pr, base: 'dev' }, { ...pr, body: 'hi' }, { ...pr, draft: true }]) {
+      assert.equal(ok('POST', `/repos/${REPO}/pulls`, b), false, JSON.stringify(b));
+    }
+  });
+});
+
+describe('post-merge confirmation re-run (live)', () => {
+  const T = 'core/results';
+  const strict: typeof policies = structuredClone(policies);
+  delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  it('records main_ci_rerun first, then re-runs that run once (no body); a second poll does nothing', async () => {
+    const MERGE = hex40('f');
+    const s = () => snapshot({
+      pulls: [{ ...mergedPull(21, T), merge_commit_sha: MERGE }],
+      contractList: [contract(T, { tier: 'auto-strict', scope: ['src/core/results.rs'] })],
+      check_runs: [checkRun(900, { event: 'push', head_sha: MERGE, candidate_sha: MERGE, conclusion: 'failure', failure_signature: 'step:golden' })],
+      main_sha: MERGE,
+      history: { [T]: history({ enqueued: [{ pr: 21, head: hex40('1'), at: '2026-10-15T07:30:00Z' }] }) },
+    });
+    const gh = liveWorld();
+    gh.addRoute('POST', new RegExp(`^/repos/${REPO}/actions/runs/900/rerun$`), () => ({ status: 201, data: null }));
+    const result = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: s() }));
+    const ev = result.appended.find((e) => e.type === 'main_ci_rerun')!;
+    assert.deepEqual([ev.payload.reason, ev.payload.effect, ev.payload.run_id], ['confirm_regression', 'rerun_ci', 900]);
+    const reruns = gh.calls.filter((c) => c.path.endsWith('/rerun'));
+    assert.deepEqual(reruns.map((c) => [c.method, c.path, c.body]), [['POST', `/repos/${REPO}/actions/runs/900/rerun`, undefined]]);
+    assert.ok(!gh.calls.some((c) => c.path.includes('/labels')), 'no hand-off before confirmation');
+    for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'live'), `${c.method} ${c.path}`);
+    gh.calls.length = 0;
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: strict, snapshot: s(), now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.ok(!gh.calls.some((c) => c.path.endsWith('/rerun')), 'one re-run per failed run');
+  });
+
+  it('allowlist: a re-run of one run with no body, live only', () => {
+    const ok = (path: string, body: unknown, mode: 'live' | 'dry-run' = 'live') => {
+      try {
+        assertAllowedRequest(REPO, 'POST', path, body, mode);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    assert.equal(ok(`/repos/${REPO}/actions/runs/900/rerun`, undefined), true);
+    assert.equal(ok(`/repos/${REPO}/actions/runs/900/rerun`, undefined, 'dry-run'), false);
+    assert.equal(ok(`/repos/${REPO}/actions/runs/900/rerun`, { enable_debug_logging: true }), false);
+    assert.equal(ok(`/repos/${REPO}/actions/runs/900/rerun-failed-jobs`, undefined), false);
+    assert.equal(ok(`/repos/other/repo/actions/runs/900/rerun`, undefined), false);
+  });
+});

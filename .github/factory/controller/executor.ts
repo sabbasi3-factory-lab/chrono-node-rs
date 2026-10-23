@@ -25,6 +25,15 @@
 //                                 If the dispatch fails, the record stands: no second review is
 //                                 sent, and with no verdict the PR goes to a person after
 //                                 REVIEW_TIMEOUT_MINUTES (fail closed, never a double spend).
+//   open_revert                 → auto-strict regression on main: a commit with the merge's parent
+//                                 tree on top of the merge commit, on branch `factory/revert-<pr>`,
+//                                 and a templated PR to main (each step reuses what exists, so a
+//                                 retry never duplicates), then record `auto_revert`. The planner
+//                                 enqueues the revert PR once its own ci and gates pass. The
+//                                 `needs_human/main_regressed` hand-off is a separate decision.
+//   rerun_ci                    → a first post-merge ci failure on main: record, then re-run that
+//                                 run once (POST actions/runs/<id>/rerun). Only a second failed
+//                                 attempt with the same signature confirms a regression.
 //   dispatch_workflow:repair    → no repair workflow exists yet: escalated instead to
 //                                 needs_human/repair_unavailable (label + comment)
 //   alert:owner, pause_dispatch, none → no GitHub effect; recorded in the audit log only
@@ -45,7 +54,7 @@
 //   is posted only if no comment with its marker exists yet.
 
 import { dedupeKey } from './audit.ts';
-import { CLOSE_COMPLETED, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate, REVIEW_WORKFLOW } from './github.ts';
+import { CLOSE_COMPLETED, REVERT_BRANCH, REVERT_TITLE, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate, REVIEW_WORKFLOW } from './github.ts';
 import { isRecorded, LABEL_NEEDS_HUMAN, LABEL_PICKED } from './planner.ts';
 import type { AuditEvent, Decision, GitHubClient, JsonObject, PendingEvent, PlannerEnv, ReasonCode } from './types.ts';
 
@@ -124,6 +133,9 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   repair_unavailable: 'CI failed. There is no repair workflow yet, so a person decides what to do.',
   full_regression_missing: "This auto-strict change has no successful full regression (the `checks` job's 10,000-phrase held-out step) on its head. A person decides.",
   review_contract_changed: 'This head was reviewed against a different contract version than the current one. A person decides (no second review is sent automatically).',
+  main_regressed: '`ci` failed on main at this merge commit (the post-merge check). If this was an auto-strict change merged by the controller, a revert PR is opened and queued automatically; otherwise a person decides.',
+  revert_head_changed: "This auto-revert PR's head is no longer the revert commit the controller created (someone pushed to it, or the record is gone). It is not queued automatically. A person decides.",
+  revert_checks_failed: 'The checks failed on this auto-revert PR, so it is not queued. A person decides.',
   review_objected: 'The reviewer agent (a second model) objected to this change: see the `factory-review` check. A person decides.',
   review_timeout: 'No verdict from the reviewer agent in time (the review run failed, was flagged or posted nothing). A person decides.',
   merge_queue_rejected: 'This PR left the merge queue without merging (the merge-group checks failed, or it was removed). It is not re-queued automatically.',
@@ -199,6 +211,52 @@ export function pendingHandoffs(events: AuditEvent[]): PendingHandoff[] {
 }
 
 export const MAX_RECONCILE_PER_RUN = 20;
+
+const HEX40 = /^[0-9a-f]{40}$/;
+
+/**
+ * The revert of a squash-merged PR on main: a commit whose tree is the merge's parent's tree, with
+ * the merge as its parent, on `factory/revert-<pr>`, and a PR from it. Reuses an existing branch
+ * (only if it is exactly that revert) and an existing PR, so a retried run never duplicates.
+ */
+async function openRevert(deps: LiveDeps, pr: number, merge: string, runId: number | null, task: string | null): Promise<{ pr: number; commit: string }> {
+  const r = `/repos/${deps.repo}`;
+  const mergeCommit = (await deps.client.request('GET', `${r}/git/commits/${merge}`)).data as { parents?: { sha?: unknown }[] } | null;
+  const parents = mergeCommit?.parents ?? [];
+  const parentSha = parents[0]?.sha;
+  if (parents.length !== 1 || typeof parentSha !== 'string' || !HEX40.test(parentSha)) throw new Error(`merge commit ${merge.slice(0, 7)} doesn't have exactly one parent`);
+  const parentTree = ((await deps.client.request('GET', `${r}/git/commits/${parentSha}`)).data as { tree?: { sha?: unknown } } | null)?.tree?.sha;
+  if (typeof parentTree !== 'string' || !HEX40.test(parentTree)) throw new Error('parent commit has no tree');
+  const branch = REVERT_BRANCH(pr);
+  const ref = await deps.client.request('GET', `${r}/git/ref/heads/${branch}`, { allowStatuses: [404] });
+  let commit: string;
+  const existing = (ref.data as { object?: { sha?: unknown } } | null)?.object?.sha;
+  if (ref.status === 200 && typeof existing === 'string') {
+    const c = (await deps.client.request('GET', `${r}/git/commits/${existing}`)).data as { tree?: { sha?: unknown }; parents?: { sha?: unknown }[] } | null;
+    if (c?.tree?.sha !== parentTree || c.parents?.length !== 1 || c.parents[0]?.sha !== merge) throw new Error(`branch ${branch} exists but isn't the revert of ${merge.slice(0, 7)}`);
+    commit = existing;
+  } else {
+    const message = `${REVERT_TITLE(pr)}\n\nci failed on main at ${merge}${runId === null ? '' : ` (run ${runId})`}. Reverts ${merge}.`;
+    const created = (await deps.client.request('POST', `${r}/git/commits`, { body: { message, tree: parentTree, parents: [merge] } })).data as { sha?: unknown } | null;
+    if (typeof created?.sha !== 'string' || !HEX40.test(created.sha)) throw new Error('revert commit not created');
+    commit = created.sha;
+    await deps.client.request('POST', `${r}/git/refs`, { body: { ref: `refs/heads/${branch}`, sha: commit } });
+  }
+  const owner = deps.repo.split('/')[0];
+  const open = await paginate(deps.client, `${r}/pulls?head=${owner}:${encodeURIComponent(branch)}&state=all&per_page=100`, (d) => (Array.isArray(d) ? d : []));
+  const found = open.map((x) => (x as { number?: unknown }).number).find((n): n is number => typeof n === 'number');
+  if (found !== undefined) return { pr: found, commit };
+  const body = [
+    `${COMMENT_MARKER} · auto-revert`,
+    '',
+    `Reverts #${pr}${task ? ` (task \`${task}\`)` : ''}: \`ci\` failed on main at its merge commit \`${merge}\`${runId === null ? '' : ` (run ${runId})`}.`,
+    '',
+    'Opened by the controller and queued once its own checks pass. The task is handed to a person. The controller reverts at most once until a person adds `factory:revert-reviewed` here.',
+  ].join('\n');
+  const created = (await deps.client.request('POST', `${r}/pulls`, { body: { title: REVERT_TITLE(pr), head: branch, base: 'main', body } })).data as { number?: unknown } | null;
+  if (typeof created?.number !== 'number') throw new Error('revert PR not created');
+  return { pr: created.number, commit };
+}
 
 async function addLabel(deps: LiveDeps, number: number, label: string): Promise<void> {
   await deps.client.request('POST', `/repos/${deps.repo}/issues/${number}/labels`, { body: { labels: [label] } });
@@ -309,6 +367,15 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
       await deps.client.request('POST', `/repos/${deps.repo}/actions/workflows/${REVIEW_WORKFLOW}/dispatches`, {
         body: { ref: 'main', inputs: { task: d.task, pr: String(d.pr), head_sha: head, contract_sha: d.contract_sha } },
       });
+    } else if (d.effect === 'rerun_ci') {
+      if (d.run_id === null) throw new Error('rerun decision has no run');
+      await deps.record(ev); // first: one re-run per failed run, never retried
+      await deps.client.request('POST', `/repos/${deps.repo}/actions/runs/${d.run_id}/rerun`);
+    } else if (d.effect === 'open_revert') {
+      const merge = d.merge_commit_sha;
+      if (d.pr === null || typeof merge !== 'string' || !/^[0-9a-f]{40}$/.test(merge)) throw new Error('revert decision has no PR or merge commit');
+      const revert = await openRevert(deps, d.pr, merge, d.run_id, d.task);
+      await deps.record({ ...ev, fields: { ...ev.fields, merge_commit_sha: merge, revert_pr: revert.pr, revert_commit: revert.commit } });
     } else if (d.effect === 'dispatch_workflow:repair') {
       throw new Error('repair dispatch is not available');
     } else {

@@ -115,6 +115,10 @@ export interface PullSnap {
   mergeable?: string | null;
   /** GitHub's `isInMergeQueue`. */
   in_merge_queue?: boolean;
+  /** The PR's head branch name (`headRefName`); revert PRs use `factory/revert-<pr>`. */
+  head_ref?: string | null;
+  /** Timeline `LabeledEvent`s: who added which label (to tell a person from a bot). */
+  labeled_events?: { label: string; actor: string | null; actor_is_bot: boolean; at: string }[];
 }
 
 export interface ContractSnap {
@@ -135,7 +139,7 @@ export interface ContractSnap {
   area: string | null;
 }
 
-export type CheckEvent = 'pull_request' | 'pull_request_target' | 'merge_group';
+export type CheckEvent = 'pull_request' | 'pull_request_target' | 'merge_group' | 'push';
 
 export interface CheckRunSnap {
   run_id: number;
@@ -167,6 +171,8 @@ export interface CheckRunSnap {
    * run's signals aren't trusted (a `.github/` change).
    */
   full_regression?: string | null;
+  /** For a re-run (attempt ≥ 2): attempt 1's recorded failure signature, or null if unknown. */
+  first_attempt_signature?: string | null;
 }
 
 export interface TaskHistory {
@@ -179,6 +185,8 @@ export interface TaskHistory {
   enqueued?: { pr: number; head: string; at: string }[];
   /** Live reviewer-agent dispatches (from `review_dispatched` events): which PR head, against which contract, when. */
   reviews?: { pr: number; head: string; contract: string | null; at: string }[];
+  /** Live auto-reverts (from `auto_revert` events): the reverted PR and its revert PR. */
+  reverts?: { pr: number; revert_pr: number | null; revert_commit?: string | null; at: string }[];
 }
 
 /**
@@ -229,6 +237,8 @@ export type DecisionType =
   | 'dispatched'
   | 'auto_merge'
   | 'review_dispatched'
+  | 'auto_revert'
+  | 'main_ci_rerun'
   | 'task_done'
   | 'repair_dispatched'
   | 'needs_human'
@@ -257,6 +267,13 @@ export type ReasonCode =
   | 'review_contract_changed'
   | 'full_regression_missing'
   | 'task_merged'
+  | 'main_regressed'
+  | 'revert_limit'
+  | 'revert_not_safe'
+  | 'revert_ready'
+  | 'revert_checks_failed'
+  | 'revert_head_changed'
+  | 'confirm_regression'
   | 'merge_queue_rejected'
   | 'enqueue_failed'
   | 'gates_failed'
@@ -291,6 +308,8 @@ export type Effect =
   | 'dispatch_workflow:review'
   | 'enqueue_merge'
   | 'close_task'
+  | 'open_revert'
+  | 'rerun_ci'
   | 'label:needs-human'
   | 'label:blocked'
   | 'label:stale-contract'
@@ -312,6 +331,8 @@ export interface Decision {
   failure_signature: string | null;
   /** The PR head this decision is about (merge-stage decisions). */
   head_sha?: string | null;
+  /** The merge commit on main to revert (auto_revert). */
+  merge_commit_sha?: string | null;
   /** Deterministic GitHub IDs/SHAs this decision is about; feeds the dedupe key. */
   source_ids: string[];
 }

@@ -2,6 +2,7 @@
 // policies to a list of decisions with stable reason codes. No I/O, no clock
 // reads (`now` is an argument), no randomness.
 
+import { CONTROLLER_LOGIN, REVERT_REVIEWED_LABEL, revertedPrOf } from './github.ts';
 import { contractPath, contractShaMatches, isCoreTask, sameArea, taskTier } from './tasks.ts';
 import type {
   CheckRunSnap,
@@ -109,6 +110,11 @@ function wait(reason: ReasonCode, base: Decision): Decision {
   return { ...base, type: 'wait', reason, effect: 'none' };
 }
 
+/** A revert PR the controller opened: its App authored it, from `factory/revert-<n>`. */
+export function isControllerRevertPr(pr: PullSnap): boolean {
+  return revertedPrOf(pr.head_ref) !== null && pr.author_is_bot && (pr.author ?? '').replace(/\[bot\]$/, '') === CONTROLLER_LOGIN;
+}
+
 export function killSwitchEnabled(env: PlannerEnv): boolean {
   // Only the exact string "true" enables dispatch; everything else fails closed.
   return env.FACTORY_ENABLED === 'true';
@@ -162,8 +168,17 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   const mergedTasks = new Set<string>();
   /** Task → its first merged PR (lowest number), the one that finished it. */
   const mergedPr = new Map<string, PullSnap>();
+  // A merged PR the controller auto-reverted no longer counts: its code is gone from main. The
+  // ledger is durable: the controller's own revert PRs (open or merged, in any age) plus the
+  // recorded `auto_revert` events, so it outlives the audit window.
+  const controllerRevertPrs = s.pulls.filter(isControllerRevertPr);
+  const revertedPrs = new Set<number>();
+  for (const r of controllerRevertPrs) if (r.state !== 'closed') revertedPrs.add(revertedPrOf(r.head_ref)!);
+  for (const h of Object.values(s.history)) for (const r of h.reverts ?? []) revertedPrs.add(r.pr);
+  const revertCommitOf = new Map<number, string>();
+  for (const h of Object.values(s.history)) for (const r of h.reverts ?? []) if (r.revert_pr !== null && r.revert_commit) revertCommitOf.set(r.revert_pr, r.revert_commit);
   for (const pr of [...s.pulls].sort((a, b) => a.number - b.number)) {
-    if (pr.state !== 'merged' || !pr.task_id) continue;
+    if (pr.state !== 'merged' || !pr.task_id || revertedPrs.has(pr.number)) continue;
     mergedTasks.add(pr.task_id);
     if (!mergedPr.has(pr.task_id)) mergedPr.set(pr.task_id, pr);
   }
@@ -212,6 +227,72 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   // Reviewer-agent dispatches: they spend AI credits, so they pass the same gates as repairs.
   const reviews: Decision[] = [];
 
+  // ---- post-merge regression on main (ci on push to main). The newest finished run per commit.
+  const mainRuns = new Map<string, CheckRunSnap>();
+  for (const r of s.check_runs) {
+    if (r.workflow !== CI_WORKFLOW || r.event !== 'push' || r.status !== 'completed' || !r.conclusion) continue;
+    const prev = mainRuns.get(r.head_sha);
+    if (!prev || r.run_id > prev.run_id || (r.run_id === prev.run_id && r.run_attempt > prev.run_attempt)) mainRuns.set(r.head_sha, r);
+  }
+  // Earlier auto-reverts a person hasn't marked reviewed: while any exists, the controller never
+  // reverts again by itself. Reviewed = the revert PR has `factory:revert-reviewed`, added by a
+  // person (timeline: a non-bot actor), not by any App. Recorded reverts without a PR count too.
+  const pullByNumber = new Map(s.pulls.map((x) => [x.number, x]));
+  const reviewedByPerson = (x: PullSnap | undefined): boolean =>
+    !!x && x.labels.includes(REVERT_REVIEWED_LABEL) && (x.labeled_events ?? []).some((e) => e.label === REVERT_REVIEWED_LABEL && !e.actor_is_bot && e.actor !== null);
+  const unreviewedReverts = [
+    ...controllerRevertPrs.filter((r) => !reviewedByPerson(r)).map((r) => r.number),
+    ...Object.values(s.history).flatMap((h) => h.reverts ?? []).filter((r) => r.revert_pr === null || !reviewedByPerson(pullByNumber.get(r.revert_pr))).map((r) => r.revert_pr ?? -1),
+  ];
+  const reverts: Decision[] = [];
+  for (const pr of [...s.pulls].sort((a, b) => a.number - b.number)) {
+    if (pr.state !== 'merged' || !pr.merge_commit_sha) continue;
+    const run = mainRuns.get(pr.merge_commit_sha);
+    if (!run || !FAILED_CONCLUSIONS.has(run.conclusion!)) continue;
+    if (revertedPrs.has(pr.number)) continue; // already reverted
+    // Only auto-strict merges the controller made (that exact head), and its own revert PRs, are
+    // watched here. Every other merge is a person's to watch (no hand-off: dormant until promotion).
+    const task = pr.task_id;
+    const c = task ? contractOf(s, task) : null;
+    const ours = task !== null && (history(task).enqueued ?? []).some((e) => e.pr === pr.number && e.head === pr.head_sha);
+    const strictOurs = !!c && mergeTier(c, p) === 'auto-strict' && ours;
+    const isRevert = isControllerRevertPr(pr);
+    if (!strictOurs && !isRevert) continue;
+    const base = { task, pr: pr.number, run_id: run.run_id };
+    // Confirm first: one failure may be flaky. Re-run the check once; only a second failed
+    // attempt with the same trusted signature is a regression.
+    if (run.run_attempt < 2) {
+      reverts.push(decide({ ...base, type: 'main_ci_rerun', reason: 'confirm_regression', effect: 'rerun_ci', source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, 'rerun'] }));
+      continue;
+    }
+    const confirmed = run.failure_signature !== null && run.failure_signature === run.first_attempt_signature;
+    const runId = `${run.run_id}/attempts/${run.run_attempt}`;
+    // A person is told on the merged PR, once (label + comment).
+    out.push(decide({ ...base, type: 'needs_human', reason: 'main_regressed', effect: 'label:needs-human', source_ids: [pr.node_id, 'main_regressed'] }));
+    if (!confirmed || isRevert) continue; // different signatures, or a revert that broke main: a person decides
+    if (unreviewedReverts.length > 0) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'revert_limit', effect: 'none', source_ids: [runId, pr.node_id, 'revert_limit'] }));
+      continue;
+    }
+    // Only a revert of main's tip is mechanical (the parent's tree); anything merged since needs a person.
+    if (s.main_sha !== pr.merge_commit_sha) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'revert_not_safe', effect: 'none', source_ids: [runId, pr.node_id, `main:${s.main_sha ?? 'unknown'}`] }));
+      continue;
+    }
+    reverts.push({ ...decide({ ...base, type: 'auto_revert', reason: 'main_regressed', effect: 'open_revert', source_ids: [pr.node_id, pr.merge_commit_sha, 'revert'] }), merge_commit_sha: pr.merge_commit_sha });
+    // Same poll: the task no longer counts as merged (no dependent is admitted, no task_done),
+    // unless another merged, unreverted PR delivers it.
+    if (task) {
+      revertedPrs.add(pr.number);
+      const other = s.pulls.find((x) => x.state === 'merged' && x.task_id === task && !revertedPrs.has(x.number));
+      if (other) mergedPr.set(task, other);
+      else {
+        mergedTasks.delete(task);
+        mergedPr.delete(task);
+      }
+    }
+  }
+
   // ---- task done: an open task issue whose task has a merged PR leaves the pipeline (close the
   // issue as completed, remove factory:ready/factory:picked). Gated by the kill switch only (no
   // escalation can hold it back). It keeps being planned while the issue is open, so an
@@ -259,6 +340,33 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     escalate(decide({ type: 'needs_human', reason: 'pick_time_unknown', effect: 'label:needs-human', task, issue: i.number, pr: pr?.number ?? null, source_ids: [i.node_id, 'picked:unknown'] }));
   }
   const unchecked = new Set(s.unchecked_heads);
+
+  // ---- the controller's revert PRs: enqueued once their own ci and gates pass (no task, no
+  // review), and only while their head is still exactly the recorded revert commit.
+  for (const pr of openPulls) {
+    if (!isControllerRevertPr(pr)) continue;
+    if (pr.labels.includes(LABEL_NEEDS_HUMAN) || pr.in_merge_queue || unchecked.has(pr.head_sha)) continue;
+    const base = { task: null, pr: pr.number, issue: null };
+    if (revertCommitOf.get(pr.number) !== pr.head_sha) {
+      // Someone pushed to the revert branch (or the record is gone): not a mechanical revert any more.
+      out.push(decide({ ...base, type: 'needs_human', reason: 'revert_head_changed', effect: 'label:needs-human', source_ids: [pr.node_id, pr.head_sha] }));
+      continue;
+    }
+    const removed = pr.merge_queue_events.find((e) => e.kind === 'dequeued' && (e.reason ?? '').toLowerCase() !== 'merged');
+    if (removed) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'merge_queue_rejected', effect: 'label:needs-human', source_ids: [pr.node_id, removed.node_id] }));
+      continue;
+    }
+    const ci = latestCheck(s, pr, CI_WORKFLOW);
+    const gates = latestCheck(s, pr, GATES_WORKFLOW);
+    const failed = [ci, gates].find((r) => r?.conclusion && FAILED_CONCLUSIONS.has(r.conclusion));
+    if (failed) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'revert_checks_failed', effect: 'label:needs-human', run_id: failed.run_id, source_ids: [`${failed.run_id}/attempts/${failed.run_attempt}`, pr.node_id] }));
+      continue;
+    }
+    if (ci?.conclusion !== 'success' || gates?.conclusion !== 'success' || pr.mergeable !== 'MERGEABLE') continue;
+    merges.push({ ...decide({ ...base, type: 'auto_merge', reason: 'revert_ready', effect: 'enqueue_merge', run_id: ci.run_id, source_ids: [pr.node_id, pr.head_sha] }), head_sha: pr.head_sha });
+  }
 
   // ---- open factory PRs: contract freshness and CI failures
   for (const pr of openPulls) {
@@ -492,6 +600,7 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     if (route(m, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(m);
   }
   for (const d of dones) if (route(d, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(d);
+  for (const d of reverts) if (route(d, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(d);
 
   for (const r of reviews) {
     if (r.task && escalated.has(r.task)) continue;
