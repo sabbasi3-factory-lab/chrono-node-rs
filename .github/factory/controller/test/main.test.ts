@@ -7,9 +7,9 @@ import { assertAllowedRequest, COMMENT_MARKER, ENQUEUE_MUTATION, PROJECT_STATUS_
 import { AUDIT_BRANCH, splitLines, verify } from '../audit.ts';
 import { decisionEvent, describe as describeDecision, execute, executeLive, isLive, liveDecision, pendingHandoffs } from '../executor.ts';
 import { FakeGitHub, type RecordedCall } from '../fake.ts';
-import { parseArgs, reviewerAppId, run, type RunDeps } from '../main.ts';
+import { parseArgs, run, type RunDeps } from '../main.ts';
 import { deriveState } from '../history.ts';
-import { readReviewChecks } from '../github.ts';
+import { readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
 import type { Snapshot } from '../types.ts';
 import { checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
 import { dedupeKey } from '../audit.ts';
@@ -925,7 +925,7 @@ describe('write allowlist: the review dispatch', () => {
 });
 
 describe('reviewer checks and history', () => {
-  const APP = 5400001;
+  const APP = REVIEWER_APP_ID;
   it('readReviewChecks keeps only factory-review check runs from the reviewer App on that exact head, and parses Reviewed-Head', async () => {
     const gh = new FakeGitHub(REPO);
     const head = hex40('1');
@@ -948,9 +948,8 @@ describe('reviewer checks and history', () => {
     assert.deepEqual(checks.map((c) => [c.id, c.reviewed_head]), [[1, head], [5, null]]);
   });
 
-  it('reviewerAppId: only a positive integer; anything else means no verdict is accepted', () => {
-    assert.equal(reviewerAppId({ FACTORY_REVIEWER_APP_ID: '5400001' }), 5400001);
-    for (const v of [undefined, '', '0', '-1', 'abc', '12x', ' 5']) assert.equal(reviewerAppId({ FACTORY_REVIEWER_APP_ID: v }), null, String(v));
+  it('the accepted reviewer is pinned to the reviewer App id (5444751) in code', () => {
+    assert.equal(REVIEWER_APP_ID, 5444751);
   });
 
   it('history: live review_dispatched events give each task its reviewed heads', () => {

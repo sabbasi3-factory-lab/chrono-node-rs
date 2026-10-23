@@ -52,6 +52,11 @@ export const ENQUEUE_MUTATION = 'mutation($id: ID!, $head: GitObjectID!) { enque
 /** The workflows live mode may dispatch, on `main` only. */
 export const IMPLEMENT_WORKFLOW = 'implement.lock.yml';
 export const REVIEW_WORKFLOW = 'review.lock.yml';
+/**
+ * The reviewer App (`sabbasi3-factory-reviewer`): the only author whose `factory-review` check
+ * runs count. Pinned in code, so changing a repository or org variable can't redirect it.
+ */
+export const REVIEWER_APP_ID = 5444751;
 /** The reviewer agent's check run (review.md `safe-outputs.create-check-run.name`). */
 export const REVIEW_CHECK_NAME = 'factory-review';
 /** The only labels live mode may add. It never adds `factory:ready`. */
@@ -707,7 +712,7 @@ export interface ReadSnapshotOptions {
   recordedChecks: ReadonlyMap<string, RecordedCheck>;
   historyTasks: Iterable<string>;
   needBusyJobs: boolean;
-  /** The reviewer App's id (FACTORY_REVIEWER_APP_ID); null = no reviewer verdict is accepted. */
+  /** The reviewer App's id (REVIEWER_APP_ID); null = no reviewer verdict is accepted. */
   reviewerAppId?: number | null;
 }
 

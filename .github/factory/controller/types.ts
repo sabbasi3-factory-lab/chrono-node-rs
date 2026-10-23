@@ -177,7 +177,7 @@ export interface TaskHistory {
 
 /**
  * A `factory-review` check run on an open factory PR head, kept only if the reviewer App
- * (FACTORY_REVIEWER_APP_ID) created it. `reviewed_head` is the SHA on the summary's first line
+ * (REVIEWER_APP_ID, 5444751) created it. `reviewed_head` is the SHA on the summary's first line
  * (`Reviewed-Head: <sha>`), or null.
  */
 export interface ReviewCheckSnap {

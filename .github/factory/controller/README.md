@@ -218,7 +218,7 @@ implementer) for that PR head, and records `review_dispatched` with the head **b
 The reviewer reads the contract, the upstream source and the change (laid out as files by trusted
 steps; nothing from the PR runs), with read-only tools, native file editing off (`edit: false`) and no network. Its only output is one
 `factory-review` check run, posted by the **reviewer App**. A verdict counts only if:
-- the check run's App id is `FACTORY_REVIEWER_APP_ID` (unset: nothing counts), and its name is `factory-review`
+- the check run's App id is the reviewer App's, **5444751** (`REVIEWER_APP_ID`, pinned in code so no variable can redirect it), and its name is `factory-review`
 - it's on the PR's current head, and its summary's first line is `Reviewed-Head: <that head>`
 - it started after the dispatch for that head (an older review never counts for a new head)
 - that dispatch was for the **current contract** (`review_dispatched` records `contract_sha`). A review
