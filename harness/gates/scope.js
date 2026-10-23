@@ -112,14 +112,17 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
 }
 
 /**
- * Whether the change needs the full regression (auto-strict, DESIGN §9 strict gates): it touches
- * an auto-strict path (tiers.yaml), or its task's contract says `tier: auto-strict`. Applies to
- * human PRs too. Fails closed: no auto-strict paths in the policy → true.
+ * Whether the change needs the full regression (auto-strict, DESIGN §9 strict gates). The same
+ * classification as the controller's effective tier: the change touches an auto-strict path
+ * (tiers.yaml), or its task's contract says `tier: auto-strict`, or any path in the contract's
+ * scope is an auto-strict path. Applies to human PRs too. Fails closed: no auto-strict paths in
+ * the policy → true.
  */
-function needsFullRegression({ changed, autoStrictGlobs, contractTier }) {
+function needsFullRegression({ changed, autoStrictGlobs, contractTier, contractScope = [] }) {
     if (!Array.isArray(autoStrictGlobs) || autoStrictGlobs.length === 0) return true;
     if (contractTier === "auto-strict") return true;
-    return changed.some((p) => matchesAny(p, autoStrictGlobs));
+    const scope = Array.isArray(contractScope) ? contractScope.filter((p) => typeof p === "string") : [];
+    return [...changed, ...scope].some((p) => matchesAny(p, autoStrictGlobs));
 }
 
 module.exports = { globToRegExp, matchesAny, trailer, evaluate, needsFullRegression };

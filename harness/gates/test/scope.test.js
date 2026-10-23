@@ -157,4 +157,8 @@ test("full regression: auto-strict paths or contract tier; fail closed without t
     assert.strictEqual(run(["src/locales/en/parsers/x.rs"], "auto"), false);
     assert.strictEqual(run(["src/locales/en/parsers/x.rs"], null, []), true, "no auto-strict paths in the policy: fail closed");
     assert.strictEqual(needsFullRegression({ changed: ["src/locales/en/parsers/x.rs"], autoStrictGlobs: undefined, contractTier: null }), true);
+    // Mixed scope: a tier-auto contract that may touch src/core is auto-strict to the controller, so CI
+    // runs the full regression even when the PR changes only the test file.
+    assert.strictEqual(needsFullRegression({ changed: ["tests/locales/en/results.rs"], autoStrictGlobs: STRICT, contractTier: "auto", contractScope: ["src/core/results.rs", "tests/locales/en/results.rs"] }), true);
+    assert.strictEqual(needsFullRegression({ changed: ["tests/locales/en/results.rs"], autoStrictGlobs: STRICT, contractTier: "auto", contractScope: ["tests/locales/en/results.rs"] }), false);
 });
