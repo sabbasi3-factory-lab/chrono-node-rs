@@ -31,7 +31,7 @@ export interface BudgetsPolicy {
   per_task: { max_aic: number };
   factory_per_day: { max_aic: number; alert_at_pct: number; pause_at_pct: number };
   /** Per-run caps (gh-aw max-ai-credits); used to reserve spend for runs still going. */
-  per_run: { implement: number; threat_detection: number };
+  per_run: { implement: number; reviewer_agent: number; threat_detection: number };
 }
 
 export type Tier = 'auto' | 'auto-strict' | 'human';
@@ -171,6 +171,22 @@ export interface TaskHistory {
   aic_spent: number;
   /** Live merge-queue enqueues by the controller (from `auto_merge` events): which head, when. */
   enqueued?: { pr: number; head: string; at: string }[];
+  /** Live reviewer-agent dispatches (from `review_dispatched` events): which PR head, against which contract, when. */
+  reviews?: { pr: number; head: string; contract: string | null; at: string }[];
+}
+
+/**
+ * A `factory-review` check run on an open factory PR head, kept only if the reviewer App
+ * (REVIEWER_APP_ID, 5444751) created it. `reviewed_head` is the SHA on the summary's first line
+ * (`Reviewed-Head: <sha>`), or null.
+ */
+export interface ReviewCheckSnap {
+  id: number;
+  head_sha: string;
+  status: string;
+  conclusion: string | null;
+  started_at: string;
+  reviewed_head: string | null;
 }
 
 export interface Snapshot {
@@ -197,6 +213,8 @@ export interface Snapshot {
   factory_aic_today: number | null;
   /** Per task id, derived from non-dry-run audit events. */
   history: Record<string, TaskHistory>;
+  /** Reviewer-App `factory-review` check runs on open factory PR heads (absent = none). */
+  review_checks?: ReviewCheckSnap[];
 }
 
 // ---------------------------------------------------------------- decisions
@@ -204,6 +222,7 @@ export interface Snapshot {
 export type DecisionType =
   | 'dispatched'
   | 'auto_merge'
+  | 'review_dispatched'
   | 'task_done'
   | 'repair_dispatched'
   | 'needs_human'
@@ -226,6 +245,10 @@ export type ReasonCode =
   | 'missing_heldout_seed'
   | 'repair_unavailable'
   | 'auto_merge_ready'
+  | 'review_needed'
+  | 'review_objected'
+  | 'review_timeout'
+  | 'review_contract_changed'
   | 'task_merged'
   | 'merge_queue_rejected'
   | 'enqueue_failed'
@@ -251,12 +274,14 @@ export type ReasonCode =
   | 'core_area_busy'
   | 'area_locked'
   | 'merge_not_ready'
+  | 'review_pending'
   | 'gates_pending'
   | 'check_runs_incomplete';
 
 export type Effect =
   | 'dispatch_workflow:implement'
   | 'dispatch_workflow:repair'
+  | 'dispatch_workflow:review'
   | 'enqueue_merge'
   | 'close_task'
   | 'label:needs-human'

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { plan } from '../planner.ts';
-import type { Decision, MergeQueueEventSnap, PlannerEnv, ReasonCode, Snapshot } from '../types.ts';
+import type { Decision, MergeQueueEventSnap, PlannerEnv, ReasonCode, ReviewCheckSnap, Snapshot } from '../types.ts';
 import { type SnapshotOverrides, checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, snapshot, testPolicies } from './helpers.ts';
 
 const policies = await testPolicies();
@@ -776,5 +776,99 @@ describe('task done: a merged task leaves the pipeline', () => {
 
   it('is deterministic: the same snapshot gives the same decision and source ids', () => {
     assert.deepEqual(run(doneWorld()), run(doneWorld()));
+  });
+});
+
+describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on the exact head', () => {
+  const T = 'core/results';
+  const MAIN_TIP = hex40('e');
+  // The promotion: tiers.yaml without `start_as: human`.
+  const strict: typeof policies = structuredClone(policies);
+  delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  const plan2 = (s: Snapshot, env: PlannerEnv = ON, now = NOW) => plan(s, strict, env, now);
+  const DISPATCHED = '2026-10-16T11:30:00Z';
+  const check = (over: Partial<ReviewCheckSnap> = {}): ReviewCheckSnap => ({ id: 77, head_sha: hex40('1'), status: 'completed', conclusion: 'success', started_at: '2026-10-16T11:40:00Z', reviewed_head: hex40('1'), ...over });
+  const world = (o: { reviews?: { pr: number; head: string; contract: string | null; at: string }[]; checks?: ReviewCheckSnap[]; contract?: Partial<ReturnType<typeof contract>>; pr?: Partial<ReturnType<typeof pull>> } = {}): Snapshot => {
+    const c = contract(T, { tier: 'auto-strict', scope: ['src/core/results.rs'], ...(o.contract ?? {}) });
+    const pr = pull(21, { task_id: c.id!, contract_sha: c.last_commit_sha, mergeable: 'MERGEABLE', in_merge_queue: false, ...(o.pr ?? {}) });
+    return snapshot({
+      issues: [issue(1, c.id!, ['factory:ready', 'factory:picked'])],
+      pulls: [pr],
+      contractList: [c],
+      check_runs: [
+        checkRun(490, { workflow: 'gates', event: 'pull_request_target', head_sha: MAIN_TIP, candidate_sha: pr.head_sha, conclusion: 'success' }),
+        checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'success' }),
+      ],
+      history: { [c.id!]: history({ picked_at: '2026-10-16T10:00:00Z', reviews: o.reviews ?? [] }) },
+      review_checks: o.checks ?? [],
+    });
+  };
+  const asked = [{ pr: 21, head: hex40('1'), contract: commitSha(T), at: DISPATCHED }];
+  const kinds = (ds: Decision[]) => ds.map((d) => `${d.type}/${d.reason}`);
+
+  it('before the promotion (start_as: human) nothing happens: no review, no merge', () => {
+    assert.deepEqual(kinds(run(world())), []);
+    assert.deepEqual(kinds(run(world({ contract: { scope: ['src/locales/en/parsers/x.rs'] } }))), [], 'contract-tier auto-strict also waits for the promotion');
+  });
+
+  it('green, every merge condition met, no review yet → review_dispatched (dispatch_workflow:review), not a merge', () => {
+    const ds = plan2(world());
+    assert.deepEqual(kinds(ds), ['review_dispatched/review_needed']);
+    assert.deepEqual([ds[0]!.effect, ds[0]!.pr, ds[0]!.head_sha, ds[0]!.contract_sha, ds[0]!.source_ids], ['dispatch_workflow:review', 21, hex40('1'), commitSha(T), ['PR_21', hex40('1'), 'review']]);
+  });
+
+  it('the dispatch spends AI credits, so it is gated like a repair (kill switch, unknown budget, busy Actions)', () => {
+    assert.deepEqual(kinds(plan2(world(), { FACTORY_ENABLED: undefined })), ['kill_switch/kill_switch']);
+    assert.deepEqual(kinds(plan2({ ...world(), factory_aic_today: null })), ['wait/budget_unknown']);
+    assert.deepEqual(kinds(plan2({ ...world(), busy_jobs: 99 })), ['wait/actions_busy']);
+  });
+
+  it('an unmet merge condition waits first (no review is spent on a PR that cannot merge)', () => {
+    assert.deepEqual(kinds(plan2(world({ pr: { mergeable: 'CONFLICTING' } }))), ['wait/merge_not_ready']);
+  });
+
+  it('a pass from the reviewer App on this head, after the dispatch → auto_merge', () => {
+    assert.deepEqual(kinds(plan2(world({ reviews: asked, checks: [check()] }))), ['auto_merge/auto_merge_ready']);
+  });
+
+  it('an objection (any non-success conclusion) → needs_human/review_objected, never a merge', () => {
+    for (const conclusion of ['failure', 'neutral', 'action_required', 'cancelled', null]) {
+      const ds = plan2(world({ reviews: asked, checks: [check({ conclusion })] }));
+      assert.deepEqual(kinds(ds), ['needs_human/review_objected'], String(conclusion));
+      assert.deepEqual(ds[0]!.source_ids, ['PR_21', hex40('1'), 'check:77']);
+    }
+  });
+
+  it('ignored as a verdict: another head, a wrong Reviewed-Head marker, a check from before the dispatch or started more than 60 minutes after it', () => {
+    for (const c of [check({ head_sha: hex40('9') }), check({ reviewed_head: hex40('9') }), check({ reviewed_head: null }), check({ started_at: '2026-10-16T11:00:00Z' }), check({ started_at: '2026-10-16T12:31:00Z' })]) {
+      assert.deepEqual(kinds(plan2(world({ reviews: asked, checks: [c] }))), ['wait/review_pending'], JSON.stringify(c));
+    }
+  });
+
+  it('no verdict (or one still running) after 60 minutes → needs_human/review_timeout (fail closed)', () => {
+    const late = new Date(Date.parse(DISPATCHED) + 61 * 60_000);
+    assert.deepEqual(kinds(plan2(world({ reviews: asked }), ON, late)), ['needs_human/review_timeout']);
+    assert.deepEqual(kinds(plan2(world({ reviews: asked, checks: [check({ status: 'in_progress', conclusion: null })] }), ON, late)), ['needs_human/review_timeout']);
+    assert.deepEqual(kinds(plan2(world({ reviews: asked }), ON, new Date(Date.parse(DISPATCHED) + 59 * 60_000))), ['wait/review_pending']);
+    // A verdict that arrived late still counts (the check is read before the clock).
+    assert.deepEqual(kinds(plan2(world({ reviews: asked, checks: [check()] }), ON, late)), ['auto_merge/auto_merge_ready']);
+  });
+
+  it('a review of an older head never counts for a new head: the new head gets its own review', () => {
+    const old = [{ pr: 21, head: hex40('9'), contract: commitSha(T), at: DISPATCHED }];
+    assert.deepEqual(kinds(plan2(world({ reviews: old, checks: [check({ head_sha: hex40('9'), reviewed_head: hex40('9') })] }))), ['review_dispatched/review_needed']);
+  });
+
+  it('a review of this head against another (or an unknown) contract never counts: needs_human/review_contract_changed, no second review', () => {
+    for (const contract of [hex40('c'), null]) {
+      const ds = plan2(world({ reviews: [{ pr: 21, head: hex40('1'), contract, at: DISPATCHED }], checks: [check()] }));
+      assert.deepEqual(kinds(ds), ['needs_human/review_contract_changed'], String(contract));
+      assert.deepEqual(ds[0]!.source_ids, ['PR_21', hex40('1'), `contract:${commitSha(T)}`]);
+    }
+  });
+
+  it('auto-tier (locale) PRs never need a review', () => {
+    const ds = plan2(world({ contract: { tier: 'auto', scope: ['src/locales/en/parsers/x.rs'] } }));
+    assert.deepEqual(kinds(ds), ['auto_merge/auto_merge_ready']);
   });
 });

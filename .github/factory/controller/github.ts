@@ -17,6 +17,7 @@ import type {
   PullSnap,
   PullState,
   RequestOptions,
+  ReviewCheckSnap,
   ReviewSnap,
   Snapshot,
 } from './types.ts';
@@ -48,8 +49,16 @@ export class GitHubApiError extends Error {
  */
 export const ENQUEUE_MUTATION = 'mutation($id: ID!, $head: GitObjectID!) { enqueuePullRequest(input: {pullRequestId: $id, expectedHeadOid: $head}) { mergeQueueEntry { id } } }';
 
-/** The only workflow live mode may dispatch, on `main` only. */
+/** The workflows live mode may dispatch, on `main` only. */
 export const IMPLEMENT_WORKFLOW = 'implement.lock.yml';
+export const REVIEW_WORKFLOW = 'review.lock.yml';
+/**
+ * The reviewer App (`sabbasi3-factory-reviewer`): the only author whose `factory-review` check
+ * runs count. Pinned in code, so changing a repository or org variable can't redirect it.
+ */
+export const REVIEWER_APP_ID = 5444751;
+/** The reviewer agent's check run (review.md `safe-outputs.create-check-run.name`). */
+export const REVIEW_CHECK_NAME = 'factory-review';
 /** The only labels live mode may add. It never adds `factory:ready`. */
 export const LIVE_LABELS: readonly string[] = ['factory:picked', 'needs-human', 'blocked', 'stale-contract'];
 /** The only labels live mode may remove, and only from a finished task's issue (close_task). */
@@ -89,6 +98,17 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
     return new RegExp(`${issue}$`).test(p) && exactKeys(b, ['state', 'state_reason']) && b.state === CLOSE_COMPLETED.state && b.state_reason === CLOSE_COMPLETED.state_reason;
   }
   if (method !== 'POST') return false;
+  if (p === `/repos/${repo}/actions/workflows/${REVIEW_WORKFLOW}/dispatches`) {
+    if (!exactKeys(b, ['ref', 'inputs']) || b.ref !== 'main') return false;
+    const i = b.inputs;
+    return (
+      exactKeys(i, ['task', 'pr', 'head_sha', 'contract_sha']) &&
+      isTaskId(i.task) &&
+      typeof i.pr === 'string' && /^[1-9][0-9]{0,8}$/.test(i.pr) &&
+      typeof i.head_sha === 'string' && HEX40.test(i.head_sha) &&
+      typeof i.contract_sha === 'string' && HEX40.test(i.contract_sha)
+    );
+  }
   if (p === `/repos/${repo}/actions/workflows/${IMPLEMENT_WORKFLOW}/dispatches`) {
     if (!exactKeys(b, ['ref', 'inputs']) || b.ref !== 'main') return false;
     const i = b.inputs;
@@ -692,6 +712,32 @@ export interface ReadSnapshotOptions {
   recordedChecks: ReadonlyMap<string, RecordedCheck>;
   historyTasks: Iterable<string>;
   needBusyJobs: boolean;
+  /** The reviewer App's id (REVIEWER_APP_ID); null = no reviewer verdict is accepted. */
+  reviewerAppId?: number | null;
+}
+
+const REVIEWED_HEAD = /^Reviewed-Head: ([0-9a-f]{40})[ \t]*$/;
+
+/**
+ * `factory-review` check runs on the given heads (at most MAX_HEAD_LOOKUPS), kept only if the
+ * reviewer App created them on that exact head. Anyone with checks:write can name a check run
+ * `factory-review`; only the App id makes it the reviewer's.
+ */
+export async function readReviewChecks(client: GitHubClient, repo: string, heads: Iterable<string>, appId: number): Promise<ReviewCheckSnap[]> {
+  const out: ReviewCheckSnap[] = [];
+  for (const head of [...new Set(heads)].filter((h) => HEX40.test(h)).sort().slice(0, MAX_HEAD_LOOKUPS)) {
+    const runs = await paginate(client, `/repos/${repo}/commits/${head}/check-runs?check_name=${REVIEW_CHECK_NAME}&filter=all&per_page=100`, (d) => asArr(asRec(d).check_runs));
+    for (const r of runs) {
+      const c = asRec(r);
+      if (asRec(c.app).id !== appId || c.name !== REVIEW_CHECK_NAME || c.head_sha !== head) continue;
+      const id = c.id;
+      const started = asStr(c.started_at);
+      if (typeof id !== 'number' || !Number.isSafeInteger(id) || !started) continue;
+      const first = (asStr(asRec(c.output).summary) ?? '').split('\n')[0]!.replace(/\r$/, '');
+      out.push({ id, head_sha: head, status: asStr(c.status) ?? 'unknown', conclusion: asStr(c.conclusion), started_at: started, reviewed_head: REVIEWED_HEAD.exec(first)?.[1] ?? null });
+    }
+  }
+  return out;
 }
 
 /** Reads everything the planner and observer need. History/spend are filled in by main. */
@@ -725,5 +771,9 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
     busy_jobs,
     factory_aic_today: null,
     history: {},
+    review_checks:
+      typeof o.reviewerAppId === 'number'
+        ? await readReviewChecks(client, o.repo, pulls.filter((p) => p.state === 'open' && p.task_id).map((p) => p.head_sha), o.reviewerAppId)
+        : [],
   };
 }

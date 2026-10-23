@@ -30,7 +30,7 @@ export const AGENT_LOGIN = 'sabbasi3-factory-agent';
  * Never for human, auto-strict or core tasks: those always wait for a person.
  */
 export function autoMergeBlocker(pr: PullSnap, c: ContractSnap, issue: IssueSnap | undefined, ci: CheckRunSnap | null, gates: CheckRunSnap | null, p: Policies): string | null {
-  if (taskTier(c, p.tiers) !== 'auto' || isCoreTask(c, p.tiers)) return 'not_auto_tier';
+  if (!mergeTier(c, p)) return 'not_auto_tier';
   if (pr.draft) return 'draft';
   if (!pr.author_is_bot || (pr.author ?? '').replace(/\[bot\]$/, '') !== AGENT_LOGIN) return 'not_agent_pr';
   if (pr.contract_sha !== c.last_commit_sha) return 'contract_sha_not_exact';
@@ -40,6 +40,23 @@ export function autoMergeBlocker(pr: PullSnap, c: ContractSnap, issue: IssueSnap
   if (pr.mergeable !== 'MERGEABLE') return 'not_mergeable';
   return null;
 }
+
+/**
+ * Tiers the merge stage may enqueue: `auto` outside the core paths, and `auto-strict` (which
+ * also needs the reviewer agent's pass). `human` never; core paths are `auto-strict` only once
+ * tiers.yaml no longer says `start_as: human`.
+ */
+export function mergeTier(c: ContractSnap, p: Policies): 'auto' | 'auto-strict' | null {
+  const tier = taskTier(c, p.tiers);
+  if (tier === 'auto') return isCoreTask(c, p.tiers) ? null : 'auto';
+  // Until the promotion PR removes `start_as: human`, no auto-strict task is merged automatically,
+  // whether it's auto-strict by its paths or by its contract's own tier.
+  if (tier !== 'auto-strict' || p.tiers.tiers['auto-strict'].start_as === 'human') return null;
+  return 'auto-strict';
+}
+
+/** Minutes after a review dispatch with no reviewer verdict before a person is asked. */
+export const REVIEW_TIMEOUT_MINUTES = 60;
 
 /** ci conclusions after which the reveal step has run, so a held-out seed must exist. */
 export const SEED_EXPECTED_CONCLUSIONS = new Set(['success', 'failure']);
@@ -192,6 +209,8 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   const repairs: Decision[] = [];
   // Merge-queue candidates: gated by the kill switch only (merging spends no AI credits).
   const merges: Decision[] = [];
+  // Reviewer-agent dispatches: they spend AI credits, so they pass the same gates as repairs.
+  const reviews: Decision[] = [];
 
   // ---- task done: an open task issue whose task has a merged PR leaves the pipeline (close the
   // issue as completed, remove factory:ready/factory:picked). Gated by the kill switch only (no
@@ -287,7 +306,7 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       continue;
     }
     // ---- merge stage: green auto-tier agent PRs go to the merge queue (live), nothing else does.
-    if (run?.conclusion === 'success' && gates?.conclusion === 'success' && taskTier(c, p.tiers) === 'auto' && !isCoreTask(c, p.tiers)) {
+    if (run?.conclusion === 'success' && gates?.conclusion === 'success' && mergeTier(c, p) !== null) {
       if (pr.in_merge_queue) continue;
       const issue = issueByTask.get(task);
       // Queue history. GitHub's removal events don't say which head was queued, so each of the
@@ -322,6 +341,39 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       if (blocker !== null) {
         out.push({ ...wait('merge_not_ready', merge), source_ids: [pr.node_id, pr.head_sha, `blocker:${blocker}`] });
         continue;
+      }
+      // ---- reviewer agent (auto-strict only): a pass from the reviewer App on this exact head,
+      // posted after the controller asked for it, is required. Anything else fails closed.
+      if (mergeTier(c, p) === 'auto-strict') {
+        const forHead = (history(task).reviews ?? []).filter((r) => r.pr === pr.number && r.head === pr.head_sha).sort((a, b) => a.at.localeCompare(b.at));
+        const asked = forHead.filter((r) => r.contract === c.last_commit_sha);
+        // A review of this head against another (or an unknown) contract never counts, and a second
+        // paid review of the same head isn't sent automatically: a person decides.
+        if (asked.length === 0 && forHead.length > 0) {
+          escalate(decide({ ...base, type: 'needs_human', reason: 'review_contract_changed', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha, `contract:${c.last_commit_sha}`] }));
+          continue;
+        }
+        const since = asked[0]?.at;
+        if (!since) {
+          reviews.push({ ...decide({ ...base, type: 'review_dispatched', reason: 'review_needed', effect: 'dispatch_workflow:review', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha, 'review'] }), head_sha: pr.head_sha });
+          continue;
+        }
+        const verdict = (s.review_checks ?? [])
+          // A verdict counts only if it started within the review window after the dispatch.
+          .filter((k) => k.head_sha === pr.head_sha && k.reviewed_head === pr.head_sha && k.started_at >= since && Date.parse(k.started_at) <= Date.parse(since) + REVIEW_TIMEOUT_MINUTES * 60_000)
+          .sort((a, b) => b.id - a.id)[0];
+        if (verdict && verdict.status === 'completed') {
+          if (verdict.conclusion !== 'success') {
+            escalate(decide({ ...base, type: 'needs_human', reason: 'review_objected', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha, `check:${verdict.id}`] }));
+            continue;
+          }
+        } else if (nowMs - Date.parse(since) > REVIEW_TIMEOUT_MINUTES * 60_000) {
+          escalate(decide({ ...base, type: 'needs_human', reason: 'review_timeout', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha, `review:${since}`] }));
+          continue;
+        } else {
+          out.push({ ...wait('review_pending', merge), source_ids: [pr.node_id, pr.head_sha, `review:${since}`] });
+          continue;
+        }
       }
       merges.push(merge);
       continue;
@@ -433,6 +485,14 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     if (route(m, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(m);
   }
   for (const d of dones) if (route(d, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(d);
+
+  for (const r of reviews) {
+    if (r.task && escalated.has(r.task)) continue;
+    if (route(r, globalGate())) {
+      out.push(r);
+      planned++;
+    }
+  }
 
   for (const r of repairs) {
     if (r.task && escalated.has(r.task)) continue;

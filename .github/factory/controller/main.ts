@@ -15,7 +15,7 @@ import { AuditLog, AuditValidationError, dedupeKey, isoSeconds } from './audit.t
 import { canonicalize } from './canonical.ts';
 import { decisionEvent, execute, executeLive, isLive, liveDecision, pendingHandoffs } from './executor.ts';
 import { FakeGitHub } from './fake.ts';
-import { createClient, readSnapshot, type RecordedCheck } from './github.ts';
+import { createClient, readSnapshot, REVIEWER_APP_ID, type RecordedCheck } from './github.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
@@ -127,6 +127,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         recordedChecks: recordedChecks(audit.events),
         historyTasks: Object.keys(derived.history),
         needBusyJobs: factoryEnabled,
+        reviewerAppId: REVIEWER_APP_ID,
       });
   snapshot.history = { ...derived.history, ...snapshot.history };
 

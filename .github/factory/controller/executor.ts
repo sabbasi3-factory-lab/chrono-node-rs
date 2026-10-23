@@ -20,6 +20,11 @@
 //                                 Recorded (`task_done`) first, once; the effect is idempotent and
 //                                 re-run while the issue is open, so an interrupted close finishes
 //                                 on the next poll.
+//   dispatch_workflow:review    → record `review_dispatched` (with the head) first, then dispatch
+//                                 review.lock.yml on main with {task, pr, head_sha, contract_sha}.
+//                                 If the dispatch fails, the record stands: no second review is
+//                                 sent, and with no verdict the PR goes to a person after
+//                                 REVIEW_TIMEOUT_MINUTES (fail closed, never a double spend).
 //   dispatch_workflow:repair    → no repair workflow exists yet: escalated instead to
 //                                 needs_human/repair_unavailable (label + comment)
 //   alert:owner, pause_dispatch, none → no GitHub effect; recorded in the audit log only
@@ -40,7 +45,7 @@
 //   is posted only if no comment with its marker exists yet.
 
 import { dedupeKey } from './audit.ts';
-import { CLOSE_COMPLETED, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate } from './github.ts';
+import { CLOSE_COMPLETED, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate, REVIEW_WORKFLOW } from './github.ts';
 import { isRecorded, LABEL_NEEDS_HUMAN, LABEL_PICKED } from './planner.ts';
 import type { AuditEvent, Decision, GitHubClient, JsonObject, PendingEvent, PlannerEnv, ReasonCode } from './types.ts';
 
@@ -117,6 +122,9 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   task_timeout: 'The task has been in progress longer than the time limit.',
   pick_time_unknown: 'The issue is marked picked, but the audit log has no pick time for it.',
   repair_unavailable: 'CI failed. There is no repair workflow yet, so a person decides what to do.',
+  review_contract_changed: 'This head was reviewed against a different contract version than the current one. A person decides (no second review is sent automatically).',
+  review_objected: 'The reviewer agent (a second model) objected to this change: see the `factory-review` check. A person decides.',
+  review_timeout: 'No verdict from the reviewer agent in time (the review run failed, was flagged or posted nothing). A person decides.',
   merge_queue_rejected: 'This PR left the merge queue without merging (the merge-group checks failed, or it was removed). It is not re-queued automatically.',
   enqueue_failed: 'Every check passed, but GitHub refused to add this PR to the merge queue.',
   invalid_contract: "The task's contract on main can't be used.",
@@ -293,6 +301,13 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
         await deps.record(failedEv);
         await completeHandoff(deps, { key: dedupeKey(failedEv.type, failedEv.source_ids), type: failed.type, reason: failed.reason, effect: failed.effect, issue: failed.issue, pr: failed.pr });
       }
+    } else if (d.effect === 'dispatch_workflow:review') {
+      const head = d.head_sha;
+      if (d.pr === null || d.task === null || d.contract_sha === null || typeof head !== 'string' || !/^[0-9a-f]{40}$/.test(head)) throw new Error('review decision is missing task, PR, head or contract SHA');
+      await deps.record(ev); // first: a failed dispatch is never retried (fail closed via review_timeout)
+      await deps.client.request('POST', `/repos/${deps.repo}/actions/workflows/${REVIEW_WORKFLOW}/dispatches`, {
+        body: { ref: 'main', inputs: { task: d.task, pr: String(d.pr), head_sha: head, contract_sha: d.contract_sha } },
+      });
     } else if (d.effect === 'dispatch_workflow:repair') {
       throw new Error('repair dispatch is not available');
     } else {

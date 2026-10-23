@@ -161,7 +161,12 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 
 | type | reason | when | would |
 |---|---|---|---|
-| `auto_merge` | `auto_merge_ready` | a green auto-tier agent PR (see **Merge stage**) | `enqueue_merge` |
+| `auto_merge` | `auto_merge_ready` | a green auto-tier agent PR, or an auto-strict one the reviewer agent passed (see **Merge stage**) | `enqueue_merge` |
+| `review_dispatched` | `review_needed` | an auto-strict PR that meets every merge condition and has no review for its head yet; gated like a repair (kill switch, budget, Actions load) | `dispatch_workflow:review` |
+| `needs_human` | `review_objected` | the reviewer App's `factory-review` check on this head finished with anything but `success` | `label:needs-human` |
+| `needs_human` | `review_contract_changed` | this head was reviewed, but against another (or an unknown) contract version than the current one; no second review is sent automatically | `label:needs-human` |
+| `needs_human` | `review_timeout` | no reviewer verdict on this head within 60 minutes of the dispatch (the run failed, was flagged by detection, or posted nothing) | `label:needs-human` |
+| `wait` | `review_pending` | the review was dispatched for this head and its verdict isn't in yet | nothing (logged, **not** recorded) |
 | `task_done` | `task_merged` | an open issue with a valid task marker whose task has a merged PR (the first one, `pr`). Planned on every poll while the issue is open; gated only by the kill switch (no escalation holds it back). A leftover open PR for a task that's already merged gets no decision at all | `close_task` |
 | `needs_human` | `merge_queue_rejected` | the PR left the merge queue without merging after its head went green; never re-queued automatically | `label:needs-human` |
 | `wait` | `merge_not_ready` | an auto-tier PR with green checks but an unmet merge condition (named in `source_ids` as `blocker:<why>`) | nothing (logged, **not** recorded) |
@@ -193,7 +198,9 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 
 When the newest `ci` **and** `gates` runs on a factory PR's current head are both `success`, the
 controller puts the PR in the merge queue (`enqueue_merge`), but only if every condition holds:
-- the task is **`tier: auto`** and not core: never human, auto-strict (`start_as: human`) or core
+- the task is **`tier: auto`** and not core, or **`auto-strict`** once `tiers.yaml` no longer says
+  `start_as: human` (until then no auto-strict or core task is merged automatically, whether it's
+  auto-strict by its paths or its contract). Never human.
 - the author is the agent App, the PR isn't a draft, and GitHub says it's `MERGEABLE`
 - `Contract-SHA:` equals the contract's commit SHA **exactly** (full 40 hex)
 - the task issue has `factory:picked`, and neither the issue nor the PR has `needs-human`
@@ -204,6 +211,23 @@ It's gated only by the kill switch (`FACTORY_ENABLED`); merging spends no AI cre
 waited for: a Copilot review is a signal, not a gate. The merge queue then runs `checks` and `gates`
 on the merge group, and GitHub merges. The controller never merges directly. `queued`, `dequeued` and
 `merged` are recorded as observed facts.
+
+**Reviewer agent (auto-strict only).** Once an auto-strict PR meets every condition above, the
+controller dispatches `review.lock.yml` (gh-aw, `gpt-6.1-sol`: a different model family from the
+implementer) for that PR head, and records `review_dispatched` with the head **before** dispatching.
+The reviewer reads the contract, the upstream source and the change (laid out as files by trusted
+steps; nothing from the PR runs), with read-only tools, native file editing off (`edit: false`) and no network. Its only output is one
+`factory-review` check run, posted by the **reviewer App**. A verdict counts only if:
+- the check run's App id is the reviewer App's, **5444751** (`REVIEWER_APP_ID`, pinned in code so no variable can redirect it), and its name is `factory-review`
+- it's on the PR's current head, and its summary's first line is `Reviewed-Head: <that head>`
+- it started after the dispatch for that head, and at most 60 minutes after it (an older review never counts for a new head)
+- that dispatch was for the **current contract** (`review_dispatched` records `contract_sha`). A review
+  of this head against another contract version → `needs_human/review_contract_changed`
+
+`success` → the merge stage goes on (`enqueue_merge`). Anything else → `needs_human/review_objected`.
+No verdict 60 minutes after the dispatch → `needs_human/review_timeout`. A failed dispatch isn't
+retried (the record already exists), so it ends in the timeout: fail closed, and never two paid
+reviews for one head.
 
 Queue history: GitHub's removal events don't say which head was queued, so each live `auto_merge`
 record (which stores its `head_sha`) claims the first non-`merged` removal after it. If the controller's
@@ -286,7 +310,7 @@ v1's own dry-run decisions never count as real work.
 
 | Run | Counted as |
 |---|---|
-| queued / in progress | **reserved** at the per-run caps: `budgets.per_run.implement + per_run.threat_detection` (500 + 400) |
+| queued / in progress | **reserved** at the per-run caps: implement runs `budgets.per_run.implement + per_run.threat_detection` (500 + 400); reviewer runs (`review.lock.yml`) `per_run.reviewer_agent + per_run.threat_detection` (200 + 400). If either workflow's runs can't be listed, spend is unknown |
 | queued / in progress, but every job completed including the final `conclusion` job | **measured** like a completed run (GitHub's run-level status can lag long after the jobs end; seen on run 39832616767). If the jobs can't be listed, it stays reserved |
 | completed, no job's `Execute …` step ran (e.g. dispatch validation failed) | **0** (`no_inference`): no model calls were made |
 | completed, with model calls | **measured** from gh-aw's `usage` artifact: the agent from `agent_usage.json` → `ai_credits`; every other job whose `Execute …` step ran (detection, and evals or others if gh-aw adds them) from the sum of `ai_credits_this_response` in `<job>/token_usage.jsonl` |
@@ -323,6 +347,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
 | `label:stale-contract` | add `stale-contract`, then one templated comment |
 | `dispatch_workflow:repair` | there is no repair workflow yet, so it becomes `needs_human`/`repair_unavailable`: label + comment |
 | `enqueue_merge` | GraphQL `enqueuePullRequest` for the PR with `expectedHeadOid` = the planned head (exact mutation), then record `auto_merge` with its head. If GitHub refuses (GraphQL error or HTTP 4xx): re-read the PR head. If it moved, the plan is stale, nothing is recorded, and the next poll re-plans. Otherwise `needs_human`/`enqueue_failed` (label + comment). Once that failure is recorded, that PR and head are never sent to GitHub again, even if the hand-off was interrupted. HTTP 5xx fails the run, and the next poll retries. |
+| `dispatch_workflow:review` | record `review_dispatched` (with the head) first, then dispatch `review.lock.yml` on `main` with `{task, pr, head_sha, contract_sha}` (full SHAs). A failed dispatch is never retried; the review times out to a person |
 | `close_task` | record `task_done` (once), then remove `factory:ready` and `factory:picked` from the issue (a 404 for a label that's already gone is fine), then close it with `state_reason: completed`. The effect re-runs whenever it's planned (the issue is still open), so an interrupted close finishes on the next poll; the event isn't recorded twice. This also backfills tasks merged before this stage existed (#45). |
 | `alert:owner`, `pause_dispatch`, `none` | no GitHub effect; recorded in the audit log only |
 
@@ -342,7 +367,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
   sentence per reason code, the label, and the run link. No text from issues, PRs or agents.
 - **The client's allowlist** (`assertAllowedRequest(…, 'live')`) independently allows only:
   `POST actions/workflows/implement.lock.yml/dispatches` with `ref: main` and exactly the four
-  validated string inputs (no `aw_context`); `POST issues/<n>/labels` with labels from
+  validated string inputs (no `aw_context`); the same for `review.lock.yml` with exactly `{task, pr, head_sha, contract_sha}`; `POST issues/<n>/labels` with labels from
   `factory:picked`, `needs-human`, `blocked`, `stale-contract`; `POST issues/<n>/comments` with a body
   starting with the template marker (≤ 2,000 chars); and the exact `enqueuePullRequest` GraphQL
   mutation with one `PR_…` node id and a 40-hex `expectedHeadOid` (no other variables, no queue jumping);
@@ -393,7 +418,7 @@ and is redone next poll, but never fails the run.
 | `planner.ts` | pure planner |
 | `observe.ts` | snapshot → observed fact events |
 | `history.ts` | task history and spend from non-dry-run audit events |
-| `spend.ts` | today's implement spend from gh-aw usage artifacts (reserved / measured / unknown) |
+| `spend.ts` | today's implement and reviewer spend from gh-aw usage artifacts (reserved / measured / unknown) |
 | `heartbeat.ts` | heartbeat due check and hour-bucket dedupe |
 | `executor.ts` | the mode switch (`isLive`), dry-run logger, live effects, decision → event |
 | `project.ts` | Project #1 "Factory status" sync (desired status, read, exact update) |

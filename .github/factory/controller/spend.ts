@@ -2,9 +2,9 @@
 // measures today's (UTC) factory spend from the implement workflow's own accounting, and
 // records it as a `spend_snapshot`. Plain code, no AI, read-only API calls.
 //
-// Per implement run created today (UTC):
-//   - queued / in progress  → reserved at the per-run caps (implement + threat detection),
-//                             unless every job has finished (see below)
+// Per run of the AI workflows (implement, and the reviewer agent's review) created today (UTC):
+//   - queued / in progress  → reserved at the per-run caps (implement or reviewer_agent, plus
+//                             threat detection), unless every job has finished (see below)
 //   - completed             → measured from gh-aw's `usage` artifact, for every job whose
 //                             `Execute …` step ran (made model calls):
 //       agent:       `agent_usage.json` → `ai_credits`
@@ -24,6 +24,7 @@ import { paginate } from './github.ts';
 import type { GitHubClient, JsonObject } from './types.ts';
 
 export const IMPLEMENT_WORKFLOW_FILE = 'implement.lock.yml';
+export const REVIEW_WORKFLOW_FILE = 'review.lock.yml';
 export const USAGE_ARTIFACT = 'usage';
 /** The implement workflow's last job: it needs every other job. */
 export const FINAL_JOB = 'conclusion';
@@ -42,6 +43,8 @@ export type SpendResult = { aic: number; runs: RunSpend[] } | { aic: null; runs:
 export interface SpendCaps {
   /** budgets.yaml per_run.implement */
   implement: number;
+  /** budgets.yaml per_run.reviewer_agent */
+  reviewer_agent: number;
   /** budgets.yaml per_run.threat_detection */
   threat_detection: number;
 }
@@ -166,20 +169,31 @@ export function allJobsFinished(jobs: readonly unknown[]): boolean {
 
 const round = (n: number): number => Math.round(n * 1e6) / 1e6;
 
-/** Today's (UTC) implement spend. Never throws for unreadable data: that's { aic: null }. */
+/** Today's (UTC) spend of the AI workflows. Never throws for unreadable data: that's { aic: null }. */
 export async function readSpendToday(client: GitHubClient, repo: string, now: Date, caps: SpendCaps): Promise<SpendResult> {
   const day = now.toISOString().slice(0, 10);
   const runs: RunSpend[] = [];
   const unknown = (reason: string): SpendResult => ({ aic: null, runs, reason });
-  let list: Rec[];
-  try {
-    list = (
-      await paginate(client, `/repos/${repo}/actions/workflows/${IMPLEMENT_WORKFLOW_FILE}/runs?created=%3E%3D${day}&per_page=100`, (d) =>
-        Array.isArray(rec(d).workflow_runs) ? (rec(d).workflow_runs as unknown[]) : [],
-      )
-    ).map(rec);
-  } catch (err) {
-    return unknown(`implement runs could not be listed (${(err as Error).message})`);
+  // Every AI workflow with its in-flight reservation. A workflow whose runs can't be listed
+  // (including a missing workflow file) makes today's spend unknown.
+  const workflows = [
+    { file: IMPLEMENT_WORKFLOW_FILE, reserve: caps.implement + caps.threat_detection },
+    { file: REVIEW_WORKFLOW_FILE, reserve: caps.reviewer_agent + caps.threat_detection },
+  ];
+  const list: Rec[] = [];
+  const reserveOf = new Map<Rec, number>();
+  for (const w of workflows) {
+    try {
+      const found = (
+        await paginate(client, `/repos/${repo}/actions/workflows/${w.file}/runs?created=%3E%3D${day}&per_page=100`, (d) =>
+          Array.isArray(rec(d).workflow_runs) ? (rec(d).workflow_runs as unknown[]) : [],
+        )
+      ).map(rec);
+      for (const r of found) reserveOf.set(r, w.reserve);
+      list.push(...found);
+    } catch (err) {
+      return unknown(`${w.file} runs could not be listed (${(err as Error).message})`);
+    }
   }
   for (const run of list) {
     const id = run.id;
@@ -197,7 +211,7 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
         jobs = null; // can't tell: keep the reservation
       }
       if (!jobs || !allJobsFinished(jobs)) {
-        runs.push({ run_id: id, status: 'reserved', aic: caps.implement + caps.threat_detection });
+        runs.push({ run_id: id, status: 'reserved', aic: reserveOf.get(run)! });
         continue;
       }
     }
