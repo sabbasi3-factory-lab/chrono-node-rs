@@ -905,3 +905,93 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
     assert.deepEqual(kinds(ds), ['auto_merge/auto_merge_ready']);
   });
 });
+
+describe('auto-revert: a post-merge ci failure on main after an auto-strict merge', () => {
+  const T = 'core/results';
+  const strict: typeof policies = structuredClone(policies);
+  delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  const plan2 = (s: Snapshot, env: PlannerEnv = ON) => plan(s, strict, env, NOW);
+  const MERGE = hex40('f');
+  const kinds = (ds: Decision[]) => ds.map((d) => `${d.type}/${d.reason}`);
+  const mainRun = (conclusion = 'failure', head = MERGE) => checkRun(900, { event: 'push', head_sha: head, candidate_sha: head, conclusion });
+  const world = (o: { ours?: boolean; contract?: Partial<ReturnType<typeof contract>>; main?: string; reverts?: { pr: number; revert_pr: number | null; at: string }[]; extraPulls?: ReturnType<typeof pull>[]; run?: ReturnType<typeof checkRun> } = {}): Snapshot =>
+    snapshot({
+      pulls: [{ ...mergedPull(21, T), merge_commit_sha: MERGE }, ...(o.extraPulls ?? [])],
+      contractList: [contract(T, { tier: 'auto-strict', scope: ['src/core/results.rs'], ...(o.contract ?? {}) })],
+      check_runs: [o.run ?? mainRun()],
+      main_sha: o.main ?? MERGE,
+      history: { [T]: history({ enqueued: o.ours === false ? [] : [{ pr: 21, head: hex40('1'), at: '2026-10-15T07:30:00Z' }], reverts: o.reverts ?? [] }) },
+    });
+
+  it('the controller\'s own auto-strict merge, still main\'s tip: hand-off on the PR, then auto_revert/open_revert', () => {
+    const ds = plan2(world());
+    assert.deepEqual(kinds(ds), ['needs_human/main_regressed', 'auto_revert/main_regressed']);
+    assert.deepEqual([ds[0]!.effect, ds[0]!.pr, ds[0]!.source_ids], ['label:needs-human', 21, ['900/attempts/1', 'PR_21']]);
+    assert.deepEqual([ds[1]!.effect, ds[1]!.pr, ds[1]!.merge_commit_sha, ds[1]!.source_ids], ['open_revert', 21, MERGE, ['PR_21', MERGE, 'revert']]);
+  });
+
+  it('only a hand-off when the merge isn\'t auto-strict, or a person merged it', () => {
+    assert.deepEqual(kinds(plan2(world({ ours: false }))), ['needs_human/main_regressed']);
+    assert.deepEqual(kinds(plan2(world({ contract: { tier: 'auto', scope: ['src/locales/en/parsers/x.rs'] } }))), ['needs_human/main_regressed']);
+    assert.deepEqual(kinds(run(world())), ['needs_human/main_regressed'], 'before the promotion nothing is auto-strict');
+  });
+
+  it('main moved on since the merge: no mechanical revert (revert_not_safe), a person decides', () => {
+    assert.deepEqual(kinds(plan2(world({ main: hex40('9') }))), ['needs_human/main_regressed', 'needs_human/revert_not_safe']);
+  });
+
+  it('never twice without a person: an earlier revert PR without factory:revert-reviewed blocks the next (revert_limit)', () => {
+    const earlier = { pr: 5, revert_pr: 6, at: '2026-10-14T00:00:00Z' };
+    const revertPr = (labels: string[]) => pull(6, { state: 'merged', merged_at: '2026-10-14T01:00:00Z', head_ref: 'factory/revert-5', labels });
+    // The earlier revert is recorded under another task.
+    const s1 = world({ extraPulls: [revertPr([])] });
+    s1.history['core/other'] = history({ reverts: [earlier] });
+    assert.deepEqual(kinds(plan2(s1)), ['needs_human/main_regressed', 'needs_human/revert_limit']);
+    const s2 = world({ extraPulls: [revertPr(['factory:revert-reviewed'])] });
+    s2.history['core/other'] = history({ reverts: [earlier] });
+    assert.deepEqual(kinds(plan2(s2)), ['needs_human/main_regressed', 'auto_revert/main_regressed']);
+  });
+
+  it('nothing when main is green, or the PR was already reverted (and a reverted task no longer counts as merged)', () => {
+    assert.deepEqual(kinds(plan2(world({ run: mainRun('success') }))), []);
+    const s = world({ reverts: [{ pr: 21, revert_pr: 30, at: '2026-10-15T09:00:00Z' }] });
+    assert.deepEqual(kinds(plan2(s)), []);
+    // A dependent of the reverted task waits for its deps again.
+    s.issues = [issue(2, 'en/dep')];
+    s.contracts[contract('en/dep').path] = contract('en/dep', { depends_on: [T] });
+    assert.deepEqual(kinds(plan2(s)), ['wait/deps_not_merged']);
+  });
+
+  it('the kill switch holds the revert (the hand-off still happens)', () => {
+    const ds = plan2(world(), { FACTORY_ENABLED: undefined });
+    assert.deepEqual(kinds(ds), ['needs_human/main_regressed', 'kill_switch/kill_switch']);
+  });
+
+  describe('revert PRs', () => {
+    const revertPull = (over: Partial<ReturnType<typeof pull>> = {}) =>
+      pull(30, { head_ref: 'factory/revert-21', author: 'sabbasi3-factory-controller[bot]', author_is_bot: true, mergeable: 'MERGEABLE', in_merge_queue: false, ...over });
+    const prWorld = (pr: ReturnType<typeof pull>, ci = 'success', gates = 'success') =>
+      snapshot({
+        pulls: [pr],
+        check_runs: [
+          checkRun(950, { head_sha: pr.head_sha, pull_requests: [30], conclusion: ci }),
+          checkRun(951, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, conclusion: gates }),
+        ],
+      });
+    it('the controller\'s revert PR with green ci and gates → auto_merge/revert_ready (enqueue_merge on its head)', () => {
+      const ds = plan2(prWorld(revertPull()));
+      assert.deepEqual(kinds(ds), ['auto_merge/revert_ready']);
+      assert.deepEqual([ds[0]!.effect, ds[0]!.head_sha, ds[0]!.source_ids], ['enqueue_merge', revertPull().head_sha, ['PR_30', revertPull().head_sha]]);
+    });
+    it('failed checks → needs_human/revert_checks_failed; left the queue unmerged → merge_queue_rejected', () => {
+      assert.deepEqual(kinds(plan2(prWorld(revertPull(), 'failure'))), ['needs_human/revert_checks_failed']);
+      const removed = revertPull({ merge_queue_events: [{ node_id: 'RMQ_1', kind: 'dequeued', created_at: '2026-10-16T11:00:00Z', actor: 'github-merge-queue', reason: 'failed checks' }] });
+      assert.deepEqual(kinds(plan2(prWorld(removed))), ['needs_human/merge_queue_rejected']);
+    });
+    it('not the controller\'s (another author, or not a revert branch) → nothing', () => {
+      assert.deepEqual(kinds(plan2(prWorld(revertPull({ author: 'sabbasi3', author_is_bot: false })))), []);
+      assert.deepEqual(kinds(plan2(prWorld(revertPull({ author: 'sabbasi3-factory-agent[bot]', author_is_bot: true })))), [], 'another App on a factory/revert-* branch');
+      assert.deepEqual(kinds(plan2(prWorld(revertPull({ head_ref: 'revert-21' })))), []);
+    });
+  });
+});

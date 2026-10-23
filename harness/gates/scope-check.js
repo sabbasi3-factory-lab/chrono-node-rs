@@ -76,6 +76,12 @@ async function context() {
         const head = event.merge_group.head_sha;
         return { pr, head, contractBase: `${head}^`, changed: changedPaths(`${head}^`, head) };
     }
+    if (name === "push" && MODE === "outputs") {
+        // Post-merge check of a main commit (ci only): its own diff, no PR, nothing enforced.
+        const head = process.env.GITHUB_SHA;
+        if (!/^[0-9a-f]{40}$/.test(head || "")) throw new Error("GITHUB_SHA missing");
+        return { pr: { number: 0, user: null, body: "" }, head, contractBase: `${head}^`, changed: changedPaths(`${head}^`, head) };
+    }
     throw new Error(`unsupported event ${name}`);
 }
 

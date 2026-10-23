@@ -168,6 +168,11 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `needs_human` | `review_contract_changed` | this head was reviewed, but against another (or an unknown) contract version than the current one; no second review is sent automatically | `label:needs-human` |
 | `needs_human` | `review_timeout` | no reviewer verdict on this head within 60 minutes of the dispatch (the run failed, was flagged by detection, or posted nothing) | `label:needs-human` |
 | `wait` | `review_pending` | the review was dispatched for this head and its verdict isn't in yet | nothing (logged, **not** recorded) |
+| `needs_human` | `main_regressed` | `ci` (on push to main) failed on a factory PR's merge commit: label and comment on the merged PR | `label:needs-human` |
+| `auto_revert` | `main_regressed` | …and it was an auto-strict PR the controller merged, it's still main's tip, and every earlier auto-revert PR has `factory:revert-reviewed` (gated by the kill switch) | `open_revert` |
+| `needs_human` | `revert_limit` / `revert_not_safe` | an earlier auto-revert isn't marked reviewed by a person, or main moved on since the merge: no revert (the `main_regressed` hand-off already told a person) | none (recorded) |
+| `auto_merge` | `revert_ready` | the controller's own `factory/revert-<n>` PR with green `ci` and `gates` and `MERGEABLE` | `enqueue_merge` |
+| `needs_human` | `revert_checks_failed` | a revert PR's `ci` or `gates` failed (never queued) | `label:needs-human` |
 | `task_done` | `task_merged` | an open issue with a valid task marker whose task has a merged PR (the first one, `pr`). Planned on every poll while the issue is open; gated only by the kill switch (no escalation holds it back). A leftover open PR for a task that's already merged gets no decision at all | `close_task` |
 | `needs_human` | `merge_queue_rejected` | the PR left the merge queue without merging after its head went green; never re-queued automatically | `label:needs-human` |
 | `wait` | `merge_not_ready` | an auto-tier PR with green checks but an unmet merge condition (named in `source_ids` as `blocker:<why>`) | nothing (logged, **not** recorded) |
@@ -221,6 +226,16 @@ top of the whole-crate golden suite (every ported case, every configuration). Th
 that step's conclusion from the jobs API (runner metadata, never log text, and only when the change
 leaves `.github/` alone), records it on `check_result` as `full_regression`, and requires `success`
 before any review or merge. Anything else → `needs_human/full_regression_missing`.
+
+**Auto-revert (auto-strict only).** `ci` also runs on every push to `main` (one concurrency group
+per commit, so no post-merge run is cancelled), and the controller records those runs. If the run on
+a factory PR's merge commit fails, a person is told on that PR (`needs_human/main_regressed`). If
+it was an auto-strict PR the controller merged and it's still main's tip, the controller also opens
+`factory/revert-<pr>` (the parent's tree on top of the merge) with a templated PR, records
+`auto_revert`, and enqueues the revert PR once its own `ci` and `gates` pass. A reverted PR no longer
+counts as merged, so its task's dependents wait. **Never twice without a person:** while any earlier
+revert PR lacks the `factory:revert-reviewed` label (which only a person adds), every later regression
+gets only the hand-off (`revert_limit`).
 
 **Reviewer agent (auto-strict only).** Once an auto-strict PR meets every condition above, the
 controller dispatches `review.lock.yml` (gh-aw, `gpt-6.1-sol`: a different model family from the
@@ -359,6 +374,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
 | `dispatch_workflow:repair` | there is no repair workflow yet, so it becomes `needs_human`/`repair_unavailable`: label + comment |
 | `enqueue_merge` | GraphQL `enqueuePullRequest` for the PR with `expectedHeadOid` = the planned head (exact mutation), then record `auto_merge` with its head. If GitHub refuses (GraphQL error or HTTP 4xx): re-read the PR head. If it moved, the plan is stale, nothing is recorded, and the next poll re-plans. Otherwise `needs_human`/`enqueue_failed` (label + comment). Once that failure is recorded, that PR and head are never sent to GitHub again, even if the hand-off was interrupted. HTTP 5xx fails the run, and the next poll retries. |
 | `dispatch_workflow:review` | record `review_dispatched` (with the head) first, then dispatch `review.lock.yml` on `main` with `{task, pr, head_sha, contract_sha}` (full SHAs). A failed dispatch is never retried; the review times out to a person |
+| `open_revert` | read the merge commit (exactly one parent) and its parent's tree; create a commit with that tree on top of the merge on `factory/revert-<pr>` (an existing branch is reused only if it is exactly that commit, otherwise the run fails closed); open the PR `Revert #<pr> (factory auto-revert)` to main from a fixed template (an existing one is reused); then record `auto_revert` with `revert_pr` and `revert_commit`. A failure is retried next poll without duplicates |
 | `close_task` | record `task_done` (once), then remove `factory:ready` and `factory:picked` from the issue (a 404 for a label that's already gone is fine), then close it with `state_reason: completed`. The effect re-runs whenever it's planned (the issue is still open), so an interrupted close finishes on the next poll; the event isn't recorded twice. This also backfills tasks merged before this stage existed (#45). |
 | `alert:owner`, `pause_dispatch`, `none` | no GitHub effect; recorded in the audit log only |
 
@@ -378,7 +394,7 @@ planner uses the fresh measurement directly; fixture mode uses the snapshot's va
   sentence per reason code, the label, and the run link. No text from issues, PRs or agents.
 - **The client's allowlist** (`assertAllowedRequest(…, 'live')`) independently allows only:
   `POST actions/workflows/implement.lock.yml/dispatches` with `ref: main` and exactly the four
-  validated string inputs (no `aw_context`); the same for `review.lock.yml` with exactly `{task, pr, head_sha, contract_sha}`; `POST issues/<n>/labels` with labels from
+  validated string inputs (no `aw_context`); the same for `review.lock.yml` with exactly `{task, pr, head_sha, contract_sha}`; `POST git/refs` only for `refs/heads/factory/revert-<n>`; `POST pulls` only for `Revert #<n> (factory auto-revert)` from `factory/revert-<n>` to `main` with a templated body; `POST issues/<n>/labels` with labels from
   `factory:picked`, `needs-human`, `blocked`, `stale-contract`; `POST issues/<n>/comments` with a body
   starting with the template marker (≤ 2,000 chars); and the exact `enqueuePullRequest` GraphQL
   mutation with one `PR_…` node id and a 40-hex `expectedHeadOid` (no other variables, no queue jumping);

@@ -2,6 +2,7 @@
 // policies to a list of decisions with stable reason codes. No I/O, no clock
 // reads (`now` is an argument), no randomness.
 
+import { CONTROLLER_LOGIN, REVERT_REVIEWED_LABEL, revertedPrOf } from './github.ts';
 import { contractPath, contractShaMatches, isCoreTask, sameArea, taskTier } from './tasks.ts';
 import type {
   CheckRunSnap,
@@ -162,8 +163,11 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   const mergedTasks = new Set<string>();
   /** Task → its first merged PR (lowest number), the one that finished it. */
   const mergedPr = new Map<string, PullSnap>();
+  // A merged PR the controller auto-reverted no longer counts: its code is gone from main.
+  const revertedPrs = new Set<number>();
+  for (const h of Object.values(s.history)) for (const r of h.reverts ?? []) revertedPrs.add(r.pr);
   for (const pr of [...s.pulls].sort((a, b) => a.number - b.number)) {
-    if (pr.state !== 'merged' || !pr.task_id) continue;
+    if (pr.state !== 'merged' || !pr.task_id || revertedPrs.has(pr.number)) continue;
     mergedTasks.add(pr.task_id);
     if (!mergedPr.has(pr.task_id)) mergedPr.set(pr.task_id, pr);
   }
@@ -212,6 +216,43 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   // Reviewer-agent dispatches: they spend AI credits, so they pass the same gates as repairs.
   const reviews: Decision[] = [];
 
+  // ---- post-merge regression on main (ci on push to main). The newest finished run per commit.
+  const mainRuns = new Map<string, CheckRunSnap>();
+  for (const r of s.check_runs) {
+    if (r.workflow !== CI_WORKFLOW || r.event !== 'push' || r.status !== 'completed' || !r.conclusion) continue;
+    const prev = mainRuns.get(r.head_sha);
+    if (!prev || r.run_id > prev.run_id || (r.run_id === prev.run_id && r.run_attempt > prev.run_attempt)) mainRuns.set(r.head_sha, r);
+  }
+  // Earlier auto-reverts a person hasn't marked reviewed (label on the revert PR): while any
+  // exists, the controller never reverts again by itself.
+  const pullByNumber = new Map(s.pulls.map((x) => [x.number, x]));
+  const unreviewedReverts = Object.values(s.history).flatMap((h) => h.reverts ?? []).filter((r) => r.revert_pr === null || !pullByNumber.get(r.revert_pr)?.labels.includes(REVERT_REVIEWED_LABEL));
+  const reverts: Decision[] = [];
+  for (const pr of [...s.pulls].sort((a, b) => a.number - b.number)) {
+    if (pr.state !== 'merged' || !pr.task_id || !pr.merge_commit_sha) continue;
+    const run = mainRuns.get(pr.merge_commit_sha);
+    if (!run || !FAILED_CONCLUSIONS.has(run.conclusion!)) continue;
+    const task = pr.task_id;
+    if ((history(task).reverts ?? []).some((r) => r.pr === pr.number)) continue; // already reverted
+    const base = { task, pr: pr.number, run_id: run.run_id };
+    const runId = `${run.run_id}/attempts/${run.run_attempt}`;
+    // Always: a person is told on the merged PR (label + comment).
+    out.push(decide({ ...base, type: 'needs_human', reason: 'main_regressed', effect: 'label:needs-human', source_ids: [runId, pr.node_id] }));
+    const c = contractOf(s, task);
+    const ours = (history(task).enqueued ?? []).some((e) => e.pr === pr.number);
+    if (!c || mergeTier(c, p) !== 'auto-strict' || !ours) continue; // only auto-strict merges the controller made are reverted
+    if (unreviewedReverts.length > 0) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'revert_limit', effect: 'none', source_ids: [runId, pr.node_id, 'revert_limit'] }));
+      continue;
+    }
+    // Only a revert of main's tip is mechanical (the parent's tree); anything merged since needs a person.
+    if (s.main_sha !== pr.merge_commit_sha) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'revert_not_safe', effect: 'none', source_ids: [runId, pr.node_id, `main:${s.main_sha ?? 'unknown'}`] }));
+      continue;
+    }
+    reverts.push({ ...decide({ ...base, type: 'auto_revert', reason: 'main_regressed', effect: 'open_revert', source_ids: [pr.node_id, pr.merge_commit_sha, 'revert'] }), merge_commit_sha: pr.merge_commit_sha });
+  }
+
   // ---- task done: an open task issue whose task has a merged PR leaves the pipeline (close the
   // issue as completed, remove factory:ready/factory:picked). Gated by the kill switch only (no
   // escalation can hold it back). It keeps being planned while the issue is open, so an
@@ -259,6 +300,27 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     escalate(decide({ type: 'needs_human', reason: 'pick_time_unknown', effect: 'label:needs-human', task, issue: i.number, pr: pr?.number ?? null, source_ids: [i.node_id, 'picked:unknown'] }));
   }
   const unchecked = new Set(s.unchecked_heads);
+
+  // ---- the controller's revert PRs: enqueued once their own ci and gates pass (no task, no review).
+  for (const pr of openPulls) {
+    if (revertedPrOf(pr.head_ref) === null || (pr.author ?? '').replace(/\[bot\]$/, '') !== CONTROLLER_LOGIN || !pr.author_is_bot) continue;
+    if (pr.labels.includes(LABEL_NEEDS_HUMAN) || pr.in_merge_queue || unchecked.has(pr.head_sha)) continue;
+    const base = { task: null, pr: pr.number, issue: null };
+    const removed = pr.merge_queue_events.find((e) => e.kind === 'dequeued' && (e.reason ?? '').toLowerCase() !== 'merged');
+    if (removed) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'merge_queue_rejected', effect: 'label:needs-human', source_ids: [pr.node_id, removed.node_id] }));
+      continue;
+    }
+    const ci = latestCheck(s, pr, CI_WORKFLOW);
+    const gates = latestCheck(s, pr, GATES_WORKFLOW);
+    const failed = [ci, gates].find((r) => r?.conclusion && FAILED_CONCLUSIONS.has(r.conclusion));
+    if (failed) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'revert_checks_failed', effect: 'label:needs-human', run_id: failed.run_id, source_ids: [`${failed.run_id}/attempts/${failed.run_attempt}`, pr.node_id] }));
+      continue;
+    }
+    if (ci?.conclusion !== 'success' || gates?.conclusion !== 'success' || pr.mergeable !== 'MERGEABLE') continue;
+    merges.push({ ...decide({ ...base, type: 'auto_merge', reason: 'revert_ready', effect: 'enqueue_merge', run_id: ci.run_id, source_ids: [pr.node_id, pr.head_sha] }), head_sha: pr.head_sha });
+  }
 
   // ---- open factory PRs: contract freshness and CI failures
   for (const pr of openPulls) {
@@ -492,6 +554,7 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     if (route(m, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(m);
   }
   for (const d of dones) if (route(d, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(d);
+  for (const d of reverts) if (route(d, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(d);
 
   for (const r of reviews) {
     if (r.task && escalated.has(r.task)) continue;

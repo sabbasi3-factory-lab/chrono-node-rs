@@ -57,6 +57,13 @@ export function deriveState(events: AuditEvent[], now: Date): DerivedState {
         (entry(task).reviews ??= []).push({ pr, head, contract, at: e.timestamp });
         break;
       }
+      case 'auto_revert': {
+        const pr = e.payload.pr;
+        if (!task || typeof pr !== 'number') break;
+        const rp = e.payload.revert_pr;
+        (entry(task).reverts ??= []).push({ pr, revert_pr: typeof rp === 'number' ? rp : null, at: e.timestamp });
+        break;
+      }
       case 'run_finished': {
         const aic = e.payload.aic;
         if (typeof aic !== 'number' || !Number.isFinite(aic) || aic < 0) break;
