@@ -250,6 +250,24 @@ describe('planner: schedule', () => {
     assert.deepEqual(reasons(run(s)), ['would_dispatch', 'core_area_busy']);
   });
 
+  it('serializes auto-strict factory-wide, not just per area: a contract-tier auto-strict task waits for an in-flight core task, and vice versa', () => {
+    const strictOnLocale = contract('en/strict', { tier: 'auto-strict', scope: ['src/locales/en/parsers/strict.rs'] });
+    const core = contract('core/a', { scope: ['src/core/a.rs'] });
+    // A core task in flight holds a contract-tier auto-strict task in an unrelated area.
+    let s = snapshot({ issues: [issue(1, 'en/strict'), issue(2, 'core/a', ['factory:picked'])], contractList: [strictOnLocale, core], history: pickedRecently(['core/a']) });
+    assert.deepEqual(reasons(run(s)), ['core_area_busy']);
+    // A contract-tier auto-strict task in flight holds a core task.
+    s = snapshot({ issues: [issue(1, 'en/strict', ['factory:picked']), issue(2, 'core/a')], contractList: [strictOnLocale, core], history: pickedRecently(['en/strict']) });
+    assert.deepEqual(reasons(run(s)), ['core_area_busy']);
+    // Two contract-tier auto-strict tasks in different areas: one per run.
+    const other = contract('en/strict2', { tier: 'auto-strict', scope: ['src/locales/en/parsers/strict2.rs'] });
+    s = snapshot({ issues: [issue(1, 'en/strict'), issue(2, 'en/strict2')], contractList: [strictOnLocale, other] });
+    assert.deepEqual(reasons(run(s)), ['would_dispatch', 'core_area_busy']);
+    // Auto-tier tasks are not in the strict lane.
+    s = snapshot({ issues: [issue(1, 'en/strict', ['factory:picked']), issue(2, 'en/plain')], contractList: [strictOnLocale, contract('en/plain')], history: pickedRecently(['en/strict']) });
+    assert.deepEqual(reasons(run(s)), ['would_dispatch']);
+  });
+
   it('holds one task per area lock (area_locked)', () => {
     const shared = 'src/locales/en/parsers/shared.rs';
     const s = snapshot({
