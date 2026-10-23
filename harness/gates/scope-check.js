@@ -101,15 +101,22 @@ async function main() {
     const isAgent = pr.user && pr.user.login === AGENT_LOGIN;
     const loadContract = loadContractAt(contractBase);
     const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract });
-    let contractTier = null;
+    // A factory PR's contract decides too (its tier and every scope path). A missing or unreadable
+    // contract fails closed: run the full regression.
+    let strict;
     if (result.task) {
+        let contract = null;
         try {
-            contractTier = (loadContract(result.task) || {}).tier || null;
+            contract = loadContract(result.task);
         } catch {
-            contractTier = "auto-strict"; // unreadable contract: fail closed (run the full regression)
+            contract = null;
         }
+        strict = contract
+            ? needsFullRegression({ changed: changedPaths, autoStrictGlobs, contractTier: contract.tier || null, contractScope: contract.scope })
+            : true;
+    } else {
+        strict = needsFullRegression({ changed: changedPaths, autoStrictGlobs, contractTier: null });
     }
-    const strict = needsFullRegression({ changed: changedPaths, autoStrictGlobs, contractTier });
 
     console.log(`mode ${MODE}; factory policies at ${version}; candidate ${head}; contracts from ${contractBase}`);
     console.log(`PR #${pr.number} by ${pr.user && pr.user.login}: ${result.kind}${result.task ? ` task ${result.task}` : ""}`);
