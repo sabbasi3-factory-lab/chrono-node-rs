@@ -268,7 +268,8 @@ The planner applies these gates in order. Repairs only go through the first grou
 3. busy jobs (unknown, or `busy + planned × ci.max_jobs_per_pr > 14`)
 4. WIP (`wip.start`, clamped to `wip.max`)
 5. human queue (> `human_queue.max_items`, human-tier tasks only)
-6. core area (`wip.core_area`)
+6. strict lane (`wip.core_area`, factory-wide): tasks with a core path **or** an effective tier of
+   `auto-strict` (by paths or contract). At most `core_area` of them in flight at once, whatever their areas, and never more than 1 (hard cap in code)
 7. area lock (same contract `area`, or overlapping `scope`)
 
 **Tiers**
