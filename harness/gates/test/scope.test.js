@@ -194,10 +194,14 @@ test("review gate (merge_group): agent auto-strict changes need the reviewer App
         [run({ output: { summary: `x\nReviewed-Head: ${head}` } })],
         // The latest verdict wins: an objection after a pass blocks.
         [run(), run({ id: 8, started_at: "2026-10-26T13:00:00Z", conclusion: "failure" })],
+        // A newer run still queued (no started_at yet) hides an older pass.
+        [run(), run({ id: 8, started_at: null, status: "queued", conclusion: null })],
+        [run({ id: 9 }), run({ id: 10, started_at: null, status: "queued", conclusion: null })],
     ];
     for (const checkRuns of bad) assert.strictEqual(gate({ checkRuns }).ok, false, JSON.stringify(checkRuns));
     // ...and a pass after an objection is accepted; another App's later run is ignored.
     assert.strictEqual(gate({ checkRuns: [run({ conclusion: "failure" }), run({ id: 8, started_at: "2026-10-26T13:00:00Z" })] }).ok, true);
+    assert.strictEqual(gate({ checkRuns: [run({ id: 8 }), run({ conclusion: "failure" })] }).ok, true, "order by id, not by array position");
     assert.strictEqual(gate({ checkRuns: [run(), run({ id: 9, app: { id: 1 }, started_at: "2026-10-26T14:00:00Z", conclusion: "failure" })] }).ok, true);
     assert.strictEqual(gate({ head: "short", checkRuns: [run({ head_sha: "short" })] }).ok, false);
 });

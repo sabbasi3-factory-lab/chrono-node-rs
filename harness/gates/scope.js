@@ -134,7 +134,7 @@ const REVIEW_CHECK_NAME = "factory-review";
  * Merge-queue review gate (DESIGN §9 strict gates, `reviewer_agent`). An agent PR whose change is
  * auto-strict (`needsFullRegression`) may enter main only if a person put it in the queue, or the
  * reviewer App's latest `factory-review` check run on the PR head passed and names that head
- * (`Reviewed-Head: <sha>` as the summary's first line). So neither the agent nor the controller
+ * (`Reviewed-Head: <sha>` as the summary's first line). "Latest" is the highest check-run id. So neither the agent nor the controller
  * App can merge an unreviewed auto-strict change. Fails closed: an unknown enqueuer counts as
  * not a person; unreadable checks count as no review.
  *   enqueuer: { type: "User" | "Bot" | ..., login } of the last AddedToMergeQueueEvent, or null.
@@ -149,7 +149,9 @@ function reviewGate({ isAgent, strict, head, enqueuer, checkRuns }) {
     if (!Array.isArray(checkRuns)) return { ok: false, why: "review gate: factory-review check runs unreadable" };
     const ours = checkRuns
         .filter((c) => c && c.app && c.app.id === REVIEWER_APP_ID && c.name === REVIEW_CHECK_NAME && c.head_sha === head)
-        .sort((a, b) => String(b.started_at || "").localeCompare(String(a.started_at || "")) || (b.id || 0) - (a.id || 0));
+        // Newest first by check-run id (assigned in creation order): a newer queued run, whose
+        // started_at may still be null, must hide an older pass.
+        .sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
     const latest = ours[0];
     if (!latest) return { ok: false, why: `review gate: no factory-review from the reviewer App on ${head} (enqueued by ${enqueuer ? enqueuer.login || "unknown" : "unknown"})` };
     const first = String((latest.output && latest.output.summary) || "").split("\n")[0].replace(/\r$/, "").trimEnd();
