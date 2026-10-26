@@ -89,6 +89,12 @@ async function reviewInputs(repo, pr) {
     return { enqueuer, checkRuns };
 }
 
+/** The merge_group review gate end to end: reads the enqueuer and verdicts only when required. */
+async function mergeGroupReview({ repo, pr, isAgent, strict }) {
+    const inputs = isAgent && strict ? await reviewInputs(repo, pr) : { enqueuer: null, checkRuns: null };
+    return reviewGate({ isAgent, strict, head: pr.head && pr.head.sha, ...inputs });
+}
+
 const changedPaths = (from, to) => git("diff", "--name-only", "--no-renames", from, to);
 
 async function context() {
@@ -166,7 +172,7 @@ async function main() {
     }
 
     if (MODE === "enforce" && process.env.GITHUB_EVENT_NAME === "merge_group" && result.ok) {
-        const gate = reviewGate({ isAgent, strict, head: pr.head && pr.head.sha, ...(isAgent && strict ? await reviewInputs(process.env.GITHUB_REPOSITORY, pr) : { enqueuer: null, checkRuns: null }) });
+        const gate = await mergeGroupReview({ repo: process.env.GITHUB_REPOSITORY, pr, isAgent, strict });
         console.log(gate.why);
         if (!gate.ok) {
             result.ok = false;
@@ -205,7 +211,11 @@ async function main() {
     console.log(result.kind === "human" ? "human PR: scope gate not applicable" : "scope and contract SHA ok");
 }
 
-main().catch((e) => {
-    console.log(`::error::scope check failed closed: ${e.message}`);
-    process.exitCode = 1;
-});
+module.exports = { mergeGroupReview };
+
+if (require.main === module) {
+    main().catch((e) => {
+        console.log(`::error::scope check failed closed: ${e.message}`);
+        process.exitCode = 1;
+    });
+}
