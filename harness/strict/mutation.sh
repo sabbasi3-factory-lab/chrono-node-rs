@@ -7,7 +7,11 @@
 # Score = (caught + timeout) / (caught + missed + timeout); unviable mutants don't count.
 # Pass if head >= base. A pure addition (base has no viable mutant) needs head >= FLOOR.
 # Enforced on factory pull requests only; a person's PRs, the merge queue and main get a notice.
-# Each cargo-mutants run is capped at CAP_SECONDS; hitting the cap fails closed.
+# Each cargo-mutants run is capped at CAP_SECONDS (then killed 60 s later); hitting the cap fails closed.
+# Parser and refiner files are declared through build.rs-generated `include!`s, which cargo-mutants
+# can't see, so each changed file it doesn't discover gets a `#[cfg(any())] #[path] mod` line in
+# src/lib.rs for the run (restored afterwards; the real module still compiles the mutated file).
+# A changed file that is still undiscovered fails closed.
 #   BASE_REV, KIND, EVENT, CAP_SECONDS, FLOOR (0..1)
 set -euo pipefail
 fail() { echo "::error::mutation_score_not_lower: $*"; exit 1; }
@@ -28,12 +32,34 @@ rm -rf "$work" && mkdir -p "$work"
 git diff --no-renames "$BASE_REV" HEAD -- "${files[@]}" > "$work/head.diff"
 git diff --no-renames HEAD "$BASE_REV" -- "${files[@]}" > "$work/base.diff"
 git worktree add -q --detach "$work/base" "$BASE_REV"
-trap 'git worktree remove --force "$work/base" >/dev/null 2>&1 || true' EXIT
+cp src/lib.rs "$work/lib.rs.orig"
+trap 'cp "$work/lib.rs.orig" src/lib.rs; git worktree remove --force "$work/base" >/dev/null 2>&1 || true' EXIT
+
+# discover <dir> <files...>: make every given file that exists in <dir> visible to cargo-mutants.
+discover() {
+    local dir="$1"; shift
+    local listed n=0 f
+    listed=$(cd "$dir" && cargo mutants --list-files 2>/dev/null) || fail "cargo mutants --list-files failed in ${dir}"
+    for f in "$@"; do
+        [ -f "$dir/$f" ] || continue
+        grep -qxF "$f" <<<"$listed" && continue
+        [[ "$f" =~ ^src/[A-Za-z0-9_/]+\.rs$ ]] || fail "unexpected path ${f}"
+        printf '\n#[cfg(any())]\n#[path = "%s"]\nmod __factory_mutants_discover_%d;\n' "${f#src/}" "$n" >> "$dir/src/lib.rs"
+        n=$((n + 1))
+    done
+    listed=$(cd "$dir" && cargo mutants --list-files 2>/dev/null) || fail "cargo mutants --list-files failed in ${dir}"
+    for f in "$@"; do
+        [ -f "$dir/$f" ] || continue
+        grep -qxF "$f" <<<"$listed" || fail "cargo-mutants can't see ${f} in ${dir} (fail closed)"
+    done
+}
+discover "$PWD" "${files[@]}"
+discover "$work/base" "${files[@]}"
 
 # run <dir> <diff> <out>: cargo-mutants exit 0 (all caught), 2 (missed) and 3 (timeouts) are results.
 run() {
     local rc=0
-    timeout "$CAP_SECONDS" cargo mutants --dir "$1" --in-diff "$2" --no-shuffle --jobs 2 --output "$3" \
+    timeout --kill-after=60 "$CAP_SECONDS" cargo mutants --dir "$1" --in-diff "$2" --no-shuffle --jobs 2 --output "$3" \
         -- --lib --test golden --test configurations > "$3.log" 2>&1 || rc=$?
     tail -3 "$3.log"
     case "$rc" in
