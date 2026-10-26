@@ -58,3 +58,22 @@ mod tests {
         assert_eq!(find_year_closest_to_ref(r, 1, 6), 2013);
     }
 }
+
+/// Probe (throwaway): a small tested addition, so every strict gate has work.
+pub fn probe_double(x: i64) -> i64 {
+    if x > 3 {
+        x * 2
+    } else {
+        x + 1
+    }
+}
+
+#[cfg(test)]
+mod probe_tests {
+    #[test]
+    fn probe_double() {
+        assert_eq!(super::probe_double(5), 10);
+        assert_eq!(super::probe_double(3), 4);
+        assert_eq!(super::probe_double(4), 8);
+    }
+}

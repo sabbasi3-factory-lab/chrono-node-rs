@@ -159,7 +159,7 @@ jobs:
         env:
           # The base this change applies to: the PR's base, the queue's base, or main before the push.
           BASE_REV: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-          KIND: ${{ steps.scope.outputs.kind }}
+          KIND: factory  # PROBE ONLY: force enforcement
         run: |
           [[ "$BASE_REV" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::semver_checks: no base revision"; exit 1; }
           # Additions are fine; removals and incompatible changes fail (contracts: public_api: unchanged-except-added).
@@ -183,7 +183,7 @@ jobs:
         if: steps.scope.outputs.strict == 'true'
         env:
           BASE_REV: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-          KIND: ${{ steps.scope.outputs.kind }}
+          KIND: factory  # PROBE ONLY: force enforcement
           EVENT: ${{ github.event_name }}
           CAP_SECONDS: "1200"   # per cargo-mutants run (head, then base); the cap fails closed
           FLOOR: "0.8"          # new code with no replaced lines to compare against
@@ -194,7 +194,7 @@ jobs:
         if: steps.scope.outputs.strict == 'true'
         env:
           BASE_REV: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-          KIND: ${{ steps.scope.outputs.kind }}
+          KIND: factory  # PROBE ONLY: force enforcement
           EVENT: ${{ github.event_name }}
           MAX_PCT: "5"   # tiers.yaml perf_regression_max_pct
         # Enforced when "$KIND" = "factory" on pull requests (see the script).
@@ -204,7 +204,7 @@ jobs:
         if: steps.scope.outputs.strict == 'true'
         env:
           BASE_REV: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-          KIND: ${{ steps.scope.outputs.kind }}
+          KIND: factory  # PROBE ONLY: force enforcement
           EVENT: ${{ github.event_name }}
         # Enforced when "$KIND" = "factory" on pull requests (see the script).
         run: bash harness/strict/code-health.sh
