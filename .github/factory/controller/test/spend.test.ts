@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { crc32, deflateRawSync } from 'node:zlib';
 import { FakeGitHub } from '../fake.ts';
-import { jobInferred, readSpendToday, readZip, responseStats, runAIC, spendSnapshotFields } from '../spend.ts';
+import { attributedTask, jobInferred, readSpendToday, readZip, responseStats, runAIC, spendSnapshotFields, type DispatchRecord, type LockVerifier } from '../spend.ts';
 import { readFileSync } from 'node:fs';
 import { NOW, REPO } from './helpers.ts';
 
@@ -84,6 +84,8 @@ interface FakeRun {
   jobsStatus?: number;
   /** run_started_at (a re-run's latest attempt start). */
   started?: string;
+  /** head_sha (default: a valid SHA; '' for none). */
+  sha?: string;
 }
 
 function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; status?: string; attempt?: number }[] = [], repairListStatus = 200, reviewRuns: { id: number; status?: string }[] = [], reviewListStatus = 200): FakeGitHub {
@@ -95,12 +97,14 @@ function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; stat
   );
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/repair\\.lock\\.yml/runs$`), () =>
     repairListStatus === 200
-      ? { data: { workflow_runs: repairRuns.map((x) => ({ id: x.id, status: x.status ?? 'in_progress', run_attempt: x.attempt ?? 1, created_at: '2026-10-16T08:00:00Z' })) } }
+      ? { data: { workflow_runs: repairRuns.map((x) => ({ id: x.id, status: x.status ?? 'in_progress', run_attempt: x.attempt ?? 1, created_at: '2026-10-16T08:00:00Z', run_started_at: '2026-10-16T08:00:00Z', head_sha: 'b'.repeat(40) })) } }
       : { status: repairListStatus, data: null },
   );
-  gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), () =>
+  // Honours `created=>=<day>` like GitHub (an old run re-run today keeps its created_at).
+  const since = (path: string) => decodeURIComponent(/[?&]created=([^&]+)/.exec(path)?.[1] ?? '').replace(/^>=/, '');
+  gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), (path) =>
     listStatus === 200
-      ? { data: { workflow_runs: runs.map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z', run_started_at: x.started ?? x.created ?? '2026-10-16T08:00:00Z', display_title: x.title ?? 'Implement one factory task' })) } }
+      ? { data: { workflow_runs: runs.filter((x) => (x.created ?? '2026-10-16T08:00:00Z').slice(0, 10) >= since(path)).map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z', run_started_at: x.started ?? x.created ?? '2026-10-16T08:00:00Z', head_sha: x.sha ?? 'a'.repeat(40), display_title: x.title ?? 'Implement one factory task' })) } }
       : { status: listStatus, data: null },
   );
   for (const x of runs) {
@@ -143,7 +147,7 @@ describe('spend collector: today\'s implement spend', () => {
       CAPS,
     );
     assert.equal(res.aic, 937, 'today: 30 + 900 + 7');
-    assert.deepEqual(res.tasks, { by_task: { 'en/a': 35, 'en/b': 900 }, unattributed: 7 });
+    assert.deepEqual(res.tasks, { by_task: { 'en/a': 35, 'en/b': 900 }, unattributed: 7, unknown_tasks: [] });
   });
 
   it('an unreadable run from yesterday makes only the per-task spend unknown (today\'s total stands)', async () => {
@@ -223,8 +227,9 @@ describe('spend collector: today\'s implement spend', () => {
     const B = { margin: 400, max_response_aic: 100, max_concurrency: 4 };
     // implement: 500 + 400 (detection) + 2 × 400 (agent and detection overshoot) = 1700.
     const IMPL_BOUND = 1700;
-    const read = (runs: FakeRun[], bounding: typeof B | null = B, repair: { id: number; status?: string; attempt?: number }[] = []) =>
-      readSpendToday(world(runs, 200, repair), REPO, NOW, CAPS, bounding);
+    const verified: LockVerifier = async () => true;
+    const read = (runs: FakeRun[], bounding: typeof B | null = B, repair: { id: number; status?: string; attempt?: number }[] = [], verifyLock: LockVerifier | null = verified, dispatches: DispatchRecord[] = []) =>
+      readSpendToday(world(runs, 200, repair), REPO, NOW, CAPS, { bounding, verifyLock, dispatches });
     /** agent/token_usage.jsonl records: [start offset s, duration s, AIC]. */
     const timed = (recs: [number, number, number][]) =>
       recs.map(([s, d, c], i) => JSON.stringify({ request_id: `a${i}`, timestamp: new Date(Date.parse('2026-10-16T08:00:00Z') + (s + d) * 1000).toISOString(), duration_ms: d * 1000, ai_credits_this_response: c })).join('\n') + '\n';
@@ -327,6 +332,43 @@ describe('spend collector: today\'s implement spend', () => {
       assert.ok(real <= IMPL_BOUND, String(real));
     });
 
+    it('the bound applies only to a run whose own commit\'s workflow is verified (head_sha, caps)', async () => {
+      const calls: string[] = [];
+      const spy: LockVerifier = async (file, sha) => {
+        calls.push(`${file}@${sha}`);
+        return false;
+      };
+      assert.equal((await read([{ id: 9 }], B, [], spy)).aic, null, 'unverified commit → unknown');
+      assert.equal((await read([{ id: 9, attempt: 2 }], B, [], spy)).aic, null, 'unverified re-run → unknown');
+      assert.deepEqual(calls, [`implement.lock.yml@${'a'.repeat(40)}`, `implement.lock.yml@${'a'.repeat(40)}`]);
+      assert.equal((await read([{ id: 9, sha: '' }])).aic, null, 'no head_sha → unknown');
+      assert.equal((await read([{ id: 9 }], B, [], async () => {
+        throw new Error('contents API down');
+      })).aic, null, 'a verifier error → unknown');
+    });
+
+    it('in flight under a bound: reserved at the bound (the daily total carries the worst case)', async () => {
+      assert.deepEqual(today(await read([{ id: 1, status: 'in_progress' }])), { aic: IMPL_BOUND, runs: [{ run_id: 1, status: 'reserved', aic: IMPL_BOUND }] });
+    });
+
+    it('a re-run of a run created days ago (within the re-run horizon) counts today when its attempt started today', async () => {
+      const res = await read([{ id: 7, attempt: 2, created: '2026-10-11T09:00:00Z', started: '2026-10-16T02:00:00Z' }]);
+      assert.equal(res.aic, 2 * IMPL_BOUND);
+      const old = await read([{ id: 7, attempt: 1, created: '2026-10-11T09:00:00Z' }]);
+      assert.equal(old.aic, 0, 'an old first attempt is not counted');
+    });
+
+    it('a readable run whose usage records can\'t be checked (no timings, or a job without records) → bound off and an overshoot_unverifiable alert', async () => {
+      const noTimings: FakeRun = { id: 5, artifacts: [{ id: 50, name: 'usage' }], zips: { 50: zip({ 'agent_usage.json': '{"ai_credits":3}', 'agent/token_usage.jsonl': '{"ai_credits_this_response":3}\n' }) } };
+      const noAgentRecords: FakeRun = { id: 5, artifacts: [{ id: 50, name: 'usage' }], zips: { 50: zip({ 'agent_usage.json': '{"ai_credits":3}' }) } };
+      for (const run of [noTimings, noAgentRecords]) {
+        const res = await read([{ id: 9 }, run]);
+        assert.equal(res.aic, null);
+        assert.equal(res.alert?.code, 'overshoot_unverifiable');
+        assert.equal(res.alert?.run_id, 5);
+      }
+    });
+
     it('responseStats: overlapping requests, back-to-back is not concurrent, unreadable → null', () => {
       const f = (t: string) => new Map([['agent/token_usage.jsonl', t]]);
       assert.deepEqual(responseStats(f(timed([[0, 10, 1], [5, 10, 2], [7, 1, 3]]))), { max_concurrency: 3, max_response_aic: 3 });
@@ -334,6 +376,29 @@ describe('spend collector: today\'s implement spend', () => {
       assert.equal(responseStats(f('{"ai_credits_this_response":1}\n')), null, 'no timestamp');
       assert.equal(responseStats(f('not json\n')), null);
       assert.equal(responseStats(new Map()), null);
+    });
+  });
+
+  describe('per-task: an unreadable run from yesterday makes only its own task unknown when the audit log shows its dispatch', () => {
+    const at = (t: string) => t;
+    const disp = (o: Partial<DispatchRecord> = {}): DispatchRecord => ({ kind: 'implement', task: 'en/a', issue: 3, attempt: 1, at: at('2026-10-15T19:55:00Z'), ...o });
+    const unreadable: FakeRun = { id: 2, created: '2026-10-15T20:00:00Z', title: 'Implement en/a #3 attempt 1', artifacts: [{ id: 20, name: 'usage' }, { id: 21, name: 'usage' }] };
+    const read = (dispatches: DispatchRecord[]) => readSpendToday(world([unreadable, { id: 1, artifacts: [{ id: 10, name: 'usage' }], zips: { 10: usageZip(30) }, title: 'Implement en/b #4 attempt 1' }]), REPO, NOW, CAPS, { dispatches });
+    it('a matching dispatch record → only en/a unknown; en/b is known, today\'s total stands', async () => {
+      const res = await read([disp()]);
+      assert.equal(res.aic, 30);
+      assert.deepEqual(res.tasks, { by_task: { 'en/b': 30 }, unattributed: 0, unknown_tasks: ['en/a'] });
+    });
+    it('a run NAMED for en/a with no matching dispatch → every task unknown (the name alone proves nothing)', async () => {
+      for (const ds of [[], [disp({ task: 'en/b' })], [disp({ issue: 4 })], [disp({ attempt: 2 })], [disp({ kind: 'repair' })], [disp({ at: '2026-10-15T20:05:00Z' })], [disp({ at: '2026-10-15T19:00:00Z' })]]) {
+        assert.equal((await read(ds)).tasks, null, JSON.stringify(ds));
+      }
+    });
+    it('attributedTask matches kind, task, issue and attempt within the window after the record', () => {
+      const run = { display_title: 'Repair en/a #3 attempt 2', created_at: '2026-10-15T20:00:00Z' };
+      assert.equal(attributedTask(run, [disp({ kind: 'repair', attempt: 2 })]), 'en/a');
+      assert.equal(attributedTask(run, [disp({ kind: 'repair', attempt: 2, at: '2026-10-15T19:29:59Z' })]), null, 'more than 30 min before');
+      assert.equal(attributedTask({ ...run, display_title: 'Repair one factory PR' }, [disp({ kind: 'repair', attempt: 2 })]), null);
     });
   });
 

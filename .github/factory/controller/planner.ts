@@ -549,8 +549,10 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     const sig = run.failure_signature;
     // Per-task spend from the collector (measured + reserved, unattributed runs included), plus
     // what this repair may cost at most: never more than budgets.per_task.max_aic. Unknown: a person.
+    // A task listed in unknown_tasks has an unreadable run of its own (attributed through the audit
+    // dispatch record): its spend is unknown, the other tasks' isn't.
     const ts = s.task_spend;
-    const spent = ts ? Math.max(h.aic_spent, (ts.by_task[task] ?? 0) + ts.unattributed) : null;
+    const spent = ts && !(ts.unknown_tasks ?? []).includes(task) ? Math.max(h.aic_spent, (ts.by_task[task] ?? 0) + ts.unattributed) : null;
     const repairCap = p.budgets.per_run.repair + p.budgets.per_run.threat_detection;
     const failure = {
       ...base,

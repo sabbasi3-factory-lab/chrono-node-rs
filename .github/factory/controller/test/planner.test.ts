@@ -1048,6 +1048,15 @@ describe('repair loop: the per-task budget (collector spend, fail closed)', () =
   it('unknown task spend → needs_human/task_budget_unknown, never a repair', () => {
     for (const ts of [null, undefined]) assert.deepEqual(reasons(run(withSpend(ts))), ['task_budget_unknown'], String(ts));
   });
+  it('only this task unknown (an unreadable run attributed to it through the audit log) → task_budget_unknown; another task\'s → repairs go on', () => {
+    assert.deepEqual(reasons(run(withSpend({ by_task: {}, unattributed: 0, unknown_tasks: ['en/weekday-parser'] }))), ['task_budget_unknown']);
+    assert.equal(find(run(withSpend({ by_task: {}, unattributed: 0, unknown_tasks: ['drill/repair-ok'] })), 'ci_failed').type, 'repair_dispatched');
+  });
+  it('the repair gate stays an expected-cost guard: cap + detection (700), not the overshoot bound (budgets.yaml, decision B1)', () => {
+    const pol = structuredClone(policies);
+    pol.budgets.per_run.overshoot = { margin: 400, max_response_aic: 100, max_concurrency: 4 };
+    assert.equal(find(plan(withSpend({ by_task: { 'en/weekday-parser': 290 }, unattributed: 10 }), pol, ON, NOW), 'ci_failed').type, 'repair_dispatched', '300 + 700 = 1000, the margin not added');
+  });
 });
 
 describe('auto-revert: a confirmed post-merge ci failure on main after an auto-strict merge', () => {

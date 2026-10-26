@@ -19,8 +19,9 @@ function jobCaps(lock: string, job: string): number[] {
 }
 
 /** Null when every lock enforces exactly the policy's caps; otherwise why not. */
-export function lockCapsMismatch(locks: Record<CappedWorkflow, string | null>, perRun: BudgetsPolicy['per_run']): string | null {
+export function lockCapsMismatch(locks: Record<CappedWorkflow, string | null>, perRun: BudgetsPolicy['per_run'], only?: readonly CappedWorkflow[]): string | null {
   for (const [wf, key] of Object.entries(CAPPED_WORKFLOWS) as [CappedWorkflow, keyof typeof perRun][]) {
+    if (only && !only.includes(wf)) continue;
     const lock = locks[wf];
     if (lock === null) return `${wf}.lock.yml could not be read`;
     if (/GH_AW_DEFAULT_(DETECTION_)?MAX_AI_CREDITS/.test(lock)) return `${wf}.lock.yml lets a variable set an AI-credits cap`;

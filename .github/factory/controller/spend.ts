@@ -82,7 +82,8 @@ export interface Bounding {
 
 /** A readable run broke an overshoot assumption: bounding is off and a person must review the margin. */
 export interface BoundAlert {
-  code: 'overshoot_assumption_exceeded';
+  /** exceeded: a run broke an assumption; unverifiable: a readable run's per-response records can't be checked. */
+  code: 'overshoot_assumption_exceeded' | 'overshoot_unverifiable';
   run_id: number;
   max_concurrency: number;
   max_response_aic: number;
@@ -105,6 +106,48 @@ export class UsageMissing extends Error {
 export interface TaskSpend {
   by_task: Record<string, number>;
   unattributed: number;
+  /** Tasks with an unreadable run from yesterday, attributed through the controller's audit dispatch record. */
+  unknown_tasks: string[];
+}
+
+/** A dispatch the controller recorded in the audit log (non-dry-run `dispatched` / `repair_dispatched`). */
+export interface DispatchRecord {
+  kind: 'implement' | 'repair';
+  task: string;
+  issue: number;
+  attempt: number;
+  /** The audit event's timestamp (recorded just before the dispatch). */
+  at: string;
+}
+
+/** How long after the dispatch record a run may be created and still be that dispatch's run. */
+export const DISPATCH_MATCH_MINUTES = 30;
+
+/**
+ * The task of a run, but only if the controller's audit log recorded a dispatch of exactly that
+ * kind, task, issue and attempt shortly before the run was created. The run name alone is only
+ * the lookup key: anyone who can dispatch can name a run.
+ */
+export function attributedTask(run: Rec, dispatches: readonly DispatchRecord[]): string | null {
+  const title = typeof run.display_title === 'string' ? run.display_title : '';
+  const m = /^(Implement|Repair) ([a-z0-9-]+(?:\/[a-z0-9-]+)+) #([1-9][0-9]{0,8}) attempt ([1-9][0-9]?)$/.exec(title);
+  const created = typeof run.created_at === 'string' ? Date.parse(run.created_at) : NaN;
+  if (!m || !Number.isFinite(created)) return null;
+  const kind = m[1] === 'Implement' ? 'implement' : 'repair';
+  const hit = dispatches.some((d) => {
+    const at = Date.parse(d.at);
+    return d.kind === kind && d.task === m[2] && d.issue === Number(m[3]) && d.attempt === Number(m[4]) && at <= created && created - at <= DISPATCH_MATCH_MINUTES * 60_000;
+  });
+  return hit ? m[2]! : null;
+}
+
+export interface SpendOptions {
+  /** The spend bound in force (budgets.yaml overshoot margin), or null/absent for none. */
+  bounding?: Bounding | null;
+  /** Verifies a run's own commit's workflow caps; the bound applies only to verified runs. */
+  verifyLock?: LockVerifier | null;
+  /** The controller's recorded dispatches (per-task attribution of unreadable runs). */
+  dispatches?: readonly DispatchRecord[];
 }
 
 export type SpendResult =
@@ -294,9 +337,19 @@ export function taskOfRun(run: Rec): string | null {
  * unreadable data: today's total is then { aic: null }; an unreadable run from yesterday only makes
  * the per-task spend unknown (`tasks: null`), so repairs fail closed while dispatch goes on.
  */
-export async function readSpendToday(client: GitHubClient, repo: string, now: Date, caps: SpendCaps, bounding: Bounding | null = null): Promise<SpendResult> {
+/** Whether the workflow file as of `headSha` enforces exactly the policy's caps (spend bound only). */
+export type LockVerifier = (workflowFile: string, headSha: string) => Promise<boolean>;
+
+/** GitHub lets a run be re-run for 30 days: older runs can't spend again. */
+export const RERUN_HORIZON_DAYS = 30;
+
+export async function readSpendToday(client: GitHubClient, repo: string, now: Date, caps: SpendCaps, opts: SpendOptions = {}): Promise<SpendResult> {
+  const bounding = opts.bounding ?? null;
+  const verifyLock = opts.verifyLock ?? null;
+  const dispatches = opts.dispatches ?? [];
   const day = now.toISOString().slice(0, 10);
   const yesterday = new Date(Date.parse(`${day}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+  const horizon = new Date(Date.parse(`${day}T00:00:00Z`) - RERUN_HORIZON_DAYS * 86_400_000).toISOString().slice(0, 10);
   const runs: RunSpend[] = [];
   const unknown = (reason: string, alert: BoundAlert | null = null): SpendResult => ({ aic: null, runs, reason, tasks: null, alert });
   // Every AI workflow with its in-flight reservation (its two caps). A workflow whose runs can't be
@@ -308,14 +361,19 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   ];
   const list: Rec[] = [];
   const reserveOf = new Map<Rec, number>();
+  const fileOf = new Map<Rec, string>();
   for (const w of workflows) {
     try {
       const found = (
-        await paginate(client, `/repos/${repo}/actions/workflows/${w.file}/runs?created=%3E%3D${yesterday}&per_page=100`, (d) =>
+        // Back to the re-run horizon: an old run re-run today keeps its original created_at.
+        await paginate(client, `/repos/${repo}/actions/workflows/${w.file}/runs?created=%3E%3D${horizon}&per_page=100`, (d) =>
           Array.isArray(rec(d).workflow_runs) ? (rec(d).workflow_runs as unknown[]) : [],
         )
       ).map(rec);
-      for (const r of found) reserveOf.set(r, w.reserve);
+      for (const r of found) {
+        reserveOf.set(r, w.reserve);
+        fileOf.set(r, w.file);
+      }
       list.push(...found);
     } catch (err) {
       return unknown(`${w.file} runs could not be listed (${(err as Error).message})`);
@@ -324,24 +382,43 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   // Measure everything first: one readable run that breaks an assumption turns bounding off for
   // all of them.
   const measured: { run: Rec; isToday: boolean; bound: number; r: RunSpend | string }[] = [];
+  const verifiedLocks = new Map<string, boolean>();
   for (const run of list) {
     const id = run.id;
     if (typeof id !== 'number' || !Number.isSafeInteger(id) || id <= 0) return unknown('a run has no id');
     const created = typeof run.created_at === 'string' ? run.created_at : '';
     const started = typeof run.run_started_at === 'string' ? run.run_started_at : '';
-    const rerunToday = typeof run.run_attempt === 'number' && run.run_attempt > 1 && started.startsWith(day);
-    const isToday = created.startsWith(day) || rerunToday;
-    if (!isToday && !created.startsWith(yesterday)) continue;
+    const rerun = typeof run.run_attempt === 'number' && run.run_attempt > 1;
+    const isToday = created.startsWith(day) || (rerun && started.startsWith(day));
+    const isYesterday = created.startsWith(yesterday) || (rerun && started.startsWith(yesterday));
+    if (!isToday && !isYesterday) continue;
     const reserve = reserveOf.get(run)!;
     const bound = bounding ? reserve + 2 * bounding.margin : reserve;
-    measured.push({ run, isToday, bound, r: await measureRun(client, repo, run, id, reserve, bounding ? bound : null) });
+    // The bound holds only for a run whose own commit's workflow enforces the policy's caps.
+    const headSha = typeof run.head_sha === 'string' ? run.head_sha : '';
+    const verified = async (): Promise<boolean> => {
+      if (!bounding || !verifyLock || !/^[0-9a-f]{40}$/.test(headSha)) return false;
+      const key = `${fileOf.get(run)!}@${headSha}`;
+      let v = verifiedLocks.get(key);
+      if (v === undefined) {
+        v = await verifyLock(fileOf.get(run)!, headSha).catch(() => false);
+        verifiedLocks.set(key, v);
+      }
+      return v;
+    };
+    measured.push({ run, isToday, bound, r: await measureRun(client, repo, run, id, bounding ? bound : reserve, verified) });
   }
   let alert: BoundAlert | null = null;
   if (bounding) {
     for (const { r, bound } of measured) {
       if (typeof r === 'string' || r.status !== 'measured') continue;
-      const conc = r.max_concurrency ?? 0;
-      const resp = r.max_response_aic ?? 0;
+      // A measured run whose per-response records can't be checked leaves the assumptions unverified.
+      if (r.max_concurrency === undefined || r.max_response_aic === undefined) {
+        alert = { code: 'overshoot_unverifiable', run_id: r.run_id, max_concurrency: 0, max_response_aic: 0, aic: r.aic, bound };
+        break;
+      }
+      const conc = r.max_concurrency;
+      const resp = r.max_response_aic;
       if (conc > bounding.max_concurrency || resp > bounding.max_response_aic || r.aic > bound) {
         alert = { code: 'overshoot_assumption_exceeded', run_id: r.run_id, max_concurrency: conc, max_response_aic: resp, aic: r.aic, bound };
         break;
@@ -351,14 +428,19 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   const byTask: Record<string, number> = {};
   let unattributed = 0;
   let taskUnknown = false;
+  const unknownTasks = new Set<string>();
   for (const { run, isToday, r: measuredRun } of measured) {
     let r = measuredRun;
     if (alert && typeof r !== 'string' && r.status === 'bounded') {
-      r = `run ${r.run_id} would count at its bound, but run ${alert.run_id} broke an overshoot assumption: bounding is off`;
+      r = `run ${r.run_id} would count at its bound, but run ${alert.run_id} ${alert.code === 'overshoot_unverifiable' ? 'can\'t be checked against the overshoot assumptions' : 'broke an overshoot assumption'}: bounding is off`;
     }
     if (typeof r === 'string') {
       if (isToday) return unknown(r, alert);
-      taskUnknown = true; // yesterday's run: only the per-task spend is unknown
+      // Yesterday's run: only per-task spend is unknown, and only its own task's when the audit log
+      // shows the controller dispatched it; otherwise every task's.
+      const task = attributedTask(run, dispatches);
+      if (task) unknownTasks.add(task);
+      else taskUnknown = true;
       continue;
     }
     if (isToday) runs.push(r);
@@ -366,7 +448,7 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
     if (task) byTask[task] = round((byTask[task] ?? 0) + r.aic);
     else unattributed = round(unattributed + r.aic); // counts against every task
   }
-  return { aic: round(runs.reduce((s, r) => s + r.aic, 0)), runs, tasks: taskUnknown ? null : { by_task: byTask, unattributed }, alert };
+  return { aic: round(runs.reduce((s, r) => s + r.aic, 0)), runs, tasks: taskUnknown ? null : { by_task: byTask, unattributed, unknown_tasks: [...unknownTasks].sort() }, alert };
 }
 
 /** The `agent` artifact's own agent_usage.json, for logging only; undefined if unreadable. */
@@ -390,14 +472,17 @@ async function observedAgentAIC(client: GitHubClient, repo: string, artifacts: R
  * `bound`: this run's bound when bounding is in force, else null (re-runs and missing usage are
  * then unknown).
  */
-async function measureRun(client: GitHubClient, repo: string, run: Rec, id: number, reserve: number, bound: number | null): Promise<RunSpend | string> {
+async function measureRun(client: GitHubClient, repo: string, run: Rec, id: number, reserve: number, verified: () => Promise<boolean>): Promise<RunSpend | string> {
+  // `reserve` is the run's bound when bounding is in force (in-flight runs are reserved at it too);
+  // the bound applies to a re-run or missing usage only if `verified()` (its commit's caps match).
+  const bound = reserve;
   const attempt = run.run_attempt;
   if (typeof attempt !== 'number' || !Number.isInteger(attempt) || attempt < 1 || attempt > MAX_ATTEMPTS) {
     return `run ${id} has an unexpected run_attempt (${String(attempt)})`;
   }
   // A re-run (even one still queued or running) carries earlier attempts' spend: n × the bound.
   if (attempt > 1) {
-    if (bound === null) return `run ${id} was re-run (attempt ${attempt}) and no spend bound is in force`;
+    if (!(await verified())) return `run ${id} was re-run (attempt ${attempt}) and no spend bound is in force for its commit`;
     return { run_id: id, status: 'bounded', aic: round(bound * attempt), reason: 'rerun' };
   }
   const listJobs = async (): Promise<Rec[]> =>
@@ -433,11 +518,12 @@ async function measureRun(client: GitHubClient, repo: string, run: Rec, id: numb
     const wanted = [...new Set([...inferred.map(usageFileFor), ...inferred.map((j) => `${j}/token_usage.jsonl`)])];
     const files = readZip(res.data, wanted);
     const aic = runAIC(files, inferred);
-    const stats = responseStats(files);
+    // The assumptions can be checked only if every job that called the model left its records.
+    const stats = inferred.every((j) => files.has(`${j}/token_usage.jsonl`)) ? responseStats(files) : null;
     return { run_id: id, status: 'measured', aic: round(aic), ...(stats ?? {}) };
   } catch (err) {
     // Only a run GitHub reports as completed: nothing more can start in it, so its bound holds.
-    if (err instanceof UsageMissing && run.status === 'completed' && bound !== null) {
+    if (err instanceof UsageMissing && run.status === 'completed' && (await verified())) {
       const observed = await observedAgentAIC(client, repo, artifacts);
       return { run_id: id, status: 'bounded', aic: bound, reason: err.code, ...(observed !== undefined ? { observed_aic: observed } : {}) };
     }

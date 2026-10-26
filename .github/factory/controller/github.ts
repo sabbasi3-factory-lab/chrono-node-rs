@@ -95,9 +95,14 @@ export const PROJECT_STATUS_MUTATION = 'mutation($project: ID!, $item: ID!, $fie
 export const COMMENT_MARKER = '**Factory controller**';
 /** A spend-bound alert for a person (watchdog, dashboard). */
 export const LABEL_ALERT = 'factory:alert';
-export type AlertCode = 'overshoot_assumption_exceeded' | 'lock_caps_mismatch';
-export const ALERT_TITLE = (code: AlertCode): string => `Factory alert: ${code === 'overshoot_assumption_exceeded' ? 'a run broke an overshoot assumption' : 'compiled workflow caps differ from budgets.yaml'} (spend bound off)`;
-export const ALERT_TITLES: readonly string[] = (['overshoot_assumption_exceeded', 'lock_caps_mismatch'] as const).map(ALERT_TITLE);
+export type AlertCode = 'overshoot_assumption_exceeded' | 'overshoot_unverifiable' | 'lock_caps_mismatch';
+const ALERT_TEXT: Record<AlertCode, string> = {
+  overshoot_assumption_exceeded: 'a run broke an overshoot assumption',
+  overshoot_unverifiable: "a run's usage records can't be checked against the overshoot assumptions",
+  lock_caps_mismatch: 'compiled workflow caps differ from budgets.yaml',
+};
+export const ALERT_TITLE = (code: AlertCode): string => `Factory alert: ${ALERT_TEXT[code]} (spend bound off)`;
+export const ALERT_TITLES: readonly string[] = (Object.keys(ALERT_TEXT) as AlertCode[]).map(ALERT_TITLE);
 export const MAX_COMMENT_LENGTH = 2000;
 
 export type ControllerMode = 'dry-run' | 'live';

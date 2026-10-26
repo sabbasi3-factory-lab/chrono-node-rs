@@ -251,7 +251,7 @@ export interface Snapshot {
    * reservations for runs in flight; runs naming no task count against every task). Null or
    * missing: unknown, so no repair is paid for (fail closed).
    */
-  task_spend?: { by_task: Record<string, number>; unattributed: number } | null;
+  task_spend?: { by_task: Record<string, number>; unattributed: number; unknown_tasks?: string[] } | null;
 }
 
 // ---------------------------------------------------------------- decisions

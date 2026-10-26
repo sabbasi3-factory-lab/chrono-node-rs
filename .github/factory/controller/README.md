@@ -377,8 +377,10 @@ v1's own dry-run decisions never count as real work.
 | completed, with model calls | **measured** from gh-aw's `usage` artifact: the agent from `agent_usage.json` → `ai_credits`; every other job whose `Execute …` step ran (detection, and evals or others if gh-aw adds them) from the sum of `ai_credits_this_response` in `<job>/token_usage.jsonl` |
 
 **The spend bound** (only when `budgets.yaml` has `per_run.overshoot_margin` with its two assumptions,
-and every compiled AI workflow enforces exactly the policy's caps (`caps.ts`, checked each poll against
-the pinned policy). `max-ai-credits` is "stop after the response that crosses the cap", not a strict
+every compiled AI workflow in the controller's checkout enforces exactly the policy's caps (`caps.ts`,
+checked each poll against the pinned policy), **no `factory:alert` issue is open** (a person closes it
+after reviewing), and **the run's own commit's** workflow (`head_sha`, read through the contents API)
+has those caps too). `max-ai-credits` is "stop after the response that crosses the cap", not a strict
 hard stop (the firewall checks the recorded total before each request), so:
 `bound = per_run.<workflow> + per_run.threat_detection + 2 × overshoot_margin` (agent and detection job).
 - a **completed** run whose usage is **missing** (no `usage` artifact, an expired one, or a job's usage
@@ -386,9 +388,18 @@ hard stop (the firewall checks the recorded total before each request), so:
   `spend_snapshot` lists it, with the agent artifact's own figure as `observed_aic` when readable);
 - a **re-run** counts n × its bound (`bounded`, `rerun`); a re-run started today counts today;
 - every readable run's **max concurrency** and **largest response** are recorded; if any run exceeds
-  the assumptions (or its bound), the bound is off for that poll and an `alert` audit event plus one
-  open `factory:alert` issue (live) ask a person to review the margin. Caps that differ from the policy
-  do the same.
+  the assumptions (or its bound), or its per-response records can't be checked, the bound is off and
+  an `alert` audit event plus one open `factory:alert` issue (live; retried each poll until opened) ask
+  a person to review the margin. Caps that differ from the policy do the same. The bound stays off
+  while that issue is open.
+- runs are listed back to GitHub's 30-day re-run horizon; a re-run started today or yesterday counts
+  on that day.
+- in flight, runs are reserved at the bound (the daily total carries the worst case). The **per-task
+  repair gate** still counts a repair at `per_run.repair + per_run.threat_detection` (an expected-cost
+  guard, decision B1; with the margin no repair would fit `per_task.max_aic`).
+- an unreadable run from **yesterday** makes only **its own task's** spend unknown
+  (`task_spend.unknown_tasks`) when the audit log has the controller's dispatch of exactly that kind,
+  task, issue and attempt within 30 min before the run; otherwise every task's.
 
 Otherwise, if **any** completed run's spend can't be read, today's spend is **unknown** (`null` →
 `wait/budget_unknown`): more than one `usage` artifact, a download/API error, a malformed accounting
