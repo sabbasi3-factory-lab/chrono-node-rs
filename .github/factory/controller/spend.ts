@@ -154,7 +154,7 @@ export interface SpendOptions {
 
 export type SpendResult =
   | { aic: number; runs: RunSpend[]; tasks: TaskSpend | null; alert: BoundAlert | null }
-  | { aic: null; runs: RunSpend[]; reason: string; tasks: null; alert: BoundAlert | null };
+  | { aic: null; runs: RunSpend[]; reason: string; tasks: null; alert: BoundAlert | null; /** today's runs that couldn't be read */ unreadable_runs?: number };
 
 export interface SpendCaps {
   /** budgets.yaml per_run.implement */
@@ -459,13 +459,20 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   let unattributed = 0;
   let taskUnknown = false;
   const unknownTasks = new Set<string>();
+  let firstUnreadable: string | null = null;
+  let unreadableToday = 0;
   for (const { run, isToday, r: measuredRun } of measured) {
     let r = measuredRun;
     if (alert && typeof r !== 'string' && r.status === 'bounded') {
       r = `run ${r.run_id} would count at its bound, but run ${alert.run_id} ${alert.code === 'overshoot_unverifiable' ? 'can\'t be checked against the overshoot assumptions' : 'broke an overshoot assumption'}: bounding is off`;
     }
     if (typeof r === 'string') {
-      if (isToday) return unknown(r, alert);
+      if (isToday) {
+        // Today's total is unknown; keep counting so the control room can say how many.
+        firstUnreadable ??= r;
+        unreadableToday++;
+        continue;
+      }
       // Yesterday's run: only per-task spend is unknown, and only its own task's when the audit log
       // shows the controller dispatched it; otherwise every task's.
       const task = attributedTask(run, dispatches);
@@ -478,6 +485,7 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
     if (task) byTask[task] = round((byTask[task] ?? 0) + r.aic);
     else unattributed = round(unattributed + r.aic); // counts against every task
   }
+  if (firstUnreadable !== null) return { aic: null, runs, reason: firstUnreadable, tasks: null, alert, unreadable_runs: unreadableToday };
   return { aic: round(runs.reduce((s, r) => s + r.aic, 0)), runs, tasks: taskUnknown ? null : { by_task: byTask, unattributed, unknown_tasks: [...unknownTasks].sort() }, alert };
 }
 

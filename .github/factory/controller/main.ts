@@ -17,6 +17,7 @@ import { decisionEvent, execute, executeLive, isLive, liveDecision, pendingHando
 import { FakeGitHub } from './fake.ts';
 import { ALERT_TITLE, ALERT_TITLES, COMMENT_MARKER, createClient, LABEL_ALERT, paginate, readSnapshot, REVIEWER_APP_ID, type AlertCode, type RecordedCheck } from './github.ts';
 import { CAPPED_WORKFLOWS, lockCapsMismatch, type CappedWorkflow } from './caps.ts';
+import { dispatchStatus, stateChanged } from './dispatch-state.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
@@ -185,6 +186,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   // Spend, measured before planning (fixture mode uses the snapshot's value). Unknown spend
   // means no dispatch: the planner waits on budget_unknown.
   let spendNote = 'fixture';
+  let unreadableRuns = 0;
   if (deps.snapshot) {
     snapshot.factory_aic_today ??= derived.factory_aic_today;
   } else {
@@ -215,7 +217,8 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     snapshot.task_spend = spend.tasks;
     if (spend.aic === null) {
       snapshot.factory_aic_today = null;
-      spendNote = `unknown: ${spend.reason}`;
+      unreadableRuns = spend.unreadable_runs ?? 0;
+      spendNote = `unknown: ${spend.reason}${unreadableRuns > 1 ? ` (${unreadableRuns} unreadable runs today)` : ''}`;
     } else {
       snapshot.factory_aic_today = spend.aic;
       spendNote = `${spend.aic} AIC from ${spend.runs.length} implement run(s)`;
@@ -274,6 +277,19 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   const planned = plan(snapshot, policies, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, now);
   const decisions = live ? planned.map(liveDecision) : planned;
   if (!live) execute(decisions, log);
+
+  // The control room's banner: what dispatching is doing, recorded only when it changes (so the
+  // event's timestamp is "since"). Real in live mode; a dry run records it as dry-run.
+  const status = dispatchStatus(planned, snapshot, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, snapshot.factory_aic_today !== null && snapshot.factory_aic_today !== undefined, unreadableRuns);
+  log(`dispatch: ${status.state}${status.reason === 'none' ? '' : ` (${status.reason})`}; ready ${status.ready}, in flight ${status.in_flight}${status.spend_known ? '' : `; spend unknown${status.unreadable_runs ? ` (${status.unreadable_runs} unreadable run(s))` : ''}`}`);
+  if (stateChanged(audit.newestOfType('dispatch_state')?.payload ?? null, status)) {
+    try {
+      await audit.append({ type: 'dispatch_state', source_ids: [`state:${status.state}`, `reason:${status.reason}`, isoSeconds(now)], fields: { ...status }, dry_run: !live }, now);
+    } catch (err) {
+      if (!(err instanceof AuditValidationError)) throw err;
+      log(`skipped invalid dispatch_state event (${err.message})`);
+    }
+  }
 
   // One bad input (an invalid payload) must not stop the run before the
   // heartbeat: skip and log that event. Other errors (API, chain) still fail.
