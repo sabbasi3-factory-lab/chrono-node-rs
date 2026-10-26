@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert");
-const { globToRegExp, evaluate, trailer, needsFullRegression } = require("../scope");
+const { globToRegExp, evaluate, trailer, needsFullRegression, reviewGate, REVIEWER_APP_ID } = require("../scope");
 
 const PROTECTED = [".github/**", "contracts/**", "upstream/**", "tests/golden/**", "Cargo.toml", "Cargo.lock", "vendor/**"];
 const CONTRACT = {
@@ -161,4 +161,47 @@ test("full regression: auto-strict paths or contract tier; fail closed without t
     // runs the full regression even when the PR changes only the test file.
     assert.strictEqual(needsFullRegression({ changed: ["tests/locales/en/results.rs"], autoStrictGlobs: STRICT, contractTier: "auto", contractScope: ["src/core/results.rs", "tests/locales/en/results.rs"] }), true);
     assert.strictEqual(needsFullRegression({ changed: ["tests/locales/en/results.rs"], autoStrictGlobs: STRICT, contractTier: "auto", contractScope: ["tests/locales/en/results.rs"] }), false);
+});
+
+test("review gate (merge_group): agent auto-strict changes need the reviewer App's pass on the head, unless a person enqueued", () => {
+    const head = "a".repeat(40);
+    const bot = { type: "Bot", login: "sabbasi3-factory-controller" };
+    const run = (o = {}) => ({ id: 7, app: { id: REVIEWER_APP_ID }, name: "factory-review", head_sha: head, status: "completed", conclusion: "success", started_at: "2026-10-26T12:00:00Z", output: { summary: `Reviewed-Head: ${head}\nlooks fine` }, ...o });
+    const gate = (o) => reviewGate({ isAgent: true, strict: true, head, enqueuer: bot, checkRuns: [run()], ...o });
+    assert.strictEqual(REVIEWER_APP_ID, 5444751);
+    assert.strictEqual(gate().ok, true);
+    // Not required: human PRs and non-strict changes.
+    assert.strictEqual(gate({ isAgent: false, checkRuns: [] }).ok, true);
+    assert.strictEqual(gate({ strict: false, checkRuns: [] }).ok, true);
+    // A person enqueued (pre-promotion owner merges): no verdict needed. A bot or unknown enqueuer: needed.
+    assert.strictEqual(gate({ enqueuer: { type: "User", login: "sabbasi3" }, checkRuns: null }).ok, true);
+    for (const enqueuer of [bot, { type: "Bot", login: "sabbasi3-factory-agent" }, null, { type: "User", login: "" }]) {
+        assert.strictEqual(gate({ enqueuer, checkRuns: [] }).ok, false, JSON.stringify(enqueuer));
+    }
+    // Fail closed on every way the verdict can be wrong.
+    const bad = [
+        null,
+        [],
+        [run({ app: { id: 5337825 } })], // the agent App
+        [run({ app: { id: 5337797 } })], // the controller App
+        [run({ name: "factory-review2" })],
+        [run({ head_sha: "b".repeat(40) })],
+        [run({ conclusion: "failure" })],
+        [run({ conclusion: "neutral" })],
+        [run({ status: "in_progress", conclusion: null })],
+        [run({ output: { summary: "looks fine" } })],
+        [run({ output: { summary: `Reviewed-Head: ${"b".repeat(40)}` } })],
+        [run({ output: { summary: `x\nReviewed-Head: ${head}` } })],
+        // The latest verdict wins: an objection after a pass blocks.
+        [run(), run({ id: 8, started_at: "2026-10-26T13:00:00Z", conclusion: "failure" })],
+        // A newer run still queued (no started_at yet) hides an older pass.
+        [run(), run({ id: 8, started_at: null, status: "queued", conclusion: null })],
+        [run({ id: 9 }), run({ id: 10, started_at: null, status: "queued", conclusion: null })],
+    ];
+    for (const checkRuns of bad) assert.strictEqual(gate({ checkRuns }).ok, false, JSON.stringify(checkRuns));
+    // ...and a pass after an objection is accepted; another App's later run is ignored.
+    assert.strictEqual(gate({ checkRuns: [run({ conclusion: "failure" }), run({ id: 8, started_at: "2026-10-26T13:00:00Z" })] }).ok, true);
+    assert.strictEqual(gate({ checkRuns: [run({ id: 8 }), run({ conclusion: "failure" })] }).ok, true, "order by id, not by array position");
+    assert.strictEqual(gate({ checkRuns: [run(), run({ id: 9, app: { id: 1 }, started_at: "2026-10-26T14:00:00Z", conclusion: "failure" })] }).ok, true);
+    assert.strictEqual(gate({ head: "short", checkRuns: [run({ head_sha: "short" })] }).ok, false);
 });

@@ -8,7 +8,8 @@
 #   the file diff starts from the PR's merge base.
 # - merge_group: checks out the queue's base (main at queue time). A PR only reaches the queue
 #   after this gate passed on pull_request_target, and the scope gate blocks agent changes to
-#   .github/** and harness/**.
+#   .github/** and harness/**. Here an agent PR with an auto-strict change also needs the
+#   reviewer App's (5444751) passing factory-review on its head, unless a person enqueued it.
 # Bootstrap: this file and harness/gates/ first exist on main when the PR adding them merges, so
 # the gate first runs (and can first pass) on PRs opened or updated after that.
 # The candidate commit is fetched as git objects and only read (diff, show, grep). Nothing from it
@@ -24,6 +25,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  checks: read   # merge_group: the reviewer App's factory-review verdict on the PR head
 
 concurrency:
   group: gates-${{ github.event.pull_request.number || github.ref }}
