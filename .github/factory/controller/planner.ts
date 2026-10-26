@@ -21,6 +21,20 @@ import type {
 export const LABEL_READY = 'factory:ready';
 export const LABEL_PICKED = 'factory:picked';
 export const LABEL_NEEDS_HUMAN = 'needs-human';
+/** Every seeded task issue carries this label. */
+export const LABEL_TASK = 'factory:task';
+/** Hand-off labels: an issue carrying any of them is never auto-readied. */
+export const AUTO_READY_HOLDS: readonly string[] = [LABEL_NEEDS_HUMAN, 'stale-contract', 'blocked'];
+
+/**
+ * Tiers that may run without a person: `auto` outside the core paths, and `auto-strict` once
+ * tiers.yaml no longer says `start_as: human`. Never `human`.
+ */
+export function autonomousTier(c: ContractSnap, p: Policies): boolean {
+  const tier = taskTier(c, p.tiers);
+  if (tier === 'auto') return !isCoreTask(c, p.tiers);
+  return tier === 'auto-strict' && p.tiers.tiers['auto-strict'].start_as !== 'human';
+}
 /** The agent App's login (GraphQL gives `name`, REST `name[bot]`). Only its PRs are auto-merged. */
 export const AGENT_LOGIN = 'sabbasi3-factory-agent';
 
@@ -511,6 +525,7 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   let wip = inFlight.size;
   let core = active.filter((c) => isCoreTask(c, p.tiers)).length;
   let humanItems = humanQueue.size;
+  const admittedNow = new Set<string>();
 
   for (const a of admissible) {
     const d = a.decision;
@@ -528,6 +543,60 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       if (isCore) core++;
       if (tier === 'human') humanItems++;
       active.push(a.contract);
+      if (a.contract.id) admittedNow.add(a.contract.id);
+    }
+  }
+
+  // ---- auto-ready (limits.yaml `auto_ready: true`): mark unblocked autonomous-tier tasks ready,
+  // only as many as the same WIP, area-lock and core limits leave room for. Ready issues that are
+  // still waiting hold their slot and area too, so this never queues more than can run.
+  if (p.limits.auto_ready === true) {
+    const reserved = [...active];
+    let slots = wip;
+    let strictN = core;
+    for (const i of openIssues) {
+      if (!i.task_id || !i.labels.includes(LABEL_READY) || i.labels.includes(LABEL_PICKED) || admittedNow.has(i.task_id) || inFlight.has(i.task_id) || mergedTasks.has(i.task_id)) continue;
+      // Only a ready issue that could actually be dispatched holds a slot: one blocked on its
+      // dependencies, or without a usable contract, would otherwise starve its own prerequisites.
+      const c = contractOf(s, i.task_id);
+      if (!c || !c.valid || !c.depends_on.every((d) => mergedTasks.has(d))) continue;
+      slots++;
+      reserved.push(c);
+      if (isCoreTask(c, p.tiers)) strictN++;
+    }
+    const candidates: { issue: IssueSnap; contract: ContractSnap }[] = [];
+    const seen = new Set<string>();
+    for (const i of openIssues) {
+      const task = i.task_id;
+      if (!task || i.marker_status !== 'ok' || !i.labels.includes(LABEL_TASK)) continue;
+      if (seen.has(task)) continue; // duplicates are the admission's to report
+      seen.add(task);
+      if (i.labels.includes(LABEL_READY) || i.labels.includes(LABEL_PICKED) || AUTO_READY_HOLDS.some((l) => i.labels.includes(l))) continue;
+      if (inFlight.has(task) || mergedTasks.has(task)) continue;
+      const c = contractOf(s, task);
+      if (!c || !c.valid || !autonomousTier(c, p)) continue;
+      if (!c.depends_on.every((d) => mergedTasks.has(d))) continue;
+      candidates.push({ issue: i, contract: c });
+    }
+    candidates.sort((a, b) => {
+      const da = dependencyDepth(s, a.contract.id ?? '');
+      const db = dependencyDepth(s, b.contract.id ?? '');
+      if (da !== db) return da - db;
+      const pa = a.contract.priority ?? Number.POSITIVE_INFINITY;
+      const pb = b.contract.priority ?? Number.POSITIVE_INFINITY;
+      if (pa !== pb) return pa - pb;
+      return a.issue.number - b.issue.number;
+    });
+    for (const { issue, contract: c } of candidates) {
+      if (slots >= wipLimit) break;
+      const strictTask = isCoreTask(c, p.tiers);
+      if (strictTask && strictN >= p.limits.wip.core_area) continue;
+      if (reserved.some((r) => sameArea(r, c))) continue;
+      const d = decide({ type: 'auto_ready', reason: 'deps_merged', effect: 'label:ready', task: c.id, issue: issue.number, contract_sha: c.last_commit_sha, source_ids: [issue.node_id, c.last_commit_sha] });
+      if (route(d, killSwitchEnabled(env) ? null : 'kill_switch')) out.push(d);
+      slots++;
+      reserved.push(c);
+      if (strictTask) strictN++;
     }
   }
 

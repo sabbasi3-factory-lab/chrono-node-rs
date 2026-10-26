@@ -10,6 +10,9 @@
 //   label:needs-human           → add `needs-human` to the PR and/or issue, then one templated comment
 //   label:blocked               → add `blocked`, then one templated comment
 //   label:stale-contract        → add `stale-contract`, then one templated comment
+//   label:ready                 → auto-ready (limits.yaml auto_ready): record `auto_ready` once, then
+//                                 add `factory:ready` to the task issue (re-applied whenever it's
+//                                 planned again, so an interrupted label is finished next poll)
 //   enqueue_merge               → add the PR to the merge queue (GraphQL enqueuePullRequest); only
 //                                 for green auto-tier agent PRs (planner autoMergeBlocker). If
 //                                 GitHub refuses, the PR is handed to a person instead
@@ -29,7 +32,8 @@
 //                                 needs_human/repair_unavailable (label + comment)
 //   alert:owner, pause_dispatch, none → no GitHub effect; recorded in the audit log only
 // It never merges directly (only the merge queue merges), closes anything but a finished task's
-// issue, removes any other label, adds `factory:ready`, or dispatches anything else.
+// issue, removes any other label, adds `factory:ready` except by auto-ready to an open task issue,
+// or dispatches anything else.
 // main.ts then syncs the Project "Factory status" field (project.ts), best-effort.
 //
 // Each decision's effect runs only if its LIVE audit event is new. Live events carry `mode:live`
@@ -46,7 +50,7 @@
 
 import { dedupeKey } from './audit.ts';
 import { CLOSE_COMPLETED, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate, REVIEW_WORKFLOW } from './github.ts';
-import { isRecorded, LABEL_NEEDS_HUMAN, LABEL_PICKED } from './planner.ts';
+import { isRecorded, LABEL_NEEDS_HUMAN, LABEL_PICKED, LABEL_READY } from './planner.ts';
 import type { AuditEvent, Decision, GitHubClient, JsonObject, PendingEvent, PlannerEnv, ReasonCode } from './types.ts';
 
 /** Live only when FACTORY_ENABLED is exactly "true"; anything else (unset, "TRUE", "1") is dry-run. */
@@ -231,6 +235,25 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
     }
     const d = liveDecision(planned);
     const ev = decisionEvent(d, true);
+    if (d.effect === 'label:ready') {
+      if (d.issue === null) throw new Error('auto_ready decision has no issue');
+      if (deps.isNew(ev)) {
+        deps.validate(ev);
+        await deps.record(ev);
+      }
+      deps.log(describe(d, true));
+      // Only an open factory task issue gets `factory:ready` (read it now: the plan may be stale).
+      const issue = (await deps.client.request('GET', `/repos/${deps.repo}/issues/${d.issue}`)).data as { state?: unknown; pull_request?: unknown; labels?: { name?: unknown }[] } | null;
+      const names = (issue?.labels ?? []).map((l) => l.name);
+      if (issue?.state !== 'open' || issue.pull_request !== undefined || !names.includes('factory:task')) {
+        deps.log(`[live] issue #${d.issue} is not an open factory task any more: not marked ready`);
+        ran++;
+        continue;
+      }
+      if (!names.includes(LABEL_READY)) await addLabel(deps, d.issue, LABEL_READY);
+      ran++;
+      continue;
+    }
     if (d.effect === 'close_task') {
       if (d.issue === null) throw new Error('task_done decision has no issue');
       // Recorded once (first), then the idempotent effect, every time it's planned (issue still open).

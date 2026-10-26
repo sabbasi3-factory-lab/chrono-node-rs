@@ -19,8 +19,10 @@ on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
+  # `closed`: a task_done close runs the controller again at once, so auto-ready marks the next
+  # unblocked tasks right after a merge instead of waiting for cron (and `labeled` then dispatches).
   issues:
-    types: [labeled, unlabeled]
+    types: [labeled, unlabeled, closed]
   workflow_run:
     workflows: ["ci", "gates", "Review one factory PR"]
     types: [completed]
@@ -43,7 +45,8 @@ permissions:
 
 jobs:
   controller:
-    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs'
+    # Issue events only for factory task issues (other issues can't change what the controller does).
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && (github.event_name != 'issues' || contains(github.event.issue.labels.*.name, 'factory:task'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:

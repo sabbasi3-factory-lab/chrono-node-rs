@@ -34,6 +34,14 @@ describe('policies', () => {
     assert.throws(() => policyUrl('main', 'limits'), /full commit SHA/);
   });
 
+  it('auto_ready is on only for an explicit `true` (missing, false, "true" or 1 → off)', async () => {
+    const t = await texts();
+    assert.equal(parsePolicies(t).limits.auto_ready, false, 'missing');
+    for (const [v, want] of [['true', true], ['false', false], ['"true"', false], ['1', false], ['yes', false]] as const) {
+      assert.equal(parsePolicies({ ...t, limits: `${t.limits}\nauto_ready: ${v}\n` }).limits.auto_ready, want, v);
+    }
+  });
+
   it('fails closed on missing or wrongly typed fields', async () => {
     const t = await texts();
     assert.throws(() => parsePolicies({ ...t, limits: t.limits.replace('max_repairs: 2', 'max_repairs: two') }), /max_repairs/);

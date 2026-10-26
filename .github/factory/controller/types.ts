@@ -24,6 +24,8 @@ export interface LimitsPolicy {
   };
   human_queue: { max_items: number };
   fail_closed: boolean;
+  /** limits.yaml `auto_ready`: the controller marks unblocked tasks `factory:ready` itself. Missing → false. */
+  auto_ready?: boolean;
 }
 
 export interface BudgetsPolicy {
@@ -223,6 +225,7 @@ export type DecisionType =
   | 'dispatched'
   | 'auto_merge'
   | 'review_dispatched'
+  | 'auto_ready'
   | 'task_done'
   | 'repair_dispatched'
   | 'needs_human'
@@ -249,6 +252,7 @@ export type ReasonCode =
   | 'review_objected'
   | 'review_timeout'
   | 'review_contract_changed'
+  | 'deps_merged'
   | 'task_merged'
   | 'merge_queue_rejected'
   | 'enqueue_failed'
@@ -283,6 +287,7 @@ export type Effect =
   | 'dispatch_workflow:repair'
   | 'dispatch_workflow:review'
   | 'enqueue_merge'
+  | 'label:ready'
   | 'close_task'
   | 'label:needs-human'
   | 'label:blocked'
