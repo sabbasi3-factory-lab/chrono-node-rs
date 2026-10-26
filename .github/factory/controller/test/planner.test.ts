@@ -914,8 +914,10 @@ describe('auto-ready: unblocked autonomous tasks become ready, within the dispat
   const t = (n: number, task: string, labels: string[] = ['factory:task']) => issue(n, task, labels);
   const kinds = (ds: Decision[]) => ds.map((d) => `${d.type}/${d.reason}${d.issue !== null ? `#${d.issue}` : ''}`);
 
-  it('off by default: nothing', () => {
-    assert.deepEqual(kinds(run(snapshot({ issues: [t(1, 'en/a')], contractList: [contract('en/a')] }))), []);
+  it('switched off: nothing', () => {
+    const off: typeof policies = structuredClone(policies);
+    off.limits.auto_ready = false;
+    assert.deepEqual(kinds(plan(snapshot({ issues: [t(1, 'en/a')], contractList: [contract('en/a')] }), off, ON, NOW)), []);
   });
 
   it('an unblocked auto-tier task → auto_ready/deps_merged (label:ready), keyed on the issue and contract', () => {

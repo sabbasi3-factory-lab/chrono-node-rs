@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { FACTORY_REPO, loadPolicies, parseFactoryVersion, parsePolicies, policyUrl, POLICY_NAMES, readFactoryVersion, type PolicyTexts } from '../policies.ts';
 
-const SHA = '320c4fcedefc03648caa4cda140bd93932367986';
+const SHA = '87a92130767f58b2875fc39abba0b563beded150';
 const dir = new URL('./fixtures/policies/', import.meta.url);
 
 async function texts(): Promise<PolicyTexts> {
@@ -27,6 +27,7 @@ describe('policies', () => {
     assert.equal(p.budgets.factory_per_day.pause_at_pct, 100);
     assert.equal(p.tiers.tiers['auto-strict'].start_as, 'human');
     assert.equal(p.cadence.heartbeat, 'hourly');
+    assert.equal(p.limits.auto_ready, true, 'turned on by the owner (factory#15)');
   });
 
   it('builds raw URLs at the pinned SHA only', () => {
@@ -36,9 +37,11 @@ describe('policies', () => {
 
   it('auto_ready is on only for an explicit `true` (missing, false, "true" or 1 → off)', async () => {
     const t = await texts();
-    assert.equal(parsePolicies(t).limits.auto_ready, false, 'missing');
+    const without = t.limits.replace(/^auto_ready:.*\n/m, '');
+    assert.ok(!/auto_ready:/.test(without));
+    assert.equal(parsePolicies({ ...t, limits: without }).limits.auto_ready, false, 'missing');
     for (const [v, want] of [['true', true], ['false', false], ['"true"', false], ['1', false], ['yes', false]] as const) {
-      assert.equal(parsePolicies({ ...t, limits: `${t.limits}\nauto_ready: ${v}\n` }).limits.auto_ready, want, v);
+      assert.equal(parsePolicies({ ...t, limits: `${without}\nauto_ready: ${v}\n` }).limits.auto_ready, want, v);
     }
   });
 
