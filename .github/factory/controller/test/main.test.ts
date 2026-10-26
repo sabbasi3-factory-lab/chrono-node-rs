@@ -999,9 +999,11 @@ describe('auto-ready in the run (live)', () => {
     }
   });
 
-  it('switched off (the default), or dry-run: nothing is labelled', async () => {
+  it('switched off, or dry-run: nothing is labelled', async () => {
+    const offPolicies: typeof policies = structuredClone(policies);
+    offPolicies.limits.auto_ready = false;
     const off = liveWorld();
-    await run(deps(off, { env: LIVE_ENV, forceDryRun: false, snapshot: readySnapshot() }));
+    await run(deps(off, { env: LIVE_ENV, forceDryRun: false, policies: offPolicies, snapshot: readySnapshot() }));
     assert.deepEqual(effectCalls(off), []);
     const dry = liveWorld();
     const lines: string[] = [];
