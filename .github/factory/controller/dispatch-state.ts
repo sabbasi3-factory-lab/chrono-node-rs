@@ -77,7 +77,10 @@ export function dispatchStatus(
     source = typeof p.since_source === 'string' && SOURCES.includes(p.since_source) ? (p.since_source as SinceSource) : 'first_record';
   }
   const evidence = reason === 'budget_unknown' && unreadableSince && TIMESTAMP.test(unreadableSince) && Date.parse(unreadableSince) <= now.getTime() ? unreadableSince : null;
-  if (evidence && source !== 'evidence' && (source === 'first_record' || Date.parse(evidence) < Date.parse(since))) {
+  // Evidence only refines a first record, and only moves `since` earlier. After a seen transition the
+  // start is bounded by the poll that still saw the old state (a higher gate may have masked the
+  // cause), so the transition time stands.
+  if (evidence && source === 'first_record' && Date.parse(evidence) <= Date.parse(since)) {
     [since, source] = [evidence, 'evidence'];
   }
   return { ...base, since, since_source: source };

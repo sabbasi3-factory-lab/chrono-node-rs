@@ -83,6 +83,15 @@ describe('dispatch state (the control room banner)', () => {
     const held = dispatchStatus(w, ready, ON, false, 3, prevOf('2026-10-16T11:00:00Z', { ...up }), NOW, '2026-10-16T09:00:00Z');
     assert.deepEqual([held.since, held.since_source], ['2026-10-16T08:43:10Z', 'evidence']);
     assert.equal(shouldRecord(prevOf('2026-10-16T11:00:00Z', { ...held, unreadable_runs: 3 }), held, NOW), false);
+    // Evidence never moves an existing start later (a legacy or multi-day pause stays as recorded).
+    const early = prevOf('2026-10-16T08:00:00Z', { state: 'paused', reason: 'budget_unknown', since: '2026-10-14T10:00:00Z' });
+    assert.deepEqual(['since', 'since_source'].map((k) => dispatchStatus(w, ready, ON, false, 2, early, NOW, '2026-10-16T08:43:10Z')[k as 'since']), ['2026-10-14T10:00:00Z', 'first_record']);
+    // After a seen transition (kill switch at 11:00 → spend pause now), older evidence is ignored, and stays ignored.
+    const killed = prevOf('2026-10-16T11:00:00Z', { state: 'paused', reason: 'kill_switch', since_source: 'transition' });
+    const tr = dispatchStatus(w, ready, ON, false, 2, killed, NOW, '2026-10-16T08:43:10Z');
+    assert.deepEqual([tr.since, tr.since_source], [T, 'transition']);
+    const later = dispatchStatus(w, ready, ON, false, 2, prevOf(T, { ...tr }), new Date(NOW.getTime() + 3600_000), '2026-10-16T08:43:10Z');
+    assert.deepEqual([later.since, later.since_source], [T, 'transition']);
     // Evidence applies only to a spend pause.
     assert.equal(dispatchStatus([wait('actions_busy')], ready, ON, false, 2, null, NOW, '2026-10-16T08:43:10Z').since_source, 'first_record');
   });
