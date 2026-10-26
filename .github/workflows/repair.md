@@ -214,6 +214,8 @@ safe-outputs:
     required-title-prefix: "[factory] "
     if-no-changes: error
     fallback-as-pull-request: false
+    # One `git am` patch (not the default bundle): the detection scope step below checks exactly it.
+    patch-format: am
     github-token-for-extra-empty-commit: none
     protected-files: blocked
     allowed-files:
@@ -229,6 +231,7 @@ safe-outputs:
     # Trusted, in the detection job (a separate runner, after the agent; safe_outputs runs only if
     # this job succeeds): replay the agent's patch on the failed head exactly as the push would,
     # and fail unless every changed path is in the contract's `scope` (pinned at contract_sha).
+    # Exactly one `am` patch is accepted (no bundle, no second patch).
     # `allowed-files` above is only the static outer bound.
     steps:
       - name: Repair scope (trusted) - the patch may change only the contract's scope files
@@ -246,6 +249,10 @@ safe-outputs:
           patches=(/tmp/gh-aw/aw-*.patch)
           [ "${#bundles[@]}" -eq 0 ] || fail "bundle output isn't checked, so it isn't allowed"
           [ "${#patches[@]}" -gt 0 ] || { echo "no patch: nothing will be pushed"; exit 0; }
+          # One push, so one patch: the push picks a patch by branch, so checking several combined
+          # could let an unused one undo the pushed one's out-of-scope edit.
+          [ "${#patches[@]}" -eq 1 ] || fail "${#patches[@]} patch artifacts; a repair pushes exactly one"
+          patch="${patches[0]}"
           work="$RUNNER_TEMP/factory-repair-scope"
           rm -rf "$work" && git init -q "$work" && cd "$work"
           git remote add origin "https://github.com/${REPO}.git"
@@ -254,9 +261,7 @@ safe-outputs:
           [ -n "$scope" ] || fail "contracts/${TASK}.yaml has an empty scope"
           while IFS= read -r p; do [[ "$p" =~ ^[A-Za-z0-9_][A-Za-z0-9_./-]*$ && "$p" != *..* ]] || fail "unexpected scope entry"; done <<<"$scope"
           git checkout -q --detach "$HEAD_SHA"
-          for f in "${patches[@]}"; do
-            git -c user.name=factory-scope -c user.email=factory-scope@invalid am -q --no-3way "$f" || fail "the patch $(basename "$f") doesn't apply to the failed head"
-          done
+          git -c user.name=factory-scope -c user.email=factory-scope@invalid am -q --no-3way "$patch" || fail "the patch $(basename "$patch") doesn't apply to the failed head"
           changed=$(git diff --name-only --no-renames "$HEAD_SHA" HEAD)
           [ -n "$changed" ] || fail "the patch changes nothing"
           bad=0
