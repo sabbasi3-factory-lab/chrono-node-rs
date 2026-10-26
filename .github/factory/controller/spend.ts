@@ -16,8 +16,12 @@
 // the final `conclusion` job (it needs every other job, so nothing can start after it), is
 // treated as completed and measured: the run-level status sometimes lags for a long time. If its
 // jobs can't be listed, it stays reserved.
-// If any completed run's spend can't be read (no artifact, expired, malformed, a re-run, an API
-// error), today's spend is UNKNOWN and the planner dispatches nothing (fail closed). No runs → 0.
+// A re-run (attempt n > 1) counts as its full reservation for every attempt (n × reserve): an upper
+// bound, never an undercount. Its attempts' artifacts can't be told apart reliably, and treating it
+// as unknown stalled all dispatch for up to two days (drill D1: one infra re-run of a repair).
+// If any completed run's spend can't be read (no artifact, expired, malformed, an implausible
+// attempt number, an API error), today's spend is UNKNOWN and the planner dispatches nothing (fail
+// closed). No runs → 0.
 
 import { crc32, inflateRawSync } from 'node:zlib';
 import { paginate } from './github.ts';
@@ -31,6 +35,8 @@ export const USAGE_ARTIFACT = 'usage';
 export const FINAL_JOB = 'conclusion';
 export const MAX_ARTIFACT_BYTES = 20 * 1024 * 1024;
 const MAX_ENTRIES = 1000;
+/** GitHub allows at most 50 attempts per run; beyond 10 here is implausible for these workflows. */
+const MAX_ATTEMPTS = 10;
 const JOB_NAME = /^[a-z][a-z0-9_]{0,39}$/;
 
 export interface RunSpend {
@@ -244,8 +250,13 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
 
 /** One run's spend (reserved, measured, no inference), or the reason it can't be read. */
 async function measureRun(client: GitHubClient, repo: string, run: Rec, id: number, reserve: number): Promise<RunSpend | string> {
-  // A re-run (even one still queued or running) carries earlier attempts' spend: unknown.
-  if (run.run_attempt !== 1) return `run ${id} was re-run (attempt ${String(run.run_attempt)})`;
+  // A re-run (even one still queued or running) carries earlier attempts' spend: count the full
+  // reservation for each attempt, an upper bound. An implausible attempt number is unknown.
+  const attempt = run.run_attempt;
+  if (typeof attempt !== 'number' || !Number.isInteger(attempt) || attempt < 1 || attempt > MAX_ATTEMPTS) {
+    return `run ${id} has an unexpected run_attempt (${String(attempt)})`;
+  }
+  if (attempt > 1) return { run_id: id, status: 'reserved', aic: round(reserve * attempt) };
   const listJobs = async (): Promise<Rec[]> =>
     (await paginate(client, `/repos/${repo}/actions/runs/${id}/attempts/1/jobs?per_page=100`, (d) => (Array.isArray(rec(d).jobs) ? (rec(d).jobs as unknown[]) : []))).map(rec);
   let jobs: Rec[] | null = null;

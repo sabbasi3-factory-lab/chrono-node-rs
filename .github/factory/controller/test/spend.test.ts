@@ -84,7 +84,7 @@ interface FakeRun {
   jobsStatus?: number;
 }
 
-function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; status?: string }[] = [], repairListStatus = 200, reviewRuns: { id: number; status?: string }[] = [], reviewListStatus = 200): FakeGitHub {
+function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; status?: string; attempt?: number }[] = [], repairListStatus = 200, reviewRuns: { id: number; status?: string }[] = [], reviewListStatus = 200): FakeGitHub {
   const gh = new FakeGitHub(REPO);
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/review\\.lock\\.yml/runs$`), () =>
     reviewListStatus === 200
@@ -93,7 +93,7 @@ function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; stat
   );
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/repair\\.lock\\.yml/runs$`), () =>
     repairListStatus === 200
-      ? { data: { workflow_runs: repairRuns.map((x) => ({ id: x.id, status: x.status ?? 'in_progress', run_attempt: 1, created_at: '2026-10-16T08:00:00Z' })) } }
+      ? { data: { workflow_runs: repairRuns.map((x) => ({ id: x.id, status: x.status ?? 'in_progress', run_attempt: x.attempt ?? 1, created_at: '2026-10-16T08:00:00Z' })) } }
       : { status: repairListStatus, data: null },
   );
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), () =>
@@ -161,6 +161,26 @@ describe('spend collector: today\'s implement spend', () => {
     for (const status of [404, 500]) assert.equal((await readSpendToday(world([], 200, [], status), REPO, NOW, CAPS)).aic, null, String(status));
   });
 
+  it('a re-run counts its full reservation for every attempt (an upper bound), completed or not, and by task', async () => {
+    // implement + threat detection = 900 per attempt.
+    for (const status of ['completed', 'queued', 'in_progress']) {
+      const res = await readSpendToday(world([{ id: 9, attempt: 2, status, title: 'Implement en/a #3 attempt 1' }, { id: 8, attempt: 3, status }]), REPO, NOW, CAPS);
+      assert.equal(res.aic, 1800 + 2700, status);
+      assert.deepEqual(
+        [...res.runs].sort((a, b) => a.run_id - b.run_id),
+        [
+          { run_id: 8, status: 'reserved', aic: 2700 },
+          { run_id: 9, status: 'reserved', aic: 1800 },
+        ],
+        status,
+      );
+      assert.equal(res.tasks?.by_task['en/a'], 1800, status);
+    }
+    // A repair re-run (drill D1's case): repair + threat detection = 700 per attempt.
+    const rep = await readSpendToday(world([], 200, [{ id: 40, status: 'completed', attempt: 2 }]), REPO, NOW, CAPS);
+    assert.deepEqual(today(rep), { aic: 1400, runs: [{ run_id: 40, status: 'reserved', aic: 1400 }] });
+  });
+
   it('a queued or in-progress run is reserved at the per-run caps (implement + threat detection)', async () => {
     const res = await readSpendToday(world([{ id: 1, status: 'in_progress' }, { id: 2, status: 'queued' }]), REPO, NOW, CAPS);
     assert.deepEqual(today(res), { aic: 1800, runs: [{ run_id: 1, status: 'reserved', aic: 900 }, { run_id: 2, status: 'reserved', aic: 900 }] });
@@ -225,9 +245,8 @@ describe('spend collector: today\'s implement spend', () => {
       ['no agent_usage.json', [{ id: 9, artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(null) } }], /agent_usage.json is missing/],
       ['detection ran without records', [{ id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(5, []) } }], /recorded no usage/],
       ['a corrupt zip entry', [{ id: 9, artifacts: [{ id: 90, name: 'usage' }], zips: { 90: zip({ 'agent_usage.json': '{"ai_credits":5}' }, { corruptCrc: 'agent_usage.json' }) } }], /CRC/],
-      ['a re-run', [{ id: 9, attempt: 2 }], /re-run/],
-      ['a queued re-run', [{ id: 9, attempt: 2, status: 'queued' }], /re-run \(attempt 2\)/],
-      ['an in-progress re-run', [{ id: 9, attempt: 3, status: 'in_progress' }], /re-run \(attempt 3\)/],
+      ['an implausible attempt number', [{ id: 9, attempt: 11 }], /unexpected run_attempt \(11\)/],
+      ['attempt 0', [{ id: 9, attempt: 0 }], /unexpected run_attempt \(0\)/],
     ];
     for (const [what, runs, reason] of cases) {
       it(what, async () => {
