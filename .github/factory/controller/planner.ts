@@ -198,11 +198,14 @@ function dependencyDepth(s: Snapshot, task: string, seen: Set<string> = new Set(
   return depth;
 }
 
-export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Decision[] {
-  const out: Decision[] = [];
-  const day = now.toISOString().slice(0, 10);
-  const nowMs = now.getTime();
-
+/** Tasks whose code is on main: merged factory PRs, minus the ones the controller auto-reverted. */
+function mergedTaskPrs(s: Snapshot): {
+  mergedTasks: Set<string>;
+  mergedPr: Map<string, PullSnap>;
+  revertCommitOf: Map<number, string>;
+  controllerRevertPrs: PullSnap[];
+  revertedPrs: Set<number>;
+} {
   const mergedTasks = new Set<string>();
   /** Task → its first merged PR (lowest number), the one that finished it. */
   const mergedPr = new Map<string, PullSnap>();
@@ -220,6 +223,30 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     mergedTasks.add(pr.task_id);
     if (!mergedPr.has(pr.task_id)) mergedPr.set(pr.task_id, pr);
   }
+  return { mergedTasks, mergedPr, revertCommitOf, controllerRevertPrs, revertedPrs };
+}
+
+/**
+ * Tasks in flight: an open factory PR, or an open issue picked (label or recorded pick) whose task
+ * isn't merged. The WIP limit counts these; the dispatch state reports the same number.
+ */
+export function inFlightTasks(s: Snapshot): Set<string> {
+  const { mergedTasks } = mergedTaskPrs(s);
+  const inFlight = new Set<string>();
+  for (const pr of s.pulls) if (pr.state === 'open' && pr.task_id) inFlight.add(pr.task_id);
+  for (const i of s.issues) {
+    if (!i.task_id || mergedTasks.has(i.task_id)) continue;
+    if (i.labels.includes(LABEL_PICKED) || s.history[i.task_id]?.picked_at) inFlight.add(i.task_id);
+  }
+  return inFlight;
+}
+
+export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Decision[] {
+  const out: Decision[] = [];
+  const day = now.toISOString().slice(0, 10);
+  const nowMs = now.getTime();
+
+  const { mergedTasks, mergedPr, revertCommitOf, controllerRevertPrs, revertedPrs } = mergedTaskPrs(s);
   const openPulls = s.pulls.filter((pr) => pr.state === 'open').sort((a, b) => a.number - b.number);
   const openIssues = [...s.issues].sort((a, b) => a.number - b.number);
   const issueByTask = new Map<string, IssueSnap>();
@@ -240,12 +267,7 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   }
 
   // ---- tasks in flight
-  const inFlight = new Set<string>();
-  for (const pr of openPulls) if (pr.task_id) inFlight.add(pr.task_id);
-  for (const i of openIssues) {
-    if (!i.task_id || mergedTasks.has(i.task_id)) continue;
-    if (i.labels.includes(LABEL_PICKED) || history(i.task_id).picked_at) inFlight.add(i.task_id);
-  }
+  const inFlight = inFlightTasks(s);
 
   // ---- human review queue: needs-human issues/PRs + open human-tier factory PRs
   const humanQueue = new Set<string>();

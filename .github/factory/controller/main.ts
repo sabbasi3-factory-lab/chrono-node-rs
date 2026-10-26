@@ -17,7 +17,7 @@ import { decisionEvent, execute, executeLive, isLive, liveDecision, pendingHando
 import { FakeGitHub } from './fake.ts';
 import { ALERT_TITLE, ALERT_TITLES, COMMENT_MARKER, createClient, LABEL_ALERT, paginate, readSnapshot, REVIEWER_APP_ID, type AlertCode, type RecordedCheck } from './github.ts';
 import { CAPPED_WORKFLOWS, lockCapsMismatch, type CappedWorkflow } from './caps.ts';
-import { dispatchStatus, stateChanged } from './dispatch-state.ts';
+import { dispatchStatus, shouldRecord } from './dispatch-state.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
@@ -278,11 +278,12 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   const decisions = live ? planned.map(liveDecision) : planned;
   if (!live) execute(decisions, log);
 
-  // The control room's banner: what dispatching is doing, recorded only when it changes (so the
-  // event's timestamp is "since"). Real in live mode; a dry run records it as dry-run.
-  const status = dispatchStatus(planned, snapshot, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, snapshot.factory_aic_today !== null && snapshot.factory_aic_today !== undefined, unreadableRuns);
+  // The control room's banner: what dispatching is doing, recorded when it changes (or daily, so it
+  // stays in the audit window), with `since` carried over. Real in live mode; dry-run otherwise.
+  const prevState = audit.newestOfType('dispatch_state');
+  const status = dispatchStatus(planned, snapshot, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, snapshot.factory_aic_today !== null && snapshot.factory_aic_today !== undefined, unreadableRuns, prevState, now);
   log(`dispatch: ${status.state}${status.reason === 'none' ? '' : ` (${status.reason})`}; ready ${status.ready}, in flight ${status.in_flight}${status.spend_known ? '' : `; spend unknown${status.unreadable_runs ? ` (${status.unreadable_runs} unreadable run(s))` : ''}`}`);
-  if (stateChanged(audit.newestOfType('dispatch_state')?.payload ?? null, status)) {
+  if (shouldRecord(prevState, status, now)) {
     try {
       await audit.append({ type: 'dispatch_state', source_ids: [`state:${status.state}`, `reason:${status.reason}`, isoSeconds(now)], fields: { ...status }, dry_run: !live }, now);
     } catch (err) {
