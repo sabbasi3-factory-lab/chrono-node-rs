@@ -8,20 +8,22 @@ set -euo pipefail
 base=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
 changed=$(git diff --name-only --no-renames "$base" "$HEAD_SHA")
 D1=src/locales/en/parsers/factory_drill_repair_ok.rs
+D1B=src/locales/en/parsers/factory_drill_repair_unaided.rs
 D2=src/locales/en/parsers/factory_drill_repair_escalate.rs
 fail=0
 
-if grep -qxF "$D1" <<<"$changed"; then
-    # D1: the first attempt always fails. It passes once the file names the failed head, a commit
-    # of this PR (not its head) that changed the file. Only a repair knows that SHA in advance.
-    sha=$(git show "${HEAD_SHA}:${D1}" | sed -nE 's#^// drill: repaired after ([0-9a-f]{40})$#\1#p' | head -1)
-    if [ -n "$sha" ] && [ "$sha" != "$HEAD_SHA" ] && git rev-list "${base}..${HEAD_SHA}" -- "$D1" | grep -qxF "$sha"; then
-        echo "drill D1: repaired after ${sha}"
+# D1 and D1b: the first attempt always fails. It passes once the file names the failed head, a
+# commit of this PR (not its head) that changed the file. Only a repair knows that SHA in advance.
+for f in "$D1" "$D1B"; do
+    grep -qxF "$f" <<<"$changed" || continue
+    sha=$(git show "${HEAD_SHA}:${f}" | sed -nE 's#^// drill: repaired after ([0-9a-f]{40})$#\1#p' | head -1)
+    if [ -n "$sha" ] && [ "$sha" != "$HEAD_SHA" ] && git rev-list "${base}..${HEAD_SHA}" -- "$f" | grep -qxF "$sha"; then
+        echo "drill ${f}: repaired after ${sha}"
     else
-        echo "::error::Drill D1 (deliberate first failure): add the line '// drill: repaired after <the failed head SHA, 40 hex>' to ${D1}. The failed head is the PR commit whose ci failed."
+        echo "::error::Drill (deliberate first failure): add the line '// drill: repaired after <the failed head SHA, 40 hex>' to ${f}. The failed head is the PR commit whose ci failed."
         fail=1
     fi
-fi
+done
 
 if grep -qxF "$D2" <<<"$changed"; then
     # D2: a requirement outside the contract's scope, so no repair can meet it.
