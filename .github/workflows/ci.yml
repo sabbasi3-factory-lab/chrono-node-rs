@@ -31,7 +31,7 @@ jobs:
   checks:
     name: checks
     runs-on: ubuntu-latest
-    timeout-minutes: 60  # auto-strict changes add the strict gates (full regression, semver, ...)
+    timeout-minutes: 90  # auto-strict factory PRs add the strict gates (mutation testing is capped at 2 x 20 min)
     steps:
       # Trusted: the first step, before any PR code exists on the runner (even before checkout).
       # It commits to a fresh held-out seed by printing only sha256("<salt>:<seed>"). The seed and
@@ -172,6 +172,23 @@ jobs:
           else
             cargo semver-checks check-release --baseline-rev "$BASE_REV" --release-type patch || echo "::warning::semver_checks: public API break (advisory: not a factory PR)"
           fi
+
+      - name: Strict gate tools - cargo-mutants
+        if: steps.scope.outputs.strict == 'true'
+        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
+        with:
+          tool: cargo-mutants@27.1.0
+
+      - name: Strict gate - mutation_score_not_lower (changed code, cargo-mutants)
+        if: steps.scope.outputs.strict == 'true'
+        env:
+          BASE_REV: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+          KIND: ${{ steps.scope.outputs.kind }}
+          EVENT: ${{ github.event_name }}
+          CAP_SECONDS: "1200"   # per cargo-mutants run (head, then base); the cap fails closed
+          FLOOR: "0.8"          # new code with no replaced lines to compare against
+        # Enforced when "$KIND" = "factory" on pull requests (see the script).
+        run: bash harness/strict/mutation.sh
 
       - name: Reveal the held-out seed
         if: always()
