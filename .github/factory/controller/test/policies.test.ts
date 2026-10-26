@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { FACTORY_REPO, loadPolicies, parseFactoryVersion, parsePolicies, policyUrl, POLICY_NAMES, readFactoryVersion, type PolicyTexts } from '../policies.ts';
 
-const SHA = 'db6444d4f30155ff7671159908127c7e861b07a4';
+const SHA = '148c774cb87e1cf620148ac37503dada8811ddd5';
 const dir = new URL('./fixtures/policies/', import.meta.url);
 
 async function texts(): Promise<PolicyTexts> {
@@ -97,8 +97,12 @@ describe('policies', () => {
 describe('budgets: overshoot margin (the spend bound)', () => {
   const withBudgets = async (extra: string) => {
     const t = await texts();
-    return parsePolicies({ ...t, budgets: t.budgets.replace(/(  threat_detection: [^\n]*\n)/, `$1${extra}`) });
+    const stripped = t.budgets.replace(/^  overshoot_[a-z_]+:.*\n/gm, '');
+    return parsePolicies({ ...t, budgets: stripped.replace(/(  threat_detection: [^\n]*\n)/, `$1${extra}`) });
   };
+  it('the pinned policy has the approved margin (factory#17)', async () => {
+    assert.deepEqual(parsePolicies(await texts()).budgets.per_run.overshoot, { margin: 400, max_response_aic: 100, max_concurrency: 4 });
+  });
   it('missing → null (no bound: unreadable usage stays unknown)', async () => {
     assert.equal((await withBudgets('')).budgets.per_run.overshoot, null);
   });
