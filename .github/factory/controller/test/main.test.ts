@@ -172,10 +172,11 @@ describe('main: dry-run enforcement', () => {
     );
   });
 
-  it('Stage 0 (no factory issues) appends only the heartbeat', async () => {
+  it('Stage 0 (no factory issues) appends the heartbeat and the first dispatch state (idle)', async () => {
     const result = await run(deps(new FakeGitHub(REPO), { snapshot: emptySnapshot() }));
     assert.deepEqual(result.decisions, []);
-    assert.deepEqual(result.appended.map((e) => e.type), ['heartbeat']);
+    assert.deepEqual(result.appended.map((e) => e.type), ['dispatch_state', 'heartbeat']);
+    assert.equal(result.appended[0]!.payload.state, 'idle');
     assert.match(result.summary, /No decisions/);
   });
 
@@ -331,6 +332,21 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
     const result = await run(deps(unreadableSpendWorld(true), { policies: noMargin, log: (l) => lines.push(l) }));
     assert.ok(lines.some((l) => l.startsWith('spend today: unknown: run 900')), lines.join('\n'));
     assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
+  });
+
+  it('dispatch state: spend unknown with ready work → paused/budget_unknown recorded once (since = its timestamp)', async () => {
+    const gh = unreadableSpendWorld();
+    const lines: string[] = [];
+    const r1 = await run(deps(gh, { log: (l) => lines.push(l) }));
+    const st = r1.appended.filter((e) => e.type === 'dispatch_state');
+    assert.equal(st.length, 1);
+    assert.equal(st[0]!.payload.state, 'paused');
+    assert.equal(st[0]!.payload.reason, 'budget_unknown');
+    assert.equal(st[0]!.payload.spend_known, false);
+    assert.equal(st[0]!.payload.unreadable_runs, 1);
+    assert.ok(lines.some((l) => l.startsWith('dispatch: paused (budget_unknown)')), lines.join('\n'));
+    const r2 = await run(deps(gh, { now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.ok(!r2.appended.some((e) => e.type === 'dispatch_state'), 'unchanged: no new event');
   });
 
   it('an open factory:alert issue keeps the bound off until a person closes it', async () => {

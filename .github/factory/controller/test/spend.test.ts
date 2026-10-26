@@ -435,6 +435,12 @@ describe('spend collector: today\'s implement spend', () => {
     });
   });
 
+  it('counts every unreadable run of today (the control room says how many)', async () => {
+    const res = await readSpendToday(world([{ id: 9, artifacts: [{ id: 90, name: 'usage' }, { id: 91, name: 'usage' }] }, { id: 8, artifacts: [{ id: 80, name: 'usage' }, { id: 81, name: 'usage' }] }]), REPO, NOW, CAPS);
+    assert.equal(res.aic, null);
+    assert.equal((res as { unreadable_runs?: number }).unreadable_runs, 2);
+  });
+
   describe('unreadable → unknown (fail closed: nothing is dispatched)', () => {
     const cases: [string, FakeRun[], RegExp][] = [
       ['two usage artifacts', [{ id: 9, artifacts: [{ id: 90, name: 'usage' }, { id: 91, name: 'usage' }] }], /2 usage artifacts/],
