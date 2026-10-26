@@ -16,20 +16,33 @@
 // the final `conclusion` job (it needs every other job, so nothing can start after it), is
 // treated as completed and measured: the run-level status sometimes lags for a long time. If its
 // jobs can't be listed, it stays reserved.
-// A re-run (attempt n > 1) counts as its full reservation for every attempt (n × reserve): an upper
-// bound, never an undercount. Its attempts' artifacts can't be told apart reliably, and treating it
-// as unknown stalled all dispatch for up to two days (drill D1: one infra re-run of a repair).
-// A run GitHub reports as `completed` whose usage is MISSING (no `usage` artifact, an expired one,
-// or a job that made model calls without its usage file) counts at its bound: the reservation,
-// i.e. the workflow's max-ai-credits plus threat detection's, both hard stops per run in gh-aw
-// (https://github.github.com/gh-aw/reference/cost-management/ "Cap AI Credits per Run": "It
-// provides a hard stop"). Status `bounded`, with the reason; main warns in the run summary and the
-// spend_snapshot audit event lists it. This revises #78's "unknown fails closed" for completed
-// runs only: one failed token step (drill D1) made a run's usage unreadable and blocked all
-// dispatch for two days.
-// Anything else that can't be read stays UNKNOWN and the planner dispatches nothing (fail closed):
-// a malformed or corrupt artifact, duplicate usage artifacts, a run not reported completed, an
-// implausible attempt number, an API error, a run list that can't be read. No runs → 0.
+// The spend BOUND (only with `bounding`: budgets.yaml per_run.overshoot_margin and its assumptions,
+// and compiled workflow caps that match the policy; null → the strict rules below):
+//   bound = max-ai-credits + threat_detection + 2 × overshoot_margin   (agent job + detection job)
+// max-ai-credits is "stop after the response that crosses the cap", not a strict hard stop: the
+// firewall checks the total recorded BEFORE each request (github/gh-aw-firewall v0.28.57,
+// containers/api-proxy/guards/ai-credits-guard.js L497-516, `roundedTotalAiCredits >= config.max`),
+// so the request admitted just under the cap is billed in full, and parallel requests can each
+// overshoot. overshoot_margin = assumed max response × assumed max concurrency.
+// With a bound:
+//   - a re-run (attempt n > 1) counts n × bound (status `bounded`, reason `rerun`);
+//   - a run GitHub reports `completed` whose usage is MISSING (no `usage` artifact, an expired one,
+//     or a job that made model calls without its usage file) counts at its bound (status
+//     `bounded`, with the reason; main warns and the spend_snapshot audit event lists it). Its
+//     agent usage, if the `agent` artifact still has it, is logged as `observed_aic` (never used
+//     for accounting: that artifact is produced inside the agent job).
+//   - every readable run is checked against the assumptions: max concurrency of its model requests
+//     (from the per-response records), its largest single response, and its total against its
+//     bound. Any excess turns bounding OFF for the whole read (bounded runs become unknown) and
+//     returns an `alert` (main records it and raises factory:alert) so a person reviews the margin.
+// This revises #78's "unknown fails closed" for completed runs only: one failed token step (drill
+// D1) made a run's usage unreadable and blocked all dispatch for two days.
+// Without a bound, a re-run or missing usage is UNKNOWN. Anything else that can't be read is
+// always UNKNOWN and the planner dispatches nothing (fail closed): a malformed or corrupt artifact,
+// duplicate usage artifacts, a run not reported completed, an implausible attempt number, an API
+// error, a run list that can't be read. No runs → 0.
+// A run counts toward TODAY's total if it was created today, or if it's a re-run (attempt > 1)
+// started today (a re-run keeps its original created_at).
 
 import { crc32, inflateRawSync } from 'node:zlib';
 import { paginate } from './github.ts';
@@ -52,7 +65,29 @@ export interface RunSpend {
   status: 'reserved' | 'measured' | 'no_inference' | 'bounded';
   aic: number;
   /** Why the run counts at its bound (status `bounded` only): an enum, as the audit log requires. */
-  reason?: UsageMissingCode;
+  reason?: UsageMissingCode | 'rerun';
+  /** Measured runs: the most model requests in flight at once, and the largest single response. */
+  max_concurrency?: number;
+  max_response_aic?: number;
+  /** Bounded runs: the agent's usage from the `agent` artifact, if readable (informational only). */
+  observed_aic?: number;
+}
+
+/** A spend bound in force (see the header). */
+export interface Bounding {
+  margin: number;
+  max_response_aic: number;
+  max_concurrency: number;
+}
+
+/** A readable run broke an overshoot assumption: bounding is off and a person must review the margin. */
+export interface BoundAlert {
+  code: 'overshoot_assumption_exceeded';
+  run_id: number;
+  max_concurrency: number;
+  max_response_aic: number;
+  aic: number;
+  bound: number;
 }
 
 export type UsageMissingCode = 'no_usage_artifact' | 'usage_artifact_expired' | 'usage_file_missing';
@@ -72,7 +107,9 @@ export interface TaskSpend {
   unattributed: number;
 }
 
-export type SpendResult = { aic: number; runs: RunSpend[]; tasks: TaskSpend | null } | { aic: null; runs: RunSpend[]; reason: string; tasks: null };
+export type SpendResult =
+  | { aic: number; runs: RunSpend[]; tasks: TaskSpend | null; alert: BoundAlert | null }
+  | { aic: null; runs: RunSpend[]; reason: string; tasks: null; alert: BoundAlert | null };
 
 export interface SpendCaps {
   /** budgets.yaml per_run.implement */
@@ -189,6 +226,44 @@ export function runAIC(files: Map<string, string>, inferredJobs: readonly string
   return aic;
 }
 
+/**
+ * Max concurrency and largest single response over every `<job>/token_usage.jsonl` present
+ * (records carry the response end `timestamp` and `duration_ms`). Null when there are no records
+ * or one can't be read: the assumptions are then simply not checked against this run.
+ */
+export function responseStats(files: Map<string, string>): { max_concurrency: number; max_response_aic: number } | null {
+  const edges: [number, number][] = [];
+  let maxResponse = 0;
+  let records = 0;
+  try {
+    for (const [name, text] of files) {
+      if (!name.endsWith('/token_usage.jsonl')) continue;
+      for (const line of text.split('\n')) {
+        if (line.trim() === '') continue;
+        const r = JSON.parse(line) as { timestamp?: unknown; duration_ms?: unknown; ai_credits_this_response?: unknown };
+        const end = typeof r.timestamp === 'string' ? Date.parse(r.timestamp) : NaN;
+        const ms = r.duration_ms;
+        if (!Number.isFinite(end) || typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0 || !isAIC(r.ai_credits_this_response)) return null;
+        edges.push([end - ms, 1], [end, -1]);
+        maxResponse = Math.max(maxResponse, r.ai_credits_this_response);
+        records++;
+      }
+    }
+  } catch {
+    return null;
+  }
+  if (records === 0) return null;
+  // Ends before starts at the same instant: back-to-back requests aren't concurrent.
+  edges.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  let open = 0;
+  let max = 0;
+  for (const [, d] of edges) {
+    open += d;
+    max = Math.max(max, open);
+  }
+  return { max_concurrency: max, max_response_aic: round(maxResponse) };
+}
+
 type Rec = Record<string, unknown>;
 const rec = (v: unknown): Rec => (v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Rec) : {});
 
@@ -219,13 +294,13 @@ export function taskOfRun(run: Rec): string | null {
  * unreadable data: today's total is then { aic: null }; an unreadable run from yesterday only makes
  * the per-task spend unknown (`tasks: null`), so repairs fail closed while dispatch goes on.
  */
-export async function readSpendToday(client: GitHubClient, repo: string, now: Date, caps: SpendCaps): Promise<SpendResult> {
+export async function readSpendToday(client: GitHubClient, repo: string, now: Date, caps: SpendCaps, bounding: Bounding | null = null): Promise<SpendResult> {
   const day = now.toISOString().slice(0, 10);
   const yesterday = new Date(Date.parse(`${day}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
   const runs: RunSpend[] = [];
-  const unknown = (reason: string): SpendResult => ({ aic: null, runs, reason, tasks: null });
-  // Every AI workflow with its in-flight reservation. A workflow whose runs can't be listed
-  // (including a missing workflow file) makes spend unknown.
+  const unknown = (reason: string, alert: BoundAlert | null = null): SpendResult => ({ aic: null, runs, reason, tasks: null, alert });
+  // Every AI workflow with its in-flight reservation (its two caps). A workflow whose runs can't be
+  // listed (including a missing workflow file) makes spend unknown.
   const workflows = [
     { file: IMPLEMENT_WORKFLOW_FILE, reserve: caps.implement + caps.threat_detection },
     { file: REPAIR_WORKFLOW_FILE, reserve: caps.repair + caps.threat_detection },
@@ -246,18 +321,43 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
       return unknown(`${w.file} runs could not be listed (${(err as Error).message})`);
     }
   }
-  const byTask: Record<string, number> = {};
-  let unattributed = 0;
-  let taskUnknown = false;
+  // Measure everything first: one readable run that breaks an assumption turns bounding off for
+  // all of them.
+  const measured: { run: Rec; isToday: boolean; bound: number; r: RunSpend | string }[] = [];
   for (const run of list) {
     const id = run.id;
     if (typeof id !== 'number' || !Number.isSafeInteger(id) || id <= 0) return unknown('a run has no id');
     const created = typeof run.created_at === 'string' ? run.created_at : '';
-    const isToday = created.startsWith(day);
+    const started = typeof run.run_started_at === 'string' ? run.run_started_at : '';
+    const rerunToday = typeof run.run_attempt === 'number' && run.run_attempt > 1 && started.startsWith(day);
+    const isToday = created.startsWith(day) || rerunToday;
     if (!isToday && !created.startsWith(yesterday)) continue;
-    const r = await measureRun(client, repo, run, id, reserveOf.get(run)!);
+    const reserve = reserveOf.get(run)!;
+    const bound = bounding ? reserve + 2 * bounding.margin : reserve;
+    measured.push({ run, isToday, bound, r: await measureRun(client, repo, run, id, reserve, bounding ? bound : null) });
+  }
+  let alert: BoundAlert | null = null;
+  if (bounding) {
+    for (const { r, bound } of measured) {
+      if (typeof r === 'string' || r.status !== 'measured') continue;
+      const conc = r.max_concurrency ?? 0;
+      const resp = r.max_response_aic ?? 0;
+      if (conc > bounding.max_concurrency || resp > bounding.max_response_aic || r.aic > bound) {
+        alert = { code: 'overshoot_assumption_exceeded', run_id: r.run_id, max_concurrency: conc, max_response_aic: resp, aic: r.aic, bound };
+        break;
+      }
+    }
+  }
+  const byTask: Record<string, number> = {};
+  let unattributed = 0;
+  let taskUnknown = false;
+  for (const { run, isToday, r: measuredRun } of measured) {
+    let r = measuredRun;
+    if (alert && typeof r !== 'string' && r.status === 'bounded') {
+      r = `run ${r.run_id} would count at its bound, but run ${alert.run_id} broke an overshoot assumption: bounding is off`;
+    }
     if (typeof r === 'string') {
-      if (isToday) return unknown(r);
+      if (isToday) return unknown(r, alert);
       taskUnknown = true; // yesterday's run: only the per-task spend is unknown
       continue;
     }
@@ -266,18 +366,40 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
     if (task) byTask[task] = round((byTask[task] ?? 0) + r.aic);
     else unattributed = round(unattributed + r.aic); // counts against every task
   }
-  return { aic: round(runs.reduce((s, r) => s + r.aic, 0)), runs, tasks: taskUnknown ? null : { by_task: byTask, unattributed } };
+  return { aic: round(runs.reduce((s, r) => s + r.aic, 0)), runs, tasks: taskUnknown ? null : { by_task: byTask, unattributed }, alert };
 }
 
-/** One run's spend (reserved, measured, no inference), or the reason it can't be read. */
-async function measureRun(client: GitHubClient, repo: string, run: Rec, id: number, reserve: number): Promise<RunSpend | string> {
-  // A re-run (even one still queued or running) carries earlier attempts' spend: count the full
-  // reservation for each attempt, an upper bound. An implausible attempt number is unknown.
+/** The `agent` artifact's own agent_usage.json, for logging only; undefined if unreadable. */
+async function observedAgentAIC(client: GitHubClient, repo: string, artifacts: Rec[]): Promise<number | undefined> {
+  try {
+    const agent = artifacts.filter((a) => a.name === 'agent' && a.expired === false && typeof a.id === 'number');
+    if (agent.length !== 1) return undefined;
+    if (typeof agent[0]!.size_in_bytes === 'number' && agent[0]!.size_in_bytes > MAX_ARTIFACT_BYTES) return undefined;
+    const res = await client.request('GET', `/repos/${repo}/actions/artifacts/${String(agent[0]!.id)}/zip`, { accept: 'binary' });
+    if (!(res.data instanceof Uint8Array)) return undefined;
+    const text = readZip(res.data, ['agent_usage.json']).get('agent_usage.json');
+    const credits = text === undefined ? undefined : (JSON.parse(text) as { ai_credits?: unknown } | null)?.ai_credits;
+    return isAIC(credits) ? round(credits) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * One run's spend (reserved, measured, no inference, bounded), or the reason it can't be read.
+ * `bound`: this run's bound when bounding is in force, else null (re-runs and missing usage are
+ * then unknown).
+ */
+async function measureRun(client: GitHubClient, repo: string, run: Rec, id: number, reserve: number, bound: number | null): Promise<RunSpend | string> {
   const attempt = run.run_attempt;
   if (typeof attempt !== 'number' || !Number.isInteger(attempt) || attempt < 1 || attempt > MAX_ATTEMPTS) {
     return `run ${id} has an unexpected run_attempt (${String(attempt)})`;
   }
-  if (attempt > 1) return { run_id: id, status: 'reserved', aic: round(reserve * attempt) };
+  // A re-run (even one still queued or running) carries earlier attempts' spend: n × the bound.
+  if (attempt > 1) {
+    if (bound === null) return `run ${id} was re-run (attempt ${attempt}) and no spend bound is in force`;
+    return { run_id: id, status: 'bounded', aic: round(bound * attempt), reason: 'rerun' };
+  }
   const listJobs = async (): Promise<Rec[]> =>
     (await paginate(client, `/repos/${repo}/actions/runs/${id}/attempts/1/jobs?per_page=100`, (d) => (Array.isArray(rec(d).jobs) ? (rec(d).jobs as unknown[]) : []))).map(rec);
   let jobs: Rec[] | null = null;
@@ -289,13 +411,14 @@ async function measureRun(client: GitHubClient, repo: string, run: Rec, id: numb
     }
     if (!jobs || !allJobsFinished(jobs)) return { run_id: id, status: 'reserved', aic: reserve };
   }
+  let artifacts: Rec[] = [];
   try {
     jobs ??= await listJobs();
     const inferred = jobs.filter(jobInferred).map((j) => String(j.name));
     const bad = inferred.find((n) => !JOB_NAME.test(n));
     if (bad !== undefined) return `run ${id} has a job with an unexpected name`;
     if (inferred.length === 0) return { run_id: id, status: 'no_inference', aic: 0 };
-    const artifacts = (
+    artifacts = (
       await paginate(client, `/repos/${repo}/actions/runs/${id}/artifacts?per_page=100`, (d) => (Array.isArray(rec(d).artifacts) ? (rec(d).artifacts as unknown[]) : []))
     ).map(rec);
     const usage = artifacts.filter((a) => a.name === USAGE_ARTIFACT);
@@ -307,12 +430,16 @@ async function measureRun(client: GitHubClient, repo: string, run: Rec, id: numb
     if (typeof a.size_in_bytes === 'number' && a.size_in_bytes > MAX_ARTIFACT_BYTES) return `run ${id}'s usage artifact is too large`;
     const res = await client.request('GET', `/repos/${repo}/actions/artifacts/${a.id}/zip`, { accept: 'binary' });
     if (!(res.data instanceof Uint8Array)) return `run ${id}'s usage artifact could not be downloaded`;
-    const aic = runAIC(readZip(res.data, inferred.map(usageFileFor)), inferred);
-    return { run_id: id, status: 'measured', aic: round(aic) };
+    const wanted = [...new Set([...inferred.map(usageFileFor), ...inferred.map((j) => `${j}/token_usage.jsonl`)])];
+    const files = readZip(res.data, wanted);
+    const aic = runAIC(files, inferred);
+    const stats = responseStats(files);
+    return { run_id: id, status: 'measured', aic: round(aic), ...(stats ?? {}) };
   } catch (err) {
     // Only a run GitHub reports as completed: nothing more can start in it, so its bound holds.
-    if (err instanceof UsageMissing && run.status === 'completed') {
-      return { run_id: id, status: 'bounded', aic: reserve, reason: err.code };
+    if (err instanceof UsageMissing && run.status === 'completed' && bound !== null) {
+      const observed = await observedAgentAIC(client, repo, artifacts);
+      return { run_id: id, status: 'bounded', aic: bound, reason: err.code, ...(observed !== undefined ? { observed_aic: observed } : {}) };
     }
     return `run ${id}'s spend could not be read (${(err as Error).message})`;
   }
@@ -323,7 +450,15 @@ export function spendSnapshotFields(day: string, spend: { aic: number; runs: Run
   return {
     day,
     aic_today: spend.aic,
-    runs: spend.runs.slice(0, 50).map((r) => ({ run_id: r.run_id, status: r.status, aic: r.aic, ...(r.reason ? { reason: r.reason } : {}) })),
+    runs: spend.runs.slice(0, 50).map((r) => ({
+      run_id: r.run_id,
+      status: r.status,
+      aic: r.aic,
+      ...(r.reason ? { reason: r.reason } : {}),
+      ...(r.max_concurrency !== undefined ? { max_concurrency: r.max_concurrency } : {}),
+      ...(r.max_response_aic !== undefined ? { max_response_aic: r.max_response_aic } : {}),
+      ...(r.observed_aic !== undefined ? { observed_aic: r.observed_aic } : {}),
+    })),
     runs_total: spend.runs.length,
   };
 }

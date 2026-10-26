@@ -33,7 +33,18 @@ export interface BudgetsPolicy {
   per_task: { max_aic: number };
   factory_per_day: { max_aic: number; alert_at_pct: number; pause_at_pct: number };
   /** Per-run caps (gh-aw max-ai-credits); used to reserve spend for runs still going. */
-  per_run: { implement: number; repair: number; reviewer_agent: number; threat_detection: number };
+  per_run: { implement: number; repair: number; reviewer_agent: number; threat_detection: number; overshoot?: Overshoot | null };
+}
+
+/**
+ * budgets.yaml per_run.overshoot_margin and its assumptions. max-ai-credits is "stop after the
+ * response that crosses the cap" (the firewall checks the recorded total before each request), so
+ * an AI job can spend up to `margin` = max response × max concurrency past its cap.
+ */
+export interface Overshoot {
+  margin: number;
+  max_response_aic: number;
+  max_concurrency: number;
 }
 
 export type Tier = 'auto' | 'auto-strict' | 'human';

@@ -3,7 +3,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { parse } from 'yaml';
-import type { BudgetsPolicy, CadencePolicy, LimitsPolicy, Policies, TiersPolicy } from './types.ts';
+import type { BudgetsPolicy, CadencePolicy, LimitsPolicy, Overshoot, Policies, TiersPolicy } from './types.ts';
 
 export const FACTORY_REPO = 'sabbasi3-factory-lab/factory';
 export const POLICY_NAMES = ['limits', 'budgets', 'tiers', 'cadence'] as const;
@@ -88,6 +88,26 @@ function version1(root: unknown, file: string): void {
   if (get(root, 'version') !== 1) throw new Error(`policy ${file}: unsupported version`);
 }
 
+/**
+ * per_run.overshoot_margin with its two assumptions. All three missing → null (no spend bound:
+ * unreadable usage stays unknown). Partly present, or a margin below max response × max
+ * concurrency → the policy is invalid (fail closed).
+ */
+function overshootOf(b: unknown): Overshoot | null {
+  const keys = ['overshoot_margin', 'overshoot_assumed_max_response_aic', 'overshoot_assumed_max_concurrency'] as const;
+  const present = keys.filter((k) => get(b, `per_run.${k}`) !== undefined);
+  if (present.length === 0) return null;
+  if (present.length !== keys.length) throw new Error('policy budgets: per_run.overshoot_margin needs both assumptions (max response, max concurrency)');
+  const o: Overshoot = {
+    margin: num(b, 'budgets', 'per_run.overshoot_margin', 1),
+    max_response_aic: num(b, 'budgets', 'per_run.overshoot_assumed_max_response_aic', 1),
+    max_concurrency: num(b, 'budgets', 'per_run.overshoot_assumed_max_concurrency', 1),
+  };
+  if (!Number.isInteger(o.max_concurrency)) throw new Error('policy budgets: per_run.overshoot_assumed_max_concurrency must be an integer');
+  if (o.margin < o.max_response_aic * o.max_concurrency) throw new Error('policy budgets: per_run.overshoot_margin is below max response × max concurrency');
+  return o;
+}
+
 export function parsePolicies(texts: PolicyTexts): Policies {
   const doc = (name: PolicyName): unknown => {
     const v: unknown = parse(texts[name]);
@@ -132,6 +152,7 @@ export function parsePolicies(texts: PolicyTexts): Policies {
       reviewer_agent: num(b, 'budgets', 'per_run.reviewer_agent', 1),
       repair: num(b, 'budgets', 'per_run.repair', 1),
       threat_detection: num(b, 'budgets', 'per_run.threat_detection', 1),
+      overshoot: overshootOf(b),
     },
     factory_per_day: {
       max_aic: num(b, 'budgets', 'factory_per_day.max_aic', 1),

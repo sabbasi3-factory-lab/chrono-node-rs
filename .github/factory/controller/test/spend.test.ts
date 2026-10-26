@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { crc32, deflateRawSync } from 'node:zlib';
 import { FakeGitHub } from '../fake.ts';
-import { jobInferred, readSpendToday, readZip, runAIC, spendSnapshotFields } from '../spend.ts';
+import { jobInferred, readSpendToday, readZip, responseStats, runAIC, spendSnapshotFields } from '../spend.ts';
 import { readFileSync } from 'node:fs';
 import { NOW, REPO } from './helpers.ts';
 
@@ -82,6 +82,8 @@ interface FakeRun {
   conclusion?: string;
   /** HTTP status for the jobs list (default 200). */
   jobsStatus?: number;
+  /** run_started_at (a re-run's latest attempt start). */
+  started?: string;
 }
 
 function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; status?: string; attempt?: number }[] = [], repairListStatus = 200, reviewRuns: { id: number; status?: string }[] = [], reviewListStatus = 200): FakeGitHub {
@@ -98,7 +100,7 @@ function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; stat
   );
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), () =>
     listStatus === 200
-      ? { data: { workflow_runs: runs.map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z', display_title: x.title ?? 'Implement one factory task' })) } }
+      ? { data: { workflow_runs: runs.map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z', run_started_at: x.started ?? x.created ?? '2026-10-16T08:00:00Z', display_title: x.title ?? 'Implement one factory task' })) } }
       : { status: listStatus, data: null },
   );
   for (const x of runs) {
@@ -161,26 +163,6 @@ describe('spend collector: today\'s implement spend', () => {
     for (const status of [404, 500]) assert.equal((await readSpendToday(world([], 200, [], status), REPO, NOW, CAPS)).aic, null, String(status));
   });
 
-  it('a re-run counts its full reservation for every attempt (an upper bound), completed or not, and by task', async () => {
-    // implement + threat detection = 900 per attempt.
-    for (const status of ['completed', 'queued', 'in_progress']) {
-      const res = await readSpendToday(world([{ id: 9, attempt: 2, status, title: 'Implement en/a #3 attempt 1' }, { id: 8, attempt: 3, status }]), REPO, NOW, CAPS);
-      assert.equal(res.aic, 1800 + 2700, status);
-      assert.deepEqual(
-        [...res.runs].sort((a, b) => a.run_id - b.run_id),
-        [
-          { run_id: 8, status: 'reserved', aic: 2700 },
-          { run_id: 9, status: 'reserved', aic: 1800 },
-        ],
-        status,
-      );
-      assert.equal(res.tasks?.by_task['en/a'], 1800, status);
-    }
-    // A repair re-run (drill D1's case): repair + threat detection = 700 per attempt.
-    const rep = await readSpendToday(world([], 200, [{ id: 40, status: 'completed', attempt: 2 }]), REPO, NOW, CAPS);
-    assert.deepEqual(today(rep), { aic: 1400, runs: [{ run_id: 40, status: 'reserved', aic: 1400 }] });
-  });
-
   it('a queued or in-progress run is reserved at the per-run caps (implement + threat detection)', async () => {
     const res = await readSpendToday(world([{ id: 1, status: 'in_progress' }, { id: 2, status: 'queued' }]), REPO, NOW, CAPS);
     assert.deepEqual(today(res), { aic: 1800, runs: [{ run_id: 1, status: 'reserved', aic: 900 }, { run_id: 2, status: 'reserved', aic: 900 }] });
@@ -236,41 +218,122 @@ describe('spend collector: today\'s implement spend', () => {
     assert.deepEqual(res.runs.map((x) => x.run_id), [6, 7]);
   });
 
-  describe('a completed run whose usage is missing counts at its bound (revises #78 for completed runs only)', () => {
-    const cases: [string, FakeRun, string][] = [
+  describe('the spend bound (budgets.yaml overshoot margin; revises #78 for completed runs only)', () => {
+    // budgets.yaml (approved): margin 400 per AI job = max response 100 × max concurrency 4.
+    const B = { margin: 400, max_response_aic: 100, max_concurrency: 4 };
+    // implement: 500 + 400 (detection) + 2 × 400 (agent and detection overshoot) = 1700.
+    const IMPL_BOUND = 1700;
+    const read = (runs: FakeRun[], bounding: typeof B | null = B, repair: { id: number; status?: string; attempt?: number }[] = []) =>
+      readSpendToday(world(runs, 200, repair), REPO, NOW, CAPS, bounding);
+    /** agent/token_usage.jsonl records: [start offset s, duration s, AIC]. */
+    const timed = (recs: [number, number, number][]) =>
+      recs.map(([s, d, c], i) => JSON.stringify({ request_id: `a${i}`, timestamp: new Date(Date.parse('2026-10-16T08:00:00Z') + (s + d) * 1000).toISOString(), duration_ms: d * 1000, ai_credits_this_response: c })).join('\n') + '\n';
+    const withRecords = (id: number, recs: [number, number, number][], agent = 30): FakeRun => ({
+      id,
+      artifacts: [{ id: id * 10, name: 'usage' }],
+      zips: { [id * 10]: zip({ 'agent_usage.json': JSON.stringify({ ai_credits: agent }), 'agent/token_usage.jsonl': timed(recs) }) },
+    });
+
+    const missing: [string, FakeRun, string][] = [
       ['no usage artifact', { id: 9 }, 'no_usage_artifact'],
       ['an expired usage artifact', { id: 9, artifacts: [{ id: 90, name: 'usage', expired: true }] }, 'usage_artifact_expired'],
       ['a usage artifact without agent_usage.json (drill D1: the token step failed)', { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(null, [3]) } }, 'usage_file_missing'],
     ];
-    for (const [what, run, reason] of cases) {
-      it(what, async () => {
-        const res = await readSpendToday(world([{ ...run, title: 'Implement en/a #3 attempt 1' }]), REPO, NOW, CAPS);
-        // implement 500 + threat detection 400: both hard stops per run in gh-aw.
-        assert.deepEqual(today(res), { aic: 900, runs: [{ run_id: 9, status: 'bounded', aic: 900, reason }] });
-        assert.equal(res.tasks?.by_task['en/a'], 900);
-        assert.deepEqual(spendSnapshotFields('2026-10-16', res as unknown as { aic: number; runs: never[] }).runs, [{ run_id: 9, status: 'bounded', aic: 900, reason }], 'the audit event names it');
+    for (const [what, run, reason] of missing) {
+      it(`completed, ${what} → counts at its bound (cap + detection + 2 × margin), named in the audit event`, async () => {
+        const res = await read([{ ...run, title: 'Implement en/a #3 attempt 1' }]);
+        assert.deepEqual(today(res), { aic: IMPL_BOUND, runs: [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason }] });
+        assert.equal(res.tasks?.by_task['en/a'], IMPL_BOUND);
+        assert.equal(res.alert, null);
+        assert.deepEqual(spendSnapshotFields('2026-10-16', res as unknown as { aic: number; runs: never[] }).runs, [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason }]);
+      });
+      it(`completed, ${what}, but no bound in force (no margin in the policy, or the locks differ) → unknown`, async () => {
+        assert.equal((await read([run], null)).aic, null);
       });
     }
 
+    it('a bounded run logs the agent artifact\'s own usage (informational, never counted)', async () => {
+      const run: FakeRun = { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }, { id: 91, name: 'agent' }], zips: { 90: usageZip(null, [3]), 91: zip({ 'agent_usage.json': '{"ai_credits":14.26}' }) } };
+      const res = await read([run]);
+      assert.deepEqual(res.runs, [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason: 'usage_file_missing', observed_aic: 14.26 }]);
+    });
+
     it('a run not reported completed (stale in progress, all jobs done) with no usage stays unknown', async () => {
-      const res = await readSpendToday(world([{ id: 15, status: 'in_progress', jobStatus: 'completed', conclusion: 'completed', artifacts: [] }]), REPO, NOW, CAPS);
-      assert.equal(res.aic, null);
+      assert.equal((await read([{ id: 15, status: 'in_progress', jobStatus: 'completed', conclusion: 'completed', artifacts: [] }])).aic, null);
     });
 
-    it('a repair run counts at repair + detection (700); yesterday\'s missing usage no longer makes per-task spend unknown', async () => {
-      const res = await readSpendToday(world([{ id: 9, created: '2026-10-15T20:00:00Z', title: 'Repair en/a #3 attempt 2' }]), REPO, NOW, CAPS);
-      assert.equal(res.aic, 0, 'yesterday is not today');
-      assert.equal(res.tasks?.by_task['en/a'], 900, 'the implement fixture lists it as an implement run: 500 + 400');
-    });
-
-    it('the bound is never below the actual usage when both are known (the real gh-aw artifact, and any usage within the caps)', () => {
-      const real = runAIC(readZip(new Uint8Array(readFileSync(new URL('./fixtures/usage-artifact.zip', import.meta.url))), ['agent_usage.json', 'detection/token_usage.jsonl']), ['agent', 'detection']);
-      assert.ok(real <= CAPS.implement + CAPS.threat_detection, String(real));
-      // Any measured run is at most its two hard caps.
-      for (const [agent, det] of [[0, 0], [500, 400], [499.99, 0.01], [12.5, 3.25]] as const) {
-        const files = new Map([['agent_usage.json', JSON.stringify({ ai_credits: agent })], ['detection/token_usage.jsonl', JSON.stringify({ ai_credits_this_response: det })]]);
-        assert.ok(runAIC(files, ['agent', 'detection']) <= CAPS.implement + CAPS.threat_detection);
+    it('a re-run counts n × its bound, completed or not, and by task; without a bound it is unknown', async () => {
+      for (const status of ['completed', 'queued', 'in_progress']) {
+        const res = await read([{ id: 9, attempt: 2, status, title: 'Implement en/a #3 attempt 1' }, { id: 8, attempt: 3, status }]);
+        assert.equal(res.aic, 2 * IMPL_BOUND + 3 * IMPL_BOUND, status);
+        assert.deepEqual([...res.runs].sort((a, b) => a.run_id - b.run_id), [
+          { run_id: 8, status: 'bounded', aic: 3 * IMPL_BOUND, reason: 'rerun' },
+          { run_id: 9, status: 'bounded', aic: 2 * IMPL_BOUND, reason: 'rerun' },
+        ], status);
+        assert.equal(res.tasks?.by_task['en/a'], 2 * IMPL_BOUND);
+        assert.match(String((await read([{ id: 9, attempt: 2, status }], null) as { reason?: string }).reason), /re-run \(attempt 2\) and no spend bound is in force/);
       }
+      // Drill D1's case: a repair re-run, repair 300 + detection 400 + 800 = 1500 per attempt.
+      const rep = await read([], B, [{ id: 40, status: 'completed', attempt: 2 }]);
+      assert.deepEqual(today(rep), { aic: 3000, runs: [{ run_id: 40, status: 'bounded', aic: 3000, reason: 'rerun' }] });
+    });
+
+    it('a re-run of a run created yesterday counts in today\'s total when its attempt started today', async () => {
+      const res = await read([{ id: 7, attempt: 2, created: '2026-10-15T23:30:00Z', started: '2026-10-16T01:00:00Z' }]);
+      assert.equal(res.aic, 2 * IMPL_BOUND);
+      const stale = await read([{ id: 7, attempt: 2, created: '2026-10-15T23:30:00Z', started: '2026-10-15T23:40:00Z' }]);
+      assert.equal(stale.aic, 0, 'started yesterday: yesterday\'s');
+    });
+
+    describe('readable runs are checked against the assumptions; any excess turns the bound off and raises an alert', () => {
+      const bounded: FakeRun = { id: 9, title: 'Implement en/a #3 attempt 1' };
+      it('within the assumptions (4 overlapping requests, a 100 AIC response) → the bound stands, no alert', async () => {
+        const ok = withRecords(5, [[0, 10, 100], [1, 10, 1], [2, 10, 1], [3, 10, 1], [20, 5, 2]], 105);
+        const res = await read([bounded, ok]);
+        assert.equal(res.alert, null);
+        assert.equal(res.aic, IMPL_BOUND + 105);
+        assert.deepEqual(res.runs.find((r) => r.run_id === 5), { run_id: 5, status: 'measured', aic: 105, max_concurrency: 4, max_response_aic: 100 });
+      });
+      const breaches: [string, FakeRun, Partial<Record<string, number>>][] = [
+        ['5 requests in flight at once', withRecords(5, [[0, 10, 1], [1, 10, 1], [2, 10, 1], [3, 10, 1], [4, 10, 1]], 5), { max_concurrency: 5 }],
+        ['a single response above 100 AIC', withRecords(5, [[0, 10, 100.5]], 100.5), { max_response_aic: 100.5 }],
+        ['a total above its bound', withRecords(5, [[0, 10, 1]], 1700.5), { aic: 1700.5 }],
+      ];
+      for (const [what, run, seen] of breaches) {
+        it(`${what} → bound off (the bounded run makes spend unknown) and an alert`, async () => {
+          const res = await read([bounded, run]);
+          assert.equal(res.aic, null);
+          assert.match((res as { reason: string }).reason, /broke an overshoot assumption: bounding is off/);
+          assert.equal(res.alert?.code, 'overshoot_assumption_exceeded');
+          assert.equal(res.alert?.run_id, 5);
+          for (const [k, v] of Object.entries(seen)) assert.equal((res.alert as unknown as Record<string, number>)[k], v, k);
+          // With nothing bounded, spend stays known, but the alert is still raised.
+          const alone = await read([run]);
+          assert.notEqual(alone.aic, null);
+          assert.equal(alone.alert?.code, 'overshoot_assumption_exceeded');
+        });
+      }
+    });
+
+    it('the bound is never below the actual usage when the assumptions hold', () => {
+      // A job's spend is at most its cap + the responses admitted just under it: at most
+      // max_concurrency of them, each at most max_response_aic, i.e. at most cap + margin.
+      for (const [cap, detection] of [[500, 400], [300, 400], [200, 400]] as const) {
+        const worstAgent = cap + B.max_concurrency * B.max_response_aic;
+        const worstDetection = detection + B.max_concurrency * B.max_response_aic;
+        assert.ok(worstAgent + worstDetection <= cap + detection + 2 * B.margin);
+      }
+      const real = runAIC(readZip(new Uint8Array(readFileSync(new URL('./fixtures/usage-artifact.zip', import.meta.url))), ['agent_usage.json', 'detection/token_usage.jsonl']), ['agent', 'detection']);
+      assert.ok(real <= IMPL_BOUND, String(real));
+    });
+
+    it('responseStats: overlapping requests, back-to-back is not concurrent, unreadable → null', () => {
+      const f = (t: string) => new Map([['agent/token_usage.jsonl', t]]);
+      assert.deepEqual(responseStats(f(timed([[0, 10, 1], [5, 10, 2], [7, 1, 3]]))), { max_concurrency: 3, max_response_aic: 3 });
+      assert.deepEqual(responseStats(f(timed([[0, 10, 1], [10, 10, 2]]))), { max_concurrency: 1, max_response_aic: 2 });
+      assert.equal(responseStats(f('{"ai_credits_this_response":1}\n')), null, 'no timestamp');
+      assert.equal(responseStats(f('not json\n')), null);
+      assert.equal(responseStats(new Map()), null);
     });
   });
 

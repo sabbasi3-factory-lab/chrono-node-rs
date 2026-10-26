@@ -15,7 +15,8 @@ import { AuditLog, AuditValidationError, dedupeKey, isoSeconds } from './audit.t
 import { canonicalize } from './canonical.ts';
 import { decisionEvent, execute, executeLive, isLive, liveDecision, pendingHandoffs } from './executor.ts';
 import { FakeGitHub } from './fake.ts';
-import { createClient, readSnapshot, REVIEWER_APP_ID, type RecordedCheck } from './github.ts';
+import { ALERT_TITLE, COMMENT_MARKER, createClient, LABEL_ALERT, paginate, readSnapshot, REVIEWER_APP_ID, type AlertCode, type RecordedCheck } from './github.ts';
+import { CAPPED_WORKFLOWS, lockCapsMismatch, type CappedWorkflow } from './caps.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
@@ -46,6 +47,8 @@ export interface RunDeps {
   snapshot?: Snapshot;
   /** Force dry-run whatever FACTORY_ENABLED says (fixture mode). */
   forceDryRun?: boolean;
+  /** Tests: the compiled workflows to check the spend bound's caps against (default: the checkout's). */
+  readLocks?: () => Promise<Record<CappedWorkflow, string | null>>;
   /** This run's URL, for comments (live mode). */
   runUrl?: string | null;
 }
@@ -71,6 +74,28 @@ export function recordedChecks(events: AuditEvent[]): Map<string, RecordedCheck>
     });
   }
   return out;
+}
+
+/** The compiled AI workflows, as the controller's own checkout has them (null if unreadable). */
+async function readLocks(): Promise<Record<CappedWorkflow, string | null>> {
+  const out = {} as Record<CappedWorkflow, string | null>;
+  for (const wf of Object.keys(CAPPED_WORKFLOWS) as CappedWorkflow[]) {
+    try {
+      out[wf] = await readFile(new URL(`../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
+    } catch {
+      out[wf] = null;
+    }
+  }
+  return out;
+}
+
+/** One open factory:alert issue per alert kind (reused while open). */
+async function raiseAlertIssue(client: GitHubClient, repo: string, code: AlertCode, note: string): Promise<void> {
+  const title = ALERT_TITLE(code);
+  const open = await paginate(client, `/repos/${repo}/issues?state=open&labels=${encodeURIComponent(LABEL_ALERT)}&per_page=100`, (d) => (Array.isArray(d) ? d : []));
+  if (open.some((i) => (i as { title?: unknown }).title === title)) return;
+  const body = `${COMMENT_MARKER} · ${LABEL_ALERT}\n\nThe spend bound is off until a person reviews it (budgets.yaml per_run.overshoot_margin, or the compiled workflow caps). Until then a run whose usage can't be read blocks dispatch again.\n\n${note}`.slice(0, 2000);
+  await client.request('POST', `/repos/${repo}/issues`, { body: { title, body, labels: [LABEL_ALERT] } });
 }
 
 function runId(env: RunEnv): number {
@@ -138,7 +163,15 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   if (deps.snapshot) {
     snapshot.factory_aic_today ??= derived.factory_aic_today;
   } else {
-    const spend = await readSpendToday(client, repo, now, policies.budgets.per_run);
+    // The spend bound (spend.ts) only with the policy's overshoot margin AND compiled workflows that
+    // enforce exactly the policy's caps; otherwise unreadable usage stays unknown.
+    const overshoot = policies.budgets.per_run.overshoot ?? null;
+    let lockMismatch: string | null = null;
+    if (overshoot) {
+      lockMismatch = lockCapsMismatch(await (deps.readLocks ?? readLocks)(), policies.budgets.per_run);
+      if (lockMismatch) log(`WARNING: spend bound off: ${lockMismatch}`);
+    }
+    const spend = await readSpendToday(client, repo, now, policies.budgets.per_run, overshoot && !lockMismatch ? overshoot : null);
     snapshot.task_spend = spend.tasks;
     if (spend.aic === null) {
       snapshot.factory_aic_today = null;
@@ -150,9 +183,25 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     // A bound stands in for a missing measurement: say so every time (summary and log).
     const bounded = spend.runs.filter((r) => r.status === 'bounded');
     if (bounded.length > 0) {
-      spendNote += `; WARNING: ${bounded.map((r) => `run ${r.run_id} counted at its bound ${r.aic} AIC (usage missing: ${r.reason ?? 'unknown'})`).join('; ')}`;
+      spendNote += `; WARNING: ${bounded.map((r) => `run ${r.run_id} counted at its bound ${r.aic} AIC (${r.reason === 'rerun' ? 're-run' : `usage missing: ${r.reason ?? 'unknown'}`}${r.observed_aic !== undefined ? `; agent artifact says ${r.observed_aic} AIC` : ''})`).join('; ')}`;
     }
+    if (spend.alert) {
+      const a = spend.alert;
+      spendNote += `; ALERT: run ${a.run_id} broke an overshoot assumption (concurrency ${a.max_concurrency}, largest response ${a.max_response_aic} AIC, total ${a.aic} vs bound ${a.bound}): spend bound off`;
+    }
+    if (lockMismatch) spendNote += `; ALERT: spend bound off (${lockMismatch})`;
     log(`spend today: ${spendNote}`);
+    // factory:alert: recorded (real in both modes, once a day per cause), and in live mode one open
+    // issue for a person to review the margin or the caps.
+    const alertDay = isoSeconds(now).slice(0, 10);
+    const alerts: { code: AlertCode; source: string; fields: Record<string, number | string> }[] = [];
+    if (spend.alert) alerts.push({ code: 'overshoot_assumption_exceeded', source: `run:${spend.alert.run_id}`, fields: { ...spend.alert } });
+    if (lockMismatch) alerts.push({ code: 'lock_caps_mismatch', source: 'locks', fields: { code: 'lock_caps_mismatch' } });
+    for (const al of alerts) {
+      const before = audit.appended.length;
+      await audit.append({ type: 'alert', source_ids: [`day:${alertDay}`, al.code, al.source], fields: al.fields, dry_run: false }, now);
+      if (live && audit.appended.length > before) await raiseAlertIssue(client, repo, al.code, spendNote);
+    }
     if (spend.aic !== null) {
       const day = isoSeconds(now).slice(0, 10);
       // A measurement, not a decision: recorded as real (dry_run: false) in both modes. A new

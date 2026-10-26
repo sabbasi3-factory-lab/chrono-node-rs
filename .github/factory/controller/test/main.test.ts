@@ -301,17 +301,55 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
     assert.ok(!result.appended.some((e) => e.type === 'dispatched'));
   });
 
+  // budgets.yaml with the approved overshoot margin (the fixture is the pinned policy, without it).
+  const bounded: typeof policies = structuredClone(policies);
+  bounded.budgets.per_run.overshoot = { margin: 400, max_response_aic: 100, max_concurrency: 4 };
+
   it('a completed run whose usage is missing counts at its bound: a warning in the summary, the audit event names it, and dispatch is not blocked', async () => {
     const lines: string[] = [];
-    const result = await run(deps(unreadableSpendWorld(true), { log: (l) => lines.push(l) }));
-    // implement 500 + threat detection 400 (the fixture's budgets.yaml).
-    assert.ok(lines.some((l) => l.startsWith('spend today: 900 AIC') && l.includes('WARNING: run 900 counted at its bound 900 AIC (usage missing: no_usage_artifact)')), lines.join('\n'));
-    assert.match(result.summary, /WARNING: run 900 counted at its bound 900 AIC/);
+    const result = await run(deps(unreadableSpendWorld(true), { policies: bounded, log: (l) => lines.push(l) }));
+    // implement 500 + threat detection 400 + 2 × 400 margin.
+    assert.ok(lines.some((l) => l.startsWith('spend today: 1700 AIC') && l.includes('WARNING: run 900 counted at its bound 1700 AIC (usage missing: no_usage_artifact)')), lines.join('\n'));
+    assert.match(result.summary, /WARNING: run 900 counted at its bound 1700 AIC/);
     const snap = result.appended.find((e) => e.type === 'spend_snapshot');
     assert.ok(snap);
-    assert.deepEqual(snap.payload.runs, [{ run_id: 900, status: 'bounded', aic: 900, reason: 'no_usage_artifact' }]);
+    assert.deepEqual(snap.payload.runs, [{ run_id: 900, status: 'bounded', aic: 1700, reason: 'no_usage_artifact' }]);
     assert.ok(!result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
+    assert.ok(!result.appended.some((e) => e.type === 'alert'));
   });
+
+  it('without the margin in the policy there is no bound: missing usage is unknown and blocks', async () => {
+    const lines: string[] = [];
+    const result = await run(deps(unreadableSpendWorld(true), { log: (l) => lines.push(l) }));
+    assert.ok(lines.some((l) => l.startsWith('spend today: unknown: run 900')), lines.join('\n'));
+    assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
+  });
+
+  it('compiled caps that differ from the policy turn the bound off, record an alert, and (live) open one factory:alert issue a day', async () => {
+    const drift = async () => {
+      const out: Record<string, string> = {};
+      for (const wf of ['implement', 'repair', 'review']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
+      out.implement = out.implement!.replace(/("maxAiCredits":)500/, '$1600');
+      return out as Record<'implement' | 'repair' | 'review', string>;
+    };
+    const gh = liveWorld(204, 0, unreadableSpendWorld(true));
+    gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues$`), () => ({ status: 201, data: { number: 500 } }));
+    const lines: string[] = [];
+    const r1 = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: bounded, readLocks: drift, log: (l) => lines.push(l) }));
+    assert.ok(lines.some((l) => l.startsWith('WARNING: spend bound off: implement.lock.yml agent cap 600')), lines.join('\n'));
+    assert.ok(r1.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'), 'no bound: the unreadable run blocks');
+    assert.deepEqual(r1.appended.filter((e) => e.type === 'alert').map((e) => e.payload.code), ['lock_caps_mismatch']);
+    const posts = () => gh.calls.filter((c) => c.method === 'POST' && c.path === `/repos/${REPO}/issues`);
+    assert.equal(posts().length, 1);
+    const body = posts()[0]!.body as { title: string; labels: string[] };
+    assert.deepEqual(body.labels, ['factory:alert']);
+    assert.match(body.title, /^Factory alert: compiled workflow caps differ/);
+    // Same day, same cause: no second event, no second issue.
+    const r2 = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: bounded, readLocks: drift, now: new Date(NOW.getTime() + 60_000) }));
+    assert.ok(!r2.appended.some((e) => e.type === 'alert'));
+    assert.equal(posts().length, 1);
+  });
+
 });
 
 // ---------------------------------------------------------------- live mode
