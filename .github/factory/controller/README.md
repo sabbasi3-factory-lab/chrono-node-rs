@@ -17,7 +17,9 @@ It never queues, merges, closes or reverts anything, and never removes a label, 
    If anything is missing or malformed, exit non-zero **before** any GitHub call (fail closed).
 3. Load the audit log: the last 7 UTC day files at the `audit` head, plus the file named in the head
    commit message. Verify the hash chain. A broken chain or a foreign head commit stops the run.
-4. Read a snapshot of GitHub (`github.ts`):
+4. Read a snapshot of GitHub (`github.ts`). Reads (GET, and read-only GraphQL queries) that get
+   502/503/504 are tried up to 3 times with backoff and jitter; then the run fails closed. Writes
+   (including mutations) are never retried, since a 5xx doesn't say whether they took effect.
    - open issues (only the `<!-- factory-task: … -->` marker is kept)
    - all PRs through GraphQL (only the `Factory-Task:`, `Contract-SHA:` and `Factory-Attempt:` trailer
      lines are kept)

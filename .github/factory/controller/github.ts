@@ -233,8 +233,33 @@ export function nextPathFromLink(link: string | null): string | null {
 }
 
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
+export type SleepFn = (ms: number) => Promise<void>;
 
-export function createClient(token: string, repo: string, fetchFn: FetchFn = fetch, mode: ControllerMode = 'dry-run'): GitHubClient {
+/** Transient GitHub errors worth another try (bad gateway, unavailable, gateway timeout). */
+export const RETRY_STATUSES: readonly number[] = [502, 503, 504];
+/** Tries in total for a retryable read; after the last, the error stands (the run fails closed). */
+export const MAX_TRIES = 3;
+const BASE_DELAY_MS = 1000;
+
+/**
+ * Only reads are retried: GET, and POST /graphql with a read-only query (the same test as the
+ * allowlist). A write is never retried: a 5xx doesn't say whether it took effect.
+ */
+export function isRetryableRead(method: HttpMethod, path: string, body: unknown): boolean {
+  if (method === 'GET') return true;
+  if (method !== 'POST' || path !== '/graphql' || body === null || typeof body !== 'object') return false;
+  const q = (body as { query?: unknown }).query;
+  return typeof q === 'string' && /^\s*(query\b|\{)/.test(q) && !/\bmutation\b/i.test(q);
+}
+
+/** Exponential backoff with full jitter: try n (1-based) waits up to BASE * 2^(n-1). */
+export function retryDelayMs(tryNumber: number, random: () => number = Math.random): number {
+  return Math.floor(random() * BASE_DELAY_MS * 2 ** (tryNumber - 1)) + 250;
+}
+
+const realSleep: SleepFn = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export function createClient(token: string, repo: string, fetchFn: FetchFn = fetch, mode: ControllerMode = 'dry-run', sleep: SleepFn = realSleep): GitHubClient {
   if (!token) throw new Error('GitHub token missing');
   return {
     async request(method: HttpMethod, path: string, options: RequestOptions = {}): Promise<ApiResponse> {
@@ -253,7 +278,13 @@ export function createClient(token: string, repo: string, fetchFn: FetchFn = fet
         headers['Content-Type'] = 'application/json';
         init.body = JSON.stringify(options.body);
       }
-      const res = await fetchFn(`${API_BASE}${path}`, init);
+      const retryable = isRetryableRead(method, path, options.body);
+      let res = await fetchFn(`${API_BASE}${path}`, init);
+      for (let tryNumber = 1; retryable && tryNumber < MAX_TRIES && RETRY_STATUSES.includes(res.status); tryNumber++) {
+        await res.body?.cancel();
+        await sleep(retryDelayMs(tryNumber));
+        res = await fetchFn(`${API_BASE}${path}`, init);
+      }
       if (options.allowStatuses?.includes(res.status)) {
         await res.body?.cancel();
         return { status: res.status, data: null, next: null };
