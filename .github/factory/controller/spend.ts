@@ -154,7 +154,7 @@ export interface SpendOptions {
 
 export type SpendResult =
   | { aic: number; runs: RunSpend[]; tasks: TaskSpend | null; alert: BoundAlert | null }
-  | { aic: null; runs: RunSpend[]; reason: string; tasks: null; alert: BoundAlert | null; /** today's runs that couldn't be read */ unreadable_runs?: number };
+  | { aic: null; runs: RunSpend[]; reason: string; tasks: null; alert: BoundAlert | null; /** today's runs that couldn't be read */ unreadable_runs?: number; /** when the earliest of them ended (or started, if still running) */ unreadable_since?: string };
 
 export interface SpendCaps {
   /** budgets.yaml per_run.implement */
@@ -461,6 +461,7 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   const unknownTasks = new Set<string>();
   let firstUnreadable: string | null = null;
   let unreadableToday = 0;
+  let unreadableSince: string | undefined;
   for (const { run, isToday, r: measuredRun } of measured) {
     let r = measuredRun;
     if (alert && typeof r !== 'string' && r.status === 'bounded') {
@@ -471,6 +472,10 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
         // Today's total is unknown; keep counting so the control room can say how many.
         firstUnreadable ??= r;
         unreadableToday++;
+        const at = run.status === 'completed' && typeof run.updated_at === 'string' ? run.updated_at : run.run_started_at;
+        if (typeof at === 'string' && Number.isFinite(Date.parse(at)) && (unreadableSince === undefined || Date.parse(at) < Date.parse(unreadableSince))) {
+          unreadableSince = new Date(Date.parse(at)).toISOString().replace(/\.\d{3}Z$/, 'Z');
+        }
         continue;
       }
       // Yesterday's run: only per-task spend is unknown, and only its own task's when the audit log
@@ -485,7 +490,7 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
     if (task) byTask[task] = round((byTask[task] ?? 0) + r.aic);
     else unattributed = round(unattributed + r.aic); // counts against every task
   }
-  if (firstUnreadable !== null) return { aic: null, runs, reason: firstUnreadable, tasks: null, alert, unreadable_runs: unreadableToday };
+  if (firstUnreadable !== null) return { aic: null, runs, reason: firstUnreadable, tasks: null, alert, unreadable_runs: unreadableToday, ...(unreadableSince ? { unreadable_since: unreadableSince } : {}) };
   return { aic: round(runs.reduce((s, r) => s + r.aic, 0)), runs, tasks: taskUnknown ? null : { by_task: byTask, unattributed, unknown_tasks: [...unknownTasks].sort() }, alert };
 }
 
