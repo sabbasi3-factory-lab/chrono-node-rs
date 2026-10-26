@@ -216,6 +216,9 @@ safe-outputs:
     fallback-as-pull-request: false
     # One `git am` patch (not the default bundle): the detection scope step below checks exactly it.
     patch-format: am
+    # The branch-protection pre-flight needs administration: read, which the agent App doesn't
+    # have (its token request failed in drill D1). GitHub still enforces the rulesets at push time.
+    check-branch-protection: false
     github-token-for-extra-empty-commit: none
     protected-files: blocked
     allowed-files:
