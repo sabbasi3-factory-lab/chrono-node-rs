@@ -842,11 +842,12 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
       p2.tiers.tiers['auto-strict'].strict_gates = gates;
       return p2;
     };
-    for (const g of [[...IMPLEMENTED_STRICT_GATES, 'semver_checks'], ['mutation_score_not_lower'], [...IMPLEMENTED_STRICT_GATES, 'perf_regression_max_pct', 'code_health_not_worse'], null]) {
+    for (const g of [[...IMPLEMENTED_STRICT_GATES, 'unbuilt_gate'], ['unbuilt_gate'], [...IMPLEMENTED_STRICT_GATES, 'unbuilt_a', 'unbuilt_b'], null]) {
       assert.deepEqual(kinds(plan(world(), held(g), ON, NOW)), [], JSON.stringify(g));
     }
-    // The real pinned list: four gates are missing today.
-    assert.deepEqual(missingStrictGates(policies), ['semver_checks', 'mutation_score_not_lower', 'perf_regression_max_pct', 'code_health_not_worse']);
+    // The real pinned list: exactly its gates that aren't implemented yet.
+    const pinned = policies.tiers.tiers['auto-strict'].strict_gates!;
+    assert.deepEqual(missingStrictGates(policies), pinned.filter((g) => !IMPLEMENTED_STRICT_GATES.includes(g)));
     assert.deepEqual(missingStrictGates(held(null)), ['(strict_gates missing or malformed)']);
     assert.deepEqual(missingStrictGates(held([])), [], 'an empty list holds nothing back');
     assert.deepEqual(missingStrictGates(strict), []);
@@ -1010,7 +1011,7 @@ describe('auto-ready: unblocked autonomous tasks become ready, within the dispat
     promoted.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES];
     assert.deepEqual(kinds(plan(s, promoted, ON, NOW)), ['auto_ready/deps_merged#1']);
     const held: typeof policies = structuredClone(promoted);
-    held.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES, 'semver_checks'];
+    held.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES, 'unbuilt_gate'];
     assert.deepEqual(kinds(plan(s, held, ON, NOW)), [], 'an unimplemented strict gate holds auto-ready too');
   });
 });
