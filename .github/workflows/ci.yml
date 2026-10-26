@@ -80,6 +80,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node gates/scope-check.js
 
+      - name: Drill (deliberate) - drills/ci-drill.sh
+        # Factory drills D1/D2 (drills/README.md): fails on purpose for a PR that changes a drill
+        # scope file; a no-op otherwise. Pull requests only. Removed with the drills.
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash drills/ci-drill.sh
+
       - name: Install Rust toolchain (rust-toolchain.toml)
         run: rustup toolchain install && rustc --version
 
