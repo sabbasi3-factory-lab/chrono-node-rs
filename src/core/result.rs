@@ -17,6 +17,19 @@ pub struct ParsingResult {
 }
 
 impl ParsingResult {
+    /// upstream `clone()`: start and end are cloned the upstream way, without their tags
+    /// ([`ParsingComponents::js_clone`]).
+    pub fn js_clone(&self) -> ParsingResult {
+        ParsingResult {
+            reference: self.reference,
+            ref_date: self.ref_date,
+            index: self.index,
+            text: self.text.clone(),
+            start: self.start.js_clone(),
+            end: self.end.as_ref().map(ParsingComponents::js_clone),
+        }
+    }
+
     /// `new ParsingResult(reference, index, text, start?, end?)`.
     pub fn new(
         reference: ReferenceWithTimezone,

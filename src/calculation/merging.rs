@@ -7,7 +7,7 @@ use crate::core::utils::dates::{assign_similar_date, imply_similar_date};
 
 /// `mergeDateTimeResult(dateResult, timeResult)`.
 pub fn merge_date_time_result(date_result: &ParsingResult, time_result: &ParsingResult) -> ParsingResult {
-    let mut result = date_result.clone();
+    let mut result = date_result.js_clone();
     result.start = merge_date_time_component(&date_result.start, &time_result.start);
 
     if date_result.end.is_some() || time_result.end.is_some() {
@@ -36,7 +36,7 @@ pub fn merge_date_time_result(date_result: &ParsingResult, time_result: &Parsing
 
 /// `mergeDateTimeComponent(dateComponent, timeComponent)`.
 pub fn merge_date_time_component(date: &ParsingComponents, time: &ParsingComponents) -> ParsingComponents {
-    let mut dt = date.clone();
+    let mut dt = date.js_clone();
     // Upstream assigns/implies `time.get(...)` directly; every time component has these implied.
     let t = |c| time.get_or_zero(c);
     if time.is_certain(Component::Hour) {

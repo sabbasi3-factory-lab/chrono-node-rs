@@ -84,7 +84,7 @@ impl WordBoundaryParser for EnMonthNameLittleEndianParser {
         }
 
         if let Some(to) = m.get(DATE_TO_GROUP).filter(|s| !s.is_empty()) {
-            let mut end = result.start.clone();
+            let mut end = result.start.js_clone();
             if let Some(d) = parse_ordinal_number_pattern(to) {
                 end.assign(Component::Day, d);
             }
