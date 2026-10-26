@@ -31,7 +31,7 @@ jobs:
   checks:
     name: checks
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60  # auto-strict changes add the strict gates (full regression, semver, ...)
     steps:
       # Trusted: the first step, before any PR code exists on the runner (even before checkout).
       # It commits to a fresh held-out seed by printing only sha256("<salt>:<seed>"). The seed and
@@ -144,6 +144,26 @@ jobs:
           node compare/compare.js --seed "$seed" --phrases 10000 --rust ../target/debug/chrono-rs-json
 
       # After the run (even if it failed): reveal the seed and salt for the commitment above.
+      # Strict gates (tiers.yaml auto-strict.strict_gates), auto-strict changes only. Each runs in this
+      # job with exactly the full regression's `if:` and never continue-on-error, so a green `ci`
+      # whose full-regression step succeeded also ran and passed every one of them (the controller
+      # checks that step; test/strict-gates.test.ts checks this file's shape).
+      - name: Strict gate tools - cargo-semver-checks
+        if: steps.scope.outputs.strict == 'true'
+        uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
+        with:
+          tool: cargo-semver-checks@0.51.0
+
+      - name: Strict gate - semver_checks (no public API break)
+        if: steps.scope.outputs.strict == 'true'
+        env:
+          # The base this change applies to: the PR's base, the queue's base, or main before the push.
+          BASE_REV: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+        run: |
+          [[ "$BASE_REV" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::semver_checks: no base revision"; exit 1; }
+          # Additions are fine; removals and incompatible changes fail (contracts: public_api: unchanged-except-added).
+          cargo semver-checks check-release --baseline-rev "$BASE_REV" --release-type patch
+
       - name: Reveal the held-out seed
         if: always()
         run: |
