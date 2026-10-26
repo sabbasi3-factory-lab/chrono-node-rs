@@ -162,3 +162,14 @@ test("full regression: auto-strict paths or contract tier; fail closed without t
     assert.strictEqual(needsFullRegression({ changed: ["tests/locales/en/results.rs"], autoStrictGlobs: STRICT, contractTier: "auto", contractScope: ["src/core/results.rs", "tests/locales/en/results.rs"] }), true);
     assert.strictEqual(needsFullRegression({ changed: ["tests/locales/en/results.rs"], autoStrictGlobs: STRICT, contractTier: "auto", contractScope: ["tests/locales/en/results.rs"] }), false);
 });
+
+test("a controller auto-revert PR is a person's kind of PR to the strict gates (advisory semver, no agent gates)", () => {
+    // The body the controller's open_revert writes (executor.ts): no Factory-Task trailer, and the
+    // author is the controller App, not the agent. So kind=human: a revert that removes public API
+    // added by the reverted change isn't blocked by semver_checks (advisory), in the PR, the merge
+    // queue or the post-merge run on main.
+    const body = "**Factory controller** · auto-revert\n\nReverts #21 (task `core/results`): `ci` failed on main at its merge commit `" + "f".repeat(40) + "` (run 900).";
+    const r = evaluate({ isAgent: false, body, changed: ["src/core/results.rs"], protectedGlobs: PROTECTED, loadContract });
+    assert.strictEqual(r.kind, "human");
+    assert.strictEqual(r.ok, true);
+});
