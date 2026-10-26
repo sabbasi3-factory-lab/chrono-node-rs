@@ -26,6 +26,11 @@ describe('strict gates: every implemented gate is enforced somewhere', () => {
       const step = matches[0]!;
       assert.equal(step.if, STRICT_IF, `${gate}: same if: as the full regression`);
       assert.equal(step['continue-on-error'], undefined, `${gate}: never continue-on-error`);
+      // Enforced on factory PRs (what auto-strict merges); a person's PRs and main are the owner's call.
+      if (name !== FULL_REGRESSION_STEP) {
+        assert.equal((step.env as Record<string, unknown> | undefined)?.KIND, '${{ steps.scope.outputs.kind }}', `${gate}: reads the PR kind`);
+        assert.match(String(step.run), /"\$KIND" = "factory"/, `${gate}: enforces on factory PRs`);
+      }
     }
     // Every step gated on strict is a gate step or its tool install.
     for (const s of steps.filter((x) => x.if === STRICT_IF)) {
