@@ -1,7 +1,8 @@
 // What the controller's dispatching is doing right now, for the control room: running, waiting
 // (ready work held by a limit or by unmerged dependencies), paused (a global gate: kill switch,
 // spend, Actions load) or idle (nothing ready). main records a `dispatch_state` audit event when
-// it changes, and re-records it daily so it never leaves the audit window; `since` carries over.
+// it changes, and re-records it daily so it never leaves the audit window; `since` carries over,
+// backfilled from evidence where there is some (a spend pause: when the first unreadable run ended).
 
 import { inFlightTasks, killSwitchEnabled, LABEL_NEEDS_HUMAN, LABEL_PICKED, LABEL_READY } from './planner.ts';
 import type { Decision, PlannerEnv, Snapshot } from './types.ts';
@@ -28,7 +29,16 @@ export interface DispatchStatus {
   unreadable_runs: number;
   /** When this state and reason began (ISO seconds), carried across re-records. */
   since: string;
+  /**
+   * How `since` is known: `evidence` (backfilled from the cause, e.g. when the first unreadable run
+   * ended), `transition` (seen changing between two polls) or `first_record` (the state was already
+   * in place when first recorded: `since` is only when it was recorded).
+   */
+  since_source: SinceSource;
 }
+
+export type SinceSource = 'evidence' | 'transition' | 'first_record';
+const SOURCES: readonly string[] = ['evidence', 'transition', 'first_record'];
 
 /** The newest recorded dispatch_state event, as main reads it from the audit log. */
 export interface PrevState {
@@ -41,6 +51,7 @@ const iso = (d: Date): string => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 export function dispatchStatus(
   decisions: readonly Decision[], s: Snapshot, env: PlannerEnv, spendKnown: boolean, unreadable: number, prev: PrevState | null, now: Date,
+  unreadableSince: string | null = null,
 ): DispatchStatus {
   const inFlight = inFlightTasks(s).size;
   const ready = s.issues.filter((i) => i.labels.includes(LABEL_READY) && !i.labels.includes(LABEL_PICKED) && !i.labels.includes(LABEL_NEEDS_HUMAN)).length;
@@ -54,10 +65,25 @@ export function dispatchStatus(
   else if (LIMIT_REASONS.some((r) => waits.has(r))) [state, reason] = ['waiting', 'limits'];
   else if (waits.has('deps_not_merged')) [state, reason] = ['waiting', 'deps'];
   else [state, reason] = ['idle', 'none'];
+  const base = { state, reason, ready, in_flight: inFlight, spend_known: spendKnown, unreadable_runs: spendKnown ? 0 : unreadable };
+
+  // Where `since` comes from, best first: evidence of the cause, a carried value, this poll.
+  let since = iso(now);
+  let source: SinceSource = prev ? 'transition' : 'first_record';
   const p = prev?.payload;
-  const same = !!p && p.state === state && p.reason === reason;
-  const carried = same ? (typeof p!.since === 'string' && TIMESTAMP.test(p!.since) ? p!.since : prev!.timestamp) : null;
-  return { state, reason, ready, in_flight: inFlight, spend_known: spendKnown, unreadable_runs: spendKnown ? 0 : unreadable, since: carried ?? iso(now) };
+  if (p && p.state === state && p.reason === reason) {
+    since = typeof p.since === 'string' && TIMESTAMP.test(p.since) ? p.since : prev!.timestamp;
+    // Events from before since_source existed were first records.
+    source = typeof p.since_source === 'string' && SOURCES.includes(p.since_source) ? (p.since_source as SinceSource) : 'first_record';
+  }
+  const evidence = reason === 'budget_unknown' && unreadableSince && TIMESTAMP.test(unreadableSince) && Date.parse(unreadableSince) <= now.getTime() ? unreadableSince : null;
+  // Evidence only refines a first record, and only moves `since` earlier. After a seen transition the
+  // start is bounded by the poll that still saw the old state (a higher gate may have masked the
+  // cause), so the transition time stands.
+  if (evidence && source === 'first_record' && Date.parse(evidence) <= Date.parse(since)) {
+    [since, source] = [evidence, 'evidence'];
+  }
+  return { ...base, since, since_source: source };
 }
 
 /**
@@ -68,6 +94,7 @@ export function shouldRecord(prev: PrevState | null, next: DispatchStatus, now: 
   if (!prev) return true;
   const p = prev.payload;
   if (p.state !== next.state || p.reason !== next.reason || p.spend_known !== next.spend_known || p.unreadable_runs !== next.unreadable_runs) return true;
+  if (p.since !== next.since || p.since_source !== next.since_source) return true; // e.g. backfilled from evidence
   const at = Date.parse(prev.timestamp);
   return !Number.isFinite(at) || now.getTime() - at >= REFRESH_MS;
 }

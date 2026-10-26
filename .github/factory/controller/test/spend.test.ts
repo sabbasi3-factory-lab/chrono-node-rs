@@ -82,6 +82,8 @@ interface FakeRun {
   conclusion?: string;
   /** HTTP status for the jobs list (default 200). */
   jobsStatus?: number;
+  /** updated_at (a completed run's end). */
+  updated?: string;
   /** run_started_at (a re-run's latest attempt start). */
   started?: string;
   /** head_sha (default: a valid SHA; '' for none). */
@@ -104,7 +106,7 @@ function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; stat
   const since = (path: string) => decodeURIComponent(/[?&]created=([^&]+)/.exec(path)?.[1] ?? '').replace(/^>=/, '');
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), (path) =>
     listStatus === 200
-      ? { data: { workflow_runs: runs.filter((x) => (x.created ?? '2026-10-16T08:00:00Z').slice(0, 10) >= since(path)).map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z', run_started_at: x.started ?? x.created ?? '2026-10-16T08:00:00Z', head_sha: x.sha ?? 'a'.repeat(40), display_title: x.title ?? 'Implement one factory task' })) } }
+      ? { data: { workflow_runs: runs.filter((x) => (x.created ?? '2026-10-16T08:00:00Z').slice(0, 10) >= since(path)).map((x) => ({ id: x.id, status: x.status ?? 'completed', run_attempt: x.attempt ?? 1, created_at: x.created ?? '2026-10-16T08:00:00Z', run_started_at: x.started ?? x.created ?? '2026-10-16T08:00:00Z', ...(x.updated ? { updated_at: x.updated } : {}), head_sha: x.sha ?? 'a'.repeat(40), display_title: x.title ?? 'Implement one factory task' })) } }
       : { status: listStatus, data: null },
   );
   for (const x of runs) {
@@ -439,6 +441,17 @@ describe('spend collector: today\'s implement spend', () => {
     const res = await readSpendToday(world([{ id: 9, artifacts: [{ id: 90, name: 'usage' }, { id: 91, name: 'usage' }] }, { id: 8, artifacts: [{ id: 80, name: 'usage' }, { id: 81, name: 'usage' }] }]), REPO, NOW, CAPS);
     assert.equal(res.aic, null);
     assert.equal((res as { unreadable_runs?: number }).unreadable_runs, 2);
+  });
+
+  it('says when the earliest unreadable run of today ended (the dispatch banner\'s "since")', async () => {
+    const res = await readSpendToday(world([
+      { id: 9, updated: '2026-10-16T09:40:00Z', artifacts: [{ id: 90, name: 'usage' }, { id: 91, name: 'usage' }] },
+      { id: 8, updated: '2026-10-16T08:43:10Z', artifacts: [{ id: 80, name: 'usage' }, { id: 81, name: 'usage' }] },
+    ]), REPO, NOW, CAPS);
+    assert.equal((res as { unreadable_since?: string }).unreadable_since, '2026-10-16T08:43:10Z');
+    const noEnd = await readSpendToday(world([{ id: 9, started: '2026-10-16T07:30:00Z', artifacts: [{ id: 90, name: 'usage' }, { id: 91, name: 'usage' }] }]), REPO, NOW, CAPS);
+    assert.equal(noEnd.aic, null);
+    assert.equal((noEnd as { unreadable_since?: string }).unreadable_since, '2026-10-16T07:30:00Z', 'no end time: its start');
   });
 
   describe('unreadable → unknown (fail closed: nothing is dispatched)', () => {

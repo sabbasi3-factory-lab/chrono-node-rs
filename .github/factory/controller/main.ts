@@ -187,6 +187,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   // means no dispatch: the planner waits on budget_unknown.
   let spendNote = 'fixture';
   let unreadableRuns = 0;
+  let unreadableSince: string | null = null;
   if (deps.snapshot) {
     snapshot.factory_aic_today ??= derived.factory_aic_today;
   } else {
@@ -218,6 +219,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     if (spend.aic === null) {
       snapshot.factory_aic_today = null;
       unreadableRuns = spend.unreadable_runs ?? 0;
+      unreadableSince = spend.unreadable_since ?? null;
       spendNote = `unknown: ${spend.reason}${unreadableRuns > 1 ? ` (${unreadableRuns} unreadable runs today)` : ''}`;
     } else {
       snapshot.factory_aic_today = spend.aic;
@@ -281,7 +283,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   // The control room's banner: what dispatching is doing, recorded when it changes (or daily, so it
   // stays in the audit window), with `since` carried over. Real in live mode; dry-run otherwise.
   const prevState = audit.newestOfType('dispatch_state');
-  const status = dispatchStatus(planned, snapshot, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, snapshot.factory_aic_today !== null && snapshot.factory_aic_today !== undefined, unreadableRuns, prevState, now);
+  const status = dispatchStatus(planned, snapshot, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, snapshot.factory_aic_today !== null && snapshot.factory_aic_today !== undefined, unreadableRuns, prevState, now, unreadableSince);
   log(`dispatch: ${status.state}${status.reason === 'none' ? '' : ` (${status.reason})`}; ready ${status.ready}, in flight ${status.in_flight}${status.spend_known ? '' : `; spend unknown${status.unreadable_runs ? ` (${status.unreadable_runs} unreadable run(s))` : ''}`}`);
   if (shouldRecord(prevState, status, now)) {
     try {

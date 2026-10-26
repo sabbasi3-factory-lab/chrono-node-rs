@@ -25,7 +25,7 @@ describe('dispatch state (the control room banner)', () => {
 
   it('the kill switch off → paused (kill_switch), even with nothing to do', () => {
     assert.deepEqual(dispatchStatus([], snapshot(), { FACTORY_ENABLED: undefined }, true, 0, null, NOW),
-      { state: 'paused', reason: 'kill_switch', ready: 0, in_flight: 0, spend_known: true, unreadable_runs: 0, since: T });
+      { state: 'paused', reason: 'kill_switch', ready: 0, in_flight: 0, spend_known: true, unreadable_runs: 0, since: T, since_source: 'first_record' });
   });
 
   it('in flight counts what the planner counts: an open factory PR (issue closed) or a recorded pick → running', () => {
@@ -44,8 +44,8 @@ describe('dispatch state (the control room banner)', () => {
     }
     assert.equal(dispatchStatus([wait('deps_not_merged')], ready, ON, true, 0, null, NOW).reason, 'deps');
     // A ready issue with no wait decision (blocked, needs-human, already merged): not "held by limits".
-    assert.deepEqual(dispatchStatus([], ready, ON, true, 0, null, NOW), { state: 'idle', reason: 'none', ready: 1, in_flight: 0, spend_known: true, unreadable_runs: 0, since: T });
-    assert.deepEqual(dispatchStatus([], snapshot(), ON, false, 1, null, NOW), { state: 'idle', reason: 'none', ready: 0, in_flight: 0, spend_known: false, unreadable_runs: 1, since: T });
+    assert.deepEqual(dispatchStatus([], ready, ON, true, 0, null, NOW), { state: 'idle', reason: 'none', ready: 1, in_flight: 0, spend_known: true, unreadable_runs: 0, since: T, since_source: 'first_record' });
+    assert.deepEqual(dispatchStatus([], snapshot(), ON, false, 1, null, NOW), { state: 'idle', reason: 'none', ready: 0, in_flight: 0, spend_known: false, unreadable_runs: 1, since: T, since_source: 'first_record' });
   });
 
   it('from the real planner: spend unknown → paused/budget_unknown; unmet dependency → waiting/deps', async () => {
@@ -62,6 +62,38 @@ describe('dispatch state (the control room banner)', () => {
     const old = prevOf('2026-10-16T09:00:00Z', { state: 'paused', reason: 'budget_unknown' });
     assert.equal(dispatchStatus([wait('budget_unknown')], ready, ON, false, 3, old, NOW).since, '2026-10-16T09:00:00Z');
     assert.equal(dispatchStatus([wait('actions_busy')], ready, ON, true, 0, prev, NOW).since, T);
+  });
+
+  it('a spend pause backfills "since" from when the first unreadable run ended; else first_record or transition', () => {
+    const w = [wait('budget_unknown')];
+    const first = dispatchStatus(w, ready, ON, false, 2, null, NOW, '2026-10-16T08:43:10Z');
+    assert.deepEqual([first.since, first.since_source], ['2026-10-16T08:43:10Z', 'evidence']);
+    const none = dispatchStatus(w, ready, ON, false, 2, null, NOW, null);
+    assert.deepEqual([none.since, none.since_source], [T, 'first_record']);
+    assert.equal(dispatchStatus(w, ready, ON, false, 2, null, NOW, '2026-10-16T13:00:00Z').since_source, 'first_record', 'evidence from the future is ignored');
+    const afterRun = prevOf('2026-10-16T10:00:00Z', { state: 'running', reason: 'none' });
+    const t = dispatchStatus(w, ready, ON, false, 2, afterRun, NOW, null);
+    assert.deepEqual([t.since, t.since_source], [T, 'transition']);
+    // A legacy record (no since_source) of the same pause is upgraded to the evidence, and recorded.
+    const legacy = prevOf('2026-10-16T10:10:00Z', { state: 'paused', reason: 'budget_unknown', spend_known: false, unreadable_runs: 2, ready: 1, in_flight: 0, since: '2026-10-16T10:10:00Z' });
+    const up = dispatchStatus(w, ready, ON, false, 2, legacy, NOW, '2026-10-16T08:43:10Z');
+    assert.deepEqual([up.since, up.since_source], ['2026-10-16T08:43:10Z', 'evidence']);
+    assert.equal(shouldRecord(legacy, up, NOW), true);
+    // Once from evidence, it holds (a later unreadable run doesn't move it).
+    const held = dispatchStatus(w, ready, ON, false, 3, prevOf('2026-10-16T11:00:00Z', { ...up }), NOW, '2026-10-16T09:00:00Z');
+    assert.deepEqual([held.since, held.since_source], ['2026-10-16T08:43:10Z', 'evidence']);
+    assert.equal(shouldRecord(prevOf('2026-10-16T11:00:00Z', { ...held, unreadable_runs: 3 }), held, NOW), false);
+    // Evidence never moves an existing start later (a legacy or multi-day pause stays as recorded).
+    const early = prevOf('2026-10-16T08:00:00Z', { state: 'paused', reason: 'budget_unknown', since: '2026-10-14T10:00:00Z' });
+    assert.deepEqual(['since', 'since_source'].map((k) => dispatchStatus(w, ready, ON, false, 2, early, NOW, '2026-10-16T08:43:10Z')[k as 'since']), ['2026-10-14T10:00:00Z', 'first_record']);
+    // After a seen transition (kill switch at 11:00 → spend pause now), older evidence is ignored, and stays ignored.
+    const killed = prevOf('2026-10-16T11:00:00Z', { state: 'paused', reason: 'kill_switch', since_source: 'transition' });
+    const tr = dispatchStatus(w, ready, ON, false, 2, killed, NOW, '2026-10-16T08:43:10Z');
+    assert.deepEqual([tr.since, tr.since_source], [T, 'transition']);
+    const later = dispatchStatus(w, ready, ON, false, 2, prevOf(T, { ...tr }), new Date(NOW.getTime() + 3600_000), '2026-10-16T08:43:10Z');
+    assert.deepEqual([later.since, later.since_source], [T, 'transition']);
+    // Evidence applies only to a spend pause.
+    assert.equal(dispatchStatus([wait('actions_busy')], ready, ON, false, 2, null, NOW, '2026-10-16T08:43:10Z').since_source, 'first_record');
   });
 
   it('recorded on a change in what the banner shows, or once the newest record is a day old', () => {
