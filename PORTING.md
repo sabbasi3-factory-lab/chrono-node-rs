@@ -73,6 +73,7 @@ Constructor arguments come from `flags.get("strictMode")` and so on, using upstr
 - `ParsingComponents::get(c)` is `Option<i64>` (`None` = JS `null`). Where upstream does arithmetic on a possibly null value, `get_or_zero` reproduces JS `null + 1 == 1`.
 - `imply` never overrides a known value; `assign` does. Known and implied maps keep JS insertion order.
 - Tags: add the same tags upstream adds (`"parser/ENFooParser"`). Golden data compares tags.
+- **`clone()` (trap: tags):** upstream's `ParsingComponents.clone()` and `ParsingResult.clone()` copy the values but **not the tags**. Rust's `Clone` copies everything. Port every upstream `.clone()` as `js_clone()`; use Rust's `.clone()` only for Rust's own copies.
 
 ## 8. Checking your work
 
@@ -99,3 +100,4 @@ The golden suite checks every case whose `requires` are all ported. When you add
 | 7 | JS `%` keeps the dividend's sign, like Rust's `%`. Use `rem_euclid` only where upstream does something different. | `parsers/weekday.rs` |
 | 8 | `endsWith`, `===` and dictionary lookups are case-sensitive in upstream even when the regex has the `i` flag. Keep them case-sensitive. | `parsers/time_expression.rs` |
 | 9 | Touch **only** the file in the contract's `scope`. The trusted `gates` check lists every violation: a protected path (even a moved or renamed file), an out-of-scope path, or a stale `Contract-SHA`. A failed `gates` run goes to a human; it is never repaired. | `harness/gates/scope.js` (#18) |
+| 10 | Upstream `clone()` drops tags; Rust's `Clone` keeps them. A range end built with `.clone()` carried the start's parser tag, an escaped defect found later by the held-out comparison. Use `js_clone()`. A golden case that would have caught it was **pending** (it also needs an unported refiner), so a step can merge with its decisive cases unchecked. | `core/components.rs` (#91) |

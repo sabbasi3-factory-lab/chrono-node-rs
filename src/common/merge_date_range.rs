@@ -82,7 +82,7 @@ impl<P: MergeDateRangePattern> MergingRefiner for MergeDateRange<P> {
             }
         }
 
-        let mut result = from.clone();
+        let mut result = from.js_clone();
         result.start = from.start.clone();
         result.end = Some(to.start.clone());
         result.index = from.index.min(to.index);

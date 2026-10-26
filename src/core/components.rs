@@ -122,6 +122,9 @@ impl ComponentMap {
 }
 
 /// upstream `ParsingComponents`.
+///
+/// Rust's `Clone` copies everything, tags included. Upstream's `clone()` doesn't copy tags: port
+/// an upstream `.clone()` as [`ParsingComponents::js_clone`] (see `PORTING.md`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct ParsingComponents {
     reference: ReferenceWithTimezone,
@@ -376,6 +379,17 @@ impl ParsingComponents {
     }
 
     /// Tags in insertion order (a JS `Set`).
+    /// upstream `clone()`: the reference and the known and implied values, **without the tags**.
+    /// Use this wherever upstream calls `.clone()` on components.
+    pub fn js_clone(&self) -> ParsingComponents {
+        ParsingComponents {
+            reference: self.reference,
+            known: self.known.clone(),
+            implied: self.implied.clone(),
+            tags: Vec::new(),
+        }
+    }
+
     pub fn tags(&self) -> &[String] {
         &self.tags
     }
@@ -387,6 +401,20 @@ mod tests {
 
     fn reference() -> ReferenceWithTimezone {
         ReferenceWithTimezone::new(JsDate::parse_iso("2012-08-10T09:30:00.000Z").unwrap(), None)
+    }
+
+    #[test]
+    fn js_clone_keeps_values_and_drops_tags_like_upstream() {
+        let mut c = ParsingComponents::new(reference(), &[(Component::Day, 21), (Component::Month, 7)]);
+        c.imply(Component::Year, 2038);
+        c.add_tag("parser/ENMonthNameMiddleEndianParser");
+        let js = c.js_clone();
+        assert_eq!(js.get(Component::Day), Some(21));
+        assert_eq!(js.get(Component::Year), Some(2038));
+        assert!(js.is_certain(Component::Month));
+        assert!(!js.is_certain(Component::Year));
+        assert!(js.tags().is_empty(), "upstream clone() doesn't copy tags");
+        assert_eq!(c.clone().tags(), c.tags(), "Rust Clone does");
     }
 
     #[test]
