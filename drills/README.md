@@ -29,7 +29,7 @@ for a drill task.
 
 ## Removal plan
 
-When D1–D3 have concluded (or are stopped at the budget), one owner-tier PR removes the drill:
+When D1–D3 **and D1b** have concluded (or are stopped at the budget), one owner-tier PR removes the drill:
 
 1. Delete `contracts/drill/`, `drills/`, the `Drill (deliberate)` step in `.github/workflows/ci.yml`,
    and the merged drill parsers (`src/locales/en/parsers/factory_drill_repair_ok.rs` and
