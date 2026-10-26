@@ -165,6 +165,8 @@ jobs:
           # Additions are fine; removals and incompatible changes fail (contracts: public_api: unchanged-except-added).
           # Enforced on factory PRs (what auto-strict merges); advisory on a person's PRs and on main,
           # where the owner decides.
+          # The baseline checkout under target/ would trip rust-cache's post-job cleanup: remove it.
+          trap 'rm -rf target/semver-checks' EXIT
           if [ "$KIND" = "factory" ]; then
             cargo semver-checks check-release --baseline-rev "$BASE_REV" --release-type patch
           else
