@@ -376,11 +376,37 @@ v1's own dry-run decisions never count as real work.
 | completed, no job's `Execute …` step ran (e.g. dispatch validation failed) | **0** (`no_inference`): no model calls were made |
 | completed, with model calls | **measured** from gh-aw's `usage` artifact: the agent from `agent_usage.json` → `ai_credits`; every other job whose `Execute …` step ran (detection, and evals or others if gh-aw adds them) from the sum of `ai_credits_this_response` in `<job>/token_usage.jsonl` |
 
-If **any** completed run's spend can't be read, today's spend is **unknown** (`null` →
-`wait/budget_unknown`): no or expired `usage` artifact, more than one, a download/API error, a missing or
-malformed accounting file, a zip that fails its size/CRC checks (stored/deflate only, no ZIP64 or
-encryption, ≤ 20 MB), a re-run (attempt > 1), or an unexpected job name. No runs today means a measured
-**0**. The artifact zip is read with Node's zlib; nothing is executed.
+**The spend bound** (only when `budgets.yaml` has `per_run.overshoot_margin` with its two assumptions,
+every compiled AI workflow in the controller's checkout enforces exactly the policy's caps (`caps.ts`,
+checked each poll against the pinned policy), **no `factory:alert` issue is open** (a person closes it
+after reviewing), and **the run's own commit's** workflow (`head_sha`, read through the contents API)
+has those caps too). `max-ai-credits` is "stop after the response that crosses the cap", not a strict
+hard stop (the firewall checks the recorded total before each request), so:
+`bound = per_run.<workflow> + per_run.threat_detection + 2 × overshoot_margin` (agent and detection job).
+- a **completed** run whose usage is **missing** (no `usage` artifact, an expired one, or a job's usage
+  file absent) counts at its bound (`bounded`, with an enum reason; the summary warns and
+  `spend_snapshot` lists it, with the agent artifact's own figure as `observed_aic` when readable);
+- a **re-run** counts n × its bound (`bounded`, `rerun`); a re-run started today counts today;
+- every readable run's **max concurrency** and **largest response** are recorded; if any run exceeds
+  the assumptions (or its bound), or its per-response records can't be checked, the bound is off and
+  an `alert` audit event plus one open `factory:alert` issue (live; retried each poll until opened) ask
+  a person to review the margin. Caps that differ from the policy do the same. The bound stays off
+  while that issue is open.
+- runs are listed back to GitHub's 30-day re-run horizon; a re-run started today or yesterday counts
+  on that day.
+- in flight, runs are reserved at the bound (the daily total carries the worst case). The **per-task
+  repair gate** still counts a repair at `per_run.repair + per_run.threat_detection` (an expected-cost
+  guard, decision B1; with the margin no repair would fit `per_task.max_aic`).
+- an unreadable run from **yesterday** makes only **its own task's** spend unknown
+  (`task_spend.unknown_tasks`) when the audit log has the controller's dispatch of exactly that kind,
+  task, issue and attempt within 30 min before the run; otherwise every task's.
+
+Otherwise, if **any** completed run's spend can't be read, today's spend is **unknown** (`null` →
+`wait/budget_unknown`): more than one `usage` artifact, a download/API error, a malformed accounting
+file, a zip that fails its size/CRC checks (stored/deflate only, no ZIP64 or encryption, ≤ 20 MB), a run
+not reported completed, an implausible attempt number, an unexpected job name, or (without a bound) a
+re-run or missing usage. No runs today means a measured **0**. The artifact zip is read with Node's
+zlib; nothing is executed.
 
 When spend is known, the controller records a `spend_snapshot` (`day`, `aic_today`, `runs[{run_id,
 status, aic}]`, `runs_total`) with **`dry_run: false` in both modes** (it's a measurement, not a

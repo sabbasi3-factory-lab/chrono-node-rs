@@ -18,18 +18,26 @@ import { CONTRACT_COMMIT, fakeWorld, projectNode, seedSpendSnapshot, type Projec
 
 const policies = await testPolicies();
 
-/** fakeWorld with one completed implement run today whose agent ran but left no usage artifact. */
-function unreadableSpendWorld(): ProjectWorld {
+/**
+ * fakeWorld with one completed implement run today whose agent ran. Its usage is malformed (two
+ * `usage` artifacts: unknown, fail closed) or, with `missing`, absent (counts at its bound).
+ */
+function unreadableSpendWorld(missing = false): ProjectWorld {
   const gh = fakeWorld();
   const r = `/repos/${REPO}`;
   gh.routes.unshift(
-    { method: 'GET', path: new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 900, run_attempt: 1, status: 'completed', conclusion: 'success', created_at: '2026-10-16T09:00:00Z' }] } }) },
+    { method: 'GET', path: new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 900, run_attempt: 1, status: 'completed', conclusion: 'success', created_at: '2026-10-16T09:00:00Z', head_sha: 'c'.repeat(40) }] } }) },
     { method: 'GET', path: new RegExp(`^${r}/actions/runs/900/attempts/1/jobs$`), handler: () => ({ data: { jobs: [{ name: 'agent', steps: [{ name: 'Execute GitHub Copilot CLI', conclusion: 'success' }] }] } }) },
-    { method: 'GET', path: new RegExp(`^${r}/actions/runs/900/artifacts$`), handler: () => ({ data: { artifacts: [] } }) },
+    { method: 'GET', path: new RegExp(`^${r}/actions/runs/900/artifacts$`), handler: () => ({ data: { artifacts: missing ? [] : [{ id: 1, name: 'usage', expired: false }, { id: 2, name: 'usage', expired: false }] } }) },
   );
+  // The run's own commit (head_sha) carries the committed implement lock: the spend bound verifies its caps.
+  gh.blobs.set('lockblob', IMPLEMENT_LOCK);
+  gh.trees.set('locktree', new Map([['.github/workflows/implement.lock.yml', 'lockblob']]));
+  gh.commits.set('c'.repeat(40), { tree: 'locktree', parents: [], message: 'run commit' });
   return gh;
 }
 const FV = '320c4fcedefc03648caa4cda140bd93932367986';
+const IMPLEMENT_LOCK = await readFile(new URL('../../../workflows/implement.lock.yml', import.meta.url), 'utf8');
 const controllerDir = fileURLToPath(new URL('..', import.meta.url));
 
 function deps(client: FakeGitHub, over: Partial<RunDeps> = {}): RunDeps {
@@ -288,15 +296,100 @@ describe('review fix 2: decision dedupe includes reason and effect', () => {
 });
 
 describe('independent review (follow-up): spend fails closed end to end', () => {
-  it('unreadable spend (a completed run without its usage artifact) means nothing is dispatched, even with FACTORY_ENABLED=true', async () => {
+  it('unreadable spend (a completed run with a malformed usage artifact) means nothing is dispatched, even with FACTORY_ENABLED=true', async () => {
     const lines: string[] = [];
     const result = await run(deps(unreadableSpendWorld(), { log: (l) => lines.push(l) }));
-    assert.ok(lines.some((l) => l.startsWith('spend today: unknown: run 900 has 0 usage artifacts')));
+    assert.ok(lines.some((l) => l.startsWith('spend today: unknown: run 900 has 2 usage artifacts')));
     assert.ok(!result.appended.some((e) => e.type === 'spend_snapshot'));
     assert.ok(!result.decisions.some((d) => d.type === 'dispatched'));
     assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
     assert.ok(!result.appended.some((e) => e.type === 'dispatched'));
   });
+
+  // budgets.yaml with the approved overshoot margin (the fixture is the pinned policy, without it).
+  const bounded: typeof policies = structuredClone(policies);
+  bounded.budgets.per_run.overshoot = { margin: 400, max_response_aic: 100, max_concurrency: 4 };
+
+  it('a completed run whose usage is missing counts at its bound: a warning in the summary, the audit event names it, and dispatch is not blocked', async () => {
+    const lines: string[] = [];
+    const result = await run(deps(unreadableSpendWorld(true), { policies: bounded, log: (l) => lines.push(l) }));
+    // implement 500 + threat detection 400 + 2 × 400 margin.
+    assert.ok(lines.some((l) => l.startsWith('spend today: 1700 AIC') && l.includes('WARNING: run 900 counted at its bound 1700 AIC (usage missing: no_usage_artifact)')), lines.join('\n'));
+    assert.match(result.summary, /WARNING: run 900 counted at its bound 1700 AIC/);
+    const snap = result.appended.find((e) => e.type === 'spend_snapshot');
+    assert.ok(snap);
+    assert.deepEqual(snap.payload.runs, [{ run_id: 900, status: 'bounded', aic: 1700, reason: 'no_usage_artifact' }]);
+    assert.ok(!result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
+    assert.ok(!result.appended.some((e) => e.type === 'alert'));
+  });
+
+  it('without the margin in the policy there is no bound: missing usage is unknown and blocks', async () => {
+    const lines: string[] = [];
+    const result = await run(deps(unreadableSpendWorld(true), { log: (l) => lines.push(l) }));
+    assert.ok(lines.some((l) => l.startsWith('spend today: unknown: run 900')), lines.join('\n'));
+    assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
+  });
+
+  it('an open factory:alert issue keeps the bound off until a person closes it', async () => {
+    const gh = unreadableSpendWorld(true);
+    const orig = gh.routes.find((x) => x.method === 'GET' && x.path.test(`/repos/${REPO}/issues`))!;
+    gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/issues$`), handler: (path, body) => (path.includes('labels=factory%3Aalert') ? { data: [{ number: 501, title: 'Factory alert: a run broke an overshoot assumption (spend bound off)', labels: [{ name: 'factory:alert' }] }] } : orig.handler(path, body)) });
+    const lines: string[] = [];
+    const result = await run(deps(gh, { policies: bounded, log: (l) => lines.push(l) }));
+    assert.ok(lines.some((l) => l.startsWith('WARNING: spend bound off: 1 open factory:alert issue')), lines.join('\n'));
+    assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
+  });
+
+  it('a failing alert issue POST is logged, does not fail the run, and is retried next poll', async () => {
+    const drift = async () => {
+      const out: Record<string, string> = {};
+      for (const wf of ['implement', 'repair', 'review']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
+      out.implement = out.implement!.replace(/("maxAiCredits":)500/, '$1600');
+      return out as Record<'implement' | 'repair' | 'review', string>;
+    };
+    const gh = liveWorld(204, 0, unreadableSpendWorld(true));
+    let fail = true;
+    gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues$`), () => (fail ? { status: 502, data: null } : { status: 201, data: { number: 500 } }));
+    const lines: string[] = [];
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: bounded, readLocks: drift, log: (l) => lines.push(l) }));
+    assert.ok(lines.some((l) => l.startsWith('WARNING: could not open the factory:alert issue')), lines.join('\n'));
+    fail = false;
+    await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: bounded, readLocks: drift, now: new Date(NOW.getTime() + 60_000) }));
+    assert.equal(gh.calls.filter((c) => c.method === 'POST' && c.path === `/repos/${REPO}/issues`).length, 2, 'retried although the day\'s alert event already exists');
+  });
+
+  it('compiled caps that differ from the policy turn the bound off, record an alert, and (live) open one factory:alert issue a day', async () => {
+    const drift = async () => {
+      const out: Record<string, string> = {};
+      for (const wf of ['implement', 'repair', 'review']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
+      out.implement = out.implement!.replace(/("maxAiCredits":)500/, '$1600');
+      return out as Record<'implement' | 'repair' | 'review', string>;
+    };
+    const gh = liveWorld(204, 0, unreadableSpendWorld(true));
+    const created: { title: string; labels: { name: string }[] }[] = [];
+    gh.addRoute('POST', new RegExp(`^/repos/${REPO}/issues$`), (_p, body) => {
+      created.push({ title: (body as { title: string }).title, labels: [{ name: 'factory:alert' }] } as never);
+      return { status: 201, data: { number: 500 } };
+    });
+    // The alert issue, once opened, is listed as open (the next poll reuses it).
+    const orig = gh.routes.find((x) => x.method === 'GET' && x.path.test(`/repos/${REPO}/issues`))!;
+    gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/issues$`), handler: (path, body) => (path.includes('labels=factory%3Aalert') ? { data: created } : orig.handler(path, body)) });
+    const lines: string[] = [];
+    const r1 = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: bounded, readLocks: drift, log: (l) => lines.push(l) }));
+    assert.ok(lines.some((l) => l.startsWith('WARNING: spend bound off: implement.lock.yml agent cap 600')), lines.join('\n'));
+    assert.ok(r1.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'), 'no bound: the unreadable run blocks');
+    assert.deepEqual(r1.appended.filter((e) => e.type === 'alert').map((e) => e.payload.code), ['lock_caps_mismatch']);
+    const posts = () => gh.calls.filter((c) => c.method === 'POST' && c.path === `/repos/${REPO}/issues`);
+    assert.equal(posts().length, 1);
+    const body = posts()[0]!.body as { title: string; labels: string[] };
+    assert.deepEqual(body.labels, ['factory:alert']);
+    assert.match(body.title, /^Factory alert: compiled workflow caps differ/);
+    // Same day, same cause: no second event, and the open issue is reused.
+    const r2 = await run(deps(gh, { env: LIVE_ENV, forceDryRun: false, policies: bounded, readLocks: drift, now: new Date(NOW.getTime() + 60_000) }));
+    assert.ok(!r2.appended.some((e) => e.type === 'alert'));
+    assert.equal(posts().length, 1);
+  });
+
 });
 
 // ---------------------------------------------------------------- live mode

@@ -93,6 +93,16 @@ export const FACTORY_STATUS_FIELD = 'Factory status';
 export const PROJECT_STATUS_MUTATION = 'mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) { updateProjectV2ItemFieldValue(input: {projectId: $project, itemId: $item, fieldId: $field, value: {singleSelectOptionId: $option}}) { projectV2Item { id } } }';
 /** Every comment live mode posts starts with this and comes from a fixed template (no agent text). */
 export const COMMENT_MARKER = '**Factory controller**';
+/** A spend-bound alert for a person (watchdog, dashboard). */
+export const LABEL_ALERT = 'factory:alert';
+export type AlertCode = 'overshoot_assumption_exceeded' | 'overshoot_unverifiable' | 'lock_caps_mismatch';
+const ALERT_TEXT: Record<AlertCode, string> = {
+  overshoot_assumption_exceeded: 'a run broke an overshoot assumption',
+  overshoot_unverifiable: "a run's usage records can't be checked against the overshoot assumptions",
+  lock_caps_mismatch: 'compiled workflow caps differ from budgets.yaml',
+};
+export const ALERT_TITLE = (code: AlertCode): string => `Factory alert: ${ALERT_TEXT[code]} (spend bound off)`;
+export const ALERT_TITLES: readonly string[] = (Object.keys(ALERT_TEXT) as AlertCode[]).map(ALERT_TITLE);
 export const MAX_COMMENT_LENGTH = 2000;
 
 export type ControllerMode = 'dry-run' | 'live';
@@ -120,6 +130,15 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
   // Auto-revert: create the revert branch (only `factory/revert-<n>`), and open its PR from the template.
   if (p === `/repos/${repo}/git/refs`) {
     return exactKeys(b, ['ref', 'sha']) && typeof b.ref === 'string' && REVERT_BRANCH_RE.test(b.ref.replace(/^refs\/heads\//, '')) && b.ref.startsWith('refs/heads/') && typeof b.sha === 'string' && HEX40.test(b.sha);
+  }
+  // factory:alert: one templated issue for a spend-bound alert (exact title from the alert codes).
+  if (p === `/repos/${repo}/issues`) {
+    return (
+      exactKeys(b, ['title', 'body', 'labels']) &&
+      typeof b.title === 'string' && ALERT_TITLES.includes(b.title) &&
+      typeof b.body === 'string' && b.body.startsWith(COMMENT_MARKER) && b.body.length <= MAX_COMMENT_LENGTH &&
+      Array.isArray(b.labels) && b.labels.length === 1 && b.labels[0] === LABEL_ALERT
+    );
   }
   if (p === `/repos/${repo}/pulls`) {
     if (!exactKeys(b, ['title', 'head', 'base', 'body']) || b.base !== 'main' || typeof b.head !== 'string') return false;

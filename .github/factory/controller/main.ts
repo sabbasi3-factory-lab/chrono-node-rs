@@ -15,12 +15,13 @@ import { AuditLog, AuditValidationError, dedupeKey, isoSeconds } from './audit.t
 import { canonicalize } from './canonical.ts';
 import { decisionEvent, execute, executeLive, isLive, liveDecision, pendingHandoffs } from './executor.ts';
 import { FakeGitHub } from './fake.ts';
-import { createClient, readSnapshot, REVIEWER_APP_ID, type RecordedCheck } from './github.ts';
+import { ALERT_TITLE, ALERT_TITLES, COMMENT_MARKER, createClient, LABEL_ALERT, paginate, readSnapshot, REVIEWER_APP_ID, type AlertCode, type RecordedCheck } from './github.ts';
+import { CAPPED_WORKFLOWS, lockCapsMismatch, type CappedWorkflow } from './caps.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
 import { statusContext, syncProject } from './project.ts';
-import { readSpendToday, spendSnapshotFields } from './spend.ts';
+import { readSpendToday, spendSnapshotFields, type DispatchRecord } from './spend.ts';
 import { isRecorded, killSwitchEnabled, missingStrictGates, plan } from './planner.ts';
 import { loadPolicies, loadPoliciesFromDir, readFactoryVersion } from './policies.ts';
 import type { AuditEvent, Decision, GitHubClient, PendingEvent, Policies, Snapshot } from './types.ts';
@@ -46,6 +47,8 @@ export interface RunDeps {
   snapshot?: Snapshot;
   /** Force dry-run whatever FACTORY_ENABLED says (fixture mode). */
   forceDryRun?: boolean;
+  /** Tests: the compiled workflows to check the spend bound's caps against (default: the checkout's). */
+  readLocks?: () => Promise<Record<CappedWorkflow, string | null>>;
   /** This run's URL, for comments (live mode). */
   runUrl?: string | null;
 }
@@ -71,6 +74,53 @@ export function recordedChecks(events: AuditEvent[]): Map<string, RecordedCheck>
     });
   }
   return out;
+}
+
+/** The compiled AI workflows, as the controller's own checkout has them (null if unreadable). */
+async function readLocks(): Promise<Record<CappedWorkflow, string | null>> {
+  const out = {} as Record<CappedWorkflow, string | null>;
+  for (const wf of Object.keys(CAPPED_WORKFLOWS) as CappedWorkflow[]) {
+    try {
+      out[wf] = await readFile(new URL(`../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
+    } catch {
+      out[wf] = null;
+    }
+  }
+  return out;
+}
+
+const EMPTY_LOCKS: Record<CappedWorkflow, string | null> = { implement: null, repair: null, review: null };
+
+/** Titles of the open factory:alert issues (any open one keeps the spend bound off). */
+async function openAlertTitles(client: GitHubClient, repo: string): Promise<string[]> {
+  const open = await paginate(client, `/repos/${repo}/issues?state=open&labels=${encodeURIComponent(LABEL_ALERT)}&per_page=100`, (d) => (Array.isArray(d) ? d : []));
+  // Only the controller's own alert issues count: labelled factory:alert, with one of its titles.
+  return open
+    .filter((i) => {
+      const labels = (i as { labels?: unknown }).labels;
+      return Array.isArray(labels) && labels.some((l) => (typeof l === 'string' ? l : (l as { name?: unknown })?.name) === LABEL_ALERT);
+    })
+    .map((i) => (i as { title?: unknown }).title)
+    .filter((t): t is string => typeof t === 'string' && ALERT_TITLES.includes(t));
+}
+
+/** The controller's non-dry-run implement and repair dispatches, for attributing runs to tasks. */
+function dispatchRecords(events: AuditEvent[]): DispatchRecord[] {
+  const out: DispatchRecord[] = [];
+  for (const e of events) {
+    if ((e.type !== 'dispatched' && e.type !== 'repair_dispatched') || e.payload.dry_run !== false) continue;
+    const { task, issue, attempt } = e.payload;
+    if (typeof task !== 'string' || typeof issue !== 'number' || typeof attempt !== 'number') continue;
+    out.push({ kind: e.type === 'dispatched' ? 'implement' : 'repair', task, issue, attempt, at: e.timestamp });
+  }
+  return out;
+}
+
+/** Opens the factory:alert issue for this cause (the caller checked none is open). */
+async function raiseAlertIssue(client: GitHubClient, repo: string, code: AlertCode, note: string): Promise<void> {
+  const title = ALERT_TITLE(code);
+  const body = `${COMMENT_MARKER} · ${LABEL_ALERT}\n\nThe spend bound is off until a person reviews it (budgets.yaml per_run.overshoot_margin, or the compiled workflow caps). Until then a run whose usage can't be read blocks dispatch again.\n\n${note}`.slice(0, 2000);
+  await client.request('POST', `/repos/${repo}/issues`, { body: { title, body, labels: [LABEL_ALERT] } });
 }
 
 function runId(env: RunEnv): number {
@@ -138,7 +188,30 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   if (deps.snapshot) {
     snapshot.factory_aic_today ??= derived.factory_aic_today;
   } else {
-    const spend = await readSpendToday(client, repo, now, policies.budgets.per_run);
+    // The spend bound (spend.ts) only with the policy's overshoot margin AND compiled workflows that
+    // enforce exactly the policy's caps; otherwise unreadable usage stays unknown.
+    const overshoot = policies.budgets.per_run.overshoot ?? null;
+    let lockMismatch: string | null = null;
+    let openAlerts: string[] = [];
+    if (overshoot) {
+      lockMismatch = lockCapsMismatch(await (deps.readLocks ?? readLocks)(), policies.budgets.per_run);
+      if (lockMismatch) log(`WARNING: spend bound off: ${lockMismatch}`);
+      // An open factory:alert keeps the bound off until a person has reviewed it and closed it.
+      openAlerts = await openAlertTitles(client, repo);
+      if (openAlerts.length > 0) log(`WARNING: spend bound off: ${openAlerts.length} open ${LABEL_ALERT} issue(s)`);
+    }
+    const bounding = overshoot && !lockMismatch && openAlerts.length === 0 ? overshoot : null;
+    const spend = await readSpendToday(client, repo, now, policies.budgets.per_run, {
+      bounding,
+      // A run executes its own commit's workflow: the bound holds only if that lock has the policy's caps.
+      verifyLock: async (file, sha) => {
+        const wf = file.replace(/\.lock\.yml$/, '') as CappedWorkflow;
+        if (!(wf in CAPPED_WORKFLOWS)) return false;
+        const res = await client.request('GET', `/repos/${repo}/contents/.github/workflows/${file}?ref=${sha}`, { accept: 'raw' });
+        return typeof res.data === 'string' && lockCapsMismatch({ ...EMPTY_LOCKS, [wf]: res.data }, policies.budgets.per_run, [wf]) === null;
+      },
+      dispatches: dispatchRecords(audit.events),
+    });
     snapshot.task_spend = spend.tasks;
     if (spend.aic === null) {
       snapshot.factory_aic_today = null;
@@ -147,7 +220,40 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       snapshot.factory_aic_today = spend.aic;
       spendNote = `${spend.aic} AIC from ${spend.runs.length} implement run(s)`;
     }
+    // A bound stands in for a missing measurement: say so every time (summary and log).
+    const bounded = spend.runs.filter((r) => r.status === 'bounded');
+    if (bounded.length > 0) {
+      spendNote += `; WARNING: ${bounded.map((r) => `run ${r.run_id} counted at its bound ${r.aic} AIC (${r.reason === 'rerun' ? 're-run' : `usage missing: ${r.reason ?? 'unknown'}`}${r.observed_aic !== undefined ? `; agent artifact says ${r.observed_aic} AIC` : ''})`).join('; ')}`;
+    }
+    if (spend.alert) {
+      const a = spend.alert;
+      spendNote +=
+        a.code === 'overshoot_unverifiable'
+          ? `; ALERT: run ${a.run_id}'s per-response records can't be checked against the overshoot assumptions: spend bound off`
+          : `; ALERT: run ${a.run_id} broke an overshoot assumption (concurrency ${a.max_concurrency}, largest response ${a.max_response_aic} AIC, total ${a.aic} vs bound ${a.bound}): spend bound off`;
+    }
+    if (lockMismatch) spendNote += `; ALERT: spend bound off (${lockMismatch})`;
     log(`spend today: ${spendNote}`);
+    // factory:alert: recorded (real in both modes, once a day per cause), and in live mode one open
+    // issue for a person to review the margin or the caps.
+    const alertDay = isoSeconds(now).slice(0, 10);
+    const alerts: { code: AlertCode; source: string; fields: Record<string, number | string> }[] = [];
+    if (spend.alert) alerts.push({ code: spend.alert.code, source: `run:${spend.alert.run_id}`, fields: { ...spend.alert } });
+    if (lockMismatch) alerts.push({ code: 'lock_caps_mismatch', source: 'locks', fields: { code: 'lock_caps_mismatch' } });
+    for (const al of alerts) {
+      await audit.append({ type: 'alert', source_ids: [`day:${alertDay}`, al.code, al.source], fields: al.fields, dry_run: false }, now);
+      // The issue follows the condition, not the (once-a-day) event: opened whenever none is open,
+      // so a failed attempt is retried next poll. A failure here doesn't fail the run: the bound is
+      // already off and the event is recorded.
+      if (live && !openAlerts.includes(ALERT_TITLE(al.code))) {
+        try {
+          await raiseAlertIssue(client, repo, al.code, spendNote);
+          openAlerts.push(ALERT_TITLE(al.code));
+        } catch (err) {
+          log(`WARNING: could not open the ${LABEL_ALERT} issue (${(err as Error).message}); retried next poll`);
+        }
+      }
+    }
     if (spend.aic !== null) {
       const day = isoSeconds(now).slice(0, 10);
       // A measurement, not a decision: recorded as real (dry_run: false) in both modes. A new

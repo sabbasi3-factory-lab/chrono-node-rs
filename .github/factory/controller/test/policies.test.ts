@@ -93,3 +93,22 @@ describe('policies', () => {
     }
   });
 });
+
+describe('budgets: overshoot margin (the spend bound)', () => {
+  const withBudgets = async (extra: string) => {
+    const t = await texts();
+    return parsePolicies({ ...t, budgets: t.budgets.replace(/(  threat_detection: [^\n]*\n)/, `$1${extra}`) });
+  };
+  it('missing → null (no bound: unreadable usage stays unknown)', async () => {
+    assert.equal((await withBudgets('')).budgets.per_run.overshoot, null);
+  });
+  it('all three keys → the margin and its assumptions', async () => {
+    const p = await withBudgets('  overshoot_margin: 400\n  overshoot_assumed_max_response_aic: 100\n  overshoot_assumed_max_concurrency: 4\n');
+    assert.deepEqual(p.budgets.per_run.overshoot, { margin: 400, max_response_aic: 100, max_concurrency: 4 });
+  });
+  it('partly present, non-integer concurrency, or a margin below response × concurrency → the policy is invalid', async () => {
+    await assert.rejects(withBudgets('  overshoot_margin: 400\n'), /needs both assumptions/);
+    await assert.rejects(withBudgets('  overshoot_margin: 400\n  overshoot_assumed_max_response_aic: 100\n  overshoot_assumed_max_concurrency: 4.5\n'), /must be an integer/);
+    await assert.rejects(withBudgets('  overshoot_margin: 300\n  overshoot_assumed_max_response_aic: 100\n  overshoot_assumed_max_concurrency: 4\n'), /below max response × max concurrency/);
+  });
+});

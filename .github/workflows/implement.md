@@ -168,6 +168,9 @@ safe-outputs:
   threat-detection:
     continue-on-error: false
     report-as-issue: false
+    # Pinned (budgets.yaml per_run.threat_detection), so no repository variable can raise it: the
+    # controller counts a run whose usage is missing at max-ai-credits + this cap.
+    max-ai-credits: 400
 ---
 
 # Implement one factory task
