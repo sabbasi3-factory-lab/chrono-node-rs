@@ -231,6 +231,9 @@ safe-outputs:
   threat-detection:
     continue-on-error: false
     report-as-issue: false
+    # Pinned (budgets.yaml per_run.threat_detection), so no repository variable can raise it: the
+    # controller counts a run whose usage is missing at max-ai-credits + this cap.
+    max-ai-credits: 400
     # Trusted, in the detection job (a separate runner, after the agent; safe_outputs runs only if
     # this job succeeds): replay the agent's patch on the failed head exactly as the push would,
     # and fail unless every changed path is in the contract's `scope` (pinned at contract_sha).

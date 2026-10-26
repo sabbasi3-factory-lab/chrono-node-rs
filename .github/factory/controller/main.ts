@@ -147,6 +147,11 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       snapshot.factory_aic_today = spend.aic;
       spendNote = `${spend.aic} AIC from ${spend.runs.length} implement run(s)`;
     }
+    // A bound stands in for a missing measurement: say so every time (summary and log).
+    const bounded = spend.runs.filter((r) => r.status === 'bounded');
+    if (bounded.length > 0) {
+      spendNote += `; WARNING: ${bounded.map((r) => `run ${r.run_id} counted at its bound ${r.aic} AIC (usage missing: ${r.reason ?? 'unknown'})`).join('; ')}`;
+    }
     log(`spend today: ${spendNote}`);
     if (spend.aic !== null) {
       const day = isoSeconds(now).slice(0, 10);

@@ -145,7 +145,7 @@ describe('spend collector: today\'s implement spend', () => {
   });
 
   it('an unreadable run from yesterday makes only the per-task spend unknown (today\'s total stands)', async () => {
-    const res = await readSpendToday(world([{ id: 1, artifacts: [{ id: 10, name: 'usage' }], zips: { 10: usageZip(30) } }, { id: 2, created: '2026-10-15T20:00:00Z', artifacts: [] }]), REPO, NOW, CAPS);
+    const res = await readSpendToday(world([{ id: 1, artifacts: [{ id: 10, name: 'usage' }], zips: { 10: usageZip(30) } }, { id: 2, created: '2026-10-15T20:00:00Z', artifacts: [{ id: 20, name: 'usage' }, { id: 21, name: 'usage' }] }]), REPO, NOW, CAPS);
     assert.deepEqual([res.aic, res.tasks], [30, null]);
   });
 
@@ -236,13 +236,48 @@ describe('spend collector: today\'s implement spend', () => {
     assert.deepEqual(res.runs.map((x) => x.run_id), [6, 7]);
   });
 
+  describe('a completed run whose usage is missing counts at its bound (revises #78 for completed runs only)', () => {
+    const cases: [string, FakeRun, string][] = [
+      ['no usage artifact', { id: 9 }, 'no_usage_artifact'],
+      ['an expired usage artifact', { id: 9, artifacts: [{ id: 90, name: 'usage', expired: true }] }, 'usage_artifact_expired'],
+      ['a usage artifact without agent_usage.json (drill D1: the token step failed)', { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(null, [3]) } }, 'usage_file_missing'],
+    ];
+    for (const [what, run, reason] of cases) {
+      it(what, async () => {
+        const res = await readSpendToday(world([{ ...run, title: 'Implement en/a #3 attempt 1' }]), REPO, NOW, CAPS);
+        // implement 500 + threat detection 400: both hard stops per run in gh-aw.
+        assert.deepEqual(today(res), { aic: 900, runs: [{ run_id: 9, status: 'bounded', aic: 900, reason }] });
+        assert.equal(res.tasks?.by_task['en/a'], 900);
+        assert.deepEqual(spendSnapshotFields('2026-10-16', res as unknown as { aic: number; runs: never[] }).runs, [{ run_id: 9, status: 'bounded', aic: 900, reason }], 'the audit event names it');
+      });
+    }
+
+    it('a run not reported completed (stale in progress, all jobs done) with no usage stays unknown', async () => {
+      const res = await readSpendToday(world([{ id: 15, status: 'in_progress', jobStatus: 'completed', conclusion: 'completed', artifacts: [] }]), REPO, NOW, CAPS);
+      assert.equal(res.aic, null);
+    });
+
+    it('a repair run counts at repair + detection (700); yesterday\'s missing usage no longer makes per-task spend unknown', async () => {
+      const res = await readSpendToday(world([{ id: 9, created: '2026-10-15T20:00:00Z', title: 'Repair en/a #3 attempt 2' }]), REPO, NOW, CAPS);
+      assert.equal(res.aic, 0, 'yesterday is not today');
+      assert.equal(res.tasks?.by_task['en/a'], 900, 'the implement fixture lists it as an implement run: 500 + 400');
+    });
+
+    it('the bound is never below the actual usage when both are known (the real gh-aw artifact, and any usage within the caps)', () => {
+      const real = runAIC(readZip(new Uint8Array(readFileSync(new URL('./fixtures/usage-artifact.zip', import.meta.url))), ['agent_usage.json', 'detection/token_usage.jsonl']), ['agent', 'detection']);
+      assert.ok(real <= CAPS.implement + CAPS.threat_detection, String(real));
+      // Any measured run is at most its two hard caps.
+      for (const [agent, det] of [[0, 0], [500, 400], [499.99, 0.01], [12.5, 3.25]] as const) {
+        const files = new Map([['agent_usage.json', JSON.stringify({ ai_credits: agent })], ['detection/token_usage.jsonl', JSON.stringify({ ai_credits_this_response: det })]]);
+        assert.ok(runAIC(files, ['agent', 'detection']) <= CAPS.implement + CAPS.threat_detection);
+      }
+    });
+  });
+
   describe('unreadable → unknown (fail closed: nothing is dispatched)', () => {
     const cases: [string, FakeRun[], RegExp][] = [
-      ['no usage artifact', [{ id: 9 }], /run 9 has 0 usage artifacts/],
-      ['an expired artifact', [{ id: 9, artifacts: [{ id: 90, name: 'usage', expired: true }] }], /expired/],
       ['two usage artifacts', [{ id: 9, artifacts: [{ id: 90, name: 'usage' }, { id: 91, name: 'usage' }] }], /2 usage artifacts/],
       ['a download error', [{ id: 9, artifacts: [{ id: 90, name: 'usage' }], zips: { 90: { status: 410 } } }], /could not be read/],
-      ['no agent_usage.json', [{ id: 9, artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(null) } }], /agent_usage.json is missing/],
       ['detection ran without records', [{ id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(5, []) } }], /recorded no usage/],
       ['a corrupt zip entry', [{ id: 9, artifacts: [{ id: 90, name: 'usage' }], zips: { 90: zip({ 'agent_usage.json': '{"ai_credits":5}' }, { corruptCrc: 'agent_usage.json' }) } }], /CRC/],
       ['an implausible attempt number', [{ id: 9, attempt: 11 }], /unexpected run_attempt \(11\)/],

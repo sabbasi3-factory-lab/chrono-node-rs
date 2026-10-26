@@ -19,9 +19,17 @@
 // A re-run (attempt n > 1) counts as its full reservation for every attempt (n × reserve): an upper
 // bound, never an undercount. Its attempts' artifacts can't be told apart reliably, and treating it
 // as unknown stalled all dispatch for up to two days (drill D1: one infra re-run of a repair).
-// If any completed run's spend can't be read (no artifact, expired, malformed, an implausible
-// attempt number, an API error), today's spend is UNKNOWN and the planner dispatches nothing (fail
-// closed). No runs → 0.
+// A run GitHub reports as `completed` whose usage is MISSING (no `usage` artifact, an expired one,
+// or a job that made model calls without its usage file) counts at its bound: the reservation,
+// i.e. the workflow's max-ai-credits plus threat detection's, both hard stops per run in gh-aw
+// (https://github.github.com/gh-aw/reference/cost-management/ "Cap AI Credits per Run": "It
+// provides a hard stop"). Status `bounded`, with the reason; main warns in the run summary and the
+// spend_snapshot audit event lists it. This revises #78's "unknown fails closed" for completed
+// runs only: one failed token step (drill D1) made a run's usage unreadable and blocked all
+// dispatch for two days.
+// Anything else that can't be read stays UNKNOWN and the planner dispatches nothing (fail closed):
+// a malformed or corrupt artifact, duplicate usage artifacts, a run not reported completed, an
+// implausible attempt number, an API error, a run list that can't be read. No runs → 0.
 
 import { crc32, inflateRawSync } from 'node:zlib';
 import { paginate } from './github.ts';
@@ -41,8 +49,21 @@ const JOB_NAME = /^[a-z][a-z0-9_]{0,39}$/;
 
 export interface RunSpend {
   run_id: number;
-  status: 'reserved' | 'measured' | 'no_inference';
+  status: 'reserved' | 'measured' | 'no_inference' | 'bounded';
   aic: number;
+  /** Why the run counts at its bound (status `bounded` only): an enum, as the audit log requires. */
+  reason?: UsageMissingCode;
+}
+
+export type UsageMissingCode = 'no_usage_artifact' | 'usage_artifact_expired' | 'usage_file_missing';
+
+/** The run's usage is missing (not malformed): a completed run counts at its bound instead. */
+export class UsageMissing extends Error {
+  readonly code: UsageMissingCode;
+  constructor(code: UsageMissingCode, message: string) {
+    super(message);
+    this.code = code;
+  }
 }
 
 /** Per-task AIC (today and yesterday): by task id, plus runs that name no task (count against every task). */
@@ -137,7 +158,7 @@ export function runAIC(files: Map<string, string>, inferredJobs: readonly string
   for (const job of inferredJobs) {
     const file = usageFileFor(job);
     const text = files.get(file);
-    if (text === undefined) throw new Error(`${job} made model calls but ${file} is missing`);
+    if (text === undefined) throw new UsageMissing('usage_file_missing', `${job} made model calls but ${file} is missing`);
     if (job === 'agent') {
       const credits = (JSON.parse(text) as { ai_credits?: unknown } | null)?.ai_credits;
       if (!isAIC(credits)) throw new Error('agent_usage.json has no valid ai_credits');
@@ -278,8 +299,10 @@ async function measureRun(client: GitHubClient, repo: string, run: Rec, id: numb
       await paginate(client, `/repos/${repo}/actions/runs/${id}/artifacts?per_page=100`, (d) => (Array.isArray(rec(d).artifacts) ? (rec(d).artifacts as unknown[]) : []))
     ).map(rec);
     const usage = artifacts.filter((a) => a.name === USAGE_ARTIFACT);
+    if (usage.length === 0) throw new UsageMissing('no_usage_artifact', 'no usage artifact');
     if (usage.length !== 1) return `run ${id} has ${usage.length} usage artifacts`;
     const a = usage[0]!;
+    if (a.expired === true) throw new UsageMissing('usage_artifact_expired', 'its usage artifact expired');
     if (a.expired !== false || typeof a.id !== 'number' || !Number.isSafeInteger(a.id)) return `run ${id}'s usage artifact is expired or has no id`;
     if (typeof a.size_in_bytes === 'number' && a.size_in_bytes > MAX_ARTIFACT_BYTES) return `run ${id}'s usage artifact is too large`;
     const res = await client.request('GET', `/repos/${repo}/actions/artifacts/${a.id}/zip`, { accept: 'binary' });
@@ -287,6 +310,10 @@ async function measureRun(client: GitHubClient, repo: string, run: Rec, id: numb
     const aic = runAIC(readZip(res.data, inferred.map(usageFileFor)), inferred);
     return { run_id: id, status: 'measured', aic: round(aic) };
   } catch (err) {
+    // Only a run GitHub reports as completed: nothing more can start in it, so its bound holds.
+    if (err instanceof UsageMissing && run.status === 'completed') {
+      return { run_id: id, status: 'bounded', aic: reserve, reason: err.code };
+    }
     return `run ${id}'s spend could not be read (${(err as Error).message})`;
   }
 }
@@ -296,7 +323,7 @@ export function spendSnapshotFields(day: string, spend: { aic: number; runs: Run
   return {
     day,
     aic_today: spend.aic,
-    runs: spend.runs.slice(0, 50).map((r) => ({ run_id: r.run_id, status: r.status, aic: r.aic })),
+    runs: spend.runs.slice(0, 50).map((r) => ({ run_id: r.run_id, status: r.status, aic: r.aic, ...(r.reason ? { reason: r.reason } : {}) })),
     runs_total: spend.runs.length,
   };
 }
