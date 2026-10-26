@@ -11,7 +11,7 @@ import { parseArgs, run, type RunDeps } from '../main.ts';
 import { IMPLEMENTED_STRICT_GATES } from '../planner.ts';
 import { deriveState } from '../history.ts';
 import { readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
-import type { Snapshot } from '../types.ts';
+import type { Policies, Snapshot } from '../types.ts';
 import { checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
 import { dedupeKey } from '../audit.ts';
 import { CONTRACT_COMMIT, fakeWorld, projectNode, seedSpendSnapshot, type ProjectWorld } from './world.ts';
@@ -37,6 +37,9 @@ function unreadableSpendWorld(missing = false): ProjectWorld {
   return gh;
 }
 const FV = '320c4fcedefc03648caa4cda140bd93932367986';
+/** The pinned policy without the overshoot margin: the strict rules (no spend bound). */
+const noMargin: Policies = structuredClone(policies);
+noMargin.budgets.per_run.overshoot = null;
 const IMPLEMENT_LOCK = await readFile(new URL('../../../workflows/implement.lock.yml', import.meta.url), 'utf8');
 const controllerDir = fileURLToPath(new URL('..', import.meta.url));
 
@@ -325,7 +328,7 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
 
   it('without the margin in the policy there is no bound: missing usage is unknown and blocks', async () => {
     const lines: string[] = [];
-    const result = await run(deps(unreadableSpendWorld(true), { log: (l) => lines.push(l) }));
+    const result = await run(deps(unreadableSpendWorld(true), { policies: noMargin, log: (l) => lines.push(l) }));
     assert.ok(lines.some((l) => l.startsWith('spend today: unknown: run 900')), lines.join('\n'));
     assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
   });
@@ -690,7 +693,7 @@ describe('spend collector in the run', () => {
       { method: 'GET', path: new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 901, run_attempt: 1, status: 'in_progress', created_at: '2026-10-16T09:00:00Z' }] } }) },
     );
     const lines: string[] = [];
-    const first = await run(deps(gh, { log: (l) => lines.push(l) }));
+    const first = await run(deps(gh, { policies: noMargin, log: (l) => lines.push(l) }));
     assert.equal(first.live, false);
     assert.ok(lines.includes('spend today: 900 AIC from 1 implement run(s)'));
     const snap = first.appended.find((e) => e.type === 'spend_snapshot')!;
@@ -699,7 +702,7 @@ describe('spend collector in the run', () => {
     assert.ok(first.appended.indexOf(snap) < first.appended.findIndex((e) => e.type === 'dispatched'), 'measured before the decisions are recorded');
     assert.equal(first.snapshot.factory_aic_today, 900);
     assert.match(first.summary, /Spend today: 900 AIC from 1 implement run\(s\)/);
-    const second = await run(deps(gh, { now: new Date(NOW.getTime() + 5 * 60_000) }));
+    const second = await run(deps(gh, { policies: noMargin, now: new Date(NOW.getTime() + 5 * 60_000) }));
     assert.ok(!second.appended.some((e) => e.type === 'spend_snapshot'), 'unchanged spend is not recorded again');
   });
 
@@ -708,7 +711,7 @@ describe('spend collector in the run', () => {
     const r = `/repos/${REPO}`;
     const runs = Array.from({ length: 12 }, (_, i) => ({ id: 910 + i, run_attempt: 1, status: 'queued', created_at: '2026-10-16T09:00:00Z' }));
     gh.routes.unshift({ method: 'GET', path: new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: runs } }) });
-    const result = await run(deps(gh));
+    const result = await run(deps(gh, { policies: noMargin }));
     assert.equal(result.snapshot.factory_aic_today, 10800);
     assert.ok(result.decisions.some((d) => d.type === 'budget_pause'));
     assert.ok(!result.decisions.some((d) => d.type === 'dispatched'));
