@@ -209,6 +209,15 @@ jobs:
         # Enforced when "$KIND" = "factory" on pull requests (see the script).
         run: bash harness/strict/perf.sh
 
+      - name: Strict gate - code_health_not_worse (clippy complexity lints)
+        if: steps.scope.outputs.strict == 'true'
+        env:
+          BASE_REV: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+          KIND: ${{ steps.scope.outputs.kind }}
+          EVENT: ${{ github.event_name }}
+        # Enforced when "$KIND" = "factory" on pull requests (see the script).
+        run: bash harness/strict/code-health.sh
+
       - name: Reveal the held-out seed
         if: always()
         run: |
