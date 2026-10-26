@@ -33,7 +33,7 @@ export interface BudgetsPolicy {
   per_task: { max_aic: number };
   factory_per_day: { max_aic: number; alert_at_pct: number; pause_at_pct: number };
   /** Per-run caps (gh-aw max-ai-credits); used to reserve spend for runs still going. */
-  per_run: { implement: number; reviewer_agent: number; threat_detection: number };
+  per_run: { implement: number; repair: number; reviewer_agent: number; threat_detection: number };
 }
 
 export type Tier = 'auto' | 'auto-strict' | 'human';
@@ -217,6 +217,12 @@ export interface Snapshot {
   history: Record<string, TaskHistory>;
   /** Reviewer-App `factory-review` check runs on open factory PR heads (absent = none). */
   review_checks?: ReviewCheckSnap[];
+  /**
+   * Per-task AIC over today and yesterday from the spend collector (measured runs plus
+   * reservations for runs in flight; runs naming no task count against every task). Null or
+   * missing: unknown, so no repair is paid for (fail closed).
+   */
+  task_spend?: { by_task: Record<string, number>; unattributed: number } | null;
 }
 
 // ---------------------------------------------------------------- decisions
@@ -247,6 +253,8 @@ export type ReasonCode =
   | 'pick_time_unknown'
   | 'missing_heldout_seed'
   | 'repair_unavailable'
+  | 'ci_not_repairable'
+  | 'task_budget_unknown'
   | 'auto_merge_ready'
   | 'review_needed'
   | 'review_objected'

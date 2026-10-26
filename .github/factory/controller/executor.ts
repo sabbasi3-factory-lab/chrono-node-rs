@@ -28,8 +28,12 @@
 //                                 If the dispatch fails, the record stands: no second review is
 //                                 sent, and with no verdict the PR goes to a person after
 //                                 REVIEW_TIMEOUT_MINUTES (fail closed, never a double spend).
-//   dispatch_workflow:repair    → no repair workflow exists yet: escalated instead to
-//                                 needs_human/repair_unavailable (label + comment)
+//   dispatch_workflow:repair    → record `repair_dispatched` (attempt, run, signature, head) first,
+//                                 then dispatch repair.lock.yml on main with the task, issue, PR,
+//                                 attempt, contract SHA, failed head, failure signature and failed
+//                                 run (no aw_context: the workflow checks out the head). A failed dispatch isn't
+//                                 retried (the run is recorded as repaired); the next ci failure or
+//                                 the task time limit hands it on (fail closed, never double spend).
 //   alert:owner, pause_dispatch, none → no GitHub effect; recorded in the audit log only
 // It never merges directly (only the merge queue merges), closes anything but a finished task's
 // issue, removes any other label, adds `factory:ready` except by auto-ready to an open task issue,
@@ -49,7 +53,7 @@
 //   is posted only if no comment with its marker exists yet.
 
 import { dedupeKey } from './audit.ts';
-import { CLOSE_COMPLETED, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate, REVIEW_WORKFLOW } from './github.ts';
+import { REPAIR_WORKFLOW, CLOSE_COMPLETED, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate, REVIEW_WORKFLOW } from './github.ts';
 import { isRecorded, LABEL_NEEDS_HUMAN, LABEL_PICKED, LABEL_READY } from './planner.ts';
 import type { AuditEvent, Decision, GitHubClient, JsonObject, PendingEvent, PlannerEnv, ReasonCode } from './types.ts';
 
@@ -103,10 +107,9 @@ export function decisionEvent(d: Decision, live = false): PendingEvent {
   return { type: d.type, source_ids: [...d.source_ids, `reason:${d.reason}`, `effect:${d.effect}`, ...(live ? ['mode:live'] : [])], fields };
 }
 
-/** In live mode a repair becomes a human hand-off: there is no repair workflow yet. */
+/** The decision live mode carries out (identity since the repair workflow exists). */
 export function liveDecision(d: Decision): Decision {
-  if (d.effect !== 'dispatch_workflow:repair') return d;
-  return { ...d, type: 'needs_human', reason: 'repair_unavailable', effect: 'label:needs-human' };
+  return d;
 }
 
 const LABEL_OF: Partial<Record<Decision['effect'], string>> = {
@@ -125,6 +128,8 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   task_budget_exhausted: "The task has used its AI budget.",
   task_timeout: 'The task has been in progress longer than the time limit.',
   pick_time_unknown: 'The issue is marked picked, but the audit log has no pick time for it.',
+  ci_not_repairable: 'CI did not finish normally on this PR (timed out, or never started). That is not repaired automatically: a person decides.',
+  task_budget_unknown: "CI failed, but this task's AI spend can't be read, so no repair is paid for.",
   repair_unavailable: 'CI failed. There is no repair workflow yet, so a person decides what to do.',
   review_contract_changed: 'This head was reviewed against a different contract version than the current one. A person decides (no second review is sent automatically).',
   review_objected: 'The reviewer agent (a second model) objected to this change: see the `factory-review` check. A person decides.',
@@ -332,7 +337,26 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
         body: { ref: 'main', inputs: { task: d.task, pr: String(d.pr), head_sha: head, contract_sha: d.contract_sha } },
       });
     } else if (d.effect === 'dispatch_workflow:repair') {
-      throw new Error('repair dispatch is not available');
+      const head = d.head_sha;
+      if (d.task === null || d.issue === null || d.pr === null || d.attempt === null || d.contract_sha === null || d.run_id === null || d.failure_signature === null || typeof head !== 'string') {
+        throw new Error('repair decision is missing task, issue, PR, attempt, contract, run, signature or head');
+      }
+      await deps.record(ev); // first: the attempt counts even if the dispatch fails (never retried)
+      await deps.client.request('POST', `/repos/${deps.repo}/actions/workflows/${REPAIR_WORKFLOW}/dispatches`, {
+        body: {
+          ref: 'main',
+          inputs: {
+            task: d.task,
+            issue: String(d.issue),
+            pr: String(d.pr),
+            attempt: String(d.attempt),
+            contract_sha: d.contract_sha,
+            head_sha: head,
+            failure_signature: d.failure_signature,
+            run_id: String(d.run_id),
+          },
+        },
+      });
     } else {
       // alert:owner, pause_dispatch and none have no GitHub effect: the record is the effect.
       await deps.record(ev);
