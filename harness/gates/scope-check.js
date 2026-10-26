@@ -16,13 +16,15 @@
 //   pinned factory version in the trusted .github/factory/factory-version). Diffs use
 //   --no-renames, so a moved file counts as a deletion plus an addition. Agent PRs without a task
 //   fail.
+// - merge_group (enforce): an agent PR with an auto-strict change also needs the reviewer App's
+//   passing `factory-review` on its head, unless a person enqueued it (scope.js reviewGate).
 // Writes kind, golden_areas, golden_step, differential_seed, differential_phrases and strict (the
 // change needs the auto-strict full regression) to $GITHUB_OUTPUT.
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const YAML = require("yaml");
-const { evaluate, needsFullRegression } = require("./scope");
+const { evaluate, needsFullRegression, reviewGate } = require("./scope");
 
 // The trusted checkout (this file's repo); the candidate commit must already be fetched into it.
 const REPO = path.resolve(__dirname, "../..");
@@ -50,6 +52,41 @@ async function loadPolicyProtected() {
     if (!Array.isArray(list) || list.length === 0) throw new Error("tiers.yaml has no protected_from_agents");
     const strict = tiers && tiers.tiers && tiers.tiers["auto-strict"] && tiers.tiers["auto-strict"].paths;
     return { version, protectedGlobs: list, autoStrictGlobs: Array.isArray(strict) ? strict : [] };
+}
+
+async function graphql(query, variables) {
+    const res = await fetch("https://api.github.com/graphql", {
+        method: "POST",
+        headers: { authorization: `bearer ${process.env.GH_TOKEN}`, "content-type": "application/json" },
+        body: JSON.stringify({ query, variables }),
+    });
+    if (!res.ok) throw new Error(`graphql: ${res.status}`);
+    const j = await res.json();
+    if (j.errors) throw new Error(`graphql: ${JSON.stringify(j.errors).slice(0, 200)}`);
+    return j.data;
+}
+
+const ENQUEUER_QUERY = `query($owner: String!, $name: String!, $n: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $n) {
+  timelineItems(itemTypes: [ADDED_TO_MERGE_QUEUE_EVENT], last: 1) { nodes { ... on AddedToMergeQueueEvent { actor { __typename login } } } } } } }`;
+
+/** Who put the PR in the queue (last AddedToMergeQueueEvent) and the factory-review runs on its head. Errors → null (fail closed). */
+async function reviewInputs(repo, pr) {
+    const [owner, name] = repo.split("/");
+    let enqueuer = null;
+    try {
+        const d = await graphql(ENQUEUER_QUERY, { owner, name, n: pr.number });
+        const a = d.repository.pullRequest.timelineItems.nodes.slice(-1)[0];
+        if (a && a.actor) enqueuer = { type: a.actor.__typename, login: a.actor.login };
+    } catch (e) {
+        console.log(`enqueuer unreadable (${e.message}): treated as not a person`);
+    }
+    let checkRuns = null;
+    try {
+        checkRuns = (await gh(`/repos/${repo}/commits/${pr.head.sha}/check-runs?check_name=factory-review&filter=all&per_page=100`)).check_runs;
+    } catch (e) {
+        console.log(`factory-review check runs unreadable (${e.message})`);
+    }
+    return { enqueuer, checkRuns };
 }
 
 const changedPaths = (from, to) => git("diff", "--name-only", "--no-renames", from, to);
@@ -126,6 +163,15 @@ async function main() {
         strict = true;
     } else {
         strict = needsFullRegression({ changed: changedPaths, autoStrictGlobs, contractTier: null });
+    }
+
+    if (MODE === "enforce" && process.env.GITHUB_EVENT_NAME === "merge_group" && result.ok) {
+        const gate = reviewGate({ isAgent, strict, head: pr.head && pr.head.sha, ...(isAgent && strict ? await reviewInputs(process.env.GITHUB_REPOSITORY, pr) : { enqueuer: null, checkRuns: null }) });
+        console.log(gate.why);
+        if (!gate.ok) {
+            result.ok = false;
+            result.reasons.push(gate.why);
+        }
     }
 
     console.log(`mode ${MODE}; factory policies at ${version}; candidate ${head}; contracts from ${contractBase}`);

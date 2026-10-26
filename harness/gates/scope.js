@@ -125,4 +125,39 @@ function needsFullRegression({ changed, autoStrictGlobs, contractTier, contractS
     return [...changed, ...scope].some((p) => matchesAny(p, autoStrictGlobs));
 }
 
-module.exports = { globToRegExp, matchesAny, trailer, evaluate, needsFullRegression };
+// The reviewer App (sabbasi3-factory-reviewer). Anyone with checks:write can name a check run
+// `factory-review`; only this App id makes it the reviewer's (same constant as the controller).
+const REVIEWER_APP_ID = 5444751;
+const REVIEW_CHECK_NAME = "factory-review";
+
+/**
+ * Merge-queue review gate (DESIGN §9 strict gates, `reviewer_agent`). An agent PR whose change is
+ * auto-strict (`needsFullRegression`) may enter main only if a person put it in the queue, or the
+ * reviewer App's latest `factory-review` check run on the PR head passed and names that head
+ * (`Reviewed-Head: <sha>` as the summary's first line). So neither the agent nor the controller
+ * App can merge an unreviewed auto-strict change. Fails closed: an unknown enqueuer counts as
+ * not a person; unreadable checks count as no review.
+ *   enqueuer: { type: "User" | "Bot" | ..., login } of the last AddedToMergeQueueEvent, or null.
+ *   checkRuns: the REST check runs on `head` named factory-review (any app), or null if unread.
+ */
+function reviewGate({ isAgent, strict, head, enqueuer, checkRuns }) {
+    if (!isAgent || !strict) return { ok: true, why: "review not required (not an agent auto-strict change)" };
+    if (enqueuer && enqueuer.type === "User" && typeof enqueuer.login === "string" && enqueuer.login) {
+        return { ok: true, why: `enqueued by a person (${enqueuer.login}): no reviewer verdict required` };
+    }
+    if (!/^[0-9a-f]{40}$/.test(head || "")) return { ok: false, why: "review gate: PR head unknown" };
+    if (!Array.isArray(checkRuns)) return { ok: false, why: "review gate: factory-review check runs unreadable" };
+    const ours = checkRuns
+        .filter((c) => c && c.app && c.app.id === REVIEWER_APP_ID && c.name === REVIEW_CHECK_NAME && c.head_sha === head)
+        .sort((a, b) => String(b.started_at || "").localeCompare(String(a.started_at || "")) || (b.id || 0) - (a.id || 0));
+    const latest = ours[0];
+    if (!latest) return { ok: false, why: `review gate: no factory-review from the reviewer App on ${head} (enqueued by ${enqueuer ? enqueuer.login || "unknown" : "unknown"})` };
+    const first = String((latest.output && latest.output.summary) || "").split("\n")[0].replace(/\r$/, "").trimEnd();
+    if (latest.status !== "completed" || latest.conclusion !== "success") {
+        return { ok: false, why: `review gate: latest factory-review on ${head} is ${latest.status}/${latest.conclusion}` };
+    }
+    if (first !== `Reviewed-Head: ${head}`) return { ok: false, why: `review gate: factory-review on ${head} doesn't name that head` };
+    return { ok: true, why: `reviewer passed ${head} (check run ${latest.id})` };
+}
+
+module.exports = { globToRegExp, matchesAny, trailer, evaluate, needsFullRegression, reviewGate, REVIEWER_APP_ID };
