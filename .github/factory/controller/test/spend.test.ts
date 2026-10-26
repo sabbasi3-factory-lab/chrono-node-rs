@@ -297,7 +297,7 @@ describe('spend collector: today\'s implement spend', () => {
         const res = await read([bounded, ok]);
         assert.equal(res.alert, null);
         assert.equal(res.aic, IMPL_BOUND + 105);
-        assert.deepEqual(res.runs.find((r) => r.run_id === 5), { run_id: 5, status: 'measured', aic: 105, max_concurrency: 4, max_response_aic: 100 });
+        assert.deepEqual(res.runs.find((r) => r.run_id === 5), { run_id: 5, status: 'measured', aic: 105, max_concurrency: 4, max_response_aic: 100, responses_aic: 105 });
       });
       const breaches: [string, FakeRun, Partial<Record<string, number>>][] = [
         ['5 requests in flight at once', withRecords(5, [[0, 10, 1], [1, 10, 1], [2, 10, 1], [3, 10, 1], [4, 10, 1]], 5), { max_concurrency: 5 }],
@@ -369,10 +369,43 @@ describe('spend collector: today\'s implement spend', () => {
       }
     });
 
+    describe('Copilot review regressions', () => {
+      it('missing agent usage with MALFORMED detection usage → unknown, not bounded (validated first, whatever the job order)', async () => {
+        const run: FakeRun = { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: zip({ 'detection/token_usage.jsonl': '{"x":1}\n' }) } };
+        const res = await read([run]);
+        assert.equal(res.aic, null);
+        assert.match((res as { reason: string }).reason, /ai_credits_this_response/);
+      });
+      it('a re-run whose readable attempt shows a 150 AIC response → bound off and an alert (still n × bound if within)', async () => {
+        const big: FakeRun = { id: 9, attempt: 2, artifacts: [{ id: 90, name: 'usage' }], zips: { 90: zip({ 'agent/token_usage.jsonl': timed([[0, 10, 150]]) }) } };
+        const res = await read([big]);
+        assert.equal(res.aic, null);
+        assert.equal(res.alert?.code, 'overshoot_assumption_exceeded');
+        const fine: FakeRun = { id: 9, attempt: 2, artifacts: [{ id: 90, name: 'usage' }], zips: { 90: zip({ 'agent/token_usage.jsonl': timed([[0, 10, 10]]) }) } };
+        assert.deepEqual((await read([fine])).runs, [{ run_id: 9, status: 'bounded', aic: 2 * IMPL_BOUND, reason: 'rerun', max_concurrency: 1, max_response_aic: 10, responses_aic: 10 }]);
+      });
+      it('agent_usage.json missing but its per-response records show a 2000 AIC response → bound off and an alert', async () => {
+        const run: FakeRun = { id: 9, artifacts: [{ id: 90, name: 'usage' }], zips: { 90: zip({ 'agent/token_usage.jsonl': timed([[0, 10, 2000]]) }) } };
+        const res = await read([run]);
+        assert.equal(res.aic, null);
+        assert.equal(res.alert?.code, 'overshoot_assumption_exceeded');
+        assert.equal(res.alert?.max_response_aic, 2000);
+      });
+      it('in flight under a bound: reserved at the bound only for a verified commit, else unknown', async () => {
+        assert.equal((await read([{ id: 1, status: 'in_progress' }], B, [], async () => false)).aic, null);
+        assert.equal((await read([{ id: 1, status: 'in_progress' }], null, [], async () => false)).aic, 900, 'no bound: the caps, as before');
+      });
+      it('an EMPTY agent record file next to valid detection records → unverifiable (alert), not detection-only stats', async () => {
+        const run: FakeRun = { id: 5, detection: 'success', artifacts: [{ id: 50, name: 'usage' }], zips: { 50: zip({ 'agent_usage.json': '{"ai_credits":3}', 'agent/token_usage.jsonl': '\n', 'detection/token_usage.jsonl': timed([[0, 1, 1]]) }) } };
+        const res = await read([{ id: 9 }, run]);
+        assert.equal(res.alert?.code, 'overshoot_unverifiable');
+      });
+    });
+
     it('responseStats: overlapping requests, back-to-back is not concurrent, unreadable → null', () => {
       const f = (t: string) => new Map([['agent/token_usage.jsonl', t]]);
-      assert.deepEqual(responseStats(f(timed([[0, 10, 1], [5, 10, 2], [7, 1, 3]]))), { max_concurrency: 3, max_response_aic: 3 });
-      assert.deepEqual(responseStats(f(timed([[0, 10, 1], [10, 10, 2]]))), { max_concurrency: 1, max_response_aic: 2 });
+      assert.deepEqual(responseStats(f(timed([[0, 10, 1], [5, 10, 2], [7, 1, 3]]))), { max_concurrency: 3, max_response_aic: 3, responses_aic: 6 });
+      assert.deepEqual(responseStats(f(timed([[0, 10, 1], [10, 10, 2]]))), { max_concurrency: 1, max_response_aic: 2, responses_aic: 3 });
       assert.equal(responseStats(f('{"ai_credits_this_response":1}\n')), null, 'no timestamp');
       assert.equal(responseStats(f('not json\n')), null);
       assert.equal(responseStats(new Map()), null);

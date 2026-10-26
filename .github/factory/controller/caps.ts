@@ -15,7 +15,8 @@ function jobCaps(lock: string, job: string): number[] {
   const rest = lock.slice(start + 1);
   const next = rest.search(/^  [a-z_][a-z0-9_-]*:\s*$/m);
   const body = next < 0 ? rest : rest.slice(0, next);
-  return [...body.matchAll(/"maxAiCredits":(\d+)/g)].map((m) => Number(m[1]));
+  // The whole JSON value, not its digit prefix (500.5 or 500e2 must not read as 500).
+  return [...body.matchAll(/"maxAiCredits":\s*([^,}\s]+)/g)].map((m) => (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(m[1]!) ? Number(m[1]) : NaN));
 }
 
 /** Null when every lock enforces exactly the policy's caps; otherwise why not. */

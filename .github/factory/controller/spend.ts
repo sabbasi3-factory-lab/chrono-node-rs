@@ -69,6 +69,8 @@ export interface RunSpend {
   /** Measured runs: the most model requests in flight at once, and the largest single response. */
   max_concurrency?: number;
   max_response_aic?: number;
+  /** Sum of the readable per-response records (the assumption guard; never accounting). */
+  responses_aic?: number;
   /** Bounded runs: the agent's usage from the `agent` artifact, if readable (informational only). */
   observed_aic?: number;
 }
@@ -235,10 +237,16 @@ export const usageFileFor = (job: string): string => (job === 'agent' ? 'agent_u
 /** AIC of one completed run from its usage files; throws if any job that made model calls isn't accounted for. */
 export function runAIC(files: Map<string, string>, inferredJobs: readonly string[]): number {
   let aic = 0;
+  let missing: string | null = null;
+  // Every present file is validated first: malformed accounting is unknown (blocks) whatever the
+  // job order, and only then is a missing file reported as missing.
   for (const job of inferredJobs) {
     const file = usageFileFor(job);
     const text = files.get(file);
-    if (text === undefined) throw new UsageMissing('usage_file_missing', `${job} made model calls but ${file} is missing`);
+    if (text === undefined) {
+      missing ??= `${job} made model calls but ${file} is missing`;
+      continue;
+    }
     if (job === 'agent') {
       const credits = (JSON.parse(text) as { ai_credits?: unknown } | null)?.ai_credits;
       if (!isAIC(credits)) throw new Error('agent_usage.json has no valid ai_credits');
@@ -266,6 +274,7 @@ export function runAIC(files: Map<string, string>, inferredJobs: readonly string
     if (reportedTotal > sum + Math.max(0.001, sum * 1e-6)) throw new Error(`${file} reports ${reportedTotal} AIC in total but its responses add up to ${sum}: records are missing`);
     aic += sum;
   }
+  if (missing !== null) throw new UsageMissing('usage_file_missing', missing);
   return aic;
 }
 
@@ -274,13 +283,19 @@ export function runAIC(files: Map<string, string>, inferredJobs: readonly string
  * (records carry the response end `timestamp` and `duration_ms`). Null when there are no records
  * or one can't be read: the assumptions are then simply not checked against this run.
  */
-export function responseStats(files: Map<string, string>): { max_concurrency: number; max_response_aic: number } | null {
+export function responseStats(
+  files: Map<string, string>,
+  requiredJobs: readonly string[] = [],
+): { max_concurrency: number; max_response_aic: number; responses_aic: number } | null {
   const edges: [number, number][] = [];
   let maxResponse = 0;
+  let total = 0;
   let records = 0;
+  const perFile = new Map<string, number>();
   try {
     for (const [name, text] of files) {
       if (!name.endsWith('/token_usage.jsonl')) continue;
+      perFile.set(name, 0);
       for (const line of text.split('\n')) {
         if (line.trim() === '') continue;
         const r = JSON.parse(line) as { timestamp?: unknown; duration_ms?: unknown; ai_credits_this_response?: unknown };
@@ -289,6 +304,8 @@ export function responseStats(files: Map<string, string>): { max_concurrency: nu
         if (!Number.isFinite(end) || typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0 || !isAIC(r.ai_credits_this_response)) return null;
         edges.push([end - ms, 1], [end, -1]);
         maxResponse = Math.max(maxResponse, r.ai_credits_this_response);
+        total += r.ai_credits_this_response;
+        perFile.set(name, perFile.get(name)! + 1);
         records++;
       }
     }
@@ -296,6 +313,8 @@ export function responseStats(files: Map<string, string>): { max_concurrency: nu
     return null;
   }
   if (records === 0) return null;
+  // Every job that called the model must have left records of its own (an empty file proves nothing).
+  if (requiredJobs.some((j) => (perFile.get(`${j}/token_usage.jsonl`) ?? 0) === 0)) return null;
   // Ends before starts at the same instant: back-to-back requests aren't concurrent.
   edges.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   let open = 0;
@@ -304,7 +323,7 @@ export function responseStats(files: Map<string, string>): { max_concurrency: nu
     open += d;
     max = Math.max(max, open);
   }
-  return { max_concurrency: max, max_response_aic: round(maxResponse) };
+  return { max_concurrency: max, max_response_aic: round(maxResponse), responses_aic: round(total) };
 }
 
 type Rec = Record<string, unknown>;
@@ -406,12 +425,23 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
       }
       return v;
     };
-    measured.push({ run, isToday, bound, r: await measureRun(client, repo, run, id, bounding ? bound : reserve, verified) });
+    measured.push({ run, isToday, bound, r: await measureRun(client, repo, run, id, bounding ? bound : reserve, bounding !== null, verified) });
   }
   let alert: BoundAlert | null = null;
   if (bounding) {
     for (const { r, bound } of measured) {
-      if (typeof r === 'string' || r.status !== 'measured') continue;
+      if (typeof r === 'string') continue;
+      if (r.status === 'bounded') {
+        // A bounded run's readable records (a re-run's attempts, or the ones left beside a missing
+        // totals file) must fit the assumptions too, and add up to no more than what it's counted at.
+        if (r.max_concurrency === undefined || r.max_response_aic === undefined) continue;
+        if (r.max_concurrency > bounding.max_concurrency || r.max_response_aic > bounding.max_response_aic || (r.responses_aic ?? 0) > r.aic) {
+          alert = { code: 'overshoot_assumption_exceeded', run_id: r.run_id, max_concurrency: r.max_concurrency, max_response_aic: r.max_response_aic, aic: r.responses_aic ?? 0, bound: r.aic };
+          break;
+        }
+        continue;
+      }
+      if (r.status !== 'measured') continue;
       // A measured run whose per-response records can't be checked leaves the assumptions unverified.
       if (r.max_concurrency === undefined || r.max_response_aic === undefined) {
         alert = { code: 'overshoot_unverifiable', run_id: r.run_id, max_concurrency: 0, max_response_aic: 0, aic: r.aic, bound };
@@ -472,18 +502,53 @@ async function observedAgentAIC(client: GitHubClient, repo: string, artifacts: R
  * `bound`: this run's bound when bounding is in force, else null (re-runs and missing usage are
  * then unknown).
  */
-async function measureRun(client: GitHubClient, repo: string, run: Rec, id: number, reserve: number, verified: () => Promise<boolean>): Promise<RunSpend | string> {
-  // `reserve` is the run's bound when bounding is in force (in-flight runs are reserved at it too);
-  // the bound applies to a re-run or missing usage only if `verified()` (its commit's caps match).
+/** Every job's per-response record file a usage artifact may hold. */
+const RECORD_FILES = ['agent/token_usage.jsonl', 'detection/token_usage.jsonl', 'evals/token_usage.jsonl'];
+
+/**
+ * Response statistics from every readable `usage` artifact of a run (all attempts), for the
+ * assumption guard only; undefined when none can be read. Never used for accounting.
+ */
+async function readableStats(client: GitHubClient, repo: string, artifacts: Rec[]): Promise<{ max_concurrency: number; max_response_aic: number; responses_aic: number } | undefined> {
+  let out: { max_concurrency: number; max_response_aic: number; responses_aic: number } | undefined;
+  for (const a of artifacts.filter((x) => x.name === USAGE_ARTIFACT && x.expired === false && typeof x.id === 'number')) {
+    try {
+      if (typeof a.size_in_bytes === 'number' && a.size_in_bytes > MAX_ARTIFACT_BYTES) continue;
+      const res = await client.request('GET', `/repos/${repo}/actions/artifacts/${String(a.id)}/zip`, { accept: 'binary' });
+      if (!(res.data instanceof Uint8Array)) continue;
+      const st = responseStats(readZip(res.data, RECORD_FILES));
+      if (!st) continue;
+      out = out
+        ? { max_concurrency: Math.max(out.max_concurrency, st.max_concurrency), max_response_aic: Math.max(out.max_response_aic, st.max_response_aic), responses_aic: round(out.responses_aic + st.responses_aic) }
+        : st;
+    } catch {
+      // unreadable: nothing to check from it
+    }
+  }
+  return out;
+}
+
+const listArtifacts = async (client: GitHubClient, repo: string, id: number): Promise<Rec[]> =>
+  (await paginate(client, `/repos/${repo}/actions/runs/${id}/artifacts?per_page=100`, (d) => (Array.isArray(rec(d).artifacts) ? (rec(d).artifacts as unknown[]) : []))).map(rec);
+
+/**
+ * One run's spend (reserved, measured, no inference, bounded), or the reason it can't be read.
+ * `reserve`: the run's bound when `bounding` is in force, else its two caps. Anything that relies
+ * on the bound (a re-run, missing usage, an in-flight reservation under a bound) needs
+ * `verified()`: the run's own commit's workflow enforces the policy's caps.
+ */
+async function measureRun(client: GitHubClient, repo: string, run: Rec, id: number, reserve: number, bounding: boolean, verified: () => Promise<boolean>): Promise<RunSpend | string> {
   const bound = reserve;
   const attempt = run.run_attempt;
   if (typeof attempt !== 'number' || !Number.isInteger(attempt) || attempt < 1 || attempt > MAX_ATTEMPTS) {
     return `run ${id} has an unexpected run_attempt (${String(attempt)})`;
   }
   // A re-run (even one still queued or running) carries earlier attempts' spend: n × the bound.
+  // Its readable records still go to the assumption guard.
   if (attempt > 1) {
-    if (!(await verified())) return `run ${id} was re-run (attempt ${attempt}) and no spend bound is in force for its commit`;
-    return { run_id: id, status: 'bounded', aic: round(bound * attempt), reason: 'rerun' };
+    if (!bounding || !(await verified())) return `run ${id} was re-run (attempt ${attempt}) and no spend bound is in force for its commit`;
+    const stats = await readableStats(client, repo, await listArtifacts(client, repo, id).catch(() => []));
+    return { run_id: id, status: 'bounded', aic: round(bound * attempt), reason: 'rerun', ...(stats ?? {}) };
   }
   const listJobs = async (): Promise<Rec[]> =>
     (await paginate(client, `/repos/${repo}/actions/runs/${id}/attempts/1/jobs?per_page=100`, (d) => (Array.isArray(rec(d).jobs) ? (rec(d).jobs as unknown[]) : []))).map(rec);
@@ -494,18 +559,21 @@ async function measureRun(client: GitHubClient, repo: string, run: Rec, id: numb
     } catch {
       jobs = null; // can't tell: keep the reservation
     }
-    if (!jobs || !allJobsFinished(jobs)) return { run_id: id, status: 'reserved', aic: reserve };
+    if (!jobs || !allJobsFinished(jobs)) {
+      // Under a bound the reservation is the bound, which holds only for a verified commit.
+      if (bounding && !(await verified())) return `run ${id} is in flight and its commit's caps can't be verified`;
+      return { run_id: id, status: 'reserved', aic: reserve };
+    }
   }
   let artifacts: Rec[] = [];
+  let files: Map<string, string> | null = null;
   try {
     jobs ??= await listJobs();
     const inferred = jobs.filter(jobInferred).map((j) => String(j.name));
     const bad = inferred.find((n) => !JOB_NAME.test(n));
     if (bad !== undefined) return `run ${id} has a job with an unexpected name`;
     if (inferred.length === 0) return { run_id: id, status: 'no_inference', aic: 0 };
-    artifacts = (
-      await paginate(client, `/repos/${repo}/actions/runs/${id}/artifacts?per_page=100`, (d) => (Array.isArray(rec(d).artifacts) ? (rec(d).artifacts as unknown[]) : []))
-    ).map(rec);
+    artifacts = await listArtifacts(client, repo, id);
     const usage = artifacts.filter((a) => a.name === USAGE_ARTIFACT);
     if (usage.length === 0) throw new UsageMissing('no_usage_artifact', 'no usage artifact');
     if (usage.length !== 1) return `run ${id} has ${usage.length} usage artifacts`;
@@ -515,17 +583,19 @@ async function measureRun(client: GitHubClient, repo: string, run: Rec, id: numb
     if (typeof a.size_in_bytes === 'number' && a.size_in_bytes > MAX_ARTIFACT_BYTES) return `run ${id}'s usage artifact is too large`;
     const res = await client.request('GET', `/repos/${repo}/actions/artifacts/${a.id}/zip`, { accept: 'binary' });
     if (!(res.data instanceof Uint8Array)) return `run ${id}'s usage artifact could not be downloaded`;
-    const wanted = [...new Set([...inferred.map(usageFileFor), ...inferred.map((j) => `${j}/token_usage.jsonl`)])];
-    const files = readZip(res.data, wanted);
+    const wanted = [...new Set([...inferred.map(usageFileFor), ...inferred.map((j) => `${j}/token_usage.jsonl`), ...RECORD_FILES])];
+    files = readZip(res.data, wanted);
     const aic = runAIC(files, inferred);
-    // The assumptions can be checked only if every job that called the model left its records.
-    const stats = inferred.every((j) => files.has(`${j}/token_usage.jsonl`)) ? responseStats(files) : null;
+    // The assumptions can be checked only if every job that called the model left records.
+    const stats = responseStats(files, inferred);
     return { run_id: id, status: 'measured', aic: round(aic), ...(stats ?? {}) };
   } catch (err) {
     // Only a run GitHub reports as completed: nothing more can start in it, so its bound holds.
-    if (err instanceof UsageMissing && run.status === 'completed' && (await verified())) {
+    if (err instanceof UsageMissing && run.status === 'completed' && bounding && (await verified())) {
       const observed = await observedAgentAIC(client, repo, artifacts);
-      return { run_id: id, status: 'bounded', aic: bound, reason: err.code, ...(observed !== undefined ? { observed_aic: observed } : {}) };
+      // Records that are present still go to the assumption guard.
+      const stats = files ? responseStats(files) : null;
+      return { run_id: id, status: 'bounded', aic: bound, reason: err.code, ...(observed !== undefined ? { observed_aic: observed } : {}), ...(stats ?? {}) };
     }
     return `run ${id}'s spend could not be read (${(err as Error).message})`;
   }
@@ -544,6 +614,7 @@ export function spendSnapshotFields(day: string, spend: { aic: number; runs: Run
       ...(r.max_concurrency !== undefined ? { max_concurrency: r.max_concurrency } : {}),
       ...(r.max_response_aic !== undefined ? { max_response_aic: r.max_response_aic } : {}),
       ...(r.observed_aic !== undefined ? { observed_aic: r.observed_aic } : {}),
+      ...(r.responses_aic !== undefined ? { responses_aic: r.responses_aic } : {}),
     })),
     runs_total: spend.runs.length,
   };
