@@ -324,6 +324,16 @@ function requireInt(v: unknown, what: string): number {
 
 /** The ci `checks` job's auto-strict step (ci.yml): its runner-reported result is the evidence. */
 export const FULL_REGRESSION_STEP = 'Full regression (auto-strict) - held-out comparison, 10000 phrases';
+/**
+ * Strict gates enforced as steps of `ci`'s `checks` job (same `if:` as the full regression, no
+ * continue-on-error), so a green `ci` with a successful FULL_REGRESSION_STEP passed them all.
+ * The other implemented strict gates are enforced by the controller itself.
+ */
+export const CI_STRICT_GATE_STEPS: Readonly<Record<string, string>> = {
+  full_regression: FULL_REGRESSION_STEP,
+  semver_checks: 'Strict gate - semver_checks (no public API break)',
+};
+export const CONTROLLER_STRICT_GATES: readonly string[] = ['reviewer_agent', 'serialize_area', 'auto_revert_on_regression'];
 
 /** Conclusion of the step with exactly this name, or null if it isn't in the job (or appears twice). */
 export function stepConclusion(steps: unknown[], name: string): string | null {

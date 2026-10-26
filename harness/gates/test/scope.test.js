@@ -205,3 +205,14 @@ test("review gate (merge_group): agent auto-strict changes need the reviewer App
     assert.strictEqual(gate({ checkRuns: [run(), run({ id: 9, app: { id: 1 }, started_at: "2026-10-26T14:00:00Z", conclusion: "failure" })] }).ok, true);
     assert.strictEqual(gate({ head: "short", checkRuns: [run({ head_sha: "short" })] }).ok, false);
 });
+
+test("a controller auto-revert PR is a person's kind of PR to the strict gates (advisory semver, no agent gates)", () => {
+    // The body the controller's open_revert writes (executor.ts): no Factory-Task trailer, and the
+    // author is the controller App, not the agent. So kind=human: a revert that removes public API
+    // added by the reverted change isn't blocked by semver_checks (advisory), in the PR, the merge
+    // queue or the post-merge run on main.
+    const body = "**Factory controller** · auto-revert\n\nReverts #21 (task `core/results`): `ci` failed on main at its merge commit `" + "f".repeat(40) + "` (run 900).";
+    const r = evaluate({ isAgent: false, body, changed: ["src/core/results.rs"], protectedGlobs: PROTECTED, loadContract });
+    assert.strictEqual(r.kind, "human");
+    assert.strictEqual(r.ok, true);
+});
