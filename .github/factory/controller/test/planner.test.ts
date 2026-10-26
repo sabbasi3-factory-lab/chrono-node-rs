@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { plan } from '../planner.ts';
+import { IMPLEMENTED_STRICT_GATES, missingStrictGates, plan } from '../planner.ts';
 import type { Decision, MergeQueueEventSnap, PlannerEnv, ReasonCode, ReviewCheckSnap, Snapshot } from '../types.ts';
 import { type SnapshotOverrides, checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, snapshot, testPolicies } from './helpers.ts';
 
@@ -809,6 +809,7 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
   // The promotion: tiers.yaml without `start_as: human`.
   const strict: typeof policies = structuredClone(policies);
   delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  strict.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES];
   const plan2 = (s: Snapshot, env: PlannerEnv = ON, now = NOW) => plan(s, strict, env, now);
   const DISPATCHED = '2026-10-16T11:30:00Z';
   const check = (over: Partial<ReviewCheckSnap> = {}): ReviewCheckSnap => ({ id: 77, head_sha: hex40('1'), status: 'completed', conclusion: 'success', started_at: '2026-10-16T11:40:00Z', reviewed_head: hex40('1'), ...over });
@@ -833,6 +834,22 @@ describe('reviewer agent: auto-strict PRs need a pass from the reviewer App on t
   it('before the promotion (start_as: human) nothing happens: no review, no merge', () => {
     assert.deepEqual(kinds(run(world())), []);
     assert.deepEqual(kinds(run(world({ contract: { scope: ['src/locales/en/parsers/x.rs'] } }))), [], 'contract-tier auto-strict also waits for the promotion');
+  });
+
+  it('start_as removed but tiers.yaml still lists unimplemented strict gates (or an unreadable list) → still nothing', () => {
+    const held = (gates: string[] | null): typeof policies => {
+      const p2 = structuredClone(strict);
+      p2.tiers.tiers['auto-strict'].strict_gates = gates;
+      return p2;
+    };
+    for (const g of [[...IMPLEMENTED_STRICT_GATES, 'semver_checks'], ['mutation_score_not_lower'], [...IMPLEMENTED_STRICT_GATES, 'perf_regression_max_pct', 'code_health_not_worse'], null]) {
+      assert.deepEqual(kinds(plan(world(), held(g), ON, NOW)), [], JSON.stringify(g));
+    }
+    // The real pinned list: four gates are missing today.
+    assert.deepEqual(missingStrictGates(policies), ['semver_checks', 'mutation_score_not_lower', 'perf_regression_max_pct', 'code_health_not_worse']);
+    assert.deepEqual(missingStrictGates(held(null)), ['(strict_gates missing or malformed)']);
+    assert.deepEqual(missingStrictGates(held([])), [], 'an empty list holds nothing back');
+    assert.deepEqual(missingStrictGates(strict), []);
   });
 
   it('green, every merge condition met, no review yet → review_dispatched (dispatch_workflow:review), not a merge', () => {
@@ -990,7 +1007,11 @@ describe('auto-ready: unblocked autonomous tasks become ready, within the dispat
     assert.deepEqual(kinds(plan3(s)), []);
     const promoted: typeof policies = structuredClone(on);
     delete (promoted.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+    promoted.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES];
     assert.deepEqual(kinds(plan(s, promoted, ON, NOW)), ['auto_ready/deps_merged#1']);
+    const held: typeof policies = structuredClone(promoted);
+    held.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES, 'semver_checks'];
+    assert.deepEqual(kinds(plan(s, held, ON, NOW)), [], 'an unimplemented strict gate holds auto-ready too');
   });
 });
 
@@ -1032,6 +1053,7 @@ describe('auto-revert: a confirmed post-merge ci failure on main after an auto-s
   const T = 'core/results';
   const strict: typeof policies = structuredClone(policies);
   delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  strict.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES];
   const plan2 = (s: Snapshot, env: PlannerEnv = ON) => plan(s, strict, env, NOW);
   const MERGE = hex40('f');
   const kinds = (ds: Decision[]) => ds.map((d) => `${d.type}/${d.reason}`);

@@ -26,8 +26,19 @@ describe('policies', () => {
     assert.equal(p.budgets.factory_per_day.alert_at_pct, 80);
     assert.equal(p.budgets.factory_per_day.pause_at_pct, 100);
     assert.equal(p.tiers.tiers['auto-strict'].start_as, 'human');
+    assert.deepEqual(p.tiers.tiers['auto-strict'].strict_gates, ['full_regression', 'semver_checks', 'mutation_score_not_lower', 'perf_regression_max_pct', 'code_health_not_worse', 'reviewer_agent', 'serialize_area', 'auto_revert_on_regression']);
     assert.equal(p.cadence.heartbeat, 'hourly');
     assert.equal(p.limits.auto_ready, true, 'turned on by the owner (factory#15)');
+  });
+
+  it('strict_gates: names (a `name: value` entry by its name); missing or malformed → null, never a load failure', async () => {
+    const t = await texts();
+    const gates = (yaml: string) => parsePolicies({ ...t, tiers: t.tiers.replace(/    strict_gates:\n(?:      - .*\n)+/, yaml) }).tiers.tiers['auto-strict'].strict_gates;
+    assert.deepEqual(gates('    strict_gates:\n      - a\n      - b: 5\n'), ['a', 'b']);
+    assert.deepEqual(gates('    strict_gates: []\n'), []);
+    for (const bad of ['', '    strict_gates: x\n', '    strict_gates:\n      - 3\n', '    strict_gates:\n      - {a: 1, b: 2}\n', '    strict_gates:\n      - ""\n']) {
+      assert.equal(gates(bad), null, JSON.stringify(bad));
+    }
   });
 
   it('builds raw URLs at the pinned SHA only', () => {

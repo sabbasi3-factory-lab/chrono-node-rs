@@ -121,7 +121,7 @@ describe('globs and tiers', () => {
     assert.equal(pathTier('src/core/results.rs', tiers), 'human'); // auto-strict starts as human
     assert.equal(pathTier('.github/workflows/ci.yml', tiers), 'human');
     assert.equal(pathTier('src/lib.rs', tiers), 'human');
-    const promoted = { ...tiers, tiers: { ...tiers.tiers, 'auto-strict': { paths: tiers.tiers['auto-strict'].paths } } };
+    const promoted = { ...tiers, tiers: { ...tiers.tiers, 'auto-strict': { paths: tiers.tiers['auto-strict'].paths, strict_gates: tiers.tiers['auto-strict'].strict_gates } } };
     assert.equal(pathTier('src/core/results.rs', promoted), 'auto-strict');
   });
 
