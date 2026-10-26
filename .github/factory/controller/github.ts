@@ -299,6 +299,15 @@ function requireInt(v: unknown, what: string): number {
   return v;
 }
 
+/** The ci `checks` job's auto-strict step (ci.yml): its runner-reported result is the evidence. */
+export const FULL_REGRESSION_STEP = 'Full regression (auto-strict) - held-out comparison, 10000 phrases';
+
+/** Conclusion of the step with exactly this name, or null if it isn't in the job (or appears twice). */
+export function stepConclusion(steps: unknown[], name: string): string | null {
+  const found = steps.map(asRec).filter((st) => st.name === name);
+  return found.length === 1 ? asStr(found[0]!.conclusion) : null;
+}
+
 /** The first step of the ci `checks` job: the only trusted source of the held-out seed commitment. */
 export const HELDOUT_COMMIT_STEP = 'Held-out seed commitment (trusted, before any PR code)';
 
@@ -554,6 +563,7 @@ export async function readContracts(
 export interface RecordedCheck {
   heldout_seed: string | null;
   failure_signature: string | null;
+  full_regression?: string | null;
 }
 
 /** Most recent pages of `/actions/runs` scanned per poll (×100 runs). */
@@ -649,6 +659,7 @@ export async function readCheckRuns(
       if (known) {
         snap.heldout_seed = known.heldout_seed;
         snap.failure_signature = known.failure_signature;
+        snap.full_regression = known.full_regression ?? null;
       } else if (name === CI_WORKFLOW_NAME) {
         // The ci `checks` job: seed from its trusted commit–reveal, signature from its step
         // results, but only if the change under test leaves `.github/` alone. `pull_request`
@@ -692,17 +703,18 @@ export async function readChecksJobLog(client: GitHubClient, repo: string, runId
     asArr(asRec(d).jobs),
   );
   const checks = jobs.map(asRec).filter((j) => j.name === CHECKS_JOB_NAME);
-  if (checks.length !== 1) return { heldout_seed: null, failure_signature: null };
+  if (checks.length !== 1) return { heldout_seed: null, failure_signature: null, full_regression: null };
   const job = checks[0]!;
   const steps = asArr(job.steps);
   const failure_signature = failureSignatureFromSteps(steps, asStr(job.conclusion));
-  if (!trustedCommitStepRan(steps)) return { heldout_seed: null, failure_signature };
+  const full_regression = stepConclusion(steps, FULL_REGRESSION_STEP);
+  if (!trustedCommitStepRan(steps)) return { heldout_seed: null, failure_signature, full_regression };
   const jobId = requireInt(job.id, 'job id');
   const res = await client.request('GET', `/repos/${repo}/actions/jobs/${jobId}/logs`, {
     accept: 'raw',
     allowStatuses: [404, 410],
   });
-  return { heldout_seed: typeof res.data === 'string' ? parseHeldoutSeed(res.data) : null, failure_signature };
+  return { heldout_seed: typeof res.data === 'string' ? parseHeldoutSeed(res.data) : null, failure_signature, full_regression };
 }
 
 const BUSY_JOB_STATUSES = new Set(['queued', 'in_progress', 'waiting', 'pending', 'requested']);
