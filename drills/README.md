@@ -14,9 +14,17 @@ deterministic, so each drill tests one controller path end to end.
 `tier:auto`, `area:drill`). Auto-ready (`limits.yaml auto_ready: true`) readies them; nobody marks
 them by hand.
 
+**One at a time, closed as each concludes:** all three share area `drill`, and the controller
+counts an open PR or a picked issue as in flight, so a drill left at `needs_human` would hold the
+area. As soon as D2 or D3 reaches its outcome (recorded in the audit log), the build session closes
+that drill's PR (without merging, branch deleted) and its issue (as not planned, linking the audit
+events), so the next drill can start. D1 closes itself by merging.
+
 **Budget:** at most **300 AIC** for D1–D3 together (implement about 30 per task, plus repairs). The
-build session watches the per-task spend on the dashboard and stops the drills at 300 by labelling
-the remaining drill issues `blocked`.
+build session watches the per-task spend on the dashboard and stops early, before 300: it labels
+every open drill issue and PR `needs-human` (what admission and repair check; `blocked` alone
+doesn't stop a ready or picked task), then cancels any queued or running implement or repair run
+for a drill task.
 
 ## Removal plan
 
@@ -24,8 +32,7 @@ When D1–D3 have concluded (or are stopped at the budget), one owner-tier PR re
 
 1. Delete `contracts/drill/`, `drills/`, the `Drill (deliberate)` step in `.github/workflows/ci.yml`,
    and the merged drill parser (`src/locales/en/parsers/factory_drill_repair_ok.rs`).
-2. Close the D2 and D3 PRs without merging, and delete their branches.
-3. Close the three drill issues: D1 is closed by its merge; close D2 and D3 as not planned, with
-   a link to the drill report.
-4. Keep the audit log as is (it's append-only). The outcome goes into `docs/JOURNAL.md` at the next
+2. Check that the D2 and D3 PRs and issues are closed (they're closed as each drill concludes;
+   see above), and that their branches are deleted.
+3. Keep the audit log as is (it's append-only). The outcome goes into `docs/JOURNAL.md` at the next
    batched refresh.
