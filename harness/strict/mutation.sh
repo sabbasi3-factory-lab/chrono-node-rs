@@ -5,20 +5,33 @@
 #   head: the change's added and modified lines, on the PR tree;
 #   base: the lines it replaced, on the base tree.
 # Score = (caught + timeout) / (caught + missed + timeout); unviable mutants don't count.
-# Pass if head >= base. A pure addition (base has no viable mutant) needs head >= FLOOR.
+# Pass if head >= base. A pure addition (base has no viable mutant) needs head >= the floor, policy
+# tiers.yaml auto-strict.strict_gates_params.mutation_floor_new_files at the pinned factory version
+# (.github/factory/factory-version); missing or invalid fails closed.
 # Enforced on factory pull requests only; a person's PRs, the merge queue and main get a notice.
 # Each cargo-mutants run is capped at CAP_SECONDS (then killed 60 s later); hitting the cap fails closed.
 # Parser and refiner files are declared through build.rs-generated `include!`s, which cargo-mutants
 # can't see, so each changed file it doesn't discover gets a `#[cfg(any())] #[path] mod` line in
 # src/lib.rs for the run (restored afterwards; the real module still compiles the mutated file).
 # A changed file that is still undiscovered fails closed.
-#   BASE_REV, KIND, EVENT, CAP_SECONDS, FLOOR (0..1)
+#   BASE_REV, KIND, EVENT, CAP_SECONDS; TIERS_FILE (tests only: read tiers.yaml from this file)
 set -euo pipefail
 fail() { echo "::error::mutation_score_not_lower: $*"; exit 1; }
 [[ "${BASE_REV:-}" =~ ^[0-9a-f]{40}$ ]] || fail "no base revision"
-[[ "${CAP_SECONDS:-}" =~ ^[1-9][0-9]*$ && "${FLOOR:-}" =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]] || fail "bad CAP_SECONDS or FLOOR"
+[[ "${CAP_SECONDS:-}" =~ ^[1-9][0-9]*$ ]] || fail "bad CAP_SECONDS"
 if [ "${KIND:-}" != "factory" ]; then echo "::notice::mutation_score_not_lower: not a factory PR, not enforced"; exit 0; fi
 if [ "${EVENT:-}" != "pull_request" ]; then echo "mutation_score_not_lower: checked on the pull request (this run is ${EVENT:-?})"; exit 0; fi
+
+if [ -n "${TIERS_FILE:-}" ]; then
+    tiers=$(cat "$TIERS_FILE")
+else
+    version=$(cat .github/factory/factory-version)
+    [[ "$version" =~ ^[0-9a-f]{40}$ ]] || fail "bad .github/factory/factory-version"
+    tiers=$(curl -fsSL --retry 3 "https://raw.githubusercontent.com/sabbasi3-factory-lab/factory/${version}/policies/tiers.yaml") || fail "cannot read tiers.yaml at factory ${version}"
+fi
+FLOOR=$(yq -r '.tiers."auto-strict".strict_gates_params.mutation_floor_new_files' <<<"$tiers") || fail "cannot parse tiers.yaml"
+[[ "$FLOOR" =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]] || fail "tiers.yaml has no valid auto-strict.strict_gates_params.mutation_floor_new_files (got '${FLOOR}'; fail closed)"
+echo "floor for new code: ${FLOOR} (policy)"
 
 files=()
 while IFS= read -r f; do files+=("$f"); done < <(git diff --name-only --no-renames "$BASE_REV" HEAD -- 'src/*.rs' 'src/**/*.rs' | grep -v '^src/bin/' || true)

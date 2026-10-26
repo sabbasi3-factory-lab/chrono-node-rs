@@ -195,7 +195,7 @@ jobs:
           KIND: ${{ steps.scope.outputs.kind }}
           EVENT: ${{ github.event_name }}
           CAP_SECONDS: "1200"   # per cargo-mutants run (head, then base); the cap fails closed
-          FLOOR: "0.8"          # new code with no replaced lines to compare against
+          # The floor for new code is policy: tiers.yaml strict_gates_params (pinned factory version).
         # Enforced when "$KIND" = "factory" on pull requests (see the script).
         run: bash harness/strict/mutation.sh
 
