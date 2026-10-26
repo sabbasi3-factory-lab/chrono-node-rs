@@ -190,6 +190,16 @@ jobs:
         # Enforced when "$KIND" = "factory" on pull requests (see the script).
         run: bash harness/strict/mutation.sh
 
+      - name: Strict gate - perf_regression_max_pct (golden phrases bench, criterion)
+        if: steps.scope.outputs.strict == 'true'
+        env:
+          BASE_REV: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+          KIND: ${{ steps.scope.outputs.kind }}
+          EVENT: ${{ github.event_name }}
+          MAX_PCT: "5"   # tiers.yaml perf_regression_max_pct
+        # Enforced when "$KIND" = "factory" on pull requests (see the script).
+        run: bash harness/strict/perf.sh
+
       - name: Reveal the held-out seed
         if: always()
         run: |

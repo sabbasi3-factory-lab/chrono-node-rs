@@ -333,6 +333,7 @@ export const CI_STRICT_GATE_STEPS: Readonly<Record<string, string>> = {
   full_regression: FULL_REGRESSION_STEP,
   semver_checks: 'Strict gate - semver_checks (no public API break)',
   mutation_score_not_lower: 'Strict gate - mutation_score_not_lower (changed code, cargo-mutants)',
+  perf_regression_max_pct: 'Strict gate - perf_regression_max_pct (golden phrases bench, criterion)',
 };
 export const CONTROLLER_STRICT_GATES: readonly string[] = ['reviewer_agent', 'serialize_area', 'auto_revert_on_regression'];
 
