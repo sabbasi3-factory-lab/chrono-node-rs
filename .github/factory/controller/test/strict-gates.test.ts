@@ -29,7 +29,8 @@ describe('strict gates: every implemented gate is enforced somewhere', () => {
       // Enforced on factory PRs (what auto-strict merges); a person's PRs and main are the owner's call.
       if (name !== FULL_REGRESSION_STEP) {
         assert.equal((step.env as Record<string, unknown> | undefined)?.KIND, '${{ steps.scope.outputs.kind }}', `${gate}: reads the PR kind`);
-        assert.match(String(step.run), /"\$KIND" = "factory"/, `${gate}: enforces on factory PRs`);
+        const run = String(step.run);
+        assert.ok(/"\$KIND" = "factory"/.test(run) || /^bash harness\/strict\/[a-z_-]+\.sh$/.test(run.trim()), `${gate}: enforces on factory PRs (inline, or in a harness/strict script)`);
       }
     }
     // Every step gated on strict is a gate step or its tool install.

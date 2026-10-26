@@ -332,6 +332,7 @@ export const FULL_REGRESSION_STEP = 'Full regression (auto-strict) - held-out co
 export const CI_STRICT_GATE_STEPS: Readonly<Record<string, string>> = {
   full_regression: FULL_REGRESSION_STEP,
   semver_checks: 'Strict gate - semver_checks (no public API break)',
+  mutation_score_not_lower: 'Strict gate - mutation_score_not_lower (changed code, cargo-mutants)',
 };
 export const CONTROLLER_STRICT_GATES: readonly string[] = ['reviewer_agent', 'serialize_area', 'auto_revert_on_regression'];
 
