@@ -209,9 +209,14 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 
 When the newest `ci` **and** `gates` runs on a factory PR's current head are both `success`, the
 controller puts the PR in the merge queue (`enqueue_merge`), but only if every condition holds:
-- the task is **`tier: auto`** and not core, or **`auto-strict`** once `tiers.yaml` no longer says
-  `start_as: human` (until then no auto-strict or core task is merged automatically, whether it's
-  auto-strict by its paths or its contract). Never human.
+- the task is **`tier: auto`** and not core, or **`auto-strict`** once the promotion is in effect:
+  `tiers.yaml` no longer says `start_as: human` **and** every gate in `auto-strict.strict_gates` is
+  one this controller enforces (`IMPLEMENTED_STRICT_GATES`: `full_regression`, `reviewer_agent`,
+  `serialize_area`, `auto_revert_on_regression`). A listed gate that isn't implemented (today
+  `semver_checks`, `mutation_score_not_lower`, `perf_regression_max_pct`, `code_health_not_worse`)
+  or an unreadable list holds the promotion, and each run logs why. Until then no auto-strict or
+  core task is merged or auto-readied automatically, whether it's auto-strict by its paths or its
+  contract. Never human.
 - the author is the agent App, the PR isn't a draft, and GitHub says it's `MERGEABLE`
 - `Contract-SHA:` equals the contract's commit SHA **exactly** (full 40 hex)
 - the task issue has `factory:picked`, and neither the issue nor the PR has `needs-human`

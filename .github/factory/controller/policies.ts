@@ -145,6 +145,17 @@ export function parsePolicies(texts: PolicyTexts): Policies {
   if (startAs !== undefined && startAs !== 'auto' && startAs !== 'auto-strict' && startAs !== 'human') {
     throw new Error('policy tiers: tiers.auto-strict.start_as must be a tier');
   }
+  // Gate names only; a malformed list doesn't stop the controller, it only holds the promotion.
+  const rawGates = get(t, 'tiers.auto-strict.strict_gates');
+  let strictGates: string[] | null = null;
+  if (Array.isArray(rawGates)) {
+    const names = rawGates.map((g: unknown) => {
+      if (typeof g === 'string') return g;
+      if (g !== null && typeof g === 'object' && !Array.isArray(g) && Object.keys(g).length === 1) return Object.keys(g)[0]!;
+      return null;
+    });
+    strictGates = names.every((n): n is string => typeof n === 'string' && n.length > 0) ? names : null;
+  }
   const tiers: TiersPolicy = {
     version: 1,
     tiers: {
@@ -152,6 +163,7 @@ export function parsePolicies(texts: PolicyTexts): Policies {
       'auto-strict': {
         paths: strList(t, 'tiers', 'tiers.auto-strict.paths'),
         ...(startAs !== undefined ? { start_as: startAs } : {}),
+        strict_gates: strictGates,
       },
       human: { paths: strList(t, 'tiers', 'tiers.human.paths') },
     },

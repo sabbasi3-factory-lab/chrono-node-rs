@@ -28,13 +28,35 @@ export const LABEL_TASK = 'factory:task';
 export const AUTO_READY_HOLDS: readonly string[] = [LABEL_NEEDS_HUMAN, 'stale-contract', 'blocked'];
 
 /**
+ * The strict gates (tiers.yaml `auto-strict.strict_gates`) this factory actually enforces:
+ * full regression (ci, #71), reviewer agent (controller + gates merge_group), one auto-strict task
+ * in flight (#72), auto-revert (#73). Add a name here only in the PR that implements that gate.
+ */
+export const IMPLEMENTED_STRICT_GATES: readonly string[] = ['full_regression', 'reviewer_agent', 'serialize_area', 'auto_revert_on_regression'];
+
+/**
+ * Listed strict gates that aren't implemented (an unreadable list → one placeholder name). While
+ * any remain, removing `start_as: human` doesn't promote anything: auto-strict stays with a person.
+ */
+export function missingStrictGates(p: Policies): string[] {
+  const listed = p.tiers.tiers['auto-strict'].strict_gates;
+  if (listed === null) return ['(strict_gates missing or malformed)'];
+  return listed.filter((g) => !IMPLEMENTED_STRICT_GATES.includes(g));
+}
+
+/** The promotion is in effect: tiers.yaml has no `start_as: human` and every listed strict gate is implemented. */
+export function autoStrictPromoted(p: Policies): boolean {
+  return p.tiers.tiers['auto-strict'].start_as !== 'human' && missingStrictGates(p).length === 0;
+}
+
+/**
  * Tiers that may run without a person: `auto` outside the core paths, and `auto-strict` once
- * tiers.yaml no longer says `start_as: human`. Never `human`.
+ * the promotion is in effect (`autoStrictPromoted`). Never `human`.
  */
 export function autonomousTier(c: ContractSnap, p: Policies): boolean {
   const tier = taskTier(c, p.tiers);
   if (tier === 'auto') return !isCoreTask(c, p.tiers);
-  return tier === 'auto-strict' && p.tiers.tiers['auto-strict'].start_as !== 'human';
+  return tier === 'auto-strict' && autoStrictPromoted(p);
 }
 /** The agent App's login (GraphQL gives `name`, REST `name[bot]`). Only its PRs are auto-merged. */
 export const AGENT_LOGIN = 'sabbasi3-factory-agent';
@@ -59,14 +81,15 @@ export function autoMergeBlocker(pr: PullSnap, c: ContractSnap, issue: IssueSnap
 /**
  * Tiers the merge stage may enqueue: `auto` outside the core paths, and `auto-strict` (which
  * also needs the reviewer agent's pass). `human` never; core paths are `auto-strict` only once
- * tiers.yaml no longer says `start_as: human`.
+ * the promotion is in effect (no `start_as: human`, every listed strict gate implemented).
  */
 export function mergeTier(c: ContractSnap, p: Policies): 'auto' | 'auto-strict' | null {
   const tier = taskTier(c, p.tiers);
   if (tier === 'auto') return isCoreTask(c, p.tiers) ? null : 'auto';
-  // Until the promotion PR removes `start_as: human`, no auto-strict task is merged automatically,
-  // whether it's auto-strict by its paths or by its contract's own tier.
-  if (tier !== 'auto-strict' || p.tiers.tiers['auto-strict'].start_as === 'human') return null;
+  // Until the promotion PR removes `start_as: human`, and while tiers.yaml lists a strict gate this
+  // factory doesn't enforce, no auto-strict task is merged automatically, whether it's auto-strict
+  // by its paths or by its contract's own tier.
+  if (tier !== 'auto-strict' || !autoStrictPromoted(p)) return null;
   return 'auto-strict';
 }
 

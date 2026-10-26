@@ -42,7 +42,11 @@ export interface TiersPolicy {
   version: number;
   tiers: {
     auto: { paths: string[] };
-    'auto-strict': { paths: string[]; start_as?: Tier };
+    /**
+     * `strict_gates`: the gate names tiers.yaml lists (a `name: value` entry counts by its name);
+     * null when missing or malformed (then no promotion takes effect: fail closed).
+     */
+    'auto-strict': { paths: string[]; start_as?: Tier; strict_gates: string[] | null };
     human: { paths: string[] };
   };
   protected_from_agents: string[];

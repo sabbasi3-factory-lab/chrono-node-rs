@@ -8,6 +8,7 @@ import { AUDIT_BRANCH, splitLines, verify } from '../audit.ts';
 import { decisionEvent, describe as describeDecision, execute, executeLive, isLive, liveDecision, pendingHandoffs } from '../executor.ts';
 import { FakeGitHub, type RecordedCall } from '../fake.ts';
 import { parseArgs, run, type RunDeps } from '../main.ts';
+import { IMPLEMENTED_STRICT_GATES } from '../planner.ts';
 import { deriveState } from '../history.ts';
 import { readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
 import type { Snapshot } from '../types.ts';
@@ -855,6 +856,7 @@ describe('reviewer agent in the run (live)', () => {
   const T = 'core/results';
   const strict: typeof policies = structuredClone(policies);
   delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  strict.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES];
   const reviewSnapshot = () => {
     const c = contract(T, { tier: 'auto-strict', scope: ['src/core/results.rs'] });
     const pr = pull(21, { task_id: T, contract_sha: c.last_commit_sha, mergeable: 'MERGEABLE', in_merge_queue: false });
@@ -1045,6 +1047,7 @@ describe('auto-revert in the run (live)', () => {
   const T = 'core/results';
   const strict: typeof policies = structuredClone(policies);
   delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  strict.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES];
   const MERGE = hex40('f');
   const PARENT = hex40('7');
   const PARENT_TREE = hex40('8');
@@ -1136,6 +1139,7 @@ describe('post-merge confirmation re-run (live)', () => {
   const T = 'core/results';
   const strict: typeof policies = structuredClone(policies);
   delete (strict.tiers.tiers['auto-strict'] as { start_as?: string }).start_as;
+  strict.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES];
   it('records main_ci_rerun first, then re-runs that run once (no body); a second poll does nothing', async () => {
     const MERGE = hex40('f');
     const s = () => snapshot({

@@ -21,7 +21,7 @@ import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
 import { statusContext, syncProject } from './project.ts';
 import { readSpendToday, spendSnapshotFields } from './spend.ts';
-import { isRecorded, killSwitchEnabled, plan } from './planner.ts';
+import { isRecorded, killSwitchEnabled, missingStrictGates, plan } from './planner.ts';
 import { loadPolicies, loadPoliciesFromDir, readFactoryVersion } from './policies.ts';
 import type { AuditEvent, Decision, GitHubClient, PendingEvent, Policies, Snapshot } from './types.ts';
 
@@ -155,6 +155,11 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       const sources = spend.runs.map((r) => `run:${r.run_id}:${r.status}:${r.aic}`);
       await audit.append({ type: 'spend_snapshot', source_ids: [`day:${day}`, `aic:${spend.aic}`, ...sources], fields: spendSnapshotFields(day, spend), dry_run: false }, now);
     }
+  }
+
+  const held = missingStrictGates(policies);
+  if (policies.tiers.tiers['auto-strict'].start_as !== 'human' && held.length > 0) {
+    log(`auto-strict promotion held: tiers.yaml lists strict gates this controller doesn't enforce (${held.join(', ')})`);
   }
 
   const observed = observe(snapshot, now);
