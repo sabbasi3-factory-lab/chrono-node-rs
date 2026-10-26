@@ -30,10 +30,10 @@ export const AUTO_READY_HOLDS: readonly string[] = [LABEL_NEEDS_HUMAN, 'stale-co
 /**
  * The strict gates (tiers.yaml `auto-strict.strict_gates`) this factory actually enforces:
  * full regression (ci, #71), reviewer agent (controller + gates merge_group), one auto-strict task
- * in flight (#72), auto-revert (#73), semver checks and mutation score (ci). Add a name here only in the PR that
+ * in flight (#72), auto-revert (#73), semver checks, mutation score and perf (ci). Add a name here only in the PR that
  * implements that gate (a ci gate also goes in github.ts CI_STRICT_GATE_STEPS).
  */
-export const IMPLEMENTED_STRICT_GATES: readonly string[] = ['full_regression', 'reviewer_agent', 'serialize_area', 'auto_revert_on_regression', 'semver_checks', 'mutation_score_not_lower'];
+export const IMPLEMENTED_STRICT_GATES: readonly string[] = ['full_regression', 'reviewer_agent', 'serialize_area', 'auto_revert_on_regression', 'semver_checks', 'mutation_score_not_lower', 'perf_regression_max_pct'];
 
 /**
  * Listed strict gates that aren't implemented (an unreadable list → one placeholder name). While
