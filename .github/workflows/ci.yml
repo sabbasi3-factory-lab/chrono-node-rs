@@ -8,13 +8,19 @@ name: ci
 on:
   pull_request:
   merge_group:
+  # Post-merge check of every commit on main: a failure on an auto-strict merge commit makes the
+  # controller open and queue a revert (auto-revert, DESIGN §9).
+  push:
+    branches: [main]
 
 permissions:
   contents: read
   pull-requests: read
 
+# One group per PR, per merge-group ref, and per main commit (a post-merge run is never cancelled
+# or replaced by the next push).
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || (github.event_name == 'push' && github.sha) || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:

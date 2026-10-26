@@ -28,7 +28,7 @@ export const CI_WORKFLOW_NAME = 'ci';
 export const GATES_WORKFLOW_NAME = 'gates';
 /** Gate workflows recorded as check_result, and the events each one runs on. */
 const CHECK_WORKFLOWS: Record<string, readonly string[]> = {
-  [CI_WORKFLOW_NAME]: ['pull_request', 'merge_group'],
+  [CI_WORKFLOW_NAME]: ['pull_request', 'merge_group', 'push'],
   [GATES_WORKFLOW_NAME]: ['pull_request_target', 'merge_group'],
 };
 export const CHECKS_JOB_NAME = 'checks';
@@ -71,6 +71,18 @@ const LABEL_READY_NAME = 'factory:ready';
 /** The only issue update live mode may send: close a finished task's issue as completed. */
 export const CLOSE_COMPLETED = { state: 'closed', state_reason: 'completed' } as const;
 
+/** Auto-revert (auto-strict): the controller's revert branches and PRs (fixed templates). */
+export const CONTROLLER_LOGIN = 'sabbasi3-factory-controller';
+export const REVERT_BRANCH = (pr: number): string => `factory/revert-${pr}`;
+export const REVERT_TITLE = (pr: number): string => `Revert #${pr} (factory auto-revert)`;
+/** Added only by a person, on a revert PR: allows the next auto-revert (never in LIVE_LABELS). */
+export const REVERT_REVIEWED_LABEL = 'factory:revert-reviewed';
+const REVERT_BRANCH_RE = /^factory\/revert-([1-9][0-9]{0,8})$/;
+export const revertedPrOf = (branch: string | null | undefined): number | null => {
+  const m = REVERT_BRANCH_RE.exec(branch ?? '');
+  return m ? Number(m[1]) : null;
+};
+
 /** The org Project (v2) whose "Factory status" field the controller keeps in sync. */
 export const FACTORY_PROJECT_NUMBER = 1;
 export const FACTORY_STATUS_FIELD = 'Factory status';
@@ -103,6 +115,17 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
     return new RegExp(`${issue}$`).test(p) && exactKeys(b, ['state', 'state_reason']) && b.state === CLOSE_COMPLETED.state && b.state_reason === CLOSE_COMPLETED.state_reason;
   }
   if (method !== 'POST') return false;
+  // Confirming a post-merge failure: re-run one workflow run, with no options.
+  if (new RegExp(`^/repos/${escapeRe(repo)}/actions/runs/[1-9][0-9]{0,19}/rerun$`).test(p)) return b === undefined;
+  // Auto-revert: create the revert branch (only `factory/revert-<n>`), and open its PR from the template.
+  if (p === `/repos/${repo}/git/refs`) {
+    return exactKeys(b, ['ref', 'sha']) && typeof b.ref === 'string' && REVERT_BRANCH_RE.test(b.ref.replace(/^refs\/heads\//, '')) && b.ref.startsWith('refs/heads/') && typeof b.sha === 'string' && HEX40.test(b.sha);
+  }
+  if (p === `/repos/${repo}/pulls`) {
+    if (!exactKeys(b, ['title', 'head', 'base', 'body']) || b.base !== 'main' || typeof b.head !== 'string') return false;
+    const n = revertedPrOf(b.head);
+    return n !== null && b.title === REVERT_TITLE(n) && typeof b.body === 'string' && b.body.startsWith(COMMENT_MARKER) && b.body.length <= MAX_COMMENT_LENGTH;
+  }
   if (p === `/repos/${repo}/actions/workflows/${REVIEW_WORKFLOW}/dispatches`) {
     if (!exactKeys(b, ['ref', 'inputs']) || b.ref !== 'main') return false;
     const i = b.inputs;
@@ -410,16 +433,17 @@ export const PULLS_QUERY = `query($owner: String!, $name: String!, $cursor: Stri
     pullRequests(first: 50, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        id number state isDraft createdAt mergedAt body headRefOid mergeable isInMergeQueue
+        id number state isDraft createdAt mergedAt body headRefOid headRefName mergeable isInMergeQueue
         mergeCommit { oid }
         author { login __typename }
         labels(first: 100) { pageInfo { hasNextPage } nodes { name } }
         reviews(last: 100) { nodes { id state submittedAt author { login __typename } } }
-        timelineItems(last: 100, itemTypes: [ADDED_TO_MERGE_QUEUE_EVENT, REMOVED_FROM_MERGE_QUEUE_EVENT]) {
+        timelineItems(last: 100, itemTypes: [ADDED_TO_MERGE_QUEUE_EVENT, REMOVED_FROM_MERGE_QUEUE_EVENT, LABELED_EVENT]) {
           nodes {
             __typename
             ... on AddedToMergeQueueEvent { id createdAt actor { login __typename } }
             ... on RemovedFromMergeQueueEvent { id createdAt reason actor { login __typename } }
+            ... on LabeledEvent { createdAt label { name } actor { login __typename } }
           }
         }
       }
@@ -448,8 +472,15 @@ export function mapPull(node: unknown): PullSnap {
     };
   });
   const mq: MergeQueueEventSnap[] = [];
+  const labeled: NonNullable<PullSnap['labeled_events']> = [];
   for (const t of asArr(asRec(n.timelineItems).nodes)) {
     const ev = asRec(t);
+    if (ev.__typename === 'LabeledEvent') {
+      const name = asStr(asRec(ev.label).name);
+      const a = login(ev.actor);
+      if (name) labeled.push({ label: name, actor: a.login, actor_is_bot: a.bot, at: asStr(ev.createdAt) ?? '' });
+      continue;
+    }
     const kind =
       ev.__typename === 'AddedToMergeQueueEvent' ? 'queued' : ev.__typename === 'RemovedFromMergeQueueEvent' ? 'dequeued' : null;
     if (!kind) continue;
@@ -482,6 +513,8 @@ export function mapPull(node: unknown): PullSnap {
     merge_queue_events: mq,
     mergeable: asStr(n.mergeable),
     in_merge_queue: n.isInMergeQueue === true,
+    head_ref: asStr(n.headRefName),
+    labeled_events: labeled,
   };
 }
 
@@ -650,6 +683,8 @@ export async function readCheckRuns(
       heldout_seed: null,
       failure_signature: null,
     };
+    // A re-run of a post-merge check: attempt 1's recorded signature, to confirm a regression.
+    if (event === 'push' && snap.run_attempt > 1) snap.first_attempt_signature = recorded.get(`${snap.run_id}/attempts/1`)?.failure_signature ?? null;
     const inWindow = Date.parse(snap.updated_at) >= windowStart;
     const forOpenPr = (candidate !== null && openHeads.has(candidate)) || openHeads.has(headSha);
     if (!inWindow && !forOpenPr) continue;

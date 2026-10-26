@@ -437,3 +437,30 @@ describe('full regression: recorded once, then reused', () => {
     assert.equal(recordedChecks([ev]).get('5/attempts/1')!.full_regression, 'success');
   });
 });
+
+describe('auto-revert inputs from GitHub', () => {
+  it('mapPull keeps LabeledEvents (label, actor, bot) next to the merge-queue events', () => {
+    const base = mapPull({ id: 'PR_1', number: 1, state: 'OPEN', isDraft: false, createdAt: '2026-10-16T00:00:00Z', mergedAt: null, body: '', headRefOid: hex40('1'), headRefName: 'factory/revert-5', mergeCommit: null, author: { login: 'sabbasi3-factory-controller', __typename: 'Bot' }, labels: { pageInfo: { hasNextPage: false }, nodes: [] }, reviews: { nodes: [] },
+      timelineItems: { nodes: [
+        { __typename: 'LabeledEvent', createdAt: '2026-10-16T01:00:00Z', label: { name: 'factory:revert-reviewed' }, actor: { login: 'sabbasi3', __typename: 'User' } },
+        { __typename: 'LabeledEvent', createdAt: '2026-10-16T01:01:00Z', label: { name: 'factory:revert-reviewed' }, actor: { login: 'sabbasi3-factory-agent', __typename: 'Bot' } },
+        { __typename: 'AddedToMergeQueueEvent', id: 'AMQ_1', createdAt: '2026-10-16T02:00:00Z', actor: { login: 'x', __typename: 'Bot' } },
+      ] } });
+    assert.equal(base.head_ref, 'factory/revert-5');
+    assert.deepEqual(base.labeled_events, [
+      { label: 'factory:revert-reviewed', actor: 'sabbasi3', actor_is_bot: false, at: '2026-10-16T01:00:00Z' },
+      { label: 'factory:revert-reviewed', actor: 'sabbasi3-factory-agent[bot]', actor_is_bot: true, at: '2026-10-16T01:01:00Z' },
+    ]);
+    assert.equal(base.merge_queue_events.length, 1);
+  });
+
+  it('a re-run of a post-merge ci run carries attempt 1\'s recorded signature', async () => {
+    const gh = fakeWorld();
+    const r = `/repos/${REPO}`;
+    gh.routes.unshift({ method: 'GET', path: new RegExp(`^${r}/actions/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 777, run_attempt: 2, name: 'ci', event: 'push', head_sha: hex40('f'), pull_requests: [], status: 'completed', conclusion: 'failure', created_at: '2026-10-16T11:00:00Z', updated_at: '2026-10-16T11:30:00Z' }] } }) });
+    const recorded = new Map<string, RecordedCheck>([['777/attempts/1', { heldout_seed: null, failure_signature: 'step:golden' }], ['777/attempts/2', { heldout_seed: null, failure_signature: 'step:golden' }]]);
+    const runs = await readCheckRuns(gh, REPO, NOW, 24, recorded, new Set(), MAIN_SHA);
+    const r777 = runs.find((x) => x.run_id === 777)!;
+    assert.deepEqual([r777.event, r777.run_attempt, r777.failure_signature, r777.first_attempt_signature], ['push', 2, 'step:golden', 'step:golden']);
+  });
+});
