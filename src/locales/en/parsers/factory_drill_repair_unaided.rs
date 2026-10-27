@@ -1,4 +1,5 @@
 //! factory drill D1b (`drills/D1b-repair-unaided.md`); no upstream file.
+// drill: repaired after 3d8bfef00347794a91de356a653d1ff516dcd610
 
 use crate::core::chrono::{Extracted, Parser};
 use crate::core::configuration::Flags;
