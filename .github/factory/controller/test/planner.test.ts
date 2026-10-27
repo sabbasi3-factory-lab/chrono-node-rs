@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { IMPLEMENTED_STRICT_GATES, missingStrictGates, plan } from '../planner.ts';
+import { IMPLEMENTED_STRICT_GATES, mergeTier, missingStrictGates, plan } from '../planner.ts';
 import type { Decision, MergeQueueEventSnap, PlannerEnv, ReasonCode, ReviewCheckSnap, Snapshot } from '../types.ts';
 import { type SnapshotOverrides, checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, snapshot, testPolicies } from './helpers.ts';
 
+// These tests were written for the pre-promotion baseline and pin it explicitly: `start_as: human`.
+// Promoted behaviour is tested with policies that remove it (see `strict` and `promoted` below); the
+// real policy (the fixture) is promoted since the promotion PR (test: 'the pinned policy is promoted').
 const policies = await testPolicies();
+policies.tiers.tiers['auto-strict'].start_as = 'human';
 const ON: PlannerEnv = { FACTORY_ENABLED: 'true' };
 
 function run(s: Snapshot, env: PlannerEnv = ON, now = NOW): Decision[] {
@@ -1252,5 +1256,16 @@ describe('auto-revert: a confirmed post-merge ci failure on main after an auto-s
       assert.deepEqual(kinds(plan2(prWorld(revertPull({ author: 'sabbasi3-factory-agent[bot]', author_is_bot: true })))), []);
       assert.deepEqual(kinds(plan2(prWorld(revertPull({ head_ref: 'revert-21' })))), []);
     });
+  });
+});
+
+describe('the promotion (tiers.yaml without start_as: human)', () => {
+  it('the pinned policy is promoted: core and contract-tier auto-strict tasks run without a person', async () => {
+    const real = await testPolicies();
+    assert.equal(real.tiers.tiers['auto-strict'].start_as, undefined);
+    assert.deepEqual(missingStrictGates(real), []);
+    assert.equal(mergeTier(contract('core/results', { scope: ['src/core/results.rs'] }), real), 'auto-strict');
+    assert.equal(mergeTier(contract('en/x', { tier: 'auto-strict' }), real), 'auto-strict');
+    assert.equal(mergeTier(contract('en/x', { tier: 'human' }), real), null, 'human stays human');
   });
 });
