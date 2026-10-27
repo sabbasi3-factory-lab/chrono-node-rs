@@ -276,6 +276,11 @@ export function applyReopens(s: Snapshot): string[] {
     const task = i.task_id;
     const at = i.reopened_at;
     if (!task || !at) continue;
+    // A reopen at or after this poll's own time waits a poll: this poll's records carry that time, so
+    // a re-dispatch made now must come strictly after the reopen it follows.
+    if (at >= s.fetched_at) continue;
+    // An open factory PR still holds the task, whatever the reopen.
+    if (s.pulls.some((pr) => pr.task_id === task && pr.state === 'open')) continue;
     const h = s.history[task];
     if (!h?.picked_at || h.picked_at > at) continue;
     const before = (h.picks ?? [h.picked_at]).filter((t) => t <= at).sort();

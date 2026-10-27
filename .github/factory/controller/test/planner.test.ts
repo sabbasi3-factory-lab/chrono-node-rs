@@ -1351,7 +1351,19 @@ describe('a reopened task starts afresh (the D8d re-run needed a manual dispatch
     assert.equal(s.history[T]!.picked_at, PICK);
   });
 
+  it('a reopen at or after the poll\'s own time waits for the next poll (a re-dispatch must come after it)', () => {
+    for (const at of ['2026-10-16T12:00:00Z', '2026-10-16T12:00:05Z']) {
+      const s = world({ reopened: at });
+      assert.deepEqual(applyReopens(s), [], at);
+      assert.ok(s.issues[0]!.labels.includes('factory:picked'));
+    }
+  });
+
   it('an open factory PR still holds the task, whatever the reopen', () => {
+    const s0 = world({ prOpen: true });
+    assert.deepEqual(applyReopens(s0), [], 'no reset: pick and label stay');
+    assert.equal(s0.history[T]!.picked_at, PICK);
+    assert.ok(s0.issues[0]!.labels.includes('factory:picked'));
     const s = after(world({ prOpen: true }));
     assert.ok(!run(s).some((d) => d.reason === 'would_dispatch'));
   });
