@@ -257,6 +257,14 @@ fn class_atom(chars: &[char], i: usize) -> Result<Option<ClassAtom>, String> {
     }
 }
 
+/// Whether `out` ends with an unescaped `-` (an even number of backslashes before it).
+fn ends_with_bare_dash(out: &str) -> bool {
+    let Some(rest) = out.strip_suffix('-') else {
+        return false;
+    };
+    rest.chars().rev().take_while(|&c| c == '\\').count() % 2 == 0
+}
+
 /// For a case-insensitive class starting at `chars[start]` (its first member): the characters JS
 /// treats as equal to a member but the class doesn't list, as class text to append before `]`.
 fn class_case_closure(chars: &[char], start: usize) -> Result<String, String> {
@@ -424,6 +432,11 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
             match c {
                 ']' => {
                     in_class = false;
+                    if !class_extra.is_empty() && ends_with_bare_dash(&out) {
+                        // JS reads a final `-` as a literal; the appended members would make it a range.
+                        out.pop();
+                        out.push_str(r"\-");
+                    }
                     out.push_str(&std::mem::take(&mut class_extra));
                     out.push(']');
                 }
@@ -461,6 +474,14 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
             {
                 out.push_str("(?P<");
                 i += 3;
+                // The group name is copied verbatim: it isn't matched text, so `i` mustn't expand it.
+                while let Some(&n) = chars.get(i) {
+                    out.push(n);
+                    i += 1;
+                    if n == '>' {
+                        break;
+                    }
+                }
                 continue;
             }
             '{' => match quantifier_len(&chars, i) {
@@ -595,6 +616,26 @@ mod tests {
         assert!(!JsRegex::new("\u{10400}", "i").is_match("\u{10428}"));
         // Without `i`, nothing changes.
         assert!(!JsRegex::new("k", "").is_match("K"));
+    }
+
+    #[test]
+    fn case_insensitive_class_keeps_a_final_dash_literal() {
+        // Appended case equivalents must not turn a final `-` into a range (`[k-\x{4B}]`, `[A-\x{61}]`).
+        let k = JsRegex::new("^[k-]$", "i");
+        assert!(k.is_match("K") && k.is_match("-"));
+        let a = JsRegex::new("^[A-]$", "i");
+        assert!(a.is_match("a") && a.is_match("-") && !a.is_match("_"));
+        let x = JsRegex::new("^[x-]$", "i");
+        assert!(x.is_match("X"));
+        let lead = JsRegex::new("^[-a]$", "i");
+        assert!(lead.is_match("A") && !lead.is_match("_"));
+        assert!(JsRegex::new(r"^[a\-]$", "i").is_match("A"));
+    }
+
+    #[test]
+    fn case_insensitive_group_names_are_not_expanded() {
+        let re = JsRegex::new("(?<ab>.)(?<AB>.)", "i");
+        assert!(re.is_match("xy"));
     }
 
     #[test]
