@@ -57,7 +57,15 @@ export interface TiersPolicy {
      * `strict_gates`: the gate names tiers.yaml lists (a `name: value` entry counts by its name);
      * null when missing or malformed (then no promotion takes effect: fail closed).
      */
-    'auto-strict': { paths: string[]; start_as?: Tier; strict_gates: string[] | null };
+    'auto-strict': {
+      paths: string[];
+      start_as?: Tier;
+      strict_gates: string[] | null;
+      /** Drill-only promotion: task-id globs promoted while `start_as: human` holds (empty: none). */
+      promote_tasks?: string[];
+      /** ...only if every contract scope path matches one of these globs. */
+      promote_tasks_paths?: string[];
+    };
     human: { paths: string[] };
   };
   protected_from_agents: string[];

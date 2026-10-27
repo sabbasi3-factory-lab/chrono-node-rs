@@ -15,6 +15,7 @@
 //! This script generates the `mod` declarations and the registry lists into `OUT_DIR`, so adding a
 //! parser means adding one file. Nobody edits a shared list, so parallel tasks don't conflict.
 //! Files whose name starts with `_` are skipped (use them for helpers shared inside a directory).
+//! Files whose name starts with `factory_drill_` must declare a `FactoryDrill…` upstream name.
 
 use std::env;
 use std::fmt::Write as _;
@@ -40,6 +41,16 @@ fn step_files(dir: &Path) -> Vec<(String, PathBuf)> {
             "step file names must be snake_case: {}",
             path.display()
         );
+        // Factory drill files (tiers.yaml promote_tasks_paths) must name a `FactoryDrill…` upstream
+        // class, which no configuration lists (tests/configurations.rs), so they're never reached.
+        if stem.starts_with("factory_drill_") {
+            let text = fs::read_to_string(&path).expect("readable step file");
+            assert!(
+                text.contains("pub const UPSTREAM: &str = \"FactoryDrill"),
+                "{} must declare `pub const UPSTREAM: &str = \"FactoryDrill...\"`",
+                path.display()
+            );
+        }
         out.push((stem.to_string(), path));
     }
     out.sort();
