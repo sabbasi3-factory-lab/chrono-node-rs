@@ -483,7 +483,9 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   for (const i of openIssues) {
     const task = i.task_id;
     if (!task || mergedTasks.has(task) || escalated.has(task) || i.labels.includes(LABEL_NEEDS_HUMAN)) continue;
-    if (!inFlight.has(task) || openPulls.some((pr) => pr.task_id === task)) continue;
+    // Only the agent's own PR for this attempt counts (finishedImplementWithoutPr filters by author
+    // and time): a person's PR, or an agent PR from an earlier attempt, doesn't stop the hand-off.
+    if (!inFlight.has(task)) continue;
     const run = finishedImplementWithoutPr(s, task, history(task));
     if (!run) continue;
     escalated.add(task);

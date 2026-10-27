@@ -1411,6 +1411,14 @@ describe('implement ended without a PR → a person at once (implement_no_pr / i
     // A person's PR doesn't count as the agent's.
     const human = pull(41, { task_id: T, state: 'closed', created_at: '2026-10-16T11:05:00Z', author: 'sabbasi3', author_is_bot: false });
     assert.deepEqual(reasons(run(world({ pulls: [human] }))), ['implement_failed']);
+    // Open ones too: a person's open PR, or an open agent PR from before this dispatch.
+    const humanOpen = pull(42, { task_id: T, state: 'open', created_at: '2026-10-16T11:05:00Z', author: 'sabbasi3', author_is_bot: false });
+    const olderOpen = pull(43, { task_id: T, state: 'open', created_at: '2026-10-16T10:00:00Z' });
+    assert.ok(reasons(run(world({ pulls: [humanOpen] }))).includes('implement_failed'), 'open human PR');
+    assert.ok(reasons(run(world({ pulls: [olderOpen] }))).includes('implement_failed'), 'open pre-dispatch agent PR');
+    // The agent's open PR for this attempt is the normal path.
+    const agentOpen = pull(44, { task_id: T, state: 'open', created_at: '2026-10-16T11:05:00Z' });
+    assert.ok(!reasons(run(world({ pulls: [agentOpen] }))).some((r) => r.startsWith('implement_')));
     // An older agent PR (from before this dispatch) doesn't count either.
     const older = pull(39, { task_id: T, state: 'closed', created_at: '2026-10-16T10:00:00Z' });
     assert.deepEqual(reasons(run(world({ pulls: [older] }))), ['implement_failed']);
