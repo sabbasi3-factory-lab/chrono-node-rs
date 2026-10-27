@@ -13,10 +13,52 @@
 //! | `[`, `&&`, `--`, `~~` in a class are literals | class syntax | escaped |
 //! | lookahead/lookbehind, backreferences | unsupported in `regex` | `fancy-regex` handles them |
 //!
-//! Known, accepted difference: with the `i` flag, Rust also folds a few non-ASCII letters onto
-//! ASCII ones (U+212A KELVIN SIGN matches `k`, U+017F LONG S matches `s`). JS doesn't.
+//! | `i` compares `Canonicalize(ch)`: the single-unit uppercase, never non-ASCII → ASCII, BMP only | Unicode simple case folding (U+017F LONG S ~ `s`, U+212A KELVIN SIGN ~ `k`, ...) | no `(?i)`: each literal becomes its JS-equivalence set, each class is closed under it |
+//!
+//! With `i`, backreferences are rejected (JS compares them canonicalized; no ported pattern uses one).
+
+use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use fancy_regex::Regex;
+
+/// JS `Canonicalize(ch)` for a non-unicode, case-insensitive regex (ECMA-262 §22.2.2.7.3): the
+/// uppercase of the single UTF-16 code unit if it is one code unit, unless that maps a non-ASCII
+/// character onto ASCII. Astral characters (surrogate pairs in JS) never fold.
+fn js_canonicalize(c: char) -> char {
+    if c as u32 > 0xFFFF {
+        return c;
+    }
+    let mut up = c.to_uppercase();
+    match (up.next(), up.next()) {
+        (Some(u), None) if (u as u32) <= 0xFFFF && !((c as u32) >= 128 && (u as u32) < 128) => u,
+        _ => c,
+    }
+}
+
+/// The BMP characters that share a `js_canonicalize` value with at least one other, by that value.
+static JS_CASE_GROUPS: LazyLock<HashMap<char, Vec<char>>> = LazyLock::new(|| {
+    let mut by: HashMap<char, Vec<char>> = HashMap::new();
+    for cp in 0..=0xFFFFu32 {
+        if let Some(c) = char::from_u32(cp) {
+            by.entry(js_canonicalize(c)).or_default().push(c);
+        }
+    }
+    by.retain(|_, v| v.len() > 1);
+    by
+});
+
+/// The characters a JS `/i` (non-unicode) regex treats as equal to `c`, including `c`.
+fn js_case_equivalents(c: char) -> Vec<char> {
+    JS_CASE_GROUPS
+        .get(&js_canonicalize(c))
+        .cloned()
+        .unwrap_or_else(|| vec![c])
+}
+
+fn class_char(c: char) -> String {
+    format!(r"\x{{{:X}}}", c as u32)
+}
 
 const JS_WHITESPACE: &str =
     r"\t\n\x0B\x0C\r \x{A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}";
@@ -152,13 +194,121 @@ fn quantifier_len(chars: &[char], i: usize) -> Option<usize> {
     (chars.get(j) == Some(&'}')).then_some(j - i + 1)
 }
 
+/// A class atom: its code-point ranges, whether it is a single character, and its source length.
+type ClassAtom = (Vec<(u32, u32)>, bool, usize);
+
+/// One class atom at `chars[i]` (after `[`): its code-point ranges and its length, or None at `]`.
+/// Ranges for class escapes (`\d`, `\W`, ...) are returned with `single = false` (no `a-b` with them).
+fn class_atom(chars: &[char], i: usize) -> Result<Option<ClassAtom>, String> {
+    let Some(&c) = chars.get(i) else {
+        return Err("unterminated character class".into());
+    };
+    if c == ']' {
+        return Ok(None);
+    }
+    if c != '\\' {
+        return Ok(Some((vec![(c as u32, c as u32)], true, 1)));
+    }
+    let Some(&e) = chars.get(i + 1) else {
+        return Err("trailing backslash".into());
+    };
+    let one = |v: u32, len: usize| Ok(Some((vec![(v, v)], true, len)));
+    let set = |r: Vec<(u32, u32)>| Ok(Some((r, false, 2)));
+    let word = vec![(0x30, 0x39), (0x41, 0x5A), (0x5F, 0x5F), (0x61, 0x7A)];
+    match e {
+        'd' => set(vec![(0x30, 0x39)]),
+        'D' => set(vec![(0, 0x2F), (0x3A, 0x10FFFF)]),
+        'w' => set(word),
+        'W' => set(vec![
+            (0, 0x2F),
+            (0x3A, 0x40),
+            (0x5B, 0x5E),
+            (0x60, 0x60),
+            (0x7B, 0x10FFFF),
+        ]),
+        's' => set(vec![
+            (0x09, 0x0D),
+            (0x20, 0x20),
+            (0xA0, 0xA0),
+            (0x1680, 0x1680),
+            (0x2000, 0x200A),
+            (0x2028, 0x2029),
+            (0x202F, 0x202F),
+            (0x205F, 0x205F),
+            (0x3000, 0x3000),
+            (0xFEFF, 0xFEFF),
+        ]),
+        'b' => one(8, 2),
+        'n' => one(10, 2),
+        'r' => one(13, 2),
+        't' => one(9, 2),
+        'f' => one(12, 2),
+        'v' => one(11, 2),
+        'u' => match hex_digits(chars, i + 2, 4) {
+            Some(h) => one(u32::from_str_radix(&h, 16).unwrap(), 6),
+            None => one('u' as u32, 2),
+        },
+        'x' => match hex_digits(chars, i + 2, 2) {
+            Some(h) => one(u32::from_str_radix(&h, 16).unwrap(), 4),
+            None => one('x' as u32, 2),
+        },
+        '0' if !chars.get(i + 2).is_some_and(|d| d.is_ascii_digit()) => one(0, 2),
+        other => one(other as u32, 2),
+    }
+}
+
+/// For a case-insensitive class starting at `chars[start]` (its first member): the characters JS
+/// treats as equal to a member but the class doesn't list, as class text to append before `]`.
+fn class_case_closure(chars: &[char], start: usize) -> Result<String, String> {
+    let mut ranges: Vec<(u32, u32)> = Vec::new();
+    let mut i = start;
+    while let Some((r, single, len)) = class_atom(chars, i)? {
+        i += len;
+        // `a-b`: a range between two single characters (not at the end of the class).
+        if single && chars.get(i) == Some(&'-') && chars.get(i + 1).is_some_and(|&n| n != ']') {
+            if let Some((r2, true, len2)) = class_atom(chars, i + 1)? {
+                ranges.push((r[0].0, r2[0].1));
+                i += 1 + len2;
+                continue;
+            }
+        }
+        ranges.extend(r);
+    }
+    let has = |c: char| ranges.iter().any(|&(a, b)| (a..=b).contains(&(c as u32)));
+    let mut extra: Vec<char> = Vec::new();
+    for group in JS_CASE_GROUPS.values() {
+        if group.iter().any(|&c| has(c)) {
+            extra.extend(group.iter().copied().filter(|&c| !has(c)));
+        }
+    }
+    extra.sort_unstable();
+    Ok(extra.into_iter().map(class_char).collect())
+}
+
+/// A literal character outside a class: with `i`, the set of its JS equivalents.
+fn push_ci_literal(out: &mut String, c: char, ci: bool) {
+    let eq = if ci { js_case_equivalents(c) } else { vec![c] };
+    if eq.len() > 1 {
+        out.push('[');
+        for e in eq {
+            out.push_str(&class_char(e));
+        }
+        out.push(']');
+    } else {
+        push_literal(out, c);
+    }
+}
+
 /// Translates JS regex source (non-unicode mode) to `fancy-regex` syntax.
 pub fn translate(source: &str, flags: &str) -> Result<String, String> {
     let mut out = String::new();
     let mut inline = String::new();
+    let ci = flags.contains('i');
     for f in flags.chars() {
         match f {
-            'i' | 'm' | 's' => inline.push(f),
+            // `i` is applied by expansion (JS canonicalize), not by Rust's Unicode case folding.
+            'i' => {}
+            'm' | 's' => inline.push(f),
             'g' | 'y' | 'd' => return Err(format!("flag '{f}' changes exec() state; not supported")),
             'u' | 'v' => return Err(format!("flag '{f}' (unicode mode) is not supported")),
             _ => return Err(format!("unknown flag '{f}'")),
@@ -171,6 +321,7 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
     let chars: Vec<char> = source.chars().collect();
     let n = chars.len();
     let mut in_class = false;
+    let mut class_extra = String::new();
     let mut i = 0;
     while i < n {
         let c = chars[i];
@@ -229,20 +380,31 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
                 'v' => out.push_str(r"\x{B}"),
                 'u' => match hex_digits(&chars, i + 1, 4) {
                     Some(h) => {
-                        out.push_str(&format!(r"\x{{{h}}}"));
+                        let ch = char::from_u32(u32::from_str_radix(&h, 16).unwrap());
+                        match ch {
+                            Some(ch) if ci && !in_class => push_ci_literal(&mut out, ch, ci),
+                            _ => out.push_str(&format!(r"\x{{{h}}}")),
+                        }
                         i += 4;
                     }
-                    None => out.push('u'),
+                    None => push_ci_literal(&mut out, 'u', ci && !in_class),
                 },
                 'x' => match hex_digits(&chars, i + 1, 2) {
                     Some(h) => {
-                        out.push_str(&format!(r"\x{{{h}}}"));
+                        let ch = char::from_u32(u32::from_str_radix(&h, 16).unwrap());
+                        match ch {
+                            Some(ch) if ci && !in_class => push_ci_literal(&mut out, ch, ci),
+                            _ => out.push_str(&format!(r"\x{{{h}}}")),
+                        }
                         i += 2;
                     }
-                    None => out.push('x'),
+                    None => push_ci_literal(&mut out, 'x', ci && !in_class),
                 },
                 '0' if !chars.get(i + 1).is_some_and(|d| d.is_ascii_digit()) => out.push_str(r"\x{0}"),
                 '1'..='9' if !in_class => {
+                    if ci {
+                        return Err("backreferences with the `i` flag are not supported".into());
+                    }
                     out.push('\\');
                     out.push(e);
                     while chars.get(i + 1).is_some_and(|d| d.is_ascii_digit()) {
@@ -252,7 +414,7 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
                 }
                 'c' | 'k' | 'p' | 'P' => return Err(format!(r"\{e} is not supported")),
                 // Identity escapes: `\-`, `\.`, `\/`, `\–`, `\：` ... are the literal character.
-                other => push_literal(&mut out, other),
+                other => push_ci_literal(&mut out, other, ci && !in_class),
             }
             i += 1;
             continue;
@@ -262,6 +424,7 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
             match c {
                 ']' => {
                     in_class = false;
+                    out.push_str(&std::mem::take(&mut class_extra));
                     out.push(']');
                 }
                 '[' | '&' | '~' => {
@@ -287,6 +450,9 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
                     out.push('^');
                     i += 1;
                 }
+                if ci {
+                    class_extra = class_case_closure(&chars, i + 1)?;
+                }
             }
             '.' => out.push_str(r"[^\n\r\x{2028}\x{2029}]"),
             '(' if chars.get(i + 1) == Some(&'?')
@@ -306,6 +472,8 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
                 None => out.push_str(r"\{"),
             },
             '}' => out.push_str(r"\}"),
+            // Syntax characters (`( ) | * + ? ^ $`) have no case equivalents, so they pass unchanged.
+            _ if ci && js_case_equivalents(c).len() > 1 => push_ci_literal(&mut out, c, true),
             _ => out.push(c),
         }
         i += 1;
@@ -394,5 +562,57 @@ mod tests {
     fn case_insensitive_flag() {
         assert!(JsRegex::new(r"^TODAY$", "i").is_match("today"));
         assert!(!JsRegex::new(r"^TODAY$", "").is_match("today"));
+    }
+
+    /// JS `/i` without `u` folds by `Canonicalize` (single-unit uppercase, never non-ASCII onto
+    /// ASCII), not by Unicode case folding. Found by the reviewer on #136 (the ` EſT` example).
+    #[test]
+    fn case_insensitive_is_js_canonicalize() {
+        let abbr = JsRegex::new(r"^\s*([A-Z]{2,4})(?:\W|$)", "i");
+        assert_eq!(
+            abbr.exec(" EsT").and_then(|m| m.get(1).map(str::to_string)),
+            Some("EsT".into())
+        );
+        assert!(!abbr.is_match(" E\u{17F}T"), "U+017F LONG S is not `s` in JS");
+        let k = JsRegex::new("k", "i");
+        assert!(k.is_match("K") && k.is_match("k"));
+        assert!(!k.is_match("\u{212A}"), "U+212A KELVIN SIGN is not `k` in JS");
+        assert!(!JsRegex::new("[a-z]", "i").is_match("\u{212A}"));
+        assert!(!JsRegex::new("[a-z]", "i").is_match("\u{17F}"));
+        // Real case pairs still fold, inside and outside classes.
+        assert!(JsRegex::new("é", "i").is_match("É") && JsRegex::new("[à-ÿ]", "i").is_match("É"));
+        let sigma = JsRegex::new("σ", "i");
+        assert!(sigma.is_match("Σ") && sigma.is_match("ς"));
+        // Full mappings don't count: ß is not SS.
+        assert!(!JsRegex::new("^ß$", "i").is_match("SS") && !JsRegex::new("^s$", "i").is_match("ß"));
+        // Negated classes are closed before negation.
+        let not_lower = JsRegex::new("^[^a-z]$", "i");
+        assert!(!not_lower.is_match("A") && not_lower.is_match("\u{17F}") && not_lower.is_match("\u{212A}"));
+        // Escapes fold like literals: \x41 is `A`; \u017F stays itself.
+        assert!(JsRegex::new(r"^\x41$", "i").is_match("a"));
+        assert!(!JsRegex::new(r"^\u017F$", "i").is_match("s"));
+        // Astral characters are surrogate pairs in JS: they never fold without `u`.
+        assert!(!JsRegex::new("\u{10400}", "i").is_match("\u{10428}"));
+        // Without `i`, nothing changes.
+        assert!(!JsRegex::new("k", "").is_match("K"));
+    }
+
+    #[test]
+    fn case_insensitive_backreferences_are_rejected() {
+        assert!(JsRegex::try_new(r"(a)\1", "i").is_err());
+        assert!(JsRegex::try_new(r"(a)\1", "").is_ok());
+    }
+
+    #[test]
+    fn js_canonicalize_rules() {
+        assert_eq!(js_canonicalize('a'), 'A');
+        assert_eq!(js_canonicalize('\u{17F}'), '\u{17F}', "non-ASCII never maps onto ASCII");
+        assert_eq!(
+            js_canonicalize('\u{131}'),
+            '\u{131}',
+            "dotless i: its uppercase I is ASCII"
+        );
+        assert_eq!(js_canonicalize('ß'), 'ß', "uppercase is two units (SS)");
+        assert_eq!(js_canonicalize('ς'), 'Σ');
     }
 }
