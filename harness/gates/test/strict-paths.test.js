@@ -43,12 +43,12 @@ test("scope check: an absolute changed path is never in scope or allowed (fails 
     const r = evaluate({
         isAgent: true,
         body: "x\n\nFactory-Task: en/x\nContract-SHA: a1b2c3d\n",
-        changed: [`/home/runner/work/repo/${STEP}`],
+        changed: [`/checkout/repo/${STEP}`],
         protectedGlobs: [".github/**"],
         loadContract: () => contract,
     });
     assert.strictEqual(r.ok, false);
-    assert.ok(r.reasons.some((x) => x.startsWith("out of contract scope: /home/runner/")), r.reasons.join("; "));
+    assert.ok(r.reasons.some((x) => x.startsWith("out of contract scope: /checkout/")), r.reasons.join("; "));
 });
 
 // code-health.sh end to end, offline: a fake `cargo` reports struct_excessive_bools under the
