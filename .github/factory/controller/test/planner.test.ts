@@ -1274,11 +1274,13 @@ describe('a reopened task starts afresh (the D8d re-run needed a manual dispatch
   const T = 'en/weekday-parser';
   const PICK = '2026-10-15T10:00:00Z';
   const REOPEN = '2026-10-16T09:00:00Z';
-  const world = (o: { reopened?: string | null; picks?: string[]; labels?: string[]; prOpen?: boolean } = {}): Snapshot => {
+  // The earlier attempt ended: its PR (opened after the pick) was closed unmerged before the reopen.
+  const closedPr = pull(21, { task_id: T, state: 'closed', created_at: '2026-10-15T10:20:00Z' });
+  const world = (o: { reopened?: string | null; picks?: string[]; labels?: string[]; prOpen?: boolean; pulls?: ReturnType<typeof pull>[] } = {}): Snapshot => {
     const picks = o.picks ?? [PICK];
     return snapshot({
       issues: [{ ...issue(1, T, o.labels ?? ['factory:task', 'factory:ready', 'factory:picked']), reopened_at: o.reopened === undefined ? REOPEN : o.reopened }],
-      pulls: o.prOpen ? [pull(21, { task_id: T })] : [],
+      pulls: o.pulls ?? (o.prOpen ? [closedPr, pull(22, { task_id: T })] : [closedPr]),
       contractList: [contract(T)],
       history: { [T]: history({ picked_at: picks[0]!, picks, dispatches: picks.length }) },
     });
@@ -1295,7 +1297,23 @@ describe('a reopened task starts afresh (the D8d re-run needed a manual dispatch
     assert.ok(!s.issues[0]!.labels.includes('factory:picked'), 'the stale picked label is dropped from the view');
     const d = find(run(s), 'would_dispatch');
     assert.equal(d.attempt, 2);
-    assert.deepEqual(d.source_ids, ['I_1', commitSha(T), 'attempt:2']);
+    assert.deepEqual(d.source_ids, ['I_1', commitSha(T), `reopened:${REOPEN}`], 'identity = the reopen, stable when old dispatches leave the window');
+  });
+
+  it('the audit window dropped the first dispatch: the attempt repeats, but the identity is still this reopen\'s', () => {
+    const s = world();
+    s.history[T] = { ...s.history[T]!, dispatches: 0 };
+    applyReopens(s);
+    const d = find(run(s), 'would_dispatch');
+    assert.deepEqual([d.attempt, d.source_ids.at(-1)], [2, `reopened:${REOPEN}`]);
+  });
+
+  it('closed and reopened while the attempt is still running (no PR yet, or only an older one) → no reset, still in flight', () => {
+    for (const pulls of [[], [pull(20, { task_id: T, state: 'closed', created_at: '2026-10-14T10:00:00Z' })], [pull(21, { task_id: T, state: 'closed', created_at: '2026-10-16T09:30:00Z' })]]) {
+      const s = world({ pulls });
+      assert.deepEqual(applyReopens(s), [], JSON.stringify(pulls.map((p) => p.created_at)));
+      assert.ok(!run(s).some((d) => d.reason === 'would_dispatch'));
+    }
   });
 
   it('a first dispatch keeps its old audit identity (attempt 1, no extra source id)', () => {

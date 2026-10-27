@@ -548,6 +548,28 @@ describe('main: live mode (FACTORY_ENABLED=true)', () => {
     assert.deepEqual(effectCalls(gh), []);
   });
 
+  it('implement: a first dispatch labels, dispatches, then records; a re-dispatch (attempt ≥ 2, after a reopen) records first', async () => {
+    const mk = (attempt: number) => ({ type: 'dispatched', reason: 'would_dispatch', effect: 'dispatch_workflow:implement', dry_run: true, task: 'en/a', issue: 3, pr: null, attempt, contract_sha: 'c'.repeat(40), run_id: null, failure_signature: null, source_ids: ['I_3', 'c'.repeat(40)] });
+    const orderFor = async (attempt: number, failDispatch = false) => {
+      const order: string[] = [];
+      const client = {
+        request: async (method: string, path: string) => {
+          order.push(`${method} ${path.replace(`/repos/${REPO}`, '')}`);
+          if (failDispatch && path.endsWith('/dispatches')) throw new Error('HTTP 502');
+          return { status: 200, data: [], next: null };
+        },
+      };
+      const run = executeLive([mk(attempt) as never], { client: client as never, repo: REPO, log: () => {}, runUrl: null, isNew: () => true, validate: () => {}, record: async () => void order.push('record') });
+      if (failDispatch) await assert.rejects(run, /HTTP 502/);
+      else await run;
+      return order;
+    };
+    assert.deepEqual(await orderFor(1), ['POST /issues/3/labels', 'POST /actions/workflows/implement.lock.yml/dispatches', 'record']);
+    assert.deepEqual(await orderFor(2), ['record', 'POST /issues/3/labels', 'POST /actions/workflows/implement.lock.yml/dispatches']);
+    // A failed re-dispatch is still recorded: the task stays in flight (time limit), never dispatched twice.
+    assert.deepEqual(await orderFor(2, true), ['record', 'POST /issues/3/labels', 'POST /actions/workflows/implement.lock.yml/dispatches']);
+  });
+
   it('a repair is recorded first (attempt, run, signature, head), then repair.lock.yml is dispatched with exactly its inputs', async () => {
     const d = { type: 'repair_dispatched', reason: 'ci_failed', effect: 'dispatch_workflow:repair', dry_run: true, task: 'en/a', issue: 3, pr: 21, attempt: 2, contract_sha: 'c'.repeat(40), run_id: 500, failure_signature: 'step:golden', head_sha: hex40('1'), source_ids: ['500/attempts/1', 'PR_21'] } as const;
     const calls: { method: string; path: string; body: unknown }[] = [];

@@ -200,6 +200,8 @@ export interface TaskHistory {
   /** Every recorded pick or dispatch time, and the number of implement dispatches (the next attempt). */
   picks?: string[];
   dispatches?: number;
+  /** Set by applyReopens: the reopen that restarted the task (the re-dispatch's audit identity). */
+  reset_at?: string;
   repairs: number;
   failure_signatures: string[];
   repaired_run_ids: number[];
