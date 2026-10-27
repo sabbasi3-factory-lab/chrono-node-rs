@@ -1308,6 +1308,13 @@ describe('a reopened task starts afresh (the D8d re-run needed a manual dispatch
     assert.deepEqual([d.attempt, d.source_ids.at(-1)], [2, `reopened:${REOPEN}`]);
   });
 
+  it('only the agent\'s own closed PR proves the attempt ended (a person\'s PR naming the task doesn\'t)', () => {
+    const human = pull(21, { task_id: T, state: 'closed', created_at: '2026-10-15T10:20:00Z', author: 'sabbasi3', author_is_bot: false });
+    const otherBot = pull(21, { task_id: T, state: 'closed', created_at: '2026-10-15T10:20:00Z', author: 'other-bot[bot]', author_is_bot: true });
+    const merged = pull(21, { task_id: T, state: 'merged', created_at: '2026-10-15T10:20:00Z' });
+    for (const p of [human, otherBot, merged]) assert.deepEqual(applyReopens(world({ pulls: [p] })), [], `${p.author} ${p.state}`);
+  });
+
   it('closed and reopened while the attempt is still running (no PR yet, or only an older one) → no reset, still in flight', () => {
     for (const pulls of [[], [pull(20, { task_id: T, state: 'closed', created_at: '2026-10-14T10:00:00Z' })], [pull(21, { task_id: T, state: 'closed', created_at: '2026-10-16T09:30:00Z' })]]) {
       const s = world({ pulls });

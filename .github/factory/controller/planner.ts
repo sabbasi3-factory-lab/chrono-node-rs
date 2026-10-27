@@ -280,7 +280,9 @@ export function applyReopens(s: Snapshot): string[] {
     if (!h?.picked_at || h.picked_at > at) continue;
     const before = (h.picks ?? [h.picked_at]).filter((t) => t <= at).sort();
     const lastPick = before[before.length - 1] ?? h.picked_at;
-    const ended = s.pulls.some((pr) => pr.task_id === task && pr.state === 'closed' && pr.created_at >= lastPick && pr.created_at <= at);
+    const ended = s.pulls.some(
+      (pr) => pr.task_id === task && pr.state === 'closed' && pr.author_is_bot && (pr.author ?? '').replace(/\[bot\]$/, '') === AGENT_LOGIN && pr.created_at >= lastPick && pr.created_at <= at,
+    );
     if (!ended) continue;
     const after = (h.picks ?? []).filter((t) => t > at).sort();
     s.history[task] = { ...h, picked_at: after[0] ?? null, reset_at: at };
