@@ -302,6 +302,10 @@ safe-outputs:
   - `GOLDEN_AREAS=<the contract's golden areas> GOLDEN_REQUIRE_STEP=<upstream_class> cargo test --test golden -- --nocapture`
   - `cargo test`
   - `cargo build --bin chrono-rs-json && cd harness && node compare/compare.js --seed 42 --phrases 2000`
+- **If the signature is `step:strict-gate-mutation-score-not-lower-…`** (the mutation gate), `failure.txt` lists each surviving mutant as `surviving mutant at <path>:<line>:<col>: <mutation>`. You can't run cargo-mutants here; use that list:
+  - Add tests to the scope file's `#[cfg(test)]` module so that each listed mutation would change a test's outcome. Don't change the ported code to make mutants disappear, and don't add `mutants::skip`.
+  - Every expected value in a new test must come from **upstream's behaviour**, never from what the Rust code returns. Cite it in a comment on the test: the upstream file and line(s) under `upstream/src/` that produce it, or the upstream test under `upstream/test/` that asserts it.
+  - If a mutant can't be killed without a test that upstream's behaviour doesn't decide (an equivalent mutant), don't guess: say which one and why in your issue comment.
 - If the failure isn't in the scope file, or you can't fix it within the scope, don't push anything: add one comment to issue #${{ github.event.inputs.issue }} saying why. The controller then hands the task to a person.
 
 ## Output
