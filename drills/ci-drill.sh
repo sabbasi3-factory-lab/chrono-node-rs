@@ -48,6 +48,8 @@ fail=0
 # commit of this PR (not its head) that changed the file. Only a repair knows that SHA in advance.
 for f in "$D1" "$D1B"; do
     grep -qxF "$f" <<<"$changed" || continue
+    # Deleted by the PR (drill D8a removes D1b's file): nothing to check here.
+    git cat-file -e "${HEAD_SHA}:${f}" 2>/dev/null || { echo "drill ${f}: deleted by this PR"; continue; }
     sha=$(git show "${HEAD_SHA}:${f}" | sed -nE 's#^// drill: repaired after ([0-9a-f]{40})$#\1#p' | head -1)
     if [ -n "$sha" ] && [ "$sha" != "$HEAD_SHA" ] && git rev-list "${base}..${HEAD_SHA}" -- "$f" | grep -qxF "$sha"; then
         echo "drill ${f}: repaired after ${sha}"
