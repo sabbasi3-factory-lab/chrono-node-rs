@@ -12,11 +12,20 @@ const st = (state: DispatchStatus['state'], reason: DispatchStatus['reason'] = '
 const RUNS = new RegExp(`^/repos/${REPO}/actions/workflows/controller\\.yml/runs$`);
 const DISPATCH = `/repos/${REPO}/actions/workflows/controller.yml/dispatches`;
 
-function world(runs: unknown[] | null): FakeGitHub {
+/** Runs by status filter (`?status=`); null: every list request fails. */
+function world(runs: { id: number; status: string }[] | null, pages: Record<string, { id: number; status: string }[][]> = {}): FakeGitHub {
   const gh = new FakeGitHub(REPO);
   gh.addRoute('GET', RUNS, (path) => {
     assert.match(path, /event=workflow_dispatch/);
-    return runs === null ? { status: 500, data: null } : { data: { workflow_runs: runs } };
+    if (runs === null) return { status: 500, data: null };
+    const status = /[?&]status=([a-z_]+)/.exec(path)?.[1] ?? '';
+    const page = Number(/[?&]page=(\d+)/.exec(path)?.[1] ?? '1');
+    const paged = pages[status];
+    if (paged) {
+      const next = page < paged.length ? `/repos/${REPO}/actions/workflows/controller.yml/runs?event=workflow_dispatch&status=${status}&per_page=100&page=${page + 1}` : null;
+      return { data: { workflow_runs: paged[page - 1] }, next };
+    }
+    return { data: { workflow_runs: runs.filter((r) => r.status === status) } };
   });
   gh.addRoute('POST', new RegExp(`^${DISPATCH}$`), () => ({ status: 204, data: null }));
   return gh;
@@ -59,6 +68,12 @@ describe('follow-up poll (cron runs every 2–8 h here)', () => {
     }
   });
 
+  it('looks past the first page of a status (a re-run older run can be pending further back)', async () => {
+    const gh = world([], { in_progress: [[{ id: 7, status: 'in_progress' }], [{ id: 3, status: 'in_progress' }]] });
+    assert.equal(await followUp(gh, REPO, 7, st('running'), true, 0, () => {}), 'pending');
+    assert.equal(gh.calls.filter((c) => c.method === 'POST').length, 0);
+  });
+
   it('fails closed: an unreadable run list means no dispatch; a failed dispatch is logged, not thrown', async () => {
     const down = world(null);
     assert.equal(await followUp(down, REPO, 7, st('running'), true, 0, () => {}), 'unknown');
@@ -66,6 +81,9 @@ describe('follow-up poll (cron runs every 2–8 h here)', () => {
     const gh = new FakeGitHub(REPO);
     gh.addRoute('GET', RUNS, () => ({ data: { workflow_runs: [] } }));
     gh.addRoute('POST', new RegExp(`^${DISPATCH}$`), () => ({ status: 403, data: null }));
+    const bad = new FakeGitHub(REPO);
+    bad.addRoute('GET', RUNS, () => ({ data: { nope: [] } }));
+    assert.equal(await followUp(bad, REPO, 7, st('running'), true, 0, () => {}), 'unknown', 'a malformed page');
     const lines: string[] = [];
     assert.equal(await followUp(gh, REPO, 7, st('running'), true, 0, (l) => lines.push(l)), 'failed');
     assert.match(lines.join('\n'), /WARNING: follow-up poll not dispatched/);

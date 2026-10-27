@@ -10,7 +10,7 @@
 // dispatch is logged, never fatal.
 
 import type { DispatchStatus } from './dispatch-state.ts';
-import { CONTROLLER_WORKFLOW } from './github.ts';
+import { CONTROLLER_WORKFLOW, paginate } from './github.ts';
 import type { GitHubClient } from './types.ts';
 
 /** Follow-ups in a row before the chain stops (about 4 h at 10 min each). */
@@ -35,7 +35,9 @@ export function followUpWanted(status: DispatchStatus, live: boolean, chain: num
   return 'wanted';
 }
 
-const PENDING = new Set(['queued', 'in_progress', 'waiting', 'pending', 'requested']);
+/** Run statuses that mean a dispatched controller run hasn't finished (GitHub's `status` filter values). */
+const PENDING = ['queued', 'in_progress', 'waiting', 'pending', 'requested'] as const;
+const PENDING_MAX_PAGES = 5;
 
 /** Dispatches the next follow-up poll if wanted; returns what it did (for the log and tests). */
 export async function followUp(
@@ -46,17 +48,25 @@ export async function followUp(
     log(`follow-up poll: none (${why})`);
     return why;
   }
+  // Any dispatched controller run still pending, by status (each list is short, so the page cap is
+  // never near; reaching it, or an unreadable page, means no follow-up).
   try {
-    const res = await client.request('GET', `/repos/${repo}/actions/workflows/${CONTROLLER_WORKFLOW}/runs?event=workflow_dispatch&per_page=30`);
-    const runs = (res.data as { workflow_runs?: unknown })?.workflow_runs;
-    if (!Array.isArray(runs)) throw new Error('no workflow_runs');
-    const other = runs.find((r) => {
-      const x = r as { id?: unknown; status?: unknown };
-      return x.id !== runId && typeof x.status === 'string' && PENDING.has(x.status);
-    });
-    if (other) {
-      log(`follow-up poll: one is already queued or running (run ${(other as { id: unknown }).id})`);
-      return 'pending';
+    for (const status of PENDING) {
+      const runs = await paginate(
+        client,
+        `/repos/${repo}/actions/workflows/${CONTROLLER_WORKFLOW}/runs?event=workflow_dispatch&status=${status}&per_page=100`,
+        (d) => {
+          const r = (d as { workflow_runs?: unknown })?.workflow_runs;
+          if (!Array.isArray(r)) throw new Error('no workflow_runs');
+          return r as { id?: unknown }[];
+        },
+        PENDING_MAX_PAGES,
+      );
+      const other = runs.find((r) => r.id !== runId);
+      if (other) {
+        log(`follow-up poll: one is already ${status} (run ${String(other.id)})`);
+        return 'pending';
+      }
     }
   } catch (err) {
     log(`follow-up poll: none (run list unreadable: ${(err as Error).message})`);
