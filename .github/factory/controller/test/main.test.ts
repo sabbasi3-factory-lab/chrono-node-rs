@@ -10,7 +10,7 @@ import { FakeGitHub, type RecordedCall } from '../fake.ts';
 import { logWaits, parseArgs, run, type RunDeps } from '../main.ts';
 import { IMPLEMENTED_STRICT_GATES } from '../planner.ts';
 import { deriveState } from '../history.ts';
-import { readRepairRuns, readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
+import { readReopenedAt, readRepairRuns, readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
 import type { Decision, Policies, Snapshot } from '../types.ts';
 import { checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
 import { dedupeKey } from '../audit.ts';
@@ -1074,6 +1074,21 @@ describe('reviewer checks and history', () => {
     });
     const checks = await readReviewChecks(gh, REPO, [head, 'not-a-sha'], APP);
     assert.deepEqual(checks.map((c) => [c.id, c.reviewed_head]), [[1, head], [5, null]]);
+  });
+
+  it('readReopenedAt: the latest reopen from the issue events; none → null; unreadable → null', async () => {
+    const gh = new FakeGitHub(REPO);
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/5/events$`), () => ({ data: [
+      { event: 'closed', created_at: '2026-10-16T08:00:00Z' },
+      { event: 'reopened', created_at: '2026-10-16T09:00:00Z' },
+      { event: 'reopened', created_at: '2026-10-15T09:00:00Z' },
+      { event: 'labeled', created_at: '2026-10-16T10:00:00Z' },
+    ] }));
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/6/events$`), () => ({ data: [{ event: 'labeled', created_at: '2026-10-16T10:00:00Z' }] }));
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/7/events$`), () => ({ status: 500, data: null }));
+    assert.equal(await readReopenedAt(gh, REPO, 5), '2026-10-16T09:00:00Z');
+    assert.equal(await readReopenedAt(gh, REPO, 6), null);
+    assert.equal(await readReopenedAt(gh, REPO, 7), null);
   });
 
   it('readRepairRuns lists two days of repair runs; a listing failure is unknown (null), never empty', async () => {

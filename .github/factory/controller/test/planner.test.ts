@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { IMPLEMENTED_STRICT_GATES, mergeTier, missingStrictGates, plan } from '../planner.ts';
+import { applyReopens, IMPLEMENTED_STRICT_GATES, mergeTier, missingStrictGates, plan } from '../planner.ts';
 import type { Decision, MergeQueueEventSnap, PlannerEnv, ReasonCode, ReviewCheckSnap, Snapshot } from '../types.ts';
 import { type SnapshotOverrides, checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, snapshot, testPolicies } from './helpers.ts';
 
@@ -1267,5 +1267,67 @@ describe('the promotion (tiers.yaml without start_as: human)', () => {
     assert.equal(mergeTier(contract('core/results', { scope: ['src/core/results.rs'] }), real), 'auto-strict');
     assert.equal(mergeTier(contract('en/x', { tier: 'auto-strict' }), real), 'auto-strict');
     assert.equal(mergeTier(contract('en/x', { tier: 'human' }), real), null, 'human stays human');
+  });
+});
+
+describe('a reopened task starts afresh (the D8d re-run needed a manual dispatch)', () => {
+  const T = 'en/weekday-parser';
+  const PICK = '2026-10-15T10:00:00Z';
+  const REOPEN = '2026-10-16T09:00:00Z';
+  const world = (o: { reopened?: string | null; picks?: string[]; labels?: string[]; prOpen?: boolean } = {}): Snapshot => {
+    const picks = o.picks ?? [PICK];
+    return snapshot({
+      issues: [{ ...issue(1, T, o.labels ?? ['factory:task', 'factory:ready', 'factory:picked']), reopened_at: o.reopened === undefined ? REOPEN : o.reopened }],
+      pulls: o.prOpen ? [pull(21, { task_id: T })] : [],
+      contractList: [contract(T)],
+      history: { [T]: history({ picked_at: picks[0]!, picks, dispatches: picks.length }) },
+    });
+  };
+  const after = (s: Snapshot) => {
+    applyReopens(s);
+    return s;
+  };
+
+  it('reopened after its pick, no PR open → dispatched again as the next attempt, with its own audit identity', () => {
+    const s = world();
+    assert.deepEqual(applyReopens(s), [T]);
+    assert.equal(s.history[T]!.picked_at, null);
+    assert.ok(!s.issues[0]!.labels.includes('factory:picked'), 'the stale picked label is dropped from the view');
+    const d = find(run(s), 'would_dispatch');
+    assert.equal(d.attempt, 2);
+    assert.deepEqual(d.source_ids, ['I_1', commitSha(T), 'attempt:2']);
+  });
+
+  it('a first dispatch keeps its old audit identity (attempt 1, no extra source id)', () => {
+    const s = snapshot({ issues: [issue(1, T, ['factory:task', 'factory:ready'])], contractList: [contract(T)] });
+    const d = find(run(s), 'would_dispatch');
+    assert.deepEqual([d.attempt, d.source_ids], [1, ['I_1', commitSha(T)]]);
+  });
+
+  it('a pick after the reopen holds: still in flight, and the time limit counts from that pick', () => {
+    const s = after(world({ picks: [PICK, '2026-10-16T09:30:00Z'] }));
+    assert.equal(s.history[T]!.picked_at, '2026-10-16T09:30:00Z');
+    assert.ok(s.issues[0]!.labels.includes('factory:picked'));
+    assert.ok(!run(s).some((d) => d.reason === 'would_dispatch' || d.reason === 'task_timeout'), 'in flight, within its limit');
+  });
+
+  it('never reopened, or the reopen time unknown → unchanged (still in flight: fail closed)', () => {
+    for (const reopened of [null]) {
+      const s = world({ reopened });
+      assert.deepEqual(applyReopens(s), []);
+      assert.equal(s.history[T]!.picked_at, PICK);
+      assert.ok(!run(s).some((d) => d.reason === 'would_dispatch'));
+    }
+  });
+
+  it('a reopen before the pick changes nothing', () => {
+    const s = world({ reopened: '2026-10-14T00:00:00Z' });
+    assert.deepEqual(applyReopens(s), []);
+    assert.equal(s.history[T]!.picked_at, PICK);
+  });
+
+  it('an open factory PR still holds the task, whatever the reopen', () => {
+    const s = after(world({ prOpen: true }));
+    assert.ok(!run(s).some((d) => d.reason === 'would_dispatch'));
   });
 });

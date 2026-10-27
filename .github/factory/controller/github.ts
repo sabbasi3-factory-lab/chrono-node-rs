@@ -881,6 +881,22 @@ export async function readReviewChecks(client: GitHubClient, repo: string, heads
   return out;
 }
 
+/** When an issue was last reopened (ISO), from its events; null if never, or if the events can't be read. */
+export async function readReopenedAt(client: GitHubClient, repo: string, issue: number): Promise<string | null> {
+  try {
+    const events = await paginate(client, `/repos/${repo}/issues/${issue}/events?per_page=100`, asArr, 5);
+    let last: string | null = null;
+    for (const e of events) {
+      const x = asRec(e);
+      const at = asStr(x.created_at);
+      if (x.event === 'reopened' && at && (!last || at > last)) last = at;
+    }
+    return last;
+  } catch {
+    return null;
+  }
+}
+
 /** The repair workflow's runs created in the last two days; null if they can't be listed (unknown). */
 export async function readRepairRuns(client: GitHubClient, repo: string, now: Date): Promise<RepairRunSnap[] | null> {
   const since = new Date(now.getTime() - 2 * 24 * 3600_000).toISOString().slice(0, 10);
@@ -907,6 +923,9 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
   // new head (or as still running), never as a finished repair next to the old head (repair_no_push).
   const repair_runs = await readRepairRuns(client, o.repo, o.now);
   const issues = await readIssues(client, o.repo);
+  // Reopen times only where they matter: open task issues whose task has history (a recorded pick).
+  const withHistory = new Set(o.historyTasks);
+  for (const i of issues) if (i.task_id && withHistory.has(i.task_id)) i.reopened_at = await readReopenedAt(client, o.repo, i.number);
   const pulls = await readPulls(client, o.repo);
   const tasks = new Set<string>(o.historyTasks);
   for (const i of issues) if (i.task_id) tasks.add(i.task_id);

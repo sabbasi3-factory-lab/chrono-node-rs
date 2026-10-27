@@ -261,6 +261,29 @@ export function finishedRepair(s: Snapshot, task: string, failedRun: number, hea
   return run && run.status === 'completed' ? run : null;
 }
 
+/**
+ * A task issue reopened after its pick is a fresh start: picks before the reopen no longer make it
+ * "in flight" (its PR was closed), and a `factory:picked` label left from before is stale. Mutates
+ * `s`: each such task's `picked_at` becomes its first pick after the reopen (or null), and the stale
+ * label is dropped from the snapshot (the next dispatch adds it again). Returns the tasks reset.
+ * An unknown reopen time changes nothing (the task stays in flight: fail closed).
+ */
+export function applyReopens(s: Snapshot): string[] {
+  const reset: string[] = [];
+  for (const i of s.issues) {
+    const task = i.task_id;
+    const at = i.reopened_at;
+    if (!task || !at) continue;
+    const h = s.history[task];
+    if (!h?.picked_at || h.picked_at > at) continue;
+    const after = (h.picks ?? []).filter((t) => t > at).sort();
+    s.history[task] = { ...h, picked_at: after[0] ?? null };
+    if (after.length === 0) i.labels = i.labels.filter((l) => l !== LABEL_PICKED);
+    reset.push(task);
+  }
+  return reset;
+}
+
 export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Decision[] {
   const out: Decision[] = [];
   const day = now.toISOString().slice(0, 10);
@@ -667,7 +690,11 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     admissible.push({
       issue,
       contract: c,
-      decision: decide({ ...base, type: 'dispatched', reason: 'would_dispatch', effect: 'dispatch_workflow:implement', attempt: 1, contract_sha: c.last_commit_sha, source_ids: [issue.node_id, c.last_commit_sha] }),
+      // A re-dispatch (after a reopen) is the next attempt, and its own audit record (dedupe).
+      decision: (() => {
+        const attempt = (history(task).dispatches ?? 0) + 1;
+        return decide({ ...base, type: 'dispatched', reason: 'would_dispatch', effect: 'dispatch_workflow:implement', attempt, contract_sha: c.last_commit_sha, source_ids: [issue.node_id, c.last_commit_sha, ...(attempt > 1 ? [`attempt:${attempt}`] : [])] });
+      })(),
     });
   }
   // Dependency order, then priority (lower first), then issue number.
