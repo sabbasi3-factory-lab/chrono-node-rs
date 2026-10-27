@@ -149,7 +149,15 @@ async function main() {
     const { version, protectedGlobs, autoStrictGlobs } = await loadPolicyProtected();
     const isAgent = pr.user && pr.user.login === AGENT_LOGIN;
     const loadContract = loadContractAt(contractBase);
-    const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract });
+    // Candidate files are read as git data only (never executed); a deleted file reads as null.
+    const readFile = (p) => {
+        try {
+            return git("show", `${head}:${p}`);
+        } catch {
+            return null;
+        }
+    };
+    const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract, readFile });
     // A factory PR's contract decides too (its tier and every scope path). A missing or unreadable
     // contract fails closed: run the full regression.
     let strict;

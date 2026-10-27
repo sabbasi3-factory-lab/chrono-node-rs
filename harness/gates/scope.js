@@ -46,10 +46,11 @@ const TASK_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
  *   changed       - changed paths
  *   protectedGlobs- tiers.yaml protected_from_agents
  *   loadContract  - (taskId) => {scope: string[], acceptance: [...] , lastCommit: string} | null
+ *   readFile      - (path) => the candidate's text of a changed file, or null (needed for `unit`)
  * @returns {{ok: boolean, kind: "human"|"factory", reasons: string[], task?: string, goldenAreas: string[],
  *            goldenStep?: string|null, differential?: {seed: number, phrases: number}|null}}
  */
-function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
+function evaluate({ isAgent, body, changed, protectedGlobs, loadContract, readFile }) {
     const task = trailer(body, "Factory-Task");
     if (!task && !isAgent) {
         return { ok: true, kind: "human", reasons: [], goldenAreas: [], goldenStep: null, differential: null };
@@ -108,7 +109,37 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
             }
         }
     }
+    reasons.push(...unitReasons({ contract, changed, scope, readFile }));
     return { ok: reasons.length === 0, kind: "factory", task, reasons, goldenAreas, goldenStep, differential };
+}
+
+const TEST_NAME = /^[a-z_][a-z0-9_]*$/;
+
+/**
+ * `acceptance: - unit: {requirement, cases: [{test, ...}]}`: every case's `test` must be a
+ * `#[test] fn <test>(` in a changed file inside the scope. A cheap presence check (CI runs the tests);
+ * line comments are ignored so a commented-out test doesn't count.
+ */
+function unitReasons({ contract, changed, scope, readFile }) {
+    const units = (contract.acceptance || []).filter((a) => a && a.unit !== undefined).map((a) => a.unit);
+    if (units.length === 0) return [];
+    const names = [];
+    for (const u of units) {
+        const cases = u && Array.isArray(u.cases) ? u.cases : null;
+        if (!cases || cases.length === 0 || !cases.every((c) => c && typeof c.test === "string" && TEST_NAME.test(c.test))) {
+            return ["unsupported unit acceptance (want {requirement, cases: [{test: <snake_case name>, ...}]})"];
+        }
+        names.push(...cases.map((c) => c.test));
+    }
+    if (typeof readFile !== "function") return ["unit acceptance: candidate files are not readable"];
+    const text = changed
+        .filter((p) => matchesAny(p, scope) && p.endsWith(".rs"))
+        .map((p) => readFile(p) || "")
+        .join("\n")
+        .replace(/\/\/[^\n]*/g, "");
+    return [...new Set(names)]
+        .filter((n) => !new RegExp(`#\\[test\\]\\s*(?:#\\[[^\\]]*\\]\\s*)*fn\\s+${n}\\s*\\(`).test(text))
+        .map((n) => `unit acceptance: no #[test] fn ${n} in the changed scope files`);
 }
 
 /**
@@ -162,4 +193,4 @@ function reviewGate({ isAgent, strict, head, enqueuer, checkRuns }) {
     return { ok: true, why: `reviewer passed ${head} (check run ${latest.id})` };
 }
 
-module.exports = { globToRegExp, matchesAny, trailer, evaluate, needsFullRegression, reviewGate, REVIEWER_APP_ID };
+module.exports = { globToRegExp, matchesAny, trailer, evaluate, unitReasons, needsFullRegression, reviewGate, REVIEWER_APP_ID };
