@@ -70,6 +70,38 @@ mod tests {
         assert!(find_parser("FactoryDrillRepairOk").is_none());
     }
 
+    /// Regression (Copilot on #109): a compiled drill module could still change the product, e.g. with
+    /// a `Drop` impl for a core type. So every drill module (and its check) is behind the
+    /// `factory-drill` feature, which the product never enables, and none is ever registered.
+    #[test]
+    fn factory_drill_modules_exist_only_with_the_feature() {
+        const GATE: &str = "#[cfg(feature = \"factory-drill\")]";
+        let mut drills = 0;
+        for generated in [
+            include_str!(concat!(env!("OUT_DIR"), "/registry/en_parsers.rs")),
+            include_str!(concat!(env!("OUT_DIR"), "/registry/en_refiners.rs")),
+        ] {
+            let lines: Vec<&str> = generated.lines().collect();
+            for (i, line) in lines.iter().enumerate() {
+                if line.starts_with("pub mod factory_drill_") {
+                    drills += 1;
+                    assert!(i >= 2 && lines[i - 2] == GATE, "ungated drill module: {line}");
+                } else if line.starts_with("const _") && line.contains("factory_drill_") {
+                    assert_eq!(lines[i - 1], GATE, "ungated drill check: {line}");
+                } else if line.contains("factory_drill_") {
+                    assert!(
+                        *line == GATE || line.starts_with("#[path"),
+                        "drill file used outside its gated module: {line}"
+                    );
+                }
+            }
+        }
+        assert!(
+            drills > 0,
+            "expected the merged drill files (test is vacuous otherwise)"
+        );
+    }
+
     #[test]
     fn upstream_names_are_unique() {
         let names = ported();

@@ -15,8 +15,9 @@
 //! This script generates the `mod` declarations and the registry lists into `OUT_DIR`, so adding a
 //! parser means adding one file. Nobody edits a shared list, so parallel tasks don't conflict.
 //! Files whose name starts with `_` are skipped (use them for helpers shared inside a directory).
-//! Files whose name starts with `factory_drill_` (factory drills) are compiled but never registered;
-//! they must declare a `FactoryDrill…` upstream name and carry no crate-wide attributes.
+//! Files whose name starts with `factory_drill_` (factory drills) are compiled only with the
+//! `factory-drill` feature (CI), never registered, must declare a `FactoryDrill…` upstream name, and
+//! carry no crate-wide attributes.
 
 use std::env;
 use std::fmt::Write as _;
@@ -86,6 +87,10 @@ fn generate_dir(out_dir: &Path, name: &str, dir: &Path, kind: &str) {
     let files = step_files(dir);
     for (stem, path) in &files {
         let abs = path.canonicalize().expect("canonical path");
+        // Factory drill modules exist only with the `factory-drill` feature (CI), never in the product.
+        if is_drill(stem) {
+            code.push_str("#[cfg(feature = \"factory-drill\")]\n");
+        }
         writeln!(code, "#[path = {:?}]\npub mod {stem};", abs.display().to_string()).unwrap();
     }
     // A factory drill file must name a `FactoryDrill…` class (checked on the real constant at compile
@@ -93,7 +98,7 @@ fn generate_dir(out_dir: &Path, name: &str, dir: &Path, kind: &str) {
     for (stem, _) in files.iter().filter(|(stem, _)| is_drill(stem)) {
         writeln!(
             code,
-            "const _: () = assert!(crate::core::registry::is_factory_drill_name({stem}::UPSTREAM), \"{stem}: UPSTREAM must start with FactoryDrill\");"
+            "#[cfg(feature = \"factory-drill\")]\nconst _: () = assert!(crate::core::registry::is_factory_drill_name({stem}::UPSTREAM), \"{stem}: UPSTREAM must start with FactoryDrill\");"
         )
         .unwrap();
     }
