@@ -1415,4 +1415,30 @@ describe('implement ended without a PR → a person at once (implement_no_pr / i
     const older = pull(39, { task_id: T, state: 'closed', created_at: '2026-10-16T10:00:00Z' });
     assert.deepEqual(reasons(run(world({ pulls: [older] }))), ['implement_failed']);
   });
+
+  it('after a reopen and re-dispatch, only the new attempt\'s finished run counts (the old PR doesn\'t block it)', () => {
+    const REOPEN = '2026-10-16T10:00:00Z';
+    const A2 = '2026-10-16T11:00:00Z';
+    const oldPr = pull(30, { task_id: T, state: 'closed', created_at: '2026-10-15T09:10:00Z' });
+    const s = snapshot({
+      issues: [{ ...issue(26, T, ['factory:task', 'factory:ready', 'factory:picked']), reopened_at: REOPEN }],
+      pulls: [oldPr],
+      contractList: [contract(T, { tier: 'auto-strict', scope: ['src/common/refiners/extract_timezone_abbr.rs'] })],
+      history: { [T]: history({ picked_at: '2026-10-15T09:00:00Z', picks: ['2026-10-15T09:00:00Z', A2], dispatches: 2, implement_dispatches: [{ issue: 26, attempt: 1, at: '2026-10-15T09:00:00Z' }, { issue: 26, attempt: 2, at: A2 }] }) },
+      implement_runs: [implRun({ id: 9002, display_title: `Implement ${T} #26 attempt 2`, created_at: '2026-10-16T11:01:00Z' }), implRun({ id: 9001, display_title: `Implement ${T} #26 attempt 1`, created_at: '2026-10-15T09:01:00Z' })],
+    });
+    applyReopens(s);
+    assert.equal(s.history[T]!.picked_at, A2);
+    const d = find(run(s), 'implement_failed');
+    assert.equal(d.run_id, 9002);
+  });
+
+  it('reopening after an implement run ended without a PR starts the task afresh (no manual dispatch needed)', () => {
+    const REOPEN = '2026-10-16T11:30:00Z';
+    const s = world();
+    s.issues[0]!.reopened_at = REOPEN;
+    assert.deepEqual(applyReopens(s), [T]);
+    const d = find(run(s), 'would_dispatch');
+    assert.deepEqual([d.attempt, d.source_ids.at(-1)], [2, `reopened:${REOPEN}`]);
+  });
 });

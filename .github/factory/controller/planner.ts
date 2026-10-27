@@ -281,10 +281,21 @@ export function finishedImplementWithoutPr(s: Snapshot, task: string, h: TaskHis
   return agentPr ? null : run;
 }
 
+/** The implement run for the dispatch recorded at or after `from` (and before `until`) finished without an agent PR. */
+function implementRunEndedWithoutPr(s: Snapshot, task: string, h: TaskHistory, from: string, until: string): boolean {
+  if (!s.implement_runs) return false;
+  const rec = (h.implement_dispatches ?? []).filter((d) => d.at >= from && d.at <= until).sort((a, b) => b.at.localeCompare(a.at))[0];
+  if (!rec) return false;
+  const run = finishedRun(s.implement_runs, `Implement ${task} #${rec.issue} attempt ${rec.attempt}`, rec.at);
+  if (!run || Date.parse(run.created_at) > Date.parse(until)) return false;
+  return !s.pulls.some((pr) => pr.task_id === task && pr.author_is_bot && (pr.author ?? '').replace(/\[bot\]$/, '') === AGENT_LOGIN && pr.created_at >= rec.at);
+}
+
 /**
- * A task issue reopened after its attempt ended is a fresh start. "Ended" means a factory PR for the
- * task opened after that pick was closed unmerged before the reopen, so a close and reopen while the
- * attempt is still running (no PR yet) changes nothing. Then picks before the reopen no longer make
+ * A task issue reopened after its attempt ended is a fresh start. "Ended" means the agent's factory
+ * PR for the task, opened after that pick, was closed unmerged before the reopen, or that attempt's
+ * implement run finished without opening a PR. A close and reopen while the attempt is still
+ * running (no PR yet) changes nothing. Then picks before the reopen no longer make
  * the task "in flight", and a `factory:picked` label left from before is stale. Mutates `s`: the
  * task's `picked_at` becomes its first pick after the reopen (or null), `reset_at` records the reopen
  * (the re-dispatch's audit identity), and the stale label is dropped from the snapshot (the next
@@ -305,9 +316,11 @@ export function applyReopens(s: Snapshot): string[] {
     if (!h?.picked_at || h.picked_at > at) continue;
     const before = (h.picks ?? [h.picked_at]).filter((t) => t <= at).sort();
     const lastPick = before[before.length - 1] ?? h.picked_at;
-    const ended = s.pulls.some(
+    const prClosed = s.pulls.some(
       (pr) => pr.task_id === task && pr.state === 'closed' && pr.author_is_bot && (pr.author ?? '').replace(/\[bot\]$/, '') === AGENT_LOGIN && pr.created_at >= lastPick && pr.created_at <= at,
     );
+    // Or that attempt's implement run finished without opening a PR (implement_no_pr / implement_failed).
+    const ended = prClosed || implementRunEndedWithoutPr(s, task, h, lastPick, at);
     if (!ended) continue;
     const after = (h.picks ?? []).filter((t) => t > at).sort();
     s.history[task] = { ...h, picked_at: after[0] ?? null, reset_at: at };
