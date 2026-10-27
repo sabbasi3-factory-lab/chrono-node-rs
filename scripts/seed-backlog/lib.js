@@ -218,7 +218,18 @@ function planIssues(contracts, repo) {
     }));
 }
 
+/**
+ * Labels to create: every required one (`{name, color, description}`) whose name isn't in `existing`,
+ * in the order given, without duplicates. Existing labels are never edited.
+ */
+function missingLabels(required, existing) {
+    const have = new Set(existing);
+    const seen = new Set();
+    return required.filter((l) => !have.has(l.name) && !seen.has(l.name) && seen.add(l.name));
+}
+
 module.exports = {
+    missingLabels,
     MARKER,
     globToRegExp,
     tierFor,

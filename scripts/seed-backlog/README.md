@@ -7,6 +7,7 @@ cd scripts/seed-backlog && npm ci
 node seed.js contracts           # write contracts/<id>.yaml
 node seed.js contracts --check   # fail if contracts/ is stale
 node seed.js issues --plan       # print the issues the contracts would become (no writes)
+node seed.js labels [--check]    # create the factory's labels (.github/factory/labels.json) and the contracts' tier:/area: labels if missing
 npm test                         # unit tests
 ```
 
