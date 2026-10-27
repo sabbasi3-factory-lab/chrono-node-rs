@@ -231,6 +231,19 @@ test("unit acceptance: every case's #[test] must exist in a changed scope file",
     assert.deepStrictEqual(run("#[test]\nfn ctor_only() {}").reasons, ["unit acceptance: no #[test] fn per_parse_wins in the changed scope files"]);
     assert.strictEqual(run("#[test]\nfn ctor_only() {}\n// #[test]\n// fn per_parse_wins() {}").ok, false);
     assert.strictEqual(run("#[test]\nfn ctor_only() {}\nfn per_parse_wins() {}").ok, false);
+    // Block comments (nested) and string literals (normal, raw) don't count either.
+    for (const hidden of [
+        "/* #[test]\nfn per_parse_wins() {} */",
+        "/* outer /* inner */ #[test]\nfn per_parse_wins() {} */",
+        'const S: &str = "#[test]\nfn per_parse_wins() {}";',
+        'const S: &str = r#"#[test]\nfn per_parse_wins() {}"#;',
+        'const S: &str = "\\" #[test] fn per_parse_wins() {}";',
+    ]) {
+        assert.strictEqual(run(`#[test]\nfn ctor_only() {}\n${hidden}`).ok, false, hidden);
+    }
+    // Code after literals and lifetimes is still seen, and visibility before fn is allowed.
+    const tricky = "fn f<'a>(x: &'a str) -> char { let _ = \"//\"; '\"' }\n#[test]\npub fn ctor_only() {}\n#[test]\npub(crate) fn per_parse_wins() {}";
+    assert.deepStrictEqual(run(tricky).reasons, []);
     // A prefix of a longer name doesn't count.
     assert.strictEqual(run("#[test]\nfn ctor_only() {}\n#[test]\nfn per_parse_wins_too() {}").ok, false);
     // Files outside the scope don't count.
