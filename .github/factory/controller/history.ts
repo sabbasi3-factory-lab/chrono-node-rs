@@ -40,6 +40,10 @@ export function deriveState(events: AuditEvent[], now: Date): DerivedState {
         h.repairs++;
         if (typeof e.payload.run_id === 'number') h.repaired_run_ids.push(e.payload.run_id);
         if (typeof e.payload.failure_signature === 'string') h.failure_signatures.push(e.payload.failure_signature);
+        const { run_id: run, head_sha: head, issue, attempt } = e.payload;
+        if (typeof run === 'number' && typeof head === 'string' && /^[0-9a-f]{40}$/.test(head) && typeof issue === 'number' && typeof attempt === 'number') {
+          (h.repair_dispatches ??= []).push({ run_id: run, head, issue, attempt, at: e.timestamp });
+        }
         break;
       }
       case 'auto_merge': {

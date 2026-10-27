@@ -4,6 +4,7 @@
 
 import { CONTROLLER_LOGIN, REVERT_REVIEWED_LABEL, revertedPrOf } from './github.ts';
 import { contractPath, contractShaMatches, isCoreTask, sameArea, taskTier } from './tasks.ts';
+import { DISPATCH_MATCH_MINUTES } from './spend.ts';
 import type {
   CheckRunSnap,
   ContractSnap,
@@ -15,6 +16,7 @@ import type {
   Policies,
   PullSnap,
   ReasonCode,
+  RepairRunSnap,
   Snapshot,
   TaskHistory,
 } from './types.ts';
@@ -239,6 +241,24 @@ export function inFlightTasks(s: Snapshot): Set<string> {
     if (i.labels.includes(LABEL_PICKED) || s.history[i.task_id]?.picked_at) inFlight.add(i.task_id);
   }
   return inFlight;
+}
+
+/**
+ * The finished repair run for a failing CI run at `head`: matched to the controller's own
+ * `repair_dispatched` record (same task, issue and attempt, created within DISPATCH_MATCH_MINUTES
+ * after it), not to the run name alone. Null while it runs, or when it can't be found or listed
+ * (the task's wall-clock limit is the backstop).
+ */
+export function finishedRepair(s: Snapshot, task: string, failedRun: number, head: string, h: TaskHistory): RepairRunSnap | null {
+  if (!s.repair_runs) return null;
+  const rec = (h.repair_dispatches ?? []).filter((d) => d.run_id === failedRun && d.head === head).sort((a, b) => b.at.localeCompare(a.at))[0];
+  if (!rec) return null;
+  const at = Date.parse(rec.at);
+  const title = `Repair ${task} #${rec.issue} attempt ${rec.attempt}`;
+  const run = s.repair_runs
+    .filter((r) => r.display_title === title && Date.parse(r.created_at) >= at && Date.parse(r.created_at) - at <= DISPATCH_MATCH_MINUTES * 60_000)
+    .sort((a, b) => b.id - a.id)[0];
+  return run && run.status === 'completed' ? run : null;
 }
 
 export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Decision[] {
@@ -555,7 +575,18 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     }
     if (!run || !run.conclusion || !FAILED_CONCLUSIONS.has(run.conclusion)) continue;
     const h = history(task);
-    if (h.repaired_run_ids.includes(run.run_id)) continue;
+    if (h.repaired_run_ids.includes(run.run_id)) {
+      // This failure was already sent to repair. Once that repair run has finished and the PR head is
+      // still the one it was asked to fix, it pushed nothing: a person, never another repair.
+      const ended = finishedRepair(s, task, run.run_id, pr.head_sha, h);
+      if (ended) {
+        escalate(decide({
+          ...base, type: 'needs_human', reason: ended.conclusion === 'success' ? 'repair_no_push' : 'repair_failed', effect: 'label:needs-human',
+          run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id, `repair_run:${ended.id}`],
+        }));
+      }
+      continue;
+    }
     // Nothing is repaired until the trusted gates have passed on this exact head
     // (missing, still running, cancelled or skipped gates → wait).
     if (gates?.conclusion !== 'success') {
