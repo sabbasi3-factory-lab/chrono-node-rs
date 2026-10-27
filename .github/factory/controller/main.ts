@@ -18,6 +18,7 @@ import { FakeGitHub } from './fake.ts';
 import { ALERT_TITLE, ALERT_TITLES, COMMENT_MARKER, createClient, LABEL_ALERT, paginate, readSnapshot, REVIEWER_APP_ID, type AlertCode, type RecordedCheck } from './github.ts';
 import { CAPPED_WORKFLOWS, lockCapsMismatch, type CappedWorkflow } from './caps.ts';
 import { dispatchStatus, shouldRecord } from './dispatch-state.ts';
+import { followUp, parseChain } from './follow-up.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
@@ -34,6 +35,8 @@ export interface RunEnv {
   FACTORY_ENABLED?: string | undefined;
   GITHUB_RUN_ID?: string | undefined;
   GITHUB_EVENT_NAME?: string | undefined;
+  /** The `chain` input of a controller-dispatched follow-up poll (follow-up.ts); empty otherwise. */
+  FACTORY_CHAIN?: string | undefined;
 }
 
 export interface RunDeps {
@@ -359,6 +362,8 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     );
   }
   log(`appended ${audit.appended.length} audit event(s) at ${isoSeconds(now)}`);
+  // Last: one follow-up poll while there's work in flight (cron here runs every 2–8 h).
+  if (!deps.snapshot) await followUp(client, repo, runId(deps.env), status, live, parseChain(deps.env.FACTORY_CHAIN), log);
   return { snapshot, decisions, appended: [...audit.appended], summary: renderSummary(decisions, audit.appended, factoryEnabled, live, spendNote, projectNote), live };
 }
 
@@ -424,6 +429,7 @@ async function cli(): Promise<void> {
         FACTORY_ENABLED: process.env.FACTORY_ENABLED,
         GITHUB_RUN_ID: process.env.GITHUB_RUN_ID,
         GITHUB_EVENT_NAME: process.env.GITHUB_EVENT_NAME,
+        FACTORY_CHAIN: process.env.FACTORY_CHAIN,
       },
       now: new Date(),
       log,
