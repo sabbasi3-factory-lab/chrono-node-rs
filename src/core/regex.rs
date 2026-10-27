@@ -630,12 +630,15 @@ mod tests {
         let lead = JsRegex::new("^[-a]$", "i");
         assert!(lead.is_match("A") && !lead.is_match("_"));
         assert!(JsRegex::new(r"^[a\-]$", "i").is_match("A"));
+        let not_a = JsRegex::new("^[^A-]$", "i");
+        assert!(!not_a.is_match("-") && !not_a.is_match("a") && not_a.is_match("_") && not_a.is_match("["));
     }
 
     #[test]
     fn case_insensitive_group_names_are_not_expanded() {
         let re = JsRegex::new("(?<ab>.)(?<AB>.)", "i");
         assert!(re.is_match("xy"));
+        assert!(JsRegex::new(r"^(?<word>ab)$", "i").is_match("AB"));
     }
 
     #[test]
