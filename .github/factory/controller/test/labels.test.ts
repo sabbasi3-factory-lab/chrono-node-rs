@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { FakeGitHub } from '../fake.ts';
 import { LABEL_ALERT, REVERT_REVIEWED_LABEL } from '../github.ts';
-import { missingLabels, requiredLabels } from '../labels.ts';
+import { labelWarning, missingLabels, requiredLabels } from '../labels.ts';
 import { AUTO_READY_HOLDS, LABEL_NEEDS_HUMAN, LABEL_PICKED, LABEL_READY, LABEL_TASK } from '../planner.ts';
 import { REPO } from './helpers.ts';
 
@@ -22,5 +22,16 @@ describe('factory labels (.github/factory/labels.json)', () => {
     const down = new FakeGitHub(REPO);
     down.addRoute('GET', new RegExp(`^/repos/${REPO}/labels$`), () => ({ status: 500, data: null }));
     assert.equal(await missingLabels(down, REPO, ['factory:task']), null);
+  });
+
+  it('the startup check never throws: a broken labels.json or an unreadable label list is a warning line', async () => {
+    const gh = new FakeGitHub(REPO);
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/labels$`), () => ({ data: [{ name: 'factory:task' }] }));
+    assert.match((await labelWarning(gh, REPO, async () => { throw new Error('bad json'); }))!, /could not load .github\/factory\/labels.json .*bad json/);
+    assert.match((await labelWarning(gh, REPO, async () => ['factory:task', 'factory:alert']))!, /factory labels missing .*: factory:alert$/);
+    assert.equal(await labelWarning(gh, REPO, async () => ['factory:task']), null);
+    const down = new FakeGitHub(REPO);
+    down.addRoute('GET', new RegExp(`^/repos/${REPO}/labels$`), () => ({ status: 500, data: null }));
+    assert.match((await labelWarning(down, REPO, async () => ['x']))!, /could not read the repo labels/);
   });
 });

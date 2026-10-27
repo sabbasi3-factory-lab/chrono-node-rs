@@ -25,3 +25,17 @@ export async function missingLabels(client: GitHubClient, repo: string, required
     return null;
   }
 }
+
+/** The startup check as one warning line, or null when all are present. Never throws. */
+export async function labelWarning(client: GitHubClient, repo: string, load: () => Promise<string[]> = requiredLabels): Promise<string | null> {
+  let required: string[];
+  try {
+    required = await load();
+  } catch (err) {
+    return `WARNING: could not load .github/factory/labels.json to check the factory labels (${(err as Error).message})`;
+  }
+  const missing = await missingLabels(client, repo, required);
+  if (missing === null) return 'WARNING: could not read the repo labels to check the factory labels';
+  if (missing.length > 0) return `WARNING: factory labels missing (run \`node scripts/seed-backlog/seed.js labels\`): ${missing.join(', ')}`;
+  return null;
+}

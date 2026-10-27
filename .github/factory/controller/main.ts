@@ -19,7 +19,7 @@ import { ALERT_TITLE, ALERT_TITLES, COMMENT_MARKER, createClient, LABEL_ALERT, p
 import { CAPPED_WORKFLOWS, lockCapsMismatch, type CappedWorkflow } from './caps.ts';
 import { dispatchStatus, shouldRecord } from './dispatch-state.ts';
 import { followUp, parseChain } from './follow-up.ts';
-import { missingLabels, requiredLabels } from './labels.ts';
+import { labelWarning } from './labels.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
@@ -176,9 +176,8 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   log(`mode: ${live ? 'live (FACTORY_ENABLED=true)' : 'dry-run'}`);
 
   if (!deps.snapshot) {
-    const missing = await missingLabels(client, repo, await requiredLabels());
-    if (missing === null) log('WARNING: could not read the repo labels to check the factory labels');
-    else if (missing.length > 0) log(`WARNING: factory labels missing (run \`node scripts/seed-backlog/seed.js labels\`): ${missing.join(', ')}`);
+    const warning = await labelWarning(client, repo);
+    if (warning) log(warning);
   }
 
   const audit = new AuditLog(client, { repo, factoryVersion: deps.factoryVersion, dryRun: !live });
