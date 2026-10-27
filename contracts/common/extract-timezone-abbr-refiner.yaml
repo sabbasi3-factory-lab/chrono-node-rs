@@ -28,4 +28,72 @@ acceptance:
       match: chrono-node@d4fe7e3
   - clippy: deny-warnings
   - public_api: unchanged-except-added
+  - unit:
+      requirement: "Keep upstream's optional constructor map (`timezoneOverrides`): expose a public constructor taking `Option<TimezoneAbbrMap>`, while `create(&Flags)` builds it with no map, as upstream's configuration does. Merge it with the per-parse `option.timezones` like `{ ...this.timezoneOverrides, ...context.option.timezones }`, so per-parse wins. Add one in-file `#[cfg(test)]` test per case: build `create_casual_configuration(false)`, replace the refiner whose name is `UPSTREAM` with one built with `constructor`, parse `text` at `ref` with `option` as `timezones`, and assert the first result's text and `timezoneOffset` (null = not set)."
+      cases:
+        - name: no map
+          text: at 10:00 XYZ
+          ref: 2012-08-10T12:00:00Z
+          constructor: null
+          option: null
+          expect:
+            text: at 10:00
+            timezoneOffset: null
+        - name: constructor only
+          text: at 10:00 XYZ
+          ref: 2012-08-10T12:00:00Z
+          constructor:
+            XYZ: -180
+          option: null
+          expect:
+            text: at 10:00 XYZ
+            timezoneOffset: -180
+        - name: per-parse only
+          text: at 10:00 XYZ
+          ref: 2012-08-10T12:00:00Z
+          constructor: null
+          option:
+            XYZ: 60
+          expect:
+            text: at 10:00 XYZ
+            timezoneOffset: 60
+        - name: per-parse beats constructor
+          text: at 10:00 XYZ
+          ref: 2012-08-10T12:00:00Z
+          constructor:
+            XYZ: -180
+          option:
+            XYZ: 60
+          expect:
+            text: at 10:00 XYZ
+            timezoneOffset: 60
+        - name: constructor beats built-in
+          text: at 10:00 EST
+          ref: 2012-08-10T12:00:00Z
+          constructor:
+            EST: 120
+          option: null
+          expect:
+            text: at 10:00 EST
+            timezoneOffset: 120
+        - name: per-parse beats constructor and built-in
+          text: at 10:00 EST
+          ref: 2012-08-10T12:00:00Z
+          constructor:
+            EST: 120
+          option:
+            EST: -60
+          expect:
+            text: at 10:00 EST
+            timezoneOffset: -60
+        - name: merge keeps other constructor keys
+          text: at 10:00 ABC
+          ref: 2012-08-10T12:00:00Z
+          constructor:
+            ABC: 30
+          option:
+            XYZ: 60
+          expect:
+            text: at 10:00 ABC
+            timezoneOffset: 30
 golden_cases: 42

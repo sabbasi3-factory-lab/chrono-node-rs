@@ -75,6 +75,14 @@ function validate({ taskmap, upstreamFiles, configurations }) {
         if (text === undefined) problems.push(`${t.id}: missing upstream file ${src}`);
         else if (!new RegExp(`class\\s+${t.step}\\b`).test(text)) problems.push(`${t.id}: ${src} has no class ${t.step}`);
         if (!t.area || !/^[a-z0-9-]+$/.test(t.area)) problems.push(`${t.id}: bad area`);
+        if (t.unit !== undefined) {
+            const u = t.unit;
+            const casesOk =
+                u && Array.isArray(u.cases) && u.cases.length > 0 && u.cases.every((c) => c && typeof c.name === "string" && c.expect && typeof c.expect === "object");
+            if (!u || typeof u.requirement !== "string" || !u.requirement.trim() || !casesOk) {
+                problems.push(`${t.id}: unit must be {requirement, cases: [{name, ..., expect}]}`);
+            }
+        }
         const kind = /\/parsers\//.test(t.rust || "") ? "parsers" : "refiners";
         if (!/\/(parsers|refiners)\//.test(t.source || "") || !t.source.includes(`/${kind}/`)) {
             problems.push(`${t.id}: source and rust path disagree on parser/refiner`);
@@ -171,6 +179,8 @@ function buildContracts({ taskmap, pin, tiers, cases }) {
                     { differential: { phrases: d.phrases, seed: d.seed, match: `chrono-node@${pin.commit.slice(0, 7)}` } },
                     { clippy: taskmap.acceptance.clippy },
                     { public_api: taskmap.acceptance.public_api },
+                    // Behaviour golden data can't reach (e.g. constructor arguments upstream never passes).
+                    ...(t.unit ? [{ unit: t.unit }] : []),
                 ],
                 golden_cases: f.count,
             };

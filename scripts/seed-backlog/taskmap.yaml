@@ -24,7 +24,32 @@ tasks:
   # --- common parsers and refiners (src/common/**: auto-strict, human tier in Stage 1) ---
   - { id: common/iso-format-parser, step: ISOFormatParser, source: common/parsers/ISOFormatParser.ts, rust: src/common/parsers/iso_format.rs, area: common-parsers }
   - { id: common/slash-date-format-parser, step: SlashDateFormatParser, source: common/parsers/SlashDateFormatParser.ts, rust: src/common/parsers/slash_date_format.rs, area: common-parsers }
-  - { id: common/extract-timezone-abbr-refiner, step: ExtractTimezoneAbbrRefiner, source: common/refiners/ExtractTimezoneAbbrRefiner.ts, rust: src/common/refiners/extract_timezone_abbr.rs, area: common-refiners }
+  - id: common/extract-timezone-abbr-refiner
+    step: ExtractTimezoneAbbrRefiner
+    source: common/refiners/ExtractTimezoneAbbrRefiner.ts
+    rust: src/common/refiners/extract_timezone_abbr.rs
+    area: common-refiners
+    # Upstream never constructs it with a map, so no golden case covers the constructor; these
+    # cases were produced by chrono-node v2.10.3 (TZ=UTC, the step swapped into the casual
+    # English configuration, built with `constructor` and parsed with `option` timezones).
+    unit:
+      requirement: >-
+        Keep upstream's optional constructor map (`timezoneOverrides`): expose a public constructor
+        taking `Option<TimezoneAbbrMap>`, while `create(&Flags)` builds it with no map, as
+        upstream's configuration does. Merge it with the per-parse `option.timezones` like
+        `{ ...this.timezoneOverrides, ...context.option.timezones }`, so per-parse wins. Add one
+        in-file `#[cfg(test)]` test per case: build `create_casual_configuration(false)`, replace
+        the refiner whose name is `UPSTREAM` with one built with `constructor`, parse `text` at
+        `ref` with `option` as `timezones`, and assert the first result's text and
+        `timezoneOffset` (null = not set).
+      cases:
+        - { name: no map, text: "at 10:00 XYZ", ref: "2012-08-10T12:00:00Z", constructor: null, option: null, expect: { text: "at 10:00", timezoneOffset: null } }
+        - { name: constructor only, text: "at 10:00 XYZ", ref: "2012-08-10T12:00:00Z", constructor: { XYZ: -180 }, option: null, expect: { text: "at 10:00 XYZ", timezoneOffset: -180 } }
+        - { name: per-parse only, text: "at 10:00 XYZ", ref: "2012-08-10T12:00:00Z", constructor: null, option: { XYZ: 60 }, expect: { text: "at 10:00 XYZ", timezoneOffset: 60 } }
+        - { name: per-parse beats constructor, text: "at 10:00 XYZ", ref: "2012-08-10T12:00:00Z", constructor: { XYZ: -180 }, option: { XYZ: 60 }, expect: { text: "at 10:00 XYZ", timezoneOffset: 60 } }
+        - { name: constructor beats built-in, text: "at 10:00 EST", ref: "2012-08-10T12:00:00Z", constructor: { EST: 120 }, option: null, expect: { text: "at 10:00 EST", timezoneOffset: 120 } }
+        - { name: per-parse beats constructor and built-in, text: "at 10:00 EST", ref: "2012-08-10T12:00:00Z", constructor: { EST: 120 }, option: { EST: -60 }, expect: { text: "at 10:00 EST", timezoneOffset: -60 } }
+        - { name: merge keeps other constructor keys, text: "at 10:00 ABC", ref: "2012-08-10T12:00:00Z", constructor: { ABC: 30 }, option: { XYZ: 60 }, expect: { text: "at 10:00 ABC", timezoneOffset: 30 } }
   - { id: common/extract-timezone-offset-refiner, step: ExtractTimezoneOffsetRefiner, source: common/refiners/ExtractTimezoneOffsetRefiner.ts, rust: src/common/refiners/extract_timezone_offset.rs, area: common-refiners }
   - { id: common/forward-date-refiner, step: ForwardDateRefiner, source: common/refiners/ForwardDateRefiner.ts, rust: src/common/refiners/forward_date.rs, area: common-refiners }
   - { id: common/merge-weekday-component-refiner, step: MergeWeekdayComponentRefiner, source: common/refiners/MergeWeekdayComponentRefiner.ts, rust: src/common/refiners/merge_weekday_component.rs, area: common-refiners }
