@@ -50,17 +50,16 @@ impl Parser for SlashDateFormatParser {
         // The character before the match could still be a number, because the pattern runs on the remaining text.
         let index = m.index + m.get(OPENING_GROUP).unwrap_or("").len();
         let index_end = m.index + m.text().len() - m.get(ENDING_GROUP).unwrap_or("").len();
-        if index > 0 {
-            let text_before = &context.text[..index];
-            if js_regex!(r"\d/?$").is_match(text_before) {
-                return Extracted::None;
-            }
+        let bytes = context.text.as_bytes();
+        let before = &bytes[..index];
+        let before = before.strip_suffix(b"/").unwrap_or(before);
+        if before.last().is_some_and(u8::is_ascii_digit) {
+            return Extracted::None;
         }
-        if index_end < context.text.len() {
-            let text_after = &context.text[index_end..];
-            if js_regex!(r"^/?\d").is_match(text_after) {
-                return Extracted::None;
-            }
+        let after = &bytes[index_end..];
+        let after = after.strip_prefix(b"/").unwrap_or(after);
+        if after.first().is_some_and(u8::is_ascii_digit) {
+            return Extracted::None;
         }
 
         let text = &context.text[index..index_end];
@@ -77,7 +76,6 @@ impl Parser for SlashDateFormatParser {
             return Extracted::None;
         }
 
-        let mut result = context.create_parsing_result(index, text, None, None);
         let (Some(mut month), Some(mut day)) = (
             js_parse_int(m.get(self.group_number_month).unwrap_or("")),
             js_parse_int(m.get(self.group_number_day).unwrap_or("")),
@@ -96,6 +94,7 @@ impl Parser for SlashDateFormatParser {
             return Extracted::None;
         }
 
+        let mut result = context.create_parsing_result(index, text, None, None);
         result.start.assign(Component::Day, day);
         result.start.assign(Component::Month, month);
 
