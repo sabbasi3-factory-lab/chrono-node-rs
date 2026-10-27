@@ -11,9 +11,10 @@ Write `src/locales/en/parsers/factory_drill_post_merge.rs` as a parser step with
 
 This PR should pass every check and be merged. The failure comes later, on `main`.
 
-Factory drill files are never registered (`build.rs`), so this parser never runs in any
-configuration. Follow the shape of an existing drill parser (for example
-`src/locales/en/parsers/factory_drill_repair_ok.rs`). Keep it short; `cargo fmt` and
-`cargo clippy --all-targets -- -D warnings` must pass. Don't add anything that isn't asked for here.
+Factory drill files compile only with the `factory-drill` feature and are never registered
+(`build.rs`), so this parser never runs in any configuration. Follow the shape of an existing drill
+parser (for example `src/locales/en/parsers/factory_drill_repair_ok.rs`). Keep it short; `cargo fmt`
+and `cargo clippy --all-targets --features factory-drill -- -D warnings` must pass (CI checks drill
+files with that feature). Don't add anything that isn't asked for here.
 
 Some acceptance of this drill is checked only in `ci`.

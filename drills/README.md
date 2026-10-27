@@ -32,9 +32,9 @@ for a drill task.
 Seven hand-written **`auto-strict`** drill tasks. Before the promotion, the controller runs
 auto-strict only for tasks matching tiers.yaml `auto-strict.promote_tasks` (`drill/*`) whose every
 scope path matches `promote_tasks_paths` (`src/locales/en/parsers/factory_drill_*.rs`); `start_as:
-human` holds for every other task (#109). Drill files are compiled but never registered (`build.rs`
-leaves `factory_drill_*` out of the registry and checks each `UPSTREAM` starts with `FactoryDrill`), so
-a merged drill can't change what chrono parses. Each deliberate failure is deterministic and can
+human` holds for every other task (#109). Drill files compile only with the non-default
+`factory-drill` cargo feature (CI's clippy and strict gates enable it; the product never does) and
+are never registered (`build.rs`), so a merged drill can't change the product. Each deliberate failure is deterministic and can
 only make a check **fail**, never pass.
 
 | Drill | Task (area) | How it fails | Pass criterion (audit log unless noted) |
@@ -77,7 +77,8 @@ the drills:
    (deliberate)` and `Drill (deliberate, post-merge)`) and the `ci-drill.sh full-regression` line in
    the full-regression step, the D8c hook in `benches/golden_phrases.rs` and its guard in
    `harness/strict/perf.sh` (with `harness/gates/test/perf-drill.test.js`), and every merged drill
-   parser (`src/locales/en/parsers/factory_drill_*.rs`).
+   parser (`src/locales/en/parsers/factory_drill_*.rs`). Then the `factory-drill` feature
+   (Cargo.toml, `build.rs`, `--features factory-drill` in ci.yml and the strict-gate scripts).
 2. In the same change, a factory PR removes `auto-strict.promote_tasks` and `promote_tasks_paths`
    from tiers.yaml, and the removal PR bumps factory-version to it. The controller's
    `drillPromoted` and the scope check's drill rule then promote nothing; remove them, and
