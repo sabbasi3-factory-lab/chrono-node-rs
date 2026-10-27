@@ -177,6 +177,15 @@ export function parsePolicies(texts: PolicyTexts): Policies {
     });
     strictGates = names.every((n): n is string => typeof n === 'string' && n.length > 0) ? names : null;
   }
+  // Drill-only promotion. Both lists must be non-empty lists of non-empty strings, else nothing is
+  // promoted by them (fail closed, without stopping the controller).
+  const globs = (key: string): string[] => {
+    const v = get(t, key);
+    return Array.isArray(v) && v.length > 0 && v.every((x: unknown) => typeof x === 'string' && x.length > 0) ? (v as string[]) : [];
+  };
+  let promoteTasks = globs('tiers.auto-strict.promote_tasks');
+  let promotePaths = globs('tiers.auto-strict.promote_tasks_paths');
+  if (promoteTasks.length === 0 || promotePaths.length === 0) [promoteTasks, promotePaths] = [[], []];
   const tiers: TiersPolicy = {
     version: 1,
     tiers: {
@@ -185,6 +194,8 @@ export function parsePolicies(texts: PolicyTexts): Policies {
         paths: strList(t, 'tiers', 'tiers.auto-strict.paths'),
         ...(startAs !== undefined ? { start_as: startAs } : {}),
         strict_gates: strictGates,
+        promote_tasks: promoteTasks,
+        promote_tasks_paths: promotePaths,
       },
       human: { paths: strList(t, 'tiers', 'tiers.human.paths') },
     },

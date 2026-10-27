@@ -46,10 +46,11 @@ const TASK_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
  *   changed       - changed paths
  *   protectedGlobs- tiers.yaml protected_from_agents
  *   loadContract  - (taskId) => {scope: string[], acceptance: [...] , lastCommit: string} | null
+ *   promoteTasks, promotePaths - tiers.yaml auto-strict.promote_tasks / promote_tasks_paths
  * @returns {{ok: boolean, kind: "human"|"factory", reasons: string[], task?: string, goldenAreas: string[],
  *            goldenStep?: string|null, differential?: {seed: number, phrases: number}|null}}
  */
-function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
+function evaluate({ isAgent, body, changed, protectedGlobs, loadContract, promoteTasks = [], promotePaths = [] }) {
     const task = trailer(body, "Factory-Task");
     if (!task && !isAgent) {
         return { ok: true, kind: "human", reasons: [], goldenAreas: [], goldenStep: null, differential: null };
@@ -77,6 +78,18 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
     const scope = Array.isArray(contract.scope) ? contract.scope : [];
     for (const path of changed) {
         if (!matchesAny(path, protectedGlobs) && !matchesAny(path, scope)) reasons.push(`out of contract scope: ${path}`);
+    }
+    // Drill-only promotion (tiers.yaml auto-strict.promote_tasks): such a task may touch only the
+    // promoted drill files, in its contract and in the change. A non-list policy promotes nothing.
+    const promoted = Array.isArray(promoteTasks) && promoteTasks.length > 0 && matchesAny(task, promoteTasks);
+    if (promoted) {
+        const allowed = Array.isArray(promotePaths) ? promotePaths : [];
+        for (const path of scope) {
+            if (typeof path !== "string" || !matchesAny(path, allowed)) reasons.push(`promoted drill task: contract scope outside the drill files: ${path}`);
+        }
+        for (const path of changed) {
+            if (!matchesAny(path, allowed)) reasons.push(`promoted drill task: change outside the drill files: ${path}`);
+        }
     }
 
     // acceptance: - golden: { step: ENWeekdayParser, areas: [en/weekday, ...] }

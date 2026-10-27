@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { IMPLEMENTED_STRICT_GATES, missingStrictGates, plan } from '../planner.ts';
+import { drillPromoted, IMPLEMENTED_STRICT_GATES, mergeTier, missingStrictGates, plan, strictPromoted } from '../planner.ts';
 import type { Decision, MergeQueueEventSnap, PlannerEnv, ReasonCode, ReviewCheckSnap, Snapshot } from '../types.ts';
 import { type SnapshotOverrides, checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, snapshot, testPolicies } from './helpers.ts';
 
@@ -1252,5 +1252,73 @@ describe('auto-revert: a confirmed post-merge ci failure on main after an auto-s
       assert.deepEqual(kinds(plan2(prWorld(revertPull({ author: 'sabbasi3-factory-agent[bot]', author_is_bot: true })))), []);
       assert.deepEqual(kinds(plan2(prWorld(revertPull({ head_ref: 'revert-21' })))), []);
     });
+  });
+});
+
+describe('drill-only promotion (tiers.yaml promote_tasks: drill/*; start_as: human stays for every other task)', () => {
+  const DRILL_FILE = 'src/locales/en/parsers/factory_drill_x.rs';
+  const drillC = (over: Partial<ReturnType<typeof contract>> = {}) => contract('drill/x', { tier: 'auto-strict', area: 'drill', scope: [DRILL_FILE], ...over });
+
+  it('the policy fixture is the real one: start_as human, promote_tasks drill/* on the drill parser files only', () => {
+    const t = policies.tiers.tiers['auto-strict'];
+    assert.equal(t.start_as, 'human');
+    assert.deepEqual([t.promote_tasks, t.promote_tasks_paths], [['drill/*'], ['src/locales/en/parsers/factory_drill_*.rs']]);
+  });
+
+  it('only a drill/* task whose every scope path is a drill parser file is promoted', () => {
+    assert.equal(drillPromoted(drillC(), policies), true);
+    assert.equal(mergeTier(drillC(), policies), 'auto-strict');
+    assert.equal(drillPromoted(drillC({ scope: [DRILL_FILE, 'src/locales/en/parsers/weekday.rs'] }), policies), false, 'scope reaches a product file');
+    assert.equal(drillPromoted(drillC({ scope: ['src/locales/en/parsers/**'] }), policies), false, 'a scope glob wider than the drill files');
+    assert.equal(drillPromoted(drillC({ scope: ['src/core/x.rs'] }), policies), false);
+    assert.equal(drillPromoted(drillC({ valid: false }), policies), false);
+    assert.equal(drillPromoted(drillC({ id: 'drill/x/y' }), policies), false, '* is one path segment');
+  });
+
+  it('every non-drill auto-strict task stays unpromoted (pinned), whatever its scope', () => {
+    for (const c of [
+      contract('en/x', { tier: 'auto-strict', scope: [DRILL_FILE] }),
+      contract('core/results', { tier: 'auto-strict', scope: ['src/core/results.rs'] }),
+      contract('en/weekday', { tier: 'auto-strict', scope: ['src/locales/en/parsers/weekday.rs'] }),
+      contract('drillx/a', { tier: 'auto-strict', scope: [DRILL_FILE] }),
+    ]) {
+      assert.equal(strictPromoted(c, policies), false, c.id!);
+      assert.equal(mergeTier(c, policies), null, c.id!);
+    }
+  });
+
+  it('nothing is promoted when a strict gate is unimplemented, or the lists are missing', () => {
+    const held = structuredClone(policies);
+    held.tiers.tiers['auto-strict'].strict_gates = [...IMPLEMENTED_STRICT_GATES, 'unbuilt_gate'];
+    assert.equal(drillPromoted(drillC(), held), false);
+    for (const k of ['promote_tasks', 'promote_tasks_paths'] as const) {
+      const none = structuredClone(policies);
+      none.tiers.tiers['auto-strict'][k] = [];
+      assert.equal(drillPromoted(drillC(), none), false, k);
+    }
+  });
+
+  it('the real path for a drill: auto-ready, then a review on a green PR; the same PR for a non-drill task waits for a person', () => {
+    const autoReady = structuredClone(policies);
+    autoReady.limits.auto_ready = true;
+    const readyKinds = (c: ReturnType<typeof contract>) => plan(snapshot({ issues: [issue(1, c.id!, ['factory:task'])], contractList: [c] }), autoReady, ON, NOW).map((d) => `${d.type}/${d.reason}`);
+    assert.deepEqual(readyKinds(drillC()), ['auto_ready/deps_merged']);
+    assert.deepEqual(readyKinds(contract('en/x', { tier: 'auto-strict', scope: [DRILL_FILE] })), []);
+    const green = (c: ReturnType<typeof contract>): Snapshot => {
+      const pr = pull(21, { task_id: c.id!, contract_sha: c.last_commit_sha, mergeable: 'MERGEABLE', in_merge_queue: false });
+      return snapshot({
+        issues: [issue(1, c.id!, ['factory:ready', 'factory:picked'])],
+        pulls: [pr],
+        contractList: [c],
+        check_runs: [
+          checkRun(490, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, conclusion: 'success' }),
+          checkRun(500, { head_sha: pr.head_sha, pull_requests: [21], conclusion: 'success', full_regression: 'success' }),
+        ],
+        history: { [c.id!]: history({ picked_at: '2026-10-16T10:00:00Z' }) },
+        review_checks: [],
+      });
+    };
+    assert.deepEqual(run(green(drillC())).map((d) => `${d.type}/${d.reason}`), ['review_dispatched/review_needed']);
+    assert.deepEqual(run(green(contract('en/x', { tier: 'auto-strict', scope: [DRILL_FILE] }))), []);
   });
 });
