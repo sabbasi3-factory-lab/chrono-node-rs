@@ -31,3 +31,17 @@ impl Parser for FactoryDrillGateMutation {
         Extracted::None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::drill_score;
+
+    #[test]
+    fn drill_score_doubles_above_ten_and_increments_otherwise() {
+        assert_eq!(drill_score(0), 1);
+        assert_eq!(drill_score(5), 6);
+        assert_eq!(drill_score(10), 11);
+        assert_eq!(drill_score(11), 22);
+        assert_eq!(drill_score(20), 40);
+    }
+}
