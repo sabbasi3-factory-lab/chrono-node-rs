@@ -1368,3 +1368,85 @@ describe('a reopened task starts afresh (the D8d re-run needed a manual dispatch
     assert.ok(!run(s).some((d) => d.reason === 'would_dispatch'));
   });
 });
+
+describe('implement ended without a PR → a person at once (implement_no_pr / implement_failed)', () => {
+  const T = 'common/extract-timezone-abbr-refiner';
+  const AT = '2026-10-16T11:00:00Z';
+  const implRun = (over: Partial<NonNullable<Snapshot['implement_runs']>[number]> = {}) => ({
+    id: 9001, display_title: `Implement ${T} #26 attempt 1`, created_at: '2026-10-16T11:01:00Z', status: 'completed', conclusion: 'failure', ...over,
+  });
+  const world = (o: { runs?: Snapshot['implement_runs']; pulls?: ReturnType<typeof pull>[]; labels?: string[]; dispatchAt?: string } = {}): Snapshot =>
+    snapshot({
+      issues: [issue(26, T, o.labels ?? ['factory:task', 'factory:ready', 'factory:picked'])],
+      pulls: o.pulls ?? [],
+      contractList: [contract(T, { tier: 'auto-strict', scope: ['src/common/refiners/extract_timezone_abbr.rs'] })],
+      history: { [T]: history({ picked_at: AT, picks: [AT], dispatches: 1, implement_dispatches: [{ issue: 26, attempt: 1, at: o.dispatchAt ?? AT }] }) },
+      implement_runs: o.runs === undefined ? [implRun()] : o.runs,
+    });
+
+  it('the run failed (the #26 case: the agent couldn\'t create a directory) → implement_failed, citing the run', () => {
+    const d = find(run(world()), 'implement_failed');
+    assert.deepEqual([d.type, d.effect, d.task, d.issue, d.run_id], ['needs_human', 'label:needs-human', T, 26, 9001]);
+    assert.ok(d.source_ids.includes('implement_run:9001'));
+    assert.ok(!run(world()).some((x) => x.type === 'dispatched'), 'never re-dispatched');
+  });
+
+  it('the run succeeded but opened no PR (the agent declined) → implement_no_pr', () => {
+    assert.deepEqual(reasons(run(world({ runs: [implRun({ conclusion: 'success' })] }))), ['implement_no_pr']);
+  });
+
+  it('nothing while the run is going, or when it can\'t be found, matched or listed (the time limit stays the backstop)', () => {
+    assert.deepEqual(run(world({ runs: [implRun({ status: 'in_progress', conclusion: null })] })), []);
+    assert.deepEqual(run(world({ runs: [] })), []);
+    assert.deepEqual(run(world({ runs: null })), []);
+    assert.deepEqual(run(world({ runs: [implRun({ display_title: `Implement ${T} #26 attempt 2` })] })), [], 'another attempt');
+    assert.deepEqual(run(world({ runs: [implRun({ created_at: '2026-10-16T10:59:00Z' })] })), [], 'before the dispatch record');
+    assert.deepEqual(run(world({ runs: [implRun({ created_at: '2026-10-16T11:31:00Z' })] })), [], 'more than 30 min after');
+  });
+
+  it('nothing once the agent opened a PR for this attempt (the normal path takes over), or when a person already has it', () => {
+    const agentPr = pull(40, { task_id: T, state: 'closed', created_at: '2026-10-16T11:05:00Z' });
+    assert.ok(!reasons(run(world({ pulls: [agentPr] }))).some((r) => r === 'implement_failed' || r === 'implement_no_pr'));
+    assert.deepEqual(reasons(run(world({ labels: ['factory:task', 'factory:picked', 'needs-human'] }))).filter((r) => r.startsWith('implement')), []);
+    // A person's PR doesn't count as the agent's.
+    const human = pull(41, { task_id: T, state: 'closed', created_at: '2026-10-16T11:05:00Z', author: 'sabbasi3', author_is_bot: false });
+    assert.deepEqual(reasons(run(world({ pulls: [human] }))), ['implement_failed']);
+    // Open ones too: a person's open PR, or an open agent PR from before this dispatch.
+    const humanOpen = pull(42, { task_id: T, state: 'open', created_at: '2026-10-16T11:05:00Z', author: 'sabbasi3', author_is_bot: false });
+    const olderOpen = pull(43, { task_id: T, state: 'open', created_at: '2026-10-16T10:00:00Z' });
+    assert.ok(reasons(run(world({ pulls: [humanOpen] }))).includes('implement_failed'), 'open human PR');
+    assert.ok(reasons(run(world({ pulls: [olderOpen] }))).includes('implement_failed'), 'open pre-dispatch agent PR');
+    // The agent's open PR for this attempt is the normal path.
+    const agentOpen = pull(44, { task_id: T, state: 'open', created_at: '2026-10-16T11:05:00Z' });
+    assert.ok(!reasons(run(world({ pulls: [agentOpen] }))).some((r) => r.startsWith('implement_')));
+    // An older agent PR (from before this dispatch) doesn't count either.
+    const older = pull(39, { task_id: T, state: 'closed', created_at: '2026-10-16T10:00:00Z' });
+    assert.deepEqual(reasons(run(world({ pulls: [older] }))), ['implement_failed']);
+  });
+
+  it('after a reopen and re-dispatch, only the new attempt\'s finished run counts (the old PR doesn\'t block it)', () => {
+    const REOPEN = '2026-10-16T10:00:00Z';
+    const A2 = '2026-10-16T11:00:00Z';
+    const oldPr = pull(30, { task_id: T, state: 'closed', created_at: '2026-10-15T09:10:00Z' });
+    const s = snapshot({
+      issues: [{ ...issue(26, T, ['factory:task', 'factory:ready', 'factory:picked']), reopened_at: REOPEN }],
+      pulls: [oldPr],
+      contractList: [contract(T, { tier: 'auto-strict', scope: ['src/common/refiners/extract_timezone_abbr.rs'] })],
+      history: { [T]: history({ picked_at: '2026-10-15T09:00:00Z', picks: ['2026-10-15T09:00:00Z', A2], dispatches: 2, implement_dispatches: [{ issue: 26, attempt: 1, at: '2026-10-15T09:00:00Z' }, { issue: 26, attempt: 2, at: A2 }] }) },
+      implement_runs: [implRun({ id: 9002, display_title: `Implement ${T} #26 attempt 2`, created_at: '2026-10-16T11:01:00Z' }), implRun({ id: 9001, display_title: `Implement ${T} #26 attempt 1`, created_at: '2026-10-15T09:01:00Z' })],
+    });
+    applyReopens(s);
+    assert.equal(s.history[T]!.picked_at, A2);
+    const d = find(run(s), 'implement_failed');
+    assert.equal(d.run_id, 9002);
+  });
+
+  it('reopening after an implement run ended without a PR starts the task afresh (no manual dispatch needed)', () => {
+    const REOPEN = '2026-10-16T11:30:00Z';
+    const s = world();
+    s.issues[0]!.reopened_at = REOPEN;
+    assert.deepEqual(applyReopens(s), [T]);
+    const d = find(run(s), 'would_dispatch');
+    assert.deepEqual([d.attempt, d.source_ids.at(-1)], [2, `reopened:${REOPEN}`]);
+  });
+});
