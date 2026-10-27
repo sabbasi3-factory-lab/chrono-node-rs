@@ -897,11 +897,11 @@ export async function readReopenedAt(client: GitHubClient, repo: string, issue: 
   }
 }
 
-/** The repair workflow's runs created in the last two days; null if they can't be listed (unknown). */
-export async function readRepairRuns(client: GitHubClient, repo: string, now: Date): Promise<RepairRunSnap[] | null> {
+/** A workflow's runs created in the last two days; null if they can't be listed (unknown). */
+export async function readWorkflowRuns(client: GitHubClient, repo: string, workflowFile: string, now: Date): Promise<RepairRunSnap[] | null> {
   const since = new Date(now.getTime() - 2 * 24 * 3600_000).toISOString().slice(0, 10);
   try {
-    const runs = await paginate(client, `/repos/${repo}/actions/workflows/${REPAIR_WORKFLOW}/runs?created=${encodeURIComponent(`>=${since}`)}&per_page=100`, (d) => asArr(asRec(d).workflow_runs));
+    const runs = await paginate(client, `/repos/${repo}/actions/workflows/${workflowFile}/runs?created=${encodeURIComponent(`>=${since}`)}&per_page=100`, (d) => asArr(asRec(d).workflow_runs));
     const out: RepairRunSnap[] = [];
     for (const r of runs) {
       const x = asRec(r);
@@ -917,11 +917,18 @@ export async function readRepairRuns(client: GitHubClient, repo: string, now: Da
   }
 }
 
+/** The repair workflow's runs created in the last two days; null if they can't be listed (unknown). */
+export function readRepairRuns(client: GitHubClient, repo: string, now: Date): Promise<RepairRunSnap[] | null> {
+  return readWorkflowRuns(client, repo, REPAIR_WORKFLOW, now);
+}
+
 /** Reads everything the planner and observer need. History/spend are filled in by main. */
 export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions): Promise<Snapshot> {
   // Repair runs before PR heads: a repair that pushes and finishes in between is then seen with its
   // new head (or as still running), never as a finished repair next to the old head (repair_no_push).
   const repair_runs = await readRepairRuns(client, o.repo, o.now);
+  // Implement runs too, before the PRs, for the same reason: a run that finished with a PR shows it.
+  const implement_runs = await readWorkflowRuns(client, o.repo, IMPLEMENT_WORKFLOW, o.now);
   const issues = await readIssues(client, o.repo);
   // Reopen times only where they matter: open task issues whose task has history (a recorded pick).
   const withHistory = new Set(o.historyTasks);
@@ -959,5 +966,6 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
         ? await readReviewChecks(client, o.repo, pulls.filter((p) => p.state === 'open' && p.task_id).map((p) => p.head_sha), o.reviewerAppId)
         : [],
     repair_runs,
+    implement_runs,
   };
 }

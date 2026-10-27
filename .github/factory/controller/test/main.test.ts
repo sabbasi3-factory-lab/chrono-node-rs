@@ -1132,6 +1132,14 @@ describe('reviewer checks and history', () => {
     assert.equal(await readRepairRuns(down, REPO, NOW), null);
   });
 
+  it('history: live dispatched events record the implement attempt (issue, attempt, when); dry runs don\'t', () => {
+    const at = '2026-10-16T11:00:00Z';
+    const ev = (dry: boolean) => ({ version: 1 as const, id: 'x', type: 'dispatched', timestamp: at, parents: [], sha: 's', payload: { task: 'en/a', issue: 26, attempt: 1, dry_run: dry } });
+    const h = deriveState([ev(false)], NOW).history['en/a']!;
+    assert.deepEqual([h.implement_dispatches, h.dispatches, h.picks], [[{ issue: 26, attempt: 1, at }], 1, [at]]);
+    assert.equal(deriveState([ev(true)], NOW).history['en/a'], undefined);
+  });
+
   it('history: live repair_dispatched events record the failing run, head, issue and attempt (dry runs don\'t)', () => {
     const at = '2026-10-16T11:00:00Z';
     const ev = (dry: boolean, head: string = hex40('1')) => ({ version: 1 as const, id: 'x', type: 'repair_dispatched', timestamp: at, parents: [], sha: 's', payload: { task: 'en/a', issue: 1, pr: 21, attempt: 2, run_id: 500, head_sha: head, failure_signature: 'step:x', dry_run: dry } });

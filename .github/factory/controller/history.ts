@@ -33,7 +33,11 @@ export function deriveState(events: AuditEvent[], now: Date): DerivedState {
         const h = entry(task);
         if (!h.picked_at || e.timestamp < h.picked_at) h.picked_at = e.timestamp;
         (h.picks ??= []).push(e.timestamp);
-        if (e.type === 'dispatched') h.dispatches = (h.dispatches ?? 0) + 1;
+        if (e.type === 'dispatched') {
+          h.dispatches = (h.dispatches ?? 0) + 1;
+          const { issue, attempt } = e.payload;
+          if (typeof issue === 'number' && typeof attempt === 'number') (h.implement_dispatches ??= []).push({ issue, attempt, at: e.timestamp });
+        }
         break;
       }
       case 'repair_dispatched': {

@@ -253,12 +253,32 @@ export function finishedRepair(s: Snapshot, task: string, failedRun: number, hea
   if (!s.repair_runs) return null;
   const rec = (h.repair_dispatches ?? []).filter((d) => d.run_id === failedRun && d.head === head).sort((a, b) => b.at.localeCompare(a.at))[0];
   if (!rec) return null;
-  const at = Date.parse(rec.at);
-  const title = `Repair ${task} #${rec.issue} attempt ${rec.attempt}`;
-  const run = s.repair_runs
-    .filter((r) => r.display_title === title && Date.parse(r.created_at) >= at && Date.parse(r.created_at) - at <= DISPATCH_MATCH_MINUTES * 60_000)
+  return finishedRun(s.repair_runs, `Repair ${task} #${rec.issue} attempt ${rec.attempt}`, rec.at);
+}
+
+/** The newest run with this exact name created within DISPATCH_MATCH_MINUTES after `at`, if completed. */
+function finishedRun(runs: readonly RepairRunSnap[], title: string, at: string): RepairRunSnap | null {
+  const t = Date.parse(at);
+  const run = runs
+    .filter((r) => r.display_title === title && Date.parse(r.created_at) >= t && Date.parse(r.created_at) - t <= DISPATCH_MATCH_MINUTES * 60_000)
     .sort((a, b) => b.id - a.id)[0];
   return run && run.status === 'completed' ? run : null;
+}
+
+/**
+ * The finished implement run for a task's current attempt that opened no PR: matched to the
+ * controller's own `dispatched` record (task, issue, attempt; created within DISPATCH_MATCH_MINUTES
+ * after it), with no agent PR for the task opened since that dispatch. Null while it runs, once a PR
+ * exists, or when the runs can't be listed or matched (the task's wall-clock limit is the backstop).
+ */
+export function finishedImplementWithoutPr(s: Snapshot, task: string, h: TaskHistory): RepairRunSnap | null {
+  if (!s.implement_runs || !h.picked_at) return null;
+  const rec = (h.implement_dispatches ?? []).filter((d) => d.at >= h.picked_at!).sort((a, b) => b.at.localeCompare(a.at))[0];
+  if (!rec) return null;
+  const run = finishedRun(s.implement_runs, `Implement ${task} #${rec.issue} attempt ${rec.attempt}`, rec.at);
+  if (!run) return null;
+  const agentPr = s.pulls.some((pr) => pr.task_id === task && pr.author_is_bot && (pr.author ?? '').replace(/\[bot\]$/, '') === AGENT_LOGIN && pr.created_at >= rec.at);
+  return agentPr ? null : run;
 }
 
 /**
@@ -443,6 +463,21 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     if (!subject) continue;
     escalated.add(task);
     out.push(decide({ type: 'needs_human', reason: 'task_timeout', effect: 'label:needs-human', task, issue: issue?.number ?? null, pr: pr?.number ?? null, source_ids: [subject, `picked:${h.picked_at}`] }));
+  }
+
+  // ---- implement ended without a PR (tightening, like repair_no_push): the current attempt's run
+  // finished and no agent PR exists → a person, at once (never re-dispatched; the time limit stays).
+  for (const i of openIssues) {
+    const task = i.task_id;
+    if (!task || mergedTasks.has(task) || escalated.has(task) || i.labels.includes(LABEL_NEEDS_HUMAN)) continue;
+    if (!inFlight.has(task) || openPulls.some((pr) => pr.task_id === task)) continue;
+    const run = finishedImplementWithoutPr(s, task, history(task));
+    if (!run) continue;
+    escalated.add(task);
+    out.push(decide({
+      type: 'needs_human', reason: run.conclusion === 'success' ? 'implement_no_pr' : 'implement_failed', effect: 'label:needs-human',
+      task, issue: i.number, pr: null, run_id: run.id, source_ids: [i.node_id, `implement_run:${run.id}`],
+    }));
   }
 
   // A picked issue whose pick time isn't in the history window can never time

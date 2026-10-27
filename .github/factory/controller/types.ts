@@ -208,6 +208,8 @@ export interface TaskHistory {
   aic_spent: number;
   /** Live merge-queue enqueues by the controller (from `auto_merge` events): which head, when. */
   enqueued?: { pr: number; head: string; at: string }[];
+  /** Live implement dispatches (from `dispatched` events): issue, attempt, when. */
+  implement_dispatches?: { issue: number; attempt: number; at: string }[];
   /** Live repair dispatches (from `repair_dispatched` events): the failing run, the PR head, when. */
   repair_dispatches?: { run_id: number; head: string; issue: number; attempt: number; at: string }[];
   /** Live reviewer-agent dispatches (from `review_dispatched` events): which PR head, against which contract, when. */
@@ -264,6 +266,8 @@ export interface Snapshot {
   task_spend?: { by_task: Record<string, number>; unattributed: number; unknown_tasks?: string[] } | null;
   /** Recent runs of the repair workflow (two days); null when they couldn't be listed (unknown). */
   repair_runs?: RepairRunSnap[] | null;
+  /** Recent runs of the implement workflow (two days); null when they couldn't be listed (unknown). */
+  implement_runs?: RepairRunSnap[] | null;
 }
 
 /** A run of repair.lock.yml. Its name is `Repair <task> #<issue> attempt <n>` (only a lookup key). */
@@ -303,6 +307,8 @@ export type ReasonCode =
   | 'max_repairs'
   | 'repair_no_push'
   | 'repair_failed'
+  | 'implement_no_pr'
+  | 'implement_failed'
   | 'missing_failure_signature'
   | 'pick_time_unknown'
   | 'missing_heldout_seed'
