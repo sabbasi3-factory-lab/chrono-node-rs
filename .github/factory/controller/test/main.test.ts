@@ -7,11 +7,11 @@ import { assertAllowedRequest, COMMENT_MARKER, ENQUEUE_MUTATION, PROJECT_STATUS_
 import { AUDIT_BRANCH, splitLines, verify } from '../audit.ts';
 import { decisionEvent, describe as describeDecision, execute, executeLive, isLive, liveDecision, pendingHandoffs } from '../executor.ts';
 import { FakeGitHub, type RecordedCall } from '../fake.ts';
-import { parseArgs, run, type RunDeps } from '../main.ts';
+import { logWaits, parseArgs, run, type RunDeps } from '../main.ts';
 import { IMPLEMENTED_STRICT_GATES } from '../planner.ts';
 import { deriveState } from '../history.ts';
 import { readRepairRuns, readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
-import type { Policies, Snapshot } from '../types.ts';
+import type { Decision, Policies, Snapshot } from '../types.ts';
 import { checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
 import { dedupeKey } from '../audit.ts';
 import { CONTRACT_COMMIT, fakeWorld, projectNode, seedSpendSnapshot, type ProjectWorld } from './world.ts';
@@ -332,6 +332,16 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
     const result = await run(deps(unreadableSpendWorld(true), { policies: noMargin, log: (l) => lines.push(l) }));
     assert.ok(lines.some((l) => l.startsWith('spend today: unknown: run 900')), lines.join('\n'));
     assert.ok(result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
+  });
+
+  it('live mode logs each wait (they aren\'t in the audit log), e.g. the strict lane holding a second task', () => {
+    const lines: string[] = [];
+    const base = { dry_run: true, effect: 'none', pr: null, attempt: null, contract_sha: null, run_id: null, failure_signature: null, source_ids: [] };
+    logWaits([
+      { ...base, type: 'wait', reason: 'core_area_busy', task: 'drill/gate-perf', issue: 12 } as unknown as Decision,
+      { ...base, type: 'dispatched', reason: 'would_dispatch', effect: 'dispatch_workflow:implement', task: 'drill/x', issue: 11 } as unknown as Decision,
+    ], (l) => lines.push(l));
+    assert.deepEqual(lines, ['[live] wait (core_area_busy) task=drill/gate-perf issue=#12']);
   });
 
   it('dispatch state: spend unknown with ready work → paused/budget_unknown recorded once (since = its timestamp)', async () => {

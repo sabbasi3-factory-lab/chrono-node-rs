@@ -13,7 +13,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AuditLog, AuditValidationError, dedupeKey, isoSeconds } from './audit.ts';
 import { canonicalize } from './canonical.ts';
-import { decisionEvent, execute, executeLive, isLive, liveDecision, pendingHandoffs } from './executor.ts';
+import { decisionEvent, describe, execute, executeLive, isLive, liveDecision, pendingHandoffs } from './executor.ts';
 import { FakeGitHub } from './fake.ts';
 import { ALERT_TITLE, ALERT_TITLES, COMMENT_MARKER, createClient, LABEL_ALERT, paginate, readSnapshot, REVIEWER_APP_ID, type AlertCode, type RecordedCheck } from './github.ts';
 import { CAPPED_WORKFLOWS, lockCapsMismatch, type CappedWorkflow } from './caps.ts';
@@ -160,6 +160,11 @@ export function renderSummary(decisions: Decision[], appended: AuditEvent[], fac
   return `${lines.join('\n')}\n`;
 }
 
+/** Live mode: one run-log line per wait decision (waits aren't in the audit log). */
+export function logWaits(decisions: readonly Decision[], log: (line: string) => void): void {
+  for (const d of decisions) if (d.type === 'wait') log(describe(d, true));
+}
+
 export async function run(deps: RunDeps): Promise<RunResult> {
   const { client, repo, policies, now, log } = deps;
   const factoryEnabled = killSwitchEnabled({ FACTORY_ENABLED: deps.env.FACTORY_ENABLED });
@@ -279,6 +284,9 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   const planned = plan(snapshot, policies, { FACTORY_ENABLED: deps.env.FACTORY_ENABLED }, now);
   const decisions = live ? planned.map(liveDecision) : planned;
   if (!live) execute(decisions, log);
+  // Waits aren't recorded in the audit log; in live mode say them in the run log (e.g. a second
+  // auto-strict task held by the strict lane: `wait (core_area_busy)`).
+  else logWaits(decisions, log);
 
   // The control room's banner: what dispatching is doing, recorded when it changes (or daily, so it
   // stays in the audit window), with `since` carried over. Real in live mode; dry-run otherwise.
