@@ -18,6 +18,8 @@
 set -euo pipefail
 # shellcheck source=harness/strict/paths.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/paths.sh"
+# shellcheck source=harness/strict/mutants.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/mutants.sh"
 fail() { echo "::error::mutation_score_not_lower: $*"; exit 1; }
 [[ "${BASE_REV:-}" =~ ^[0-9a-f]{40}$ ]] || fail "no base revision"
 [[ "${CAP_SECONDS:-}" =~ ^[1-9][0-9]*$ ]] || fail "bad CAP_SECONDS"
@@ -98,10 +100,15 @@ read -r bd bv < <(counts "$work/base-out")
 echo "head (changed lines): ${hd}/${hv} detected; base (replaced lines): ${bd}/${bv} detected"
 [ -f "$work/head/mutants.out/missed.txt" ] && [ -s "$work/head/mutants.out/missed.txt" ] && { echo "missed in the change:"; sed 's/^/  /' "$work/head/mutants.out/missed.txt"; }
 [ "$hv" -gt 0 ] || { echo "mutation_score_not_lower: no viable mutant in the change"; exit 0; }
+# On failure, list each surviving mutant as an annotation first (the repair agent's input).
+fail_score() {
+    [ -s "$work/head/mutants.out/missed.txt" ] && rel_paths "$PWD" < "$work/head/mutants.out/missed.txt" | annotate_missed 50
+    fail "$@"
+}
 if [ "$bv" -gt 0 ]; then
     # head/hv >= bd/bv, in integers.
-    [ $((hd * bv)) -ge $((bd * hv)) ] || fail "score ${hd}/${hv} on the change is lower than main's ${bd}/${bv} on the lines it replaced"
+    [ $((hd * bv)) -ge $((bd * hv)) ] || fail_score "score ${hd}/${hv} on the change is lower than main's ${bd}/${bv} on the lines it replaced"
 else
-    awk -v d="$hd" -v v="$hv" -v f="$FLOOR" 'BEGIN { exit !(d / v >= f) }' || fail "new code scores ${hd}/${hv}, below the floor ${FLOOR}"
+    awk -v d="$hd" -v v="$hv" -v f="$FLOOR" 'BEGIN { exit !(d / v >= f) }' || fail_score "new code scores ${hd}/${hv}, below the floor ${FLOOR}"
 fi
 echo "mutation_score_not_lower: ok"

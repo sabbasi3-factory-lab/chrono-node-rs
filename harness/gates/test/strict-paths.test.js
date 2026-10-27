@@ -93,3 +93,26 @@ test("the gate compares the change with its base: an existing warning doesn't bl
     assert.match(r.stdout, /struct_excessive_bools: base 1, change 1/);
     assert.match(r.stdout, /code_health_not_worse: ok/);
 });
+
+test("annotate_missed (mutants.sh): one escaped ::error per surviving mutant, capped", () => {
+    const run = (input, cap = 50) =>
+        spawnSync("bash", ["-c", `source "${STRICT}/mutants.sh"; annotate_missed ${cap}`], { input, encoding: "utf8" });
+    const missed = [
+        "src/common/refiners/forward_date.rs:74:57: replace && with || in <impl Refiner for ForwardDateRefiner>::refine",
+        "src/a,b.rs:3:1: replace 100% with ::warning::x",
+        "",
+        "not a cargo-mutants line",
+    ].join("\n");
+    const r = run(missed);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.deepStrictEqual(r.stdout.trim().split("\n"), [
+        "::error file=src/common/refiners/forward_date.rs,line=74,title=surviving mutant::surviving mutant at src/common/refiners/forward_date.rs:74:57: replace && with || in <impl Refiner for ForwardDateRefiner>::refine",
+        "::error file=src/a%2Cb.rs,line=3,title=surviving mutant::surviving mutant at src/a,b.rs:3:1: replace 100%25 with ::warning::x",
+        "::error title=surviving mutant::surviving mutant: not a cargo-mutants line",
+    ]);
+    const many = Array.from({ length: 5 }, (_, i) => `src/x.rs:${i + 1}:1: m${i}`).join("\n");
+    const capped = run(many, 2).stdout.trim().split("\n");
+    assert.strictEqual(capped.length, 3);
+    assert.match(capped[2], /^::error::3 more surviving mutants/);
+    assert.strictEqual(run("").stdout, "");
+});
