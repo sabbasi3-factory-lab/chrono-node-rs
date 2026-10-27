@@ -16,6 +16,7 @@ import type {
   MergeQueueEventSnap,
   PullSnap,
   PullState,
+  RepairRunSnap,
   RequestOptions,
   ReviewCheckSnap,
   ReviewSnap,
@@ -874,6 +875,26 @@ export async function readReviewChecks(client: GitHubClient, repo: string, heads
   return out;
 }
 
+/** The repair workflow's runs created in the last two days; null if they can't be listed (unknown). */
+export async function readRepairRuns(client: GitHubClient, repo: string, now: Date): Promise<RepairRunSnap[] | null> {
+  const since = new Date(now.getTime() - 2 * 24 * 3600_000).toISOString().slice(0, 10);
+  try {
+    const runs = await paginate(client, `/repos/${repo}/actions/workflows/${REPAIR_WORKFLOW}/runs?created=${encodeURIComponent(`>=${since}`)}&per_page=100`, (d) => asArr(asRec(d).workflow_runs));
+    const out: RepairRunSnap[] = [];
+    for (const r of runs) {
+      const x = asRec(r);
+      const id = x.id;
+      const title = asStr(x.display_title);
+      const created = asStr(x.created_at);
+      if (typeof id !== 'number' || !Number.isSafeInteger(id) || !title || !created) continue;
+      out.push({ id, display_title: title, created_at: created, status: asStr(x.status) ?? 'unknown', conclusion: asStr(x.conclusion) });
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
 /** Reads everything the planner and observer need. History/spend are filled in by main. */
 export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions): Promise<Snapshot> {
   const issues = await readIssues(client, o.repo);
@@ -909,5 +930,6 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
       typeof o.reviewerAppId === 'number'
         ? await readReviewChecks(client, o.repo, pulls.filter((p) => p.state === 'open' && p.task_id).map((p) => p.head_sha), o.reviewerAppId)
         : [],
+    repair_runs: await readRepairRuns(client, o.repo, o.now),
   };
 }

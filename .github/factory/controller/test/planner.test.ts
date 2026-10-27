@@ -1038,6 +1038,68 @@ describe('repair loop: attempts, stop rules and the head', () => {
   });
 });
 
+describe('repair loop: a finished repair that pushed nothing goes to a person (repair_no_push / repair_failed)', () => {
+  const TASK = 'en/weekday-parser';
+  const DISPATCHED = '2026-10-16T11:00:00Z';
+  const repaired = (head = hex40('1')) => history({
+    picked_at: PICKED_RECENTLY, repairs: 1, failure_signatures: ['step:golden'], repaired_run_ids: [500],
+    repair_dispatches: [{ run_id: 500, head, issue: 1, attempt: 2, at: DISPATCHED }],
+  });
+  const repairRun = (over: Partial<NonNullable<Snapshot['repair_runs']>[number]> = {}) => ({
+    id: 7001, display_title: `Repair ${TASK} #1 attempt 2`, created_at: '2026-10-16T11:00:20Z', status: 'completed', conclusion: 'success', ...over,
+  });
+  const world = (runs: Snapshot['repair_runs'], h = repaired()): Snapshot => ({ ...failingPrWorld('step:golden', h), repair_runs: runs });
+
+  it('the agent declined or did nothing (run succeeded, head unchanged) → repair_no_push, citing the repair run', () => {
+    const d = find(run(world([repairRun()])), 'repair_no_push');
+    assert.deepEqual([d.type, d.effect, d.task, d.pr, d.run_id], ['needs_human', 'label:needs-human', TASK, 21, 500]);
+    assert.ok(d.source_ids.includes('repair_run:7001'));
+    assert.ok(!run(world([repairRun()])).some((x) => x.type === 'repair_dispatched'), 'never re-dispatched');
+  });
+
+  it('the repair run itself failed (infra, token) → repair_failed', () => {
+    for (const conclusion of ['failure', 'cancelled', 'timed_out']) {
+      assert.deepEqual(reasons(run(world([repairRun({ conclusion })]))), ['repair_failed'], conclusion);
+    }
+  });
+
+  it('a repair still running, not found, or unlisted → no decision (the wall-clock limit is the backstop)', () => {
+    assert.deepEqual(run(world([repairRun({ status: 'in_progress', conclusion: null })])), []);
+    assert.deepEqual(run(world([repairRun({ status: 'queued', conclusion: null })])), []);
+    assert.deepEqual(run(world([])), []);
+    assert.deepEqual(run(world(null)), [], 'listing failed: unknown');
+    assert.deepEqual(run(world(undefined)), []);
+  });
+
+  it('matched to the controller\'s own dispatch record, not the run name alone', () => {
+    assert.deepEqual(run(world([repairRun({ created_at: '2026-10-16T10:59:59Z' })])), [], 'created before the dispatch record');
+    assert.deepEqual(run(world([repairRun({ created_at: '2026-10-16T11:30:01Z' })])), [], 'more than 30 min after');
+    assert.deepEqual(run(world([repairRun({ display_title: `Repair ${TASK} #1 attempt 3` })])), [], 'another attempt');
+    const noRecord = history({ picked_at: PICKED_RECENTLY, repairs: 1, failure_signatures: ['step:golden'], repaired_run_ids: [500] });
+    assert.deepEqual(run(world([repairRun()], noRecord)), [], 'no repair_dispatched record with a head');
+  });
+
+  it('the head changed (the repair pushed) → the normal path for the new head\'s run', () => {
+    // The record is for an older head; the PR's current head has its own failing run 500 → not this rule.
+    assert.deepEqual(run(world([repairRun()], repaired(hex40('9')))), []);
+    // A new failing run on the pushed head is repaired normally (attempt 3).
+    const pushed = { ...world([repairRun()]), check_runs: [gatesRun(491, hex40('1')), checkRun(510, { head_sha: hex40('1'), pull_requests: [21], conclusion: 'failure', failure_signature: 'step:clippy' })] };
+    assert.deepEqual([find(run(pushed), 'ci_failed').type, find(run(pushed), 'ci_failed').attempt], ['repair_dispatched', 3]);
+  });
+
+  it('once escalated, the task still holds WIP and its area until its PR or issue is closed', () => {
+    const escalated = world([repairRun()]);
+    escalated.pulls = escalated.pulls.map((x) => ({ ...x, labels: ['needs-human'] }));
+    const other = contract('en/other-parser', { area: 'en' });
+    const same = { ...escalated, issues: [...escalated.issues, issue(2, 'en/other-parser', ['factory:task', 'factory:ready'])], contracts: { ...escalated.contracts, [other.path]: other } };
+    same.contracts['contracts/en/weekday-parser.yaml'] = { ...same.contracts['contracts/en/weekday-parser.yaml']!, area: 'en' };
+    assert.deepEqual(reasons(run(same)), ['area_locked'], 'no repeat escalation; the area stays held');
+    const p = structuredClone(policies);
+    p.limits.wip.start = 1;
+    assert.deepEqual(reasons(plan({ ...same, contracts: { ...same.contracts, [other.path]: { ...other, area: null } } }, p, ON, NOW)), ['wip_full'], 'and WIP');
+  });
+});
+
 describe('repair loop: the per-task budget (collector spend, fail closed)', () => {
   const withSpend = (spend: Snapshot['task_spend']) => ({ ...failingPrWorld('step:golden'), task_spend: spend });
   it('repairs only while the task spend plus this repair cap (300 + 400) stays within per_task.max_aic (1000)', () => {

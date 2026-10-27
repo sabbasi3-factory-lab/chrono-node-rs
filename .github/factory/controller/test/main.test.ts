@@ -10,7 +10,7 @@ import { FakeGitHub, type RecordedCall } from '../fake.ts';
 import { parseArgs, run, type RunDeps } from '../main.ts';
 import { IMPLEMENTED_STRICT_GATES } from '../planner.ts';
 import { deriveState } from '../history.ts';
-import { readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
+import { readRepairRuns, readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
 import type { Policies, Snapshot } from '../types.ts';
 import { checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
 import { dedupeKey } from '../audit.ts';
@@ -1064,6 +1064,33 @@ describe('reviewer checks and history', () => {
     });
     const checks = await readReviewChecks(gh, REPO, [head, 'not-a-sha'], APP);
     assert.deepEqual(checks.map((c) => [c.id, c.reviewed_head]), [[1, head], [5, null]]);
+  });
+
+  it('readRepairRuns lists two days of repair runs; a listing failure is unknown (null), never empty', async () => {
+    const gh = new FakeGitHub(REPO);
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/actions/workflows/repair\\.lock\\.yml/runs$`), (path) => {
+      assert.match(decodeURIComponent(path), /created=>=2026-10-14/);
+      return { data: { workflow_runs: [
+        { id: 7, display_title: 'Repair en/a #1 attempt 2', created_at: '2026-10-16T11:00:20Z', status: 'completed', conclusion: 'success' },
+        { id: 8, display_title: 'Repair en/a #1 attempt 3', created_at: '2026-10-16T11:40:00Z', status: 'in_progress', conclusion: null },
+        { id: 'x', display_title: 'junk' },
+      ] } };
+    });
+    assert.deepEqual(await readRepairRuns(gh, REPO, NOW), [
+      { id: 7, display_title: 'Repair en/a #1 attempt 2', created_at: '2026-10-16T11:00:20Z', status: 'completed', conclusion: 'success' },
+      { id: 8, display_title: 'Repair en/a #1 attempt 3', created_at: '2026-10-16T11:40:00Z', status: 'in_progress', conclusion: null },
+    ]);
+    const down = new FakeGitHub(REPO);
+    down.addRoute('GET', new RegExp(`^/repos/${REPO}/actions/workflows/repair\\.lock\\.yml/runs$`), () => ({ status: 500, data: null }));
+    assert.equal(await readRepairRuns(down, REPO, NOW), null);
+  });
+
+  it('history: live repair_dispatched events record the failing run, head, issue and attempt (dry runs don\'t)', () => {
+    const at = '2026-10-16T11:00:00Z';
+    const ev = (dry: boolean, head: string = hex40('1')) => ({ version: 1 as const, id: 'x', type: 'repair_dispatched', timestamp: at, parents: [], sha: 's', payload: { task: 'en/a', issue: 1, pr: 21, attempt: 2, run_id: 500, head_sha: head, failure_signature: 'step:x', dry_run: dry } });
+    assert.deepEqual(deriveState([ev(false)], NOW).history['en/a']!.repair_dispatches, [{ run_id: 500, head: hex40('1'), issue: 1, attempt: 2, at }]);
+    assert.equal(deriveState([ev(true)], NOW).history['en/a'], undefined);
+    assert.equal(deriveState([ev(false, 'nope')], NOW).history['en/a']!.repair_dispatches, undefined);
   });
 
   it('the accepted reviewer is pinned to the reviewer App id (5444751) in code', () => {
