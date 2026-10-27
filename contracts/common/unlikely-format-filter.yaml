@@ -2,7 +2,7 @@
 # Do not edit by hand: change the task map (by reviewed PR) and re-run the script.
 id: common/unlikely-format-filter
 title: Port UnlikelyFormatFilter
-tier: human
+tier: auto-strict
 area: common-refiners
 priority: 13
 source: upstream/src/common/refiners/UnlikelyFormatFilter.ts
