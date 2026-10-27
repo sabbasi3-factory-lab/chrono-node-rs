@@ -16,6 +16,8 @@
 # A changed file that is still undiscovered fails closed.
 #   BASE_REV, KIND, EVENT, CAP_SECONDS; TIERS_FILE (tests only: read tiers.yaml from this file)
 set -euo pipefail
+# shellcheck source=harness/strict/paths.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/paths.sh"
 fail() { echo "::error::mutation_score_not_lower: $*"; exit 1; }
 [[ "${BASE_REV:-}" =~ ^[0-9a-f]{40}$ ]] || fail "no base revision"
 [[ "${CAP_SECONDS:-}" =~ ^[1-9][0-9]*$ ]] || fail "bad CAP_SECONDS"
@@ -56,6 +58,7 @@ discover() {
     local dir="$1"; shift
     local listed n=0 f
     listed=$(cd "$dir" && cargo mutants --list-files $(drill_features "$dir") 2>/dev/null) || fail "cargo mutants --list-files failed in ${dir}"
+    listed=$(rel_paths "$dir" <<<"$listed")
     for f in "$@"; do
         [ -f "$dir/$f" ] || continue
         grep -qxF "$f" <<<"$listed" && continue
@@ -64,6 +67,7 @@ discover() {
         n=$((n + 1))
     done
     listed=$(cd "$dir" && cargo mutants --list-files $(drill_features "$dir") 2>/dev/null) || fail "cargo mutants --list-files failed in ${dir}"
+    listed=$(rel_paths "$dir" <<<"$listed")
     for f in "$@"; do
         [ -f "$dir/$f" ] || continue
         grep -qxF "$f" <<<"$listed" || fail "cargo-mutants can't see ${f} in ${dir} (fail closed)"
