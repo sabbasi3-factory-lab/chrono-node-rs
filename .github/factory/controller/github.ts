@@ -52,6 +52,8 @@ export const ENQUEUE_MUTATION = 'mutation($id: ID!, $head: GitObjectID!) { enque
 
 /** The workflows live mode may dispatch, on `main` only. */
 export const IMPLEMENT_WORKFLOW = 'implement.lock.yml';
+/** This controller's own workflow (follow-up polls, follow-up.ts). */
+export const CONTROLLER_WORKFLOW = 'controller.yml';
 export const REVIEW_WORKFLOW = 'review.lock.yml';
 /**
  * The reviewer App (`sabbasi3-factory-reviewer`): the only author whose `factory-review` check
@@ -171,6 +173,10 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
       typeof i.failure_signature === 'string' && /^(step|job):[a-z0-9_-]{1,100}$/.test(i.failure_signature) &&
       typeof i.run_id === 'string' && /^[1-9][0-9]{0,19}$/.test(i.run_id)
     );
+  }
+  // A follow-up poll of the controller itself on main: only a `chain` position 1..24 (follow-up.ts).
+  if (p === `/repos/${repo}/actions/workflows/${CONTROLLER_WORKFLOW}/dispatches`) {
+    return exactKeys(b, ['ref', 'inputs']) && b.ref === 'main' && exactKeys(b.inputs, ['chain']) && typeof b.inputs.chain === 'string' && /^([1-9]|1[0-9]|2[0-4])$/.test(b.inputs.chain);
   }
   if (p === `/repos/${repo}/actions/workflows/${IMPLEMENT_WORKFLOW}/dispatches`) {
     if (!exactKeys(b, ['ref', 'inputs']) || b.ref !== 'main') return false;
