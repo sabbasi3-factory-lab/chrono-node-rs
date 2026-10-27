@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { FACTORY_REPO, loadPolicies, parseFactoryVersion, parsePolicies, policyUrl, POLICY_NAMES, readFactoryVersion, type PolicyTexts } from '../policies.ts';
 
-const SHA = '148c774cb87e1cf620148ac37503dada8811ddd5';
+const SHA = 'dddeddd106d1bbaf1f5779bbe1b2868c4dfd33f7';
 const dir = new URL('./fixtures/policies/', import.meta.url);
 
 async function texts(): Promise<PolicyTexts> {
@@ -39,6 +39,19 @@ describe('policies', () => {
     for (const bad of ['', '    strict_gates: x\n', '    strict_gates:\n      - 3\n', '    strict_gates:\n      - {a: 1, b: 2}\n', '    strict_gates:\n      - ""\n']) {
       assert.equal(gates(bad), null, JSON.stringify(bad));
     }
+  });
+
+  it('promote_tasks / promote_tasks_paths: both non-empty string lists, else neither (nothing promoted, never a load failure)', async () => {
+    const t = await texts();
+    const lists = (yaml: string) => {
+      const a = parsePolicies({ ...t, tiers: t.tiers.replace(/    promote_tasks:\n(?:      - .*\n)+    promote_tasks_paths:\n(?:      - .*\n)+/, yaml) }).tiers.tiers['auto-strict'];
+      return [a.promote_tasks, a.promote_tasks_paths];
+    };
+    assert.deepEqual(lists('    promote_tasks:\n      - "drill/*"\n    promote_tasks_paths:\n      - "x/*.rs"\n'), [['drill/*'], ['x/*.rs']]);
+    assert.deepEqual(lists(''), [[], []], 'absent');
+    assert.deepEqual(lists('    promote_tasks:\n      - "drill/*"\n'), [[], []], 'paths missing: neither');
+    assert.deepEqual(lists('    promote_tasks: "drill/*"\n    promote_tasks_paths:\n      - "x/*.rs"\n'), [[], []], 'not a list');
+    assert.deepEqual(lists('    promote_tasks:\n      - ""\n    promote_tasks_paths:\n      - "x/*.rs"\n'), [[], []], 'empty glob');
   });
 
   it('builds raw URLs at the pinned SHA only', () => {

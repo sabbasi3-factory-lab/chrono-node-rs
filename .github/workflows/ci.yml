@@ -106,13 +106,19 @@ jobs:
         run: cargo fmt --all --check
 
       - name: cargo clippy -D warnings
-        run: cargo clippy --all-targets --locked -- -D warnings
+        # With the factory drill files too (feature `factory-drill`, drills/README.md; never in the product).
+        run: cargo clippy --all-targets --locked --features factory-drill -- -D warnings
 
       - name: cargo build
         run: cargo build --all-targets --locked
 
       - name: Unit tests and configuration order
         run: cargo test --locked --lib --bins --test configurations
+
+      - name: Unit tests with the factory drill files (feature factory-drill)
+        # Library tests only, so the product binaries (target/debug/chrono-rs-json, compared below)
+        # stay built without the feature. Removed with the drills.
+        run: cargo test --locked --lib --features factory-drill
 
       - name: Whole-crate golden suite (no regressions)
         run: cargo test --locked --test golden -- --nocapture

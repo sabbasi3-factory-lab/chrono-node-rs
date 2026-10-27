@@ -11,6 +11,9 @@ fail() { echo "::error::code_health_not_worse: $*"; exit 1; }
 [[ "${BASE_REV:-}" =~ ^[0-9a-f]{40}$ ]] || fail "no base revision"
 if [ "${KIND:-}" != "factory" ]; then echo "::notice::code_health_not_worse: not a factory PR, not enforced"; exit 0; fi
 if [ "${EVENT:-}" != "pull_request" ]; then echo "code_health_not_worse: checked on the pull request (this run is ${EVENT:-?})"; exit 0; fi
+# Factory drills (drills/README.md): drill step files compile only with the `factory-drill` feature;
+# check them too wherever the checkout declares it (a base from before the feature doesn't).
+drill_features() { if grep -qE '^factory-drill *=' "$1/Cargo.toml"; then echo "--features factory-drill"; fi; }
 LINTS=(clippy::cognitive_complexity clippy::too_many_lines clippy::fn_params_excessive_bools clippy::struct_excessive_bools)
 
 files=()
@@ -27,7 +30,7 @@ counts() {
     local flags=()
     for l in "${LINTS[@]}"; do flags+=(-W "$l"); done
     touch "$1/src/lib.rs" # never reuse a cached check that was run without these lints
-    (cd "$1" && cargo clippy --locked --lib --message-format=json -- "${flags[@]}") > "$2.json" 2> "$2.log" || { cat "$2.log"; fail "cargo clippy failed in $1"; }
+    (cd "$1" && cargo clippy --locked --lib $(drill_features "$1") --message-format=json -- "${flags[@]}") > "$2.json" 2> "$2.log" || { cat "$2.log"; fail "cargo clippy failed in $1"; }
     jq -r --argjson lints "$(printf '%s\n' "${LINTS[@]}" | jq -R . | jq -s .)" '
         select(.reason == "compiler-message") | .message
         | select(.code != null and (.code.code as $c | $lints | index($c)))

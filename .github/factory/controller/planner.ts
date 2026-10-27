@@ -3,7 +3,7 @@
 // reads (`now` is an argument), no randomness.
 
 import { CONTROLLER_LOGIN, REVERT_REVIEWED_LABEL, revertedPrOf } from './github.ts';
-import { contractPath, contractShaMatches, isCoreTask, sameArea, taskTier } from './tasks.ts';
+import { contractPath, contractShaMatches, isCoreTask, matchesAny, sameArea, taskTier } from './tasks.ts';
 import { DISPATCH_MATCH_MINUTES } from './spend.ts';
 import type {
   CheckRunSnap,
@@ -53,13 +53,33 @@ export function autoStrictPromoted(p: Policies): boolean {
 }
 
 /**
+ * Drill-only promotion (tiers.yaml `promote_tasks`, removed with the drills): the task's id matches a
+ * `promote_tasks` glob AND every contract scope path matches a `promote_tasks_paths` glob (drill
+ * files no product configuration reaches). The strict gates must all be implemented, as for the
+ * real promotion. Every other task keeps `start_as: human`.
+ */
+export function drillPromoted(c: ContractSnap, p: Policies): boolean {
+  const s = p.tiers.tiers['auto-strict'];
+  const tasks = s.promote_tasks ?? [];
+  const paths = s.promote_tasks_paths ?? [];
+  if (tasks.length === 0 || paths.length === 0 || missingStrictGates(p).length > 0) return false;
+  if (!c.valid || !c.id || c.scope.length === 0) return false;
+  return matchesAny(c.id, tasks) && c.scope.every((path) => matchesAny(path, paths));
+}
+
+/** Auto-strict runs without a person for this task: the promotion is in effect, or a drill-only one. */
+export function strictPromoted(c: ContractSnap, p: Policies): boolean {
+  return autoStrictPromoted(p) || drillPromoted(c, p);
+}
+
+/**
  * Tiers that may run without a person: `auto` outside the core paths, and `auto-strict` once
- * the promotion is in effect (`autoStrictPromoted`). Never `human`.
+ * the promotion is in effect for the task (`strictPromoted`). Never `human`.
  */
 export function autonomousTier(c: ContractSnap, p: Policies): boolean {
   const tier = taskTier(c, p.tiers);
   if (tier === 'auto') return !isCoreTask(c, p.tiers);
-  return tier === 'auto-strict' && autoStrictPromoted(p);
+  return tier === 'auto-strict' && strictPromoted(c, p);
 }
 /** The agent App's login (GraphQL gives `name`, REST `name[bot]`). Only its PRs are auto-merged. */
 export const AGENT_LOGIN = 'sabbasi3-factory-agent';
@@ -92,7 +112,7 @@ export function mergeTier(c: ContractSnap, p: Policies): 'auto' | 'auto-strict' 
   // Until the promotion PR removes `start_as: human`, and while tiers.yaml lists a strict gate this
   // factory doesn't enforce, no auto-strict task is merged automatically, whether it's auto-strict
   // by its paths or by its contract's own tier.
-  if (tier !== 'auto-strict' || !autoStrictPromoted(p)) return null;
+  if (tier !== 'auto-strict' || !strictPromoted(c, p)) return null;
   return 'auto-strict';
 }
 
