@@ -2,7 +2,7 @@
 # Do not edit by hand: change the task map (by reviewed PR) and re-run the script.
 id: common/slash-date-format-parser
 title: Port SlashDateFormatParser
-tier: human
+tier: auto-strict
 area: common-parsers
 priority: 11
 source: upstream/src/common/parsers/SlashDateFormatParser.ts

@@ -2,7 +2,7 @@
 # Do not edit by hand: change the task map (by reviewed PR) and re-run the script.
 id: common/forward-date-refiner
 title: Port ForwardDateRefiner
-tier: human
+tier: auto-strict
 area: common-refiners
 priority: 19
 source: upstream/src/common/refiners/ForwardDateRefiner.ts

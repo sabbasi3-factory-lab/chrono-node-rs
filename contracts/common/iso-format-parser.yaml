@@ -2,7 +2,7 @@
 # Do not edit by hand: change the task map (by reviewed PR) and re-run the script.
 id: common/iso-format-parser
 title: Port ISOFormatParser
-tier: human
+tier: auto-strict
 area: common-parsers
 priority: 6
 source: upstream/src/common/parsers/ISOFormatParser.ts

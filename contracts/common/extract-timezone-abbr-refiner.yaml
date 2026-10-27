@@ -2,7 +2,7 @@
 # Do not edit by hand: change the task map (by reviewed PR) and re-run the script.
 id: common/extract-timezone-abbr-refiner
 title: Port ExtractTimezoneAbbrRefiner
-tier: human
+tier: auto-strict
 area: common-refiners
 priority: 10
 source: upstream/src/common/refiners/ExtractTimezoneAbbrRefiner.ts
