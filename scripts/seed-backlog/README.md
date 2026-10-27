@@ -20,6 +20,7 @@ npm test                         # unit tests
 | `tier` | `factory/policies/tiers.yaml` at `.github/factory/factory-version`, matched against `scope`. `auto-strict` paths use `start_as` (human in Stage 1); a path in no tier is human (fail closed). |
 | `depends_on` | `tests/golden`: of the golden cases needing this step, the one needing the **fewest other unported steps** decides which tasks must land first (ties broken by name). Without this, the contract's golden gate couldn't pass. Cycles are an error. |
 | `acceptance.golden` | `{step, areas}`: the golden areas where the step appears. CI requires every ported case there to pass and at least one checked case to exercise the step. |
+| `acceptance.unit` | only when the task map gives the task a `unit: {requirement, cases}`: behaviour golden data can't reach (e.g. a constructor argument upstream never passes). The cases' expected values come from chrono-node; the agent adds one in-file `#[cfg(test)]` test per case, which `cargo test` runs in CI, and the reviewer checks they're there. |
 | `priority`, `golden_cases` | golden impact: more golden cases need the step → higher priority |
 
 `taskmap.yaml` is validated before anything is written:
