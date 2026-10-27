@@ -1,0 +1,16 @@
+{
+  "comment": "Labels the factory relies on. Seed with `node scripts/seed-backlog/seed.js labels` (creates missing ones, never edits); the controller warns at startup if any is missing. A label that doesn't exist can't be applied by a person (e.g. factory:revert-reviewed, needed for D7's revert).",
+  "labels": [
+    { "name": "factory:task", "color": "0E8A16", "description": "A factory task issue (one contract)" },
+    { "name": "factory:ready", "color": "1D76DB", "description": "Ready to dispatch" },
+    { "name": "factory:picked", "color": "5319E7", "description": "Dispatched; in flight" },
+    { "name": "needs-human", "color": "D93F0B", "description": "Handed to a person; the controller won't act on it" },
+    { "name": "blocked", "color": "B60205", "description": "Can't be dispatched (bad marker, contract or duplicate)" },
+    { "name": "stale-contract", "color": "FBCA04", "description": "The contract changed after dispatch" },
+    { "name": "factory:alert", "color": "B60205", "description": "A person must review (spend-bound alert)" },
+    { "name": "factory:revert-reviewed", "color": "0E8A16", "description": "A person reviewed the controller's auto-revert PR" },
+    { "name": "tier:auto", "color": "C2E0C6", "description": "Contract tier: auto" },
+    { "name": "tier:auto-strict", "color": "BFD4F2", "description": "Contract tier: auto-strict" },
+    { "name": "tier:human", "color": "F9D0C4", "description": "Contract tier: human" }
+  ]
+}

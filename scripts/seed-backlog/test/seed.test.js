@@ -112,3 +112,9 @@ test("re-run keeps owner labels and replaces managed ones", () => {
     const merged = lib.mergeLabels(["factory:ready", "tier:human", "area:old", "factory:task", "needs-human"], ["factory:task", "tier:auto", "area:x"]);
     assert.deepStrictEqual(merged, ["area:x", "factory:ready", "factory:task", "needs-human", "tier:auto"]);
 });
+
+test("missingLabels: only the absent ones, first definition wins, existing never touched", () => {
+    const req = [{ name: "factory:task" }, { name: "factory:revert-reviewed", color: "0E8A16" }, { name: "area:x" }, { name: "factory:revert-reviewed", color: "000000" }];
+    assert.deepStrictEqual(lib.missingLabels(req, ["factory:task", "area:x"]), [{ name: "factory:revert-reviewed", color: "0E8A16" }]);
+    assert.deepStrictEqual(lib.missingLabels(req, ["factory:task", "factory:revert-reviewed", "area:x"]), []);
+});

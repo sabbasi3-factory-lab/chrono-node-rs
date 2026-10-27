@@ -6,6 +6,8 @@
 //   node seed.js contracts --check   fail if contracts/ differs from a fresh generation
 //   node seed.js issues --plan       print the issues the contracts would become (no writes)
 //   node seed.js issues --apply      create/update one issue per contract (see guards below)
+//   node seed.js labels [--check]    create the factory's labels (.github/factory/labels.json) and the
+//                                    contracts' tier:/area: labels if missing (--check: only report)
 //
 // Inputs: upstream/ (pinned), tests/golden/ (requires per case), the four English configurations
 // (tests/golden/configurations.json), factory policies/tiers.yaml at the pinned factory version
@@ -183,12 +185,41 @@ async function issuesCommand(apply) {
     }
 }
 
+async function existingLabels() {
+    const have = [];
+    for (let page = 1; ; page++) {
+        const batch = await gh("GET", `/repos/${REPO_SLUG}/labels?per_page=100&page=${page}`);
+        have.push(...batch.map((l) => l.name));
+        if (batch.length < 100) break;
+    }
+    return have;
+}
+
+async function labelsCommand(check) {
+    if (!process.env.GH_TOKEN) throw new Error("GH_TOKEN is required");
+    const factory = JSON.parse(read(".github/factory/labels.json")).labels;
+    const { contracts } = await generate();
+    const fromContracts = lib.planIssues(contracts, REPO_SLUG).flatMap((p) => p.labels).map((name) => ({ name, color: "EDEDED", description: "" }));
+    const missing = lib.missingLabels([...factory, ...fromContracts], await existingLabels());
+    if (check) {
+        if (missing.length > 0) throw new Error(`missing labels: ${missing.map((l) => l.name).join(", ")}`);
+        console.log("labels: all present");
+        return;
+    }
+    for (const l of missing) {
+        await gh("POST", `/repos/${REPO_SLUG}/labels`, l);
+        console.log(`created label ${l.name}`);
+    }
+    console.log(`labels: ${missing.length} created`);
+}
+
 async function main() {
     const [command, ...flags] = process.argv.slice(2);
     if (command === "contracts") return contractsCommand(flags.includes("--check"));
     if (command === "issues" && flags.includes("--plan")) return issuesCommand(false);
     if (command === "issues" && flags.includes("--apply")) return issuesCommand(true);
-    console.error("usage: seed.js contracts [--check] | issues --plan | issues --apply");
+    if (command === "labels") return labelsCommand(flags.includes("--check"));
+    console.error("usage: seed.js contracts [--check] | issues --plan | issues --apply | labels [--check]");
     process.exit(2);
 }
 
