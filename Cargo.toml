@@ -10,12 +10,6 @@ publish = false
 build = "build.rs"
 exclude = ["upstream/", "harness/", "tests/golden/", "contracts/"]
 
-
-[features]
-# Factory drills only (drills/README.md): compiles the never-registered `factory_drill_*` step files,
-# so CI's clippy, build and strict gates see them. Never a default: the product doesn't contain them.
-# Removed with the drills.
-factory-drill = []
 [lib]
 name = "chrono_node"
 

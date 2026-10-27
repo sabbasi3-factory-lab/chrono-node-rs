@@ -216,24 +216,3 @@ test("a controller auto-revert PR is a person's kind of PR to the strict gates (
     assert.strictEqual(r.kind, "human");
     assert.strictEqual(r.ok, true);
 });
-
-test("promoted drill task (promote_tasks): only drill files, in the contract scope and in the change", () => {
-    const PROMOTE = { promoteTasks: ["drill/*"], promotePaths: ["src/locales/en/parsers/factory_drill_*.rs"] };
-    const drill = (scope) => (task) => (task === "drill/x" ? { scope, acceptance: [], lastCommit: "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678" } : null);
-    const dbody = "Drill.\n\nFactory-Task: drill/x\nContract-SHA: a1b2c3d\n";
-    const run = (scope, changed, promote = PROMOTE) => evaluate({ isAgent: true, body: dbody, changed, protectedGlobs: PROTECTED, loadContract: drill(scope), ...promote });
-    const ok = run(["src/locales/en/parsers/factory_drill_x.rs"], ["src/locales/en/parsers/factory_drill_x.rs"]);
-    assert.deepStrictEqual([ok.ok, ok.reasons], [true, []]);
-    // A drill/* contract whose scope reaches a non-drill file is refused, even for an in-scope change.
-    const wide = run(["src/locales/en/parsers/factory_drill_x.rs", "src/locales/en/parsers/weekday.rs"], ["src/locales/en/parsers/factory_drill_x.rs"]);
-    assert.strictEqual(wide.ok, false);
-    assert.ok(wide.reasons.includes("promoted drill task: contract scope outside the drill files: src/locales/en/parsers/weekday.rs"), wide.reasons.join("; "));
-    const glob = run(["src/locales/en/parsers/**"], ["src/locales/en/parsers/factory_drill_x.rs"]);
-    assert.strictEqual(glob.ok, false, "a scope glob wider than the drill files is refused");
-    const touch = run(["src/locales/en/parsers/factory_drill_x.rs", "src/locales/en/parsers/weekday.rs"], ["src/locales/en/parsers/weekday.rs"]);
-    assert.ok(touch.reasons.includes("promoted drill task: change outside the drill files: src/locales/en/parsers/weekday.rs"));
-    // Without promotion (no policy, or another task id) the ordinary scope rules apply unchanged.
-    assert.strictEqual(run(["src/locales/en/parsers/weekday.rs"], ["src/locales/en/parsers/weekday.rs"], {}).ok, true);
-    const other = evaluate({ isAgent: true, body: body(), changed: ["src/locales/en/parsers/weekday.rs"], protectedGlobs: PROTECTED, loadContract, ...PROMOTE });
-    assert.strictEqual(other.ok, true, "en/weekday-parser isn't a drill task");
-});

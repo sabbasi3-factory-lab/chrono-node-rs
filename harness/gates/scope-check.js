@@ -51,15 +51,7 @@ async function loadPolicyProtected() {
     const list = tiers && tiers.protected_from_agents;
     if (!Array.isArray(list) || list.length === 0) throw new Error("tiers.yaml has no protected_from_agents");
     const strict = tiers && tiers.tiers && tiers.tiers["auto-strict"] && tiers.tiers["auto-strict"].paths;
-    const strictTier = (tiers && tiers.tiers && tiers.tiers["auto-strict"]) || {};
-    const strList = (v) => (Array.isArray(v) && v.every((x) => typeof x === "string" && x.length > 0) ? v : []);
-    return {
-        version,
-        protectedGlobs: list,
-        autoStrictGlobs: Array.isArray(strict) ? strict : [],
-        promoteTasks: strList(strictTier.promote_tasks),
-        promotePaths: strList(strictTier.promote_tasks_paths),
-    };
+    return { version, protectedGlobs: list, autoStrictGlobs: Array.isArray(strict) ? strict : [] };
 }
 
 async function graphql(query, variables) {
@@ -154,10 +146,10 @@ function loadContractAt(base) {
 async function main() {
     const { pr, head, contractBase, changed } = await context();
     const changedPaths = changed ? changed.split("\n").filter(Boolean) : [];
-    const { version, protectedGlobs, autoStrictGlobs, promoteTasks, promotePaths } = await loadPolicyProtected();
+    const { version, protectedGlobs, autoStrictGlobs } = await loadPolicyProtected();
     const isAgent = pr.user && pr.user.login === AGENT_LOGIN;
     const loadContract = loadContractAt(contractBase);
-    const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract, promoteTasks, promotePaths });
+    const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract });
     // A factory PR's contract decides too (its tier and every scope path). A missing or unreadable
     // contract fails closed: run the full regression.
     let strict;

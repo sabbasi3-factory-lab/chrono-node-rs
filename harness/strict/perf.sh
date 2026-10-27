@@ -20,9 +20,6 @@ rm -rf "$work" && mkdir -p "$work"
 git worktree add -q --detach "$work/base" "$BASE_REV"
 trap 'git worktree remove --force "$work/base" >/dev/null 2>&1 || true' EXIT
 [ -f "$work/base/benches/golden_phrases.rs" ] || fail "the base has no benches/golden_phrases.rs (fail closed)"
-# Drill D8c's bench hook (drills/README.md) only ever slows the change: a base that has the drill
-# file would make every change look faster, so it's refused (fail closed). Removed with the drills.
-[ ! -f "$work/base/src/locales/en/parsers/factory_drill_gate_perf.rs" ] || fail "the base has the D8c perf drill file (its bench hook would hide a regression)"
 export CRITERION_HOME="$work/criterion"
 ARGS=(--warm-up-time 2 --measurement-time 8 --sample-size 50 --noplot)
 
