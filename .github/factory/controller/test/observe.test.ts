@@ -124,7 +124,7 @@ describe('history (from audit events)', () => {
       ],
       NOW,
     );
-    assert.deepEqual(d.history['en/a'], { picked_at: '2026-10-15T09:00:00Z', repairs: 1, failure_signatures: ['sig'], repaired_run_ids: [9], aic_spent: 140 });
+    assert.deepEqual(d.history['en/a'], { picked_at: '2026-10-15T09:00:00Z', picks: ['2026-10-15T09:00:00Z'], dispatches: 1, repairs: 1, failure_signatures: ['sig'], repaired_run_ids: [9], aic_spent: 140 });
     assert.equal(d.factory_aic_today, 50);
   });
 });

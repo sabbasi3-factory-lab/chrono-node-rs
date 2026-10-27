@@ -10,7 +10,7 @@ import { FakeGitHub, type RecordedCall } from '../fake.ts';
 import { logWaits, parseArgs, run, type RunDeps } from '../main.ts';
 import { IMPLEMENTED_STRICT_GATES } from '../planner.ts';
 import { deriveState } from '../history.ts';
-import { readRepairRuns, readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
+import { readReopenedAt, readRepairRuns, readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
 import type { Decision, Policies, Snapshot } from '../types.ts';
 import { checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
 import { dedupeKey } from '../audit.ts';
@@ -548,6 +548,28 @@ describe('main: live mode (FACTORY_ENABLED=true)', () => {
     assert.deepEqual(effectCalls(gh), []);
   });
 
+  it('implement: a first dispatch labels, dispatches, then records; a re-dispatch (attempt ≥ 2, after a reopen) records first', async () => {
+    const mk = (attempt: number) => ({ type: 'dispatched', reason: 'would_dispatch', effect: 'dispatch_workflow:implement', dry_run: true, task: 'en/a', issue: 3, pr: null, attempt, contract_sha: 'c'.repeat(40), run_id: null, failure_signature: null, source_ids: ['I_3', 'c'.repeat(40)] });
+    const orderFor = async (attempt: number, failDispatch = false) => {
+      const order: string[] = [];
+      const client = {
+        request: async (method: string, path: string) => {
+          order.push(`${method} ${path.replace(`/repos/${REPO}`, '')}`);
+          if (failDispatch && path.endsWith('/dispatches')) throw new Error('HTTP 502');
+          return { status: 200, data: [], next: null };
+        },
+      };
+      const run = executeLive([mk(attempt) as never], { client: client as never, repo: REPO, log: () => {}, runUrl: null, isNew: () => true, validate: () => {}, record: async () => void order.push('record') });
+      if (failDispatch) await assert.rejects(run, /HTTP 502/);
+      else await run;
+      return order;
+    };
+    assert.deepEqual(await orderFor(1), ['POST /issues/3/labels', 'POST /actions/workflows/implement.lock.yml/dispatches', 'record']);
+    assert.deepEqual(await orderFor(2), ['record', 'POST /issues/3/labels', 'POST /actions/workflows/implement.lock.yml/dispatches']);
+    // A failed re-dispatch is still recorded: the task stays in flight (time limit), never dispatched twice.
+    assert.deepEqual(await orderFor(2, true), ['record', 'POST /issues/3/labels', 'POST /actions/workflows/implement.lock.yml/dispatches']);
+  });
+
   it('a repair is recorded first (attempt, run, signature, head), then repair.lock.yml is dispatched with exactly its inputs', async () => {
     const d = { type: 'repair_dispatched', reason: 'ci_failed', effect: 'dispatch_workflow:repair', dry_run: true, task: 'en/a', issue: 3, pr: 21, attempt: 2, contract_sha: 'c'.repeat(40), run_id: 500, failure_signature: 'step:golden', head_sha: hex40('1'), source_ids: ['500/attempts/1', 'PR_21'] } as const;
     const calls: { method: string; path: string; body: unknown }[] = [];
@@ -1074,6 +1096,21 @@ describe('reviewer checks and history', () => {
     });
     const checks = await readReviewChecks(gh, REPO, [head, 'not-a-sha'], APP);
     assert.deepEqual(checks.map((c) => [c.id, c.reviewed_head]), [[1, head], [5, null]]);
+  });
+
+  it('readReopenedAt: the latest reopen from the issue events; none → null; unreadable → null', async () => {
+    const gh = new FakeGitHub(REPO);
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/5/events$`), () => ({ data: [
+      { event: 'closed', created_at: '2026-10-16T08:00:00Z' },
+      { event: 'reopened', created_at: '2026-10-16T09:00:00Z' },
+      { event: 'reopened', created_at: '2026-10-15T09:00:00Z' },
+      { event: 'labeled', created_at: '2026-10-16T10:00:00Z' },
+    ] }));
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/6/events$`), () => ({ data: [{ event: 'labeled', created_at: '2026-10-16T10:00:00Z' }] }));
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/7/events$`), () => ({ status: 500, data: null }));
+    assert.equal(await readReopenedAt(gh, REPO, 5), '2026-10-16T09:00:00Z');
+    assert.equal(await readReopenedAt(gh, REPO, 6), null);
+    assert.equal(await readReopenedAt(gh, REPO, 7), null);
   });
 
   it('readRepairRuns lists two days of repair runs; a listing failure is unknown (null), never empty', async () => {

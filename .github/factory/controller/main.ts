@@ -25,7 +25,7 @@ import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
 import { statusContext, syncProject } from './project.ts';
 import { readSpendToday, spendSnapshotFields, type DispatchRecord } from './spend.ts';
-import { isRecorded, killSwitchEnabled, missingStrictGates, plan } from './planner.ts';
+import { applyReopens, isRecorded, killSwitchEnabled, missingStrictGates, plan } from './planner.ts';
 import { loadPolicies, loadPoliciesFromDir, readFactoryVersion } from './policies.ts';
 import type { AuditEvent, Decision, GitHubClient, PendingEvent, Policies, Snapshot } from './types.ts';
 
@@ -196,6 +196,8 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         reviewerAppId: REVIEWER_APP_ID,
       });
   snapshot.history = { ...derived.history, ...snapshot.history };
+  // A task issue reopened after its pick starts afresh (its old pick no longer holds it in flight).
+  for (const task of applyReopens(snapshot)) log(`reopened task ${task}: its earlier pick no longer counts`);
 
   // Spend, measured before planning (fixture mode uses the snapshot's value). Unknown spend
   // means no dispatch: the planner waits on budget_unknown.

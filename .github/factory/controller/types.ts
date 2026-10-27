@@ -87,6 +87,8 @@ export interface IssueSnap {
   /** Parsed only from the hidden `<!-- factory-task: ... -->` marker. */
   task_id: string | null;
   marker_status: MarkerStatus;
+  /** When the issue was last reopened (only read for issues whose task has a recorded pick); null if never or unknown. */
+  reopened_at?: string | null;
 }
 
 export interface ReviewSnap {
@@ -193,7 +195,13 @@ export interface CheckRunSnap {
 }
 
 export interface TaskHistory {
+  /** The first recorded pick (after the issue's last reopen, once applyReopens has run). */
   picked_at: string | null;
+  /** Every recorded pick or dispatch time, and the number of implement dispatches (the next attempt). */
+  picks?: string[];
+  dispatches?: number;
+  /** Set by applyReopens: the reopen that restarted the task (the re-dispatch's audit identity). */
+  reset_at?: string;
   repairs: number;
   failure_signatures: string[];
   repaired_run_ids: number[];

@@ -261,6 +261,42 @@ export function finishedRepair(s: Snapshot, task: string, failedRun: number, hea
   return run && run.status === 'completed' ? run : null;
 }
 
+/**
+ * A task issue reopened after its attempt ended is a fresh start. "Ended" means a factory PR for the
+ * task opened after that pick was closed unmerged before the reopen, so a close and reopen while the
+ * attempt is still running (no PR yet) changes nothing. Then picks before the reopen no longer make
+ * the task "in flight", and a `factory:picked` label left from before is stale. Mutates `s`: the
+ * task's `picked_at` becomes its first pick after the reopen (or null), `reset_at` records the reopen
+ * (the re-dispatch's audit identity), and the stale label is dropped from the snapshot (the next
+ * dispatch adds it again). Returns the tasks reset. An unknown reopen time changes nothing (fail closed).
+ */
+export function applyReopens(s: Snapshot): string[] {
+  const reset: string[] = [];
+  for (const i of s.issues) {
+    const task = i.task_id;
+    const at = i.reopened_at;
+    if (!task || !at) continue;
+    // A reopen at or after this poll's own time waits a poll: this poll's records carry that time, so
+    // a re-dispatch made now must come strictly after the reopen it follows.
+    if (at >= s.fetched_at) continue;
+    // An open factory PR still holds the task, whatever the reopen.
+    if (s.pulls.some((pr) => pr.task_id === task && pr.state === 'open')) continue;
+    const h = s.history[task];
+    if (!h?.picked_at || h.picked_at > at) continue;
+    const before = (h.picks ?? [h.picked_at]).filter((t) => t <= at).sort();
+    const lastPick = before[before.length - 1] ?? h.picked_at;
+    const ended = s.pulls.some(
+      (pr) => pr.task_id === task && pr.state === 'closed' && pr.author_is_bot && (pr.author ?? '').replace(/\[bot\]$/, '') === AGENT_LOGIN && pr.created_at >= lastPick && pr.created_at <= at,
+    );
+    if (!ended) continue;
+    const after = (h.picks ?? []).filter((t) => t > at).sort();
+    s.history[task] = { ...h, picked_at: after[0] ?? null, reset_at: at };
+    if (after.length === 0) i.labels = i.labels.filter((l) => l !== LABEL_PICKED);
+    reset.push(task);
+  }
+  return reset;
+}
+
 export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Decision[] {
   const out: Decision[] = [];
   const day = now.toISOString().slice(0, 10);
@@ -667,7 +703,14 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     admissible.push({
       issue,
       contract: c,
-      decision: decide({ ...base, type: 'dispatched', reason: 'would_dispatch', effect: 'dispatch_workflow:implement', attempt: 1, contract_sha: c.last_commit_sha, source_ids: [issue.node_id, c.last_commit_sha] }),
+      // A re-dispatch (after a reopen) is the next attempt.
+      decision: (() => {
+        const attempt = (history(task).dispatches ?? 0) + 1;
+        // Its audit identity is the reopen it follows (stable even when older dispatches leave the
+        // audit window and the attempt count repeats); a first dispatch keeps its old identity.
+        const reset = history(task).reset_at;
+        return decide({ ...base, type: 'dispatched', reason: 'would_dispatch', effect: 'dispatch_workflow:implement', attempt: reset ? Math.max(attempt, 2) : attempt, contract_sha: c.last_commit_sha, source_ids: [issue.node_id, c.last_commit_sha, ...(reset ? [`reopened:${reset}`] : [])] });
+      })(),
     });
   }
   // Dependency order, then priority (lower first), then issue number.

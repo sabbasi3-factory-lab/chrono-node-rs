@@ -341,11 +341,16 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
     deps.log(describe(d, true));
     if (d.effect === 'dispatch_workflow:implement') {
       if (d.issue === null || d.task === null || d.attempt === null || d.contract_sha === null) throw new Error('dispatch decision is missing task, issue, attempt or contract SHA');
+      // A re-dispatch (attempt ≥ 2, after a reopen): record first. Its factory:picked label is already
+      // on the issue, so the label can't guard against a second dispatch if the record were lost; a
+      // recorded attempt whose dispatch fails stays in flight until the time limit hands it on.
+      const redispatch = d.attempt > 1;
+      if (redispatch) await deps.record(ev);
       await addLabel(deps, d.issue, LABEL_PICKED);
       await deps.client.request('POST', `/repos/${deps.repo}/actions/workflows/${IMPLEMENT_WORKFLOW}/dispatches`, {
         body: { ref: 'main', inputs: { task: d.task, issue: String(d.issue), attempt: String(d.attempt), contract_sha: d.contract_sha } },
       });
-      await deps.record(ev);
+      if (!redispatch) await deps.record(ev);
     } else if (LABEL_OF[d.effect]) {
       if (d.pr === null && d.issue === null) throw new Error(`${d.type}/${d.reason} has no issue or PR to label`);
       // Record first: if a later step fails, the next live run finishes it (pendingHandoffs).
