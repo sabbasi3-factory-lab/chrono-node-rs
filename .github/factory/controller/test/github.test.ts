@@ -202,6 +202,18 @@ describe('snapshot reader', () => {
     assert.ok(!JSON.stringify(p).includes('Hello'));
   });
 
+  it('lists repair runs before reading PR heads (a repair finishing in between is never paired with the old head)', async () => {
+    const gh = fakeWorld();
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/actions/workflows/repair\\.lock\\.yml/runs$`), () => ({ data: { workflow_runs: [] } }));
+    const before = gh.calls.length;
+    const s = await readSnapshot(gh, { repo: REPO, now: NOW, windowHours: 24, recordedChecks: new Map(), historyTasks: [], needBusyJobs: false });
+    const calls = gh.calls.slice(before).map((c) => c.path);
+    const repairAt = calls.findIndex((p) => p.includes('/repair.lock.yml/runs'));
+    const firstOther = calls.findIndex((p) => !p.includes('/repair.lock.yml/runs'));
+    assert.ok(repairAt === 0 && firstOther > repairAt, calls.join('\n'));
+    assert.deepEqual(s.repair_runs, []);
+  });
+
   it('reads issues, PRs, contracts (with last commit SHA), CI runs and seeds', async () => {
     const gh = fakeWorld();
     const s = await readSnapshot(gh, { repo: REPO, now: NOW, windowHours: 24, recordedChecks: new Map(), historyTasks: [], needBusyJobs: true });

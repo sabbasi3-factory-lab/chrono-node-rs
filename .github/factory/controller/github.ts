@@ -897,6 +897,9 @@ export async function readRepairRuns(client: GitHubClient, repo: string, now: Da
 
 /** Reads everything the planner and observer need. History/spend are filled in by main. */
 export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions): Promise<Snapshot> {
+  // Repair runs before PR heads: a repair that pushes and finishes in between is then seen with its
+  // new head (or as still running), never as a finished repair next to the old head (repair_no_push).
+  const repair_runs = await readRepairRuns(client, o.repo, o.now);
   const issues = await readIssues(client, o.repo);
   const pulls = await readPulls(client, o.repo);
   const tasks = new Set<string>(o.historyTasks);
@@ -930,6 +933,6 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
       typeof o.reviewerAppId === 'number'
         ? await readReviewChecks(client, o.repo, pulls.filter((p) => p.state === 'open' && p.task_id).map((p) => p.head_sha), o.reviewerAppId)
         : [],
-    repair_runs: await readRepairRuns(client, o.repo, o.now),
+    repair_runs,
   };
 }
