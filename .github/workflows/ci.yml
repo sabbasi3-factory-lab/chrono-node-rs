@@ -80,23 +80,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node gates/scope-check.js
 
-      - name: Drill (deliberate) - drills/ci-drill.sh
-        # Factory drills D1/D2 (drills/README.md): fails on purpose for a PR that changes a drill
-        # scope file; a no-op otherwise. Pull requests only. Removed with the drills.
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: bash drills/ci-drill.sh
-
-      - name: Drill (deliberate, post-merge) - drills/ci-drill.sh post-merge
-        # Factory drill D7 (drills/README.md): fails main's push run when the pushed commit adds the D7
-        # drill file, so the controller's auto-revert runs for real. A no-op otherwise. Removed with the drills.
-        if: github.event_name == 'push'
-        env:
-          HEAD_SHA: ${{ github.sha }}
-        run: bash drills/ci-drill.sh post-merge
-
       - name: Install Rust toolchain (rust-toolchain.toml)
         run: rustup toolchain install && rustc --version
 
@@ -106,19 +89,13 @@ jobs:
         run: cargo fmt --all --check
 
       - name: cargo clippy -D warnings
-        # With the factory drill files too (feature `factory-drill`, drills/README.md; never in the product).
-        run: cargo clippy --all-targets --locked --features factory-drill -- -D warnings
+        run: cargo clippy --all-targets --locked -- -D warnings
 
       - name: cargo build
         run: cargo build --all-targets --locked
 
       - name: Unit tests and configuration order
         run: cargo test --locked --lib --bins --test configurations
-
-      - name: Unit tests with the factory drill files (feature factory-drill)
-        # Library tests only, so the product binaries (target/debug/chrono-rs-json, compared below)
-        # stay built without the feature. Removed with the drills.
-        run: cargo test --locked --lib --features factory-drill
 
       - name: Whole-crate golden suite (no regressions)
         run: cargo test --locked --test golden -- --nocapture
@@ -162,12 +139,7 @@ jobs:
       - name: Full regression (auto-strict) - held-out comparison, 10000 phrases
         if: steps.scope.outputs.strict == 'true'
         working-directory: harness
-        env:
-          # Drill D5 only (drills/README.md, removed with the drills): can only fail the step.
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          bash ../drills/ci-drill.sh full-regression
           seed=$(cat "$RUNNER_TEMP/factory-heldout/seed")
           node compare/compare.js --seed "$seed" --phrases 10000 --rust ../target/debug/chrono-rs-json
 

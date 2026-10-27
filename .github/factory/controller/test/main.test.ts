@@ -338,10 +338,10 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
     const lines: string[] = [];
     const base = { dry_run: true, effect: 'none', pr: null, attempt: null, contract_sha: null, run_id: null, failure_signature: null, source_ids: [] };
     logWaits([
-      { ...base, type: 'wait', reason: 'core_area_busy', task: 'drill/gate-perf', issue: 12 } as unknown as Decision,
-      { ...base, type: 'dispatched', reason: 'would_dispatch', effect: 'dispatch_workflow:implement', task: 'drill/x', issue: 11 } as unknown as Decision,
+      { ...base, type: 'wait', reason: 'core_area_busy', task: 'core/results', issue: 12 } as unknown as Decision,
+      { ...base, type: 'dispatched', reason: 'would_dispatch', effect: 'dispatch_workflow:implement', task: 'en/x', issue: 11 } as unknown as Decision,
     ], (l) => lines.push(l));
-    assert.deepEqual(lines, ['[live] wait (core_area_busy) task=drill/gate-perf issue=#12']);
+    assert.deepEqual(lines, ['[live] wait (core_area_busy) task=core/results issue=#12']);
   });
 
   it('dispatch state: spend unknown with ready work → paused/budget_unknown recorded once (since = its timestamp)', async () => {

@@ -51,13 +51,10 @@ cp src/lib.rs "$work/lib.rs.orig"
 trap 'cp "$work/lib.rs.orig" src/lib.rs; git worktree remove --force "$work/base" >/dev/null 2>&1 || true' EXIT
 
 # discover <dir> <files...>: make every given file that exists in <dir> visible to cargo-mutants.
-# Factory drills (drills/README.md): drill step files compile only with the `factory-drill` feature;
-# check them too wherever the checkout declares it (a base from before the feature doesn't).
-drill_features() { if grep -qE '^factory-drill *=' "$1/Cargo.toml"; then echo "--features factory-drill"; fi; }
 discover() {
     local dir="$1"; shift
     local listed n=0 f
-    listed=$(cd "$dir" && cargo mutants --list-files $(drill_features "$dir") 2>/dev/null) || fail "cargo mutants --list-files failed in ${dir}"
+    listed=$(cd "$dir" && cargo mutants --list-files 2>/dev/null) || fail "cargo mutants --list-files failed in ${dir}"
     listed=$(rel_paths "$dir" <<<"$listed")
     for f in "$@"; do
         [ -f "$dir/$f" ] || continue
@@ -66,7 +63,7 @@ discover() {
         printf '\n#[cfg(any())]\n#[path = "%s"]\nmod __factory_mutants_discover_%d;\n' "${f#src/}" "$n" >> "$dir/src/lib.rs"
         n=$((n + 1))
     done
-    listed=$(cd "$dir" && cargo mutants --list-files $(drill_features "$dir") 2>/dev/null) || fail "cargo mutants --list-files failed in ${dir}"
+    listed=$(cd "$dir" && cargo mutants --list-files 2>/dev/null) || fail "cargo mutants --list-files failed in ${dir}"
     listed=$(rel_paths "$dir" <<<"$listed")
     for f in "$@"; do
         [ -f "$dir/$f" ] || continue
@@ -79,7 +76,7 @@ discover "$work/base" "${files[@]}"
 # run <dir> <diff> <out>: cargo-mutants exit 0 (all caught), 2 (missed) and 3 (timeouts) are results.
 run() {
     local rc=0
-    timeout --kill-after=60 "$CAP_SECONDS" cargo mutants --dir "$1" --in-diff "$2" $(drill_features "$1") --no-shuffle --jobs 2 --output "$3" \
+    timeout --kill-after=60 "$CAP_SECONDS" cargo mutants --dir "$1" --in-diff "$2" --no-shuffle --jobs 2 --output "$3" \
         -- --lib --test golden --test configurations > "$3.log" 2>&1 || rc=$?
     tail -3 "$3.log"
     case "$rc" in
