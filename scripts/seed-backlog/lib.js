@@ -77,10 +77,15 @@ function validate({ taskmap, upstreamFiles, configurations }) {
         if (!t.area || !/^[a-z0-9-]+$/.test(t.area)) problems.push(`${t.id}: bad area`);
         if (t.unit !== undefined) {
             const u = t.unit;
+            // `test` is the #[test] fn the gates check for, so it must be a unique snake_case name.
             const casesOk =
-                u && Array.isArray(u.cases) && u.cases.length > 0 && u.cases.every((c) => c && typeof c.name === "string" && c.expect && typeof c.expect === "object");
+                u &&
+                Array.isArray(u.cases) &&
+                u.cases.length > 0 &&
+                u.cases.every((c) => c && typeof c.test === "string" && /^[a-z_][a-z0-9_]*$/.test(c.test) && c.expect && typeof c.expect === "object") &&
+                new Set(u.cases.map((c) => c.test)).size === u.cases.length;
             if (!u || typeof u.requirement !== "string" || !u.requirement.trim() || !casesOk) {
-                problems.push(`${t.id}: unit must be {requirement, cases: [{name, ..., expect}]}`);
+                problems.push(`${t.id}: unit must be {requirement, cases: [{test: <unique snake_case>, ..., expect}]}`);
             }
         }
         const kind = /\/parsers\//.test(t.rust || "") ? "parsers" : "refiners";

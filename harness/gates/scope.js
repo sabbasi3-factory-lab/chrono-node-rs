@@ -46,10 +46,11 @@ const TASK_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
  *   changed       - changed paths
  *   protectedGlobs- tiers.yaml protected_from_agents
  *   loadContract  - (taskId) => {scope: string[], acceptance: [...] , lastCommit: string} | null
+ *   readFile      - (path) => the candidate's text of a changed file, or null (needed for `unit`)
  * @returns {{ok: boolean, kind: "human"|"factory", reasons: string[], task?: string, goldenAreas: string[],
  *            goldenStep?: string|null, differential?: {seed: number, phrases: number}|null}}
  */
-function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
+function evaluate({ isAgent, body, changed, protectedGlobs, loadContract, readFile }) {
     const task = trailer(body, "Factory-Task");
     if (!task && !isAgent) {
         return { ok: true, kind: "human", reasons: [], goldenAreas: [], goldenStep: null, differential: null };
@@ -108,7 +109,93 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract }) {
             }
         }
     }
+    reasons.push(...unitReasons({ contract, changed, scope, readFile }));
     return { ok: reasons.length === 0, kind: "factory", task, reasons, goldenAreas, goldenStep, differential };
+}
+
+/**
+ * Rust source with comments (line, nested block) and string literals (normal, byte, raw `r#".."#`)
+ * replaced by spaces; char literals are skipped so `'"'` doesn't open a string. Lifetimes are kept.
+ */
+function stripRustNonCode(src) {
+    let out = "";
+    let i = 0;
+    const n = src.length;
+    const blank = (from, to) => {
+        out += src.slice(from, to).replace(/[^\n]/g, " ");
+        i = to;
+    };
+    while (i < n) {
+        const c = src[i];
+        const next = src[i + 1];
+        if (c === "/" && next === "/") {
+            const end = src.indexOf("\n", i);
+            blank(i, end === -1 ? n : end);
+        } else if (c === "/" && next === "*") {
+            let depth = 0;
+            let j = i;
+            while (j < n) {
+                if (src[j] === "/" && src[j + 1] === "*") {
+                    depth++;
+                    j += 2;
+                } else if (src[j] === "*" && src[j + 1] === "/") {
+                    depth--;
+                    j += 2;
+                    if (depth === 0) break;
+                } else j++;
+            }
+            blank(i, Math.min(j, n));
+        } else if (/^b?r#*"/.test(src.slice(i, i + 260)) && !/[A-Za-z0-9_]/.test(src[i - 1] || "")) {
+            const m = /^b?r(#*)"/.exec(src.slice(i));
+            const close = '"' + m[1];
+            const end = src.indexOf(close, i + m[0].length);
+            blank(i, end === -1 ? n : end + close.length);
+        } else if (c === '"' || (c === "b" && next === '"' && !/[A-Za-z0-9_]/.test(src[i - 1] || ""))) {
+            let j = i + (c === "b" ? 2 : 1);
+            while (j < n && src[j] !== '"') j += src[j] === "\\" ? 2 : 1;
+            blank(i, Math.min(j + 1, n));
+        } else if (c === "'") {
+            const m = /^'(?:\\(?:u\{[0-9a-fA-F]+\}|x[0-9a-fA-F]{2}|.)|[^\\'\n])'/u.exec(src.slice(i));
+            if (m) blank(i, i + m[0].length);
+            else {
+                out += c;
+                i++;
+            }
+        } else {
+            out += c;
+            i++;
+        }
+    }
+    return out;
+}
+
+const TEST_NAME = /^[a-z_][a-z0-9_]*$/;
+
+/**
+ * `acceptance: - unit: {requirement, cases: [{test, ...}]}`: every case's `test` must be a
+ * `#[test] [pub[(..)]] fn <test>(` in a changed file inside the scope. A cheap presence check (CI runs
+ * the tests); comments and string literals are blanked first, so a test there doesn't count.
+ */
+function unitReasons({ contract, changed, scope, readFile }) {
+    const units = (contract.acceptance || []).filter((a) => a && a.unit !== undefined).map((a) => a.unit);
+    if (units.length === 0) return [];
+    const names = [];
+    for (const u of units) {
+        const cases = u && Array.isArray(u.cases) ? u.cases : null;
+        if (!cases || cases.length === 0 || !cases.every((c) => c && typeof c.test === "string" && TEST_NAME.test(c.test))) {
+            return ["unsupported unit acceptance (want {requirement, cases: [{test: <snake_case name>, ...}]})"];
+        }
+        names.push(...cases.map((c) => c.test));
+    }
+    if (typeof readFile !== "function") return ["unit acceptance: candidate files are not readable"];
+    const text = changed
+        .filter((p) => matchesAny(p, scope) && p.endsWith(".rs"))
+        .map((p) => readFile(p) || "")
+        .map(stripRustNonCode)
+        .join("\n");
+    return [...new Set(names)]
+        .filter((n) => !new RegExp(`#\\[test\\]\\s*(?:#\\[[^\\]]*\\]\\s*)*(?:pub(?:\\s*\\([^)]*\\))?\\s+)?fn\\s+${n}\\s*\\(`).test(text))
+        .map((n) => `unit acceptance: no #[test] fn ${n} in the changed scope files`);
 }
 
 /**
@@ -162,4 +249,4 @@ function reviewGate({ isAgent, strict, head, enqueuer, checkRuns }) {
     return { ok: true, why: `reviewer passed ${head} (check run ${latest.id})` };
 }
 
-module.exports = { globToRegExp, matchesAny, trailer, evaluate, needsFullRegression, reviewGate, REVIEWER_APP_ID };
+module.exports = { globToRegExp, matchesAny, trailer, evaluate, unitReasons, stripRustNonCode, needsFullRegression, reviewGate, REVIEWER_APP_ID };

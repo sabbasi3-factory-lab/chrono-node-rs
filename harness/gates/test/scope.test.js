@@ -216,3 +216,44 @@ test("a controller auto-revert PR is a person's kind of PR to the strict gates (
     assert.strictEqual(r.kind, "human");
     assert.strictEqual(r.ok, true);
 });
+
+test("unit acceptance: every case's #[test] must exist in a changed scope file", () => {
+    const FILE = "src/locales/en/parsers/weekday.rs";
+    const unit = { requirement: "r", cases: [{ test: "ctor_only", expect: {} }, { test: "per_parse_wins", expect: {} }] };
+    const withUnit = { ...CONTRACT, acceptance: [...CONTRACT.acceptance, { unit }] };
+    const load = (task) => (task === "en/weekday-parser" ? withUnit : null);
+    const run = (text, extra = {}) =>
+        evaluate({ isAgent: true, body: body(), changed: [FILE], protectedGlobs: PROTECTED, loadContract: load, readFile: (p) => (p === FILE ? text : null), ...extra });
+
+    const both = "mod tests {\n    #[test]\n    fn ctor_only() {}\n    #[test]\n    #[should_panic]\n    fn per_parse_wins () {}\n}";
+    assert.deepStrictEqual(run(both).reasons, []);
+    // A missing, commented-out, or non-#[test] function fails.
+    assert.deepStrictEqual(run("#[test]\nfn ctor_only() {}").reasons, ["unit acceptance: no #[test] fn per_parse_wins in the changed scope files"]);
+    assert.strictEqual(run("#[test]\nfn ctor_only() {}\n// #[test]\n// fn per_parse_wins() {}").ok, false);
+    assert.strictEqual(run("#[test]\nfn ctor_only() {}\nfn per_parse_wins() {}").ok, false);
+    // Block comments (nested) and string literals (normal, raw) don't count either.
+    for (const hidden of [
+        "/* #[test]\nfn per_parse_wins() {} */",
+        "/* outer /* inner */ #[test]\nfn per_parse_wins() {} */",
+        'const S: &str = "#[test]\nfn per_parse_wins() {}";',
+        'const S: &str = r#"#[test]\nfn per_parse_wins() {}"#;',
+        'const S: &str = "\\" #[test] fn per_parse_wins() {}";',
+    ]) {
+        assert.strictEqual(run(`#[test]\nfn ctor_only() {}\n${hidden}`).ok, false, hidden);
+    }
+    // Code after literals and lifetimes is still seen, and visibility before fn is allowed.
+    const tricky = "fn f<'a>(x: &'a str) -> char { let _ = \"//\"; '\"' }\n#[test]\npub fn ctor_only() {}\n#[test]\npub(crate) fn per_parse_wins() {}";
+    assert.deepStrictEqual(run(tricky).reasons, []);
+    // A prefix of a longer name doesn't count.
+    assert.strictEqual(run("#[test]\nfn ctor_only() {}\n#[test]\nfn per_parse_wins_too() {}").ok, false);
+    // Files outside the scope don't count.
+    const outside = evaluate({ isAgent: true, body: body(), changed: [FILE, "src/other.rs"], protectedGlobs: PROTECTED, loadContract: load, readFile: (p) => (p === "src/other.rs" ? both : "") });
+    assert.strictEqual(outside.ok, false);
+    // Fails closed without a file reader, and on cases without a valid test name.
+    assert.match(run(both, { readFile: undefined }).reasons.join(), /not readable/);
+    const noName = { ...CONTRACT, acceptance: [...CONTRACT.acceptance, { unit: { requirement: "r", cases: [{ name: "x y" }] } }] };
+    const r = evaluate({ isAgent: true, body: body(), changed: [FILE], protectedGlobs: PROTECTED, loadContract: () => noName, readFile: () => both });
+    assert.match(r.reasons.join(), /unsupported unit acceptance/);
+    // Contracts without `unit` don't need a reader.
+    assert.ok(evaluate({ isAgent: true, body: body(), changed: [FILE], protectedGlobs: PROTECTED, loadContract }).ok);
+});

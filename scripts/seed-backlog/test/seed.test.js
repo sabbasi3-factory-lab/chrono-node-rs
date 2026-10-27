@@ -83,14 +83,14 @@ test("contracts: deps from the cheapest golden case, priority by golden count, d
 });
 
 test("a task's unit requirement becomes a unit acceptance entry; malformed ones are rejected", () => {
-    const unit = { requirement: "keep the constructor map", cases: [{ name: "c", text: "x", expect: { timezoneOffset: 1 } }] };
+    const unit = { requirement: "keep the constructor map", cases: [{ test: "c", text: "x", expect: { timezoneOffset: 1 } }] };
     const withUnit = { ...taskmap, tasks: [{ ...taskmap.tasks[0], unit }, ...taskmap.tasks.slice(1)] };
     const contracts = lib.buildContracts({ taskmap: withUnit, pin, tiers: TIERS, cases });
     const a = contracts.find((c) => c.id === taskmap.tasks[0].id);
     assert.deepStrictEqual(a.acceptance.at(-1), { unit });
     for (const c of contracts.filter((c) => c.id !== a.id)) assert.ok(!c.acceptance.some((x) => x.unit), c.id);
     assert.deepStrictEqual(lib.validate({ taskmap: withUnit, upstreamFiles, configurations }), []);
-    for (const bad of [{}, { requirement: " ", cases: unit.cases }, { requirement: "r", cases: [] }, { requirement: "r", cases: [{ name: "c" }] }]) {
+    for (const bad of [{}, { requirement: " ", cases: unit.cases }, { requirement: "r", cases: [] }, { requirement: "r", cases: [{ test: "c" }] }, { requirement: "r", cases: [{ test: "Bad name", expect: {} }] }, { requirement: "r", cases: [unit.cases[0], unit.cases[0]] }]) {
         const t = { ...taskmap, tasks: [{ ...taskmap.tasks[0], unit: bad }, ...taskmap.tasks.slice(1)] };
         assert.match(lib.validate({ taskmap: t, upstreamFiles, configurations }).join("\n"), /unit must be/, JSON.stringify(bad));
     }
