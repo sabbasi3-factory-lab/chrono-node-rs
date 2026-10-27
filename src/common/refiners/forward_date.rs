@@ -94,7 +94,10 @@ impl Refiner for ForwardDateRefiner {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::context::ParsingOption;
+    use super::ForwardDateRefiner;
+    use crate::core::chrono::Refiner;
+    use crate::core::components::Component;
+    use crate::core::context::{ParsingContext, ParsingOption};
     use crate::core::js_date::JsDate;
     use crate::locales::en::configuration::create_casual_configuration;
 
@@ -155,6 +158,46 @@ mod tests {
     fn weekday_range() {
         check("Thursday - Friday", REF, &[1344513600000, 1344600000000], &[1345118400000, 1345204800000]);
         check("Monday - Wednesday", REF, &[1344859200000, 1345032000000], &[1344859200000, 1345032000000]);
+    }
+
+    /// Runs the refiner alone on one constructed result: start/end known components, plus an
+    /// implied year when given. Returns the (start, end) years. Expected values: chrono-node v2.10.3.
+    fn refine_years(start: (&[(Component, i64)], Option<i64>), end: (&[(Component, i64)], Option<i64>)) -> (i64, i64) {
+        let option = ParsingOption {
+            forward_date: true,
+            ..Default::default()
+        };
+        let reference = JsDate::parse_iso(REF).unwrap();
+        let context = ParsingContext::new("x", &reference.into(), option, reference);
+        let comp = |(known, year): (&[(Component, i64)], Option<i64>)| {
+            let mut c = context.create_parsing_components(known);
+            if let Some(y) = year {
+                c.imply(Component::Year, y);
+            }
+            c
+        };
+        let result = context.create_parsing_result(0, "x", Some(comp(start)), Some(comp(end)));
+        let out = ForwardDateRefiner.refine(&context, vec![result]);
+        let r = &out[0];
+        (r.start.get_or_zero(Component::Year), r.end.as_ref().unwrap().get_or_zero(Component::Year))
+    }
+
+    #[test]
+    fn far_past_unknown_year_moves_at_most_three_years() {
+        let (m, d) = (Component::Month, Component::Day);
+        assert_eq!(refine_years((&[(m, 3), (d, 5)], Some(2005)), (&[(m, 3), (d, 6)], Some(2005))), (2008, 2008));
+    }
+
+    #[test]
+    fn certain_year_in_the_past_is_kept() {
+        let (m, d, y) = (Component::Month, Component::Day, Component::Year);
+        assert_eq!(refine_years((&[(m, 8), (d, 5), (y, 2011)], None), (&[(m, 8), (d, 6)], Some(2011))), (2011, 2011));
+    }
+
+    #[test]
+    fn certain_end_year_is_kept() {
+        let (m, d, y) = (Component::Month, Component::Day, Component::Year);
+        assert_eq!(refine_years((&[(m, 3), (d, 5)], None), (&[(m, 3), (d, 6), (y, 2012)], None)), (2013, 2012));
     }
 
     #[test]
