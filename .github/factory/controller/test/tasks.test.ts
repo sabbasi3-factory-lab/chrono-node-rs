@@ -118,7 +118,9 @@ describe('globs and tiers', () => {
   it('classifies paths, strictest first; unknown paths are human', () => {
     assert.equal(pathTier('src/locales/en/parsers/weekday.rs', tiers), 'auto');
     assert.equal(pathTier('tests/locales/en/weekday.rs', tiers), 'auto');
-    assert.equal(pathTier('src/core/results.rs', tiers), 'human'); // auto-strict starts as human
+    assert.equal(pathTier('src/core/results.rs', tiers), 'auto-strict'); // promoted (no start_as)
+    const held = { ...tiers, tiers: { ...tiers.tiers, 'auto-strict': { ...tiers.tiers['auto-strict'], start_as: 'human' as const } } };
+    assert.equal(pathTier('src/core/results.rs', held), 'human', 'with start_as: human, auto-strict paths are human');
     assert.equal(pathTier('.github/workflows/ci.yml', tiers), 'human');
     assert.equal(pathTier('src/lib.rs', tiers), 'human');
     const promoted = { ...tiers, tiers: { ...tiers.tiers, 'auto-strict': { paths: tiers.tiers['auto-strict'].paths, strict_gates: tiers.tiers['auto-strict'].strict_gates } } };

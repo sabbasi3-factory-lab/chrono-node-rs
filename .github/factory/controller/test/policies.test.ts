@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { FACTORY_REPO, loadPolicies, parseFactoryVersion, parsePolicies, policyUrl, POLICY_NAMES, readFactoryVersion, type PolicyTexts } from '../policies.ts';
 
-const SHA = 'abbd9d753d1d393aac74cf753a9d2f3a7b342e86';
+const SHA = 'eb7722180c4a4f5f1ddfd579eef7a85bd4204aba';
 const dir = new URL('./fixtures/policies/', import.meta.url);
 
 async function texts(): Promise<PolicyTexts> {
@@ -25,7 +25,7 @@ describe('policies', () => {
     assert.equal(p.budgets.factory_per_day.max_aic, 10000);
     assert.equal(p.budgets.factory_per_day.alert_at_pct, 80);
     assert.equal(p.budgets.factory_per_day.pause_at_pct, 100);
-    assert.equal(p.tiers.tiers['auto-strict'].start_as, 'human');
+    assert.equal(p.tiers.tiers['auto-strict'].start_as, undefined, 'promoted (factory PR removing start_as: human)');
     assert.deepEqual(p.tiers.tiers['auto-strict'].strict_gates, ['full_regression', 'semver_checks', 'mutation_score_not_lower', 'perf_regression_max_pct', 'code_health_not_worse', 'reviewer_agent', 'serialize_area', 'auto_revert_on_regression']);
     assert.equal(p.cadence.heartbeat, 'hourly');
     assert.equal(p.limits.auto_ready, true, 'turned on by the owner (factory#15)');
