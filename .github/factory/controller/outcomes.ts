@@ -196,17 +196,22 @@ export const REVIEW_MATCH_MINUTES = 30;
  * Untitled review runs ("Review one factory PR", before review.md had a run-name) → the dispatch
  * each started after: created at or after the dispatch, within 30 minutes; the nearest pairs first,
  * and at most one run per dispatch (and one dispatch per run). Unmatched runs are absent.
+ * Pass every untitled run, including ones already attributed (`task` known, e.g. carried over from
+ * an earlier collection, or titled): those can only take a dispatch of their own task and claim it
+ * first, so the dispatch they used stays reserved and is never handed to another run later.
  */
-export function matchReviewRuns(runs: readonly { run_id: number; created_at: string }[], dispatches: readonly ReviewDispatch[]): Map<number, ReviewDispatch> {
-  const pairs: { run: number; d: ReviewDispatch; gap: number }[] = [];
+export function matchReviewRuns(runs: readonly { run_id: number; created_at: string; task?: string | null }[], dispatches: readonly ReviewDispatch[]): Map<number, ReviewDispatch> {
+  const pairs: { run: number; d: ReviewDispatch; gap: number; known: boolean }[] = [];
   for (const r of runs) {
     const created = Date.parse(r.created_at);
     for (const d of dispatches) {
+      if (r.task && d.task !== r.task) continue;
       const gap = created - Date.parse(d.at);
-      if (Number.isFinite(gap) && gap >= 0 && gap <= REVIEW_MATCH_MINUTES * 60_000) pairs.push({ run: r.run_id, d, gap });
+      if (Number.isFinite(gap) && gap >= 0 && gap <= REVIEW_MATCH_MINUTES * 60_000) pairs.push({ run: r.run_id, d, gap, known: Boolean(r.task) });
     }
   }
-  pairs.sort((a, b) => a.gap - b.gap || a.run - b.run);
+  // Attributed runs claim their dispatch first, whatever the gap; then the nearest pairs.
+  pairs.sort((a, b) => Number(b.known) - Number(a.known) || a.gap - b.gap || a.run - b.run);
   const out = new Map<number, ReviewDispatch>();
   const used = new Set<ReviewDispatch>();
   for (const p of pairs) {

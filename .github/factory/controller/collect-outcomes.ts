@@ -187,8 +187,15 @@ export async function collect(deps: CollectDeps): Promise<{ snapshot: OutcomesSn
   });
 
   // Review runs from before review.md had a run-name: the controller's review dispatch each followed.
+  // Every review run takes part: titled ones and ones already attributed (listed or carried over
+  // from the previous snapshot) reserve the dispatch of their own task, so a dispatch is never given
+  // to a second run on a later collection. Only matches of runs without a task are applied below.
+  const listedIds = new Set(listed.map((r) => r.run_id));
   const reviewTasks = matchReviewRuns(
-    listed.filter((r) => r.workflow === 'review' && taskFromTitle(r.title) === null && !previous?.get(r.run_id)?.task),
+    [
+      ...listed.filter((r) => r.workflow === 'review').map((r) => ({ run_id: r.run_id, created_at: r.created_at, task: taskFromTitle(r.title) ?? previous?.get(r.run_id)?.task ?? null })),
+      ...[...(previous?.values() ?? [])].filter((p) => p.workflow === 'review' && p.task !== null && !listedIds.has(p.run_id)),
+    ],
     dispatches,
   );
 
@@ -219,7 +226,6 @@ export async function collect(deps: CollectDeps): Promise<{ snapshot: OutcomesSn
   }
   // A previously recorded run missing from this listing (being re-run, so not `completed` right now,
   // or deleted) is carried forward unchanged, so the snapshot stays complete.
-  const listedIds = new Set(listed.map((r) => r.run_id));
   const unlisted = previous ? [...previous.values()].filter((p) => !listedIds.has(p.run_id)) : [];
   if (unlisted.length > 0) log(`${unlisted.length} recorded run(s) not in the current listing carried over unchanged: ${unlisted.map((p) => p.run_id).join(', ')}`);
   runs.push(...unlisted);

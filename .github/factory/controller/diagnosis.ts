@@ -71,20 +71,23 @@ export interface PendingDiagnosis {
 const posInt = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v > 0;
 
 /**
- * Diagnoses due: a live needs_human (implement_failed / implement_no_pr) record with its run id, an
- * open task issue that is still with a person (`needs-human`, or the hand-off was recorded this
- * poll), a diagnosis with at least one code for that run in the snapshot, and none posted yet.
+ * Diagnoses due. Only each issue's NEWEST live `needs_human` record counts (any reason): it must be
+ * implement_failed / implement_no_pr with its run id, the issue open and still with a person
+ * (`needs-human`, or the hand-off recorded this poll), a diagnosis with at least one code for that
+ * exact run in the snapshot, and none posted yet. An older hand-off of the same issue is never
+ * considered, so attempt 1's diagnosis can't be posted during a later attempt's hand-off.
  */
 export function pendingDiagnoses(events: readonly AuditEvent[], appendedNow: readonly AuditEvent[], runs: ReadonlyMap<number, OutcomeRun> | null, issues: readonly IssueSnap[], posted: (key: string) => boolean): PendingDiagnosis[] {
   if (!runs) return [];
   const out: PendingDiagnosis[] = [];
-  const seen = new Set<number>();
+  const seenIssues = new Set<number>();
   const now = new Set(appendedNow);
   for (const e of [...events].reverse()) {
     const p = e.payload;
-    if (e.type !== 'needs_human' || p.dry_run !== false || typeof p.reason !== 'string' || !DIAGNOSIS_REASONS.includes(p.reason)) continue;
-    if (!posInt(p.run_id) || !posInt(p.issue) || seen.has(p.run_id)) continue;
-    seen.add(p.run_id);
+    if (e.type !== 'needs_human' || p.dry_run !== false || !posInt(p.issue)) continue;
+    if (seenIssues.has(p.issue)) continue;
+    seenIssues.add(p.issue);
+    if (typeof p.reason !== 'string' || !DIAGNOSIS_REASONS.includes(p.reason) || !posInt(p.run_id)) continue;
     const issue = issues.find((i) => i.number === p.issue);
     if (!issue || !(issue.labels.includes('needs-human') || now.has(e))) continue;
     const d = runs.get(p.run_id)?.diagnosis;

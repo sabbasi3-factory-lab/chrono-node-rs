@@ -62,6 +62,40 @@ describe('review runs → tasks', () => {
     assert.equal(m2.get(2)?.task, 'en/a');
   });
 
+  it('attributed and titled runs keep their dispatch reserved', () => {
+    // Run 1 already has the task (an earlier collection gave it the dispatch), run 2 is nearer but new.
+    const m = matchReviewRuns([{ ...rr(1, 4), task: 'en/a' }, rr(2, 2)], [d('en/a', 1, 0)]);
+    assert.deepEqual([...m.keys()], [1]);
+    // A titled run of another task never takes this dispatch.
+    assert.equal(matchReviewRuns([{ ...rr(3, 1), task: 'en/b' }], [d('en/a', 1, 0)]).size, 0);
+  });
+
+  it('two collections never give one dispatch to two runs', async () => {
+    const reviewRun = (id: number, min: number) => ({ id, path: '.github/workflows/review.lock.yml', status: 'completed', conclusion: 'success', created_at: at(min), display_title: 'Review one factory PR' });
+    let reviewRuns = [reviewRun(1, 2), reviewRun(2, 4)];
+    const gh = new FakeGitHub(REPO);
+    gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/(implement|repair|review)\\.lock\\.yml/runs$`), (path) => ({ data: { workflow_runs: path.includes('review') ? reviewRuns : [] } }));
+    const ghAw: GhAw = async (args) => (args[0] === 'logs' ? '{"runs":[]}' : JSON.stringify({ run_id: Number(args[1]), items: [] }));
+    const opts = { client: gh, repo: REPO, ghAw, full: false, workDir: 'w', log: () => {}, reviewDispatches: [d('en/a', 54, 0)] };
+    const one = await collect({ ...opts, now: new Date(NOW.getTime() + 60 * 60_000), previous: null });
+    assert.deepEqual(Object.fromEntries(one.snapshot.runs.map((x) => [x.run_id, x.task])), { 1: 'en/a', 2: null });
+    const prev = new Map(one.snapshot.runs.map((x) => [x.run_id, x]));
+    const two = await collect({ ...opts, now: new Date(NOW.getTime() + 120 * 60_000), previous: prev });
+    assert.deepEqual(Object.fromEntries(two.snapshot.runs.map((x) => [x.run_id, x.task])), { 1: 'en/a', 2: null }, 'run 2 doesn\'t get the dispatch run 1 used');
+    // Run 1 dropped out of the listing (being re-run): carried over, and still holds its dispatch.
+    reviewRuns = [reviewRun(2, 4)];
+    const three = await collect({ ...opts, now: new Date(NOW.getTime() + 180 * 60_000), previous: new Map(two.snapshot.runs.map((x) => [x.run_id, x])) });
+    assert.deepEqual(Object.fromEntries(three.snapshot.runs.map((x) => [x.run_id, x.task])), { 1: 'en/a', 2: null });
+  });
+
+  it('a run attributed on a first collection keeps the dispatch when a nearer run appears later', async () => {
+    // First collection only sees run 2 (+4 min); run 1 (+2 min) was still running.
+    const m1 = matchReviewRuns([rr(2, 4)], [d('en/a', 1, 0)]);
+    assert.equal(m1.get(2)?.task, 'en/a');
+    const m2 = matchReviewRuns([{ ...rr(2, 4), task: 'en/a' }, rr(1, 2)], [d('en/a', 1, 0)]);
+    assert.deepEqual([...m2.keys()], [2]);
+  });
+
   it('collect: backfilled untitled review runs get their task; titled ones parse it', async () => {
     const gh = new FakeGitHub(REPO);
     gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/(implement|repair|review)\\.lock\\.yml/runs$`), (path) => ({
@@ -231,6 +265,28 @@ describe('diagnosis follow-up comment (controller)', () => {
     assert.deepEqual(pendingDiagnoses(w.audit.events, [], w.runs, relabelled, (k) => w.audit.hasDedupeKey(k)), [], 'needs-human removed');
     // The hand-off recorded in this very poll (label added after the snapshot was read) counts.
     assert.equal(pendingDiagnoses(w.audit.events, w.audit.appended, w.runs, relabelled, (k) => w.audit.hasDedupeKey(k)).length, 1);
+  });
+
+  /** A live needs_human for #26 (any reason, optional run), appended after the world's own. */
+  const handoff = (audit: AuditLog, reason: string, runId: number | null, min: number) =>
+    audit.append({ type: 'needs_human', source_ids: ['I_26', `x:${reason}:${runId}`, `reason:${reason}`, 'mode:live'], fields: { reason, effect: 'label:needs-human', issue: 26, ...(runId ? { run_id: runId } : { pr: 30 }) }, dry_run: false }, new Date(NOW.getTime() + min * 60_000));
+
+  it('only the issue\'s newest hand-off counts: a newer implement_failed without a diagnosis blocks the older one\'s', async () => {
+    // Attempt 1 (run 40552111692) has a diagnosis; attempt 2's run 40600000000 has none ingested yet.
+    const { audit, runs } = await world(DIAG);
+    await handoff(audit, 'implement_failed', 40600000000, 5);
+    assert.deepEqual(pendingDiagnoses(audit.events, [], runs, issues, (k) => audit.hasDedupeKey(k)), []);
+    // Once attempt 2's own diagnosis is in, that one (only) is due.
+    runs.set(40600000000, run(40600000000, { diagnosis: { codes: ['workflow_timeout'], severity: 'high' } }));
+    assert.deepEqual(pendingDiagnoses(audit.events, [], runs, issues, (k) => audit.hasDedupeKey(k)).map((d) => d.run_id), [40600000000]);
+  });
+
+  it('only the issue\'s newest hand-off counts: a newer gates_failed (or review_objected) blocks an older implement_failed', async () => {
+    for (const reason of ['gates_failed', 'review_objected']) {
+      const { audit, runs } = await world(DIAG);
+      await handoff(audit, reason, null, 5);
+      assert.deepEqual(pendingDiagnoses(audit.events, [], runs, issues, (k) => audit.hasDedupeKey(k)), [], reason);
+    }
   });
 
   it('a failed post is logged and retried next poll (fail-soft)', async () => {

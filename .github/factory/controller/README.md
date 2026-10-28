@@ -465,7 +465,9 @@ bursts queue rather than race.
 has a `run-name:`, `Review <task> PR #<pr>`); otherwise, for review runs titled `Review one factory PR`
 (before that), the controller's live `review_dispatched` record each run started after: created at or
 after it, within 30 minutes, nearest pairs first, one run per dispatch (the collector reads them from the
-audit branch, 14 days); otherwise the PR (or task issue) the run's items point at (`Factory-Task:`
+audit branch, 14 days). Every review run takes part in the matching: titled runs and runs already
+attributed (listed, or carried over from the previous snapshot) claim a dispatch of their own task first,
+so a dispatch used on an earlier collection is never given to a second run; otherwise the PR (or task issue) the run's items point at (`Factory-Task:`
 trailer, then a `[factory] <task>: port …` title, or the issue's task marker); otherwise null. A task once
 found is kept. `drill/*` tasks are kept and marked `drill: true`. (Review runs still count as
 unattributed in `spend.ts`: its run-name match covers implement and repair only, unchanged.)
@@ -583,11 +585,12 @@ runs hash), so the size per change no longer grows with history.
 
 ## Diagnosis follow-up (`diagnosis.ts`, live only)
 
-When the controller has handed a task to a person with `needs_human` / `implement_failed` or
-`implement_no_pr` (a live record with the implement run's id: the run `finishedImplementWithoutPr`
-matched), the task issue is still open and with a person (`needs-human`, or the hand-off was recorded in
+When the task issue's **newest** live `needs_human` record (any reason; older ones are never
+considered) is `implement_failed` or `implement_no_pr` with the implement run's id (the run
+`finishedImplementWithoutPr` matched), the task issue is still open and with a person (`needs-human`, or the hand-off was recorded in
 this poll), and the newest `outcomes_snapshot` holds a diagnosis with at least one code for **that run**,
-it posts ONE comment on the task issue:
+it posts ONE comment on the task issue. So an earlier attempt's diagnosis is never posted during a later
+hand-off (a later attempt whose own diagnosis isn't in yet, or a different reason such as `gates_failed`):
 
 ```
 **Factory controller** · diagnosis of implement run <id> (`<reason>`)
