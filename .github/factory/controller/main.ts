@@ -23,6 +23,7 @@ import { labelWarning } from './labels.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
+import { ingestOutcomes } from './outcomes.ts';
 import { statusContext, syncProject } from './project.ts';
 import { readSpendToday, spendSnapshotFields, type DispatchRecord } from './spend.ts';
 import { applyReopens, isRecorded, killSwitchEnabled, missingStrictGates, plan } from './planner.ts';
@@ -281,6 +282,18 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       // event only when the total or its sources change (dedupe on them).
       const sources = spend.runs.map((r) => `run:${r.run_id}:${r.status}:${r.aic}`);
       await audit.append({ type: 'spend_snapshot', source_ids: [`day:${day}`, `aic:${spend.aic}`, ...sources], fields: spendSnapshotFields(day, spend), dry_run: false }, now);
+    }
+  }
+
+  // gh-aw Outcomes (outcomes.ts): ingest the newest successful outcomes run's snapshot, once. A
+  // measurement, recorded in both modes; fail-soft, so it never blocks the poll or dispatch.
+  if (!deps.snapshot) {
+    try {
+      const o = await ingestOutcomes(client, repo, audit, now, log);
+      if (o.status === 'ingested') log(`outcomes: recorded run ${o.run_id} (${o.runs} agent runs, ${o.items} items)`);
+      else if (o.status === 'unchanged') log(`outcomes: run ${o.run_id} unchanged since run ${o.same_as}; not recorded again`);
+    } catch (err) {
+      log(`outcomes: not ingested (${(err as Error).message}); retried next poll`);
     }
   }
 
