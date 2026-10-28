@@ -23,7 +23,8 @@ import { labelWarning } from './labels.ts';
 import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
-import { ingestOutcomes } from './outcomes.ts';
+import { ingestOutcomes, previousRuns } from './outcomes.ts';
+import { pendingDiagnoses, postDiagnoses } from './diagnosis.ts';
 import { statusContext, syncProject } from './project.ts';
 import { readSpendToday, spendSnapshotFields, type DispatchRecord } from './spend.ts';
 import { applyReopens, isRecorded, killSwitchEnabled, missingStrictGates, plan } from './planner.ts';
@@ -360,6 +361,16 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     for (const d of decisions) if (isRecorded(d)) await appendOrSkip(decisionEvent(d));
   }
   if (skipped > 0) log(`skipped ${skipped} invalid audit event(s)`);
+  // gh-aw audit diagnosis of a failed / PR-less implement run, once, on the task issue (live only;
+  // dry-run logs it). Fail-soft: never blocks the hand-off or the poll.
+  if (!deps.snapshot) {
+    try {
+      const due = pendingDiagnoses(audit.events, audit.appended, previousRuns(audit, repo), snapshot.issues, (k) => audit.hasDedupeKey(k));
+      await postDiagnoses(client, repo, audit, due, live, now, log);
+    } catch (err) {
+      log(`diagnosis: skipped (${(err as Error).message}); retried next poll`);
+    }
+  }
   // Project "Factory status" (best-effort, never fails the run). Read after the effects, so issue
   // labels and closes from this run already show. Not in fixture mode (no Project there).
   let projectNote: string | null = null;

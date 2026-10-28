@@ -119,6 +119,7 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `heartbeat` | `hour:YYYY-MM-DDTHH` | `hour`, `run_id`, `trigger`, `open_pr_count`, `decision_count`, `factory_enabled` |
 | `outcomes_snapshot` | `outcomes_run:<id>`, `attempt:<n>` (the outcomes workflow run that produced it) | `source_run_id`, `source_run_attempt`, `gh_aw_version`, `evaluated_at`, `mode`, `runs`, `summary` (see **Outcomes**); `dry_run: false` in both modes. Only when the runs changed |
 | `outcomes_checked` | the same as `outcomes_snapshot` | `source_run_id`, `source_run_attempt`, `runs_hash`, `same_as_run_id`: that outcomes run's runs were unchanged (~600 bytes, instead of a ~33 KB snapshot) |
+| `diagnosis_posted` | `diagnosis:<run id>` | `run_id`, `issue`, `reason`, `codes`, `severity`: the gh-aw audit diagnosis comment for that implement run was posted (live only; see **Diagnosis follow-up**) |
 | decision types | the planner's `source_ids` + `reason:<reason>` + `effect:<effect>` (a changed reason for the same subject is recorded; an identical retry dedupes) | `reason`, `effect`, and when set: `task`, `issue`, `pr`, `attempt`, `contract_sha`, `run_id`, `failure_signature` |
 
 - **Facts:** the controller observes only facts whose own GitHub timestamp is within the last 24 h. That
@@ -460,10 +461,25 @@ bursts queue rather than race.
 - No run is ever dropped: a recorded run missing from the current listing (being re-run, so not
   `completed` right now, or deleted) is carried forward unchanged.
 
-**Task join.** The run title (`Implement <task> #<issue> attempt <n>`, `Repair …`); otherwise the PR
-(or task issue) the run's items point at (`Factory-Task:` trailer, then a `[factory] <task>: port …`
-title, or the issue's task marker); otherwise null. Review runs' only item is a `create_check_run` with
-no object reference, so their task is null today. `drill/*` tasks are kept and marked `drill: true`.
+**Task join.** The run title (`Implement <task> #<issue> attempt <n>`, `Repair …`, and since review.md
+has a `run-name:`, `Review <task> PR #<pr>`); otherwise, for review runs titled `Review one factory PR`
+(before that), the controller's live `review_dispatched` record each run started after: created at or
+after it, within 30 minutes, nearest pairs first, one run per dispatch (the collector reads them from the
+audit branch, 14 days). Every review run takes part in the matching: titled runs and runs already
+attributed (listed, or carried over from the previous snapshot) claim a dispatch of their own task first,
+so a dispatch used on an earlier collection is never given to a second run; otherwise the PR (or task issue) the run's items point at (`Factory-Task:`
+trailer, then a `[factory] <task>: port …` title, or the issue's task marker); otherwise null. A task once
+found is kept. `drill/*` tasks are kept and marked `drill: true`. (Review runs still count as
+unattributed in `spend.ts`: its run-name match covers implement and repair only, unchanged.)
+
+**Diagnosis (gh-aw `audit`).** For each implement run that didn't succeed or completed without a
+`create_pull_request` item, the collector runs `gh aw audit <run> --repo … --json --no-baseline` once
+(4 at a time, same timeout) and keeps only `key_findings[].code` (stable, enum-like; at most 5, most
+severe first, each matching `^[a-z][a-z0-9_]{0,63}$`) and the highest `severity`
+(`critical`/`high`/`medium`/`low`, else null). Titles, descriptions, assessments and recommendations are
+free text and never kept. A run with a diagnosis keeps it; a failed audit stores `diagnosis: null` and is
+retried next collection. Snapshots recorded before this field existed are read as `diagnosis: null`
+(the ingest validator requires the field).
 
 **AI credits belong to the run.** `aic` is gh-aw's figure for the whole run (`gh aw logs`), stored once
 on the run record and never per item, so summing `runs[].aic` counts every credit exactly once. It can
@@ -525,6 +541,7 @@ source_run_id, source_run_attempt, gh_aw_version: "v0.92.0", evaluated_at,
 mode: "full" | "incremental" (sweep) | "targeted",
 runs: [{ run_id, workflow: "implement"|"repair"|"review", task | null, drill, created_at,
          aic | null, conclusion, eval: "ok"|"stale"|"error", evaluated_at | null,
+         diagnosis: null | { codes: [≤ 5 snake_case codes], severity: "critical"|"high"|"medium"|"low"|null },
          items: [{ type, object_url | null,
                    outcome_status: "accepted"|"rejected"|"ignored"|"pending"|"unknown"|
                                    "skipped"|"lifecycle"|"lifecycle_close"|"error",
@@ -565,6 +582,36 @@ runs hash), so the size per change no longer grows with history.
    `source_run_id` = that outcomes run, `mode: targeted`, and the PR's run with `create_pull_request`
    `accepted` (merged) or `rejected` (closed).
 6. Re-running the controller records nothing more (deduped).
+
+## Diagnosis follow-up (`diagnosis.ts`, live only)
+
+When the task issue's **newest** live `needs_human` record (any reason; older ones are never
+considered) is `implement_failed` or `implement_no_pr` with the implement run's id (the run
+`finishedImplementWithoutPr` matched), the task issue is still open and with a person (`needs-human`, or the hand-off was recorded in
+this poll), and the newest `outcomes_snapshot` holds a diagnosis with at least one code for **that run**,
+it posts ONE comment on the task issue. So an earlier attempt's diagnosis is never posted during a later
+hand-off (a later attempt whose own diagnosis isn't in yet, or a different reason such as `gates_failed`):
+
+```
+**Factory controller** · diagnosis of implement run <id> (`<reason>`)
+
+gh-aw audit (severity: <severity>):
+- <sentence for code 1>
+- <sentence for code 2>
+- <sentence for code 3>
+
+Run: https://github.com/<repo>/actions/runs/<id>. For details, run `gh aw audit <id>` locally.
+
+<!-- factory-diagnosis: <id> -->
+```
+
+The sentences come from a fixed table (`DIAGNOSIS_TEXT`, gh-aw v0.92.0's documented codes); an unknown
+code is shown as `` `code` ``; at most 3 lines. Nothing from gh-aw, the agent or the issue is quoted.
+Once per run: the comment (skipped if one with its marker exists), then a `diagnosis_posted` event
+(dedupe `diagnosis:<run id>`). At most 5 per poll. It uses the existing live comment allowlist (body
+starts with the template marker, ≤ 2,000 chars): no new permission. Dry-run only logs
+`[dry-run] would post …`. Any failure is logged and retried next poll; it never blocks the hand-off or
+the poll.
 
 ## Modes: dry-run and live
 
@@ -662,6 +709,7 @@ and is redone next poll, but never fails the run.
 | `history.ts` | task history and spend from non-dry-run audit events |
 | `spend.ts` | today's implement and reviewer spend from gh-aw usage artifacts (reserved / measured / unknown) |
 | `outcomes.ts` | gh-aw Outcomes: run selection, task join, snapshot building, strict validation, ingest |
+| `diagnosis.ts` | the gh-aw audit diagnosis follow-up comment (live only, once per implement run) |
 | `collect-outcomes.ts` | the outcomes collector (run by `outcomes.yml`, read-only, no App key) |
 | `heartbeat.ts` | heartbeat due check and hour-bucket dedupe |
 | `executor.ts` | the mode switch (`isLive`), dry-run logger, live effects, decision → event |

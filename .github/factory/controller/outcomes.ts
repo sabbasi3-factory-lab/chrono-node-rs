@@ -84,6 +84,48 @@ export interface OutcomeRun {
   /** When `items` were evaluated (null for `error`). */
   evaluated_at: string | null;
   items: OutcomeItem[];
+  /**
+   * gh-aw `audit` of an implement run that failed or opened no PR: its finding codes (at most 5,
+   * most severe first) and the highest severity. Null when not applicable, not yet audited, or the
+   * audit failed (retried next collection).
+   */
+  diagnosis: Diagnosis | null;
+}
+
+export const SEVERITIES = ['critical', 'high', 'medium', 'low'] as const;
+export type Severity = (typeof SEVERITIES)[number];
+export interface Diagnosis {
+  codes: string[];
+  severity: Severity | null;
+}
+export const MAX_DIAGNOSIS_CODES = 5;
+export const DIAGNOSIS_CODE = /^[a-z][a-z0-9_]{0,63}$/;
+
+/** Whether an implement run gets a gh-aw audit: it didn't succeed, or opened no PR. */
+export function needsDiagnosis(run: { workflow: AgentWorkflow; conclusion: string }, items: readonly OutcomeItem[]): boolean {
+  return run.workflow === 'implement' && (run.conclusion !== 'success' || !items.some((i) => i.type === 'create_pull_request'));
+}
+
+/**
+ * A diagnosis from `gh aw audit <run> --json`: only `key_findings[].code` (stable enum-like codes)
+ * and `severity`; titles and descriptions are free text and never kept. Throws if there are no
+ * key_findings (the audit didn't produce a report).
+ */
+export function diagnosisFromAudit(raw: unknown): Diagnosis {
+  const findings = (raw as { key_findings?: unknown } | null)?.key_findings;
+  if (!Array.isArray(findings)) throw new Error('audit output has no key_findings');
+  const rank = (s: unknown): number => {
+    const i = (SEVERITIES as readonly unknown[]).indexOf(s);
+    return i < 0 ? SEVERITIES.length : i;
+  };
+  const valid = findings
+    .map((f) => (f ?? {}) as { code?: unknown; severity?: unknown })
+    .filter((f): f is { code: string; severity?: unknown } => typeof f.code === 'string' && DIAGNOSIS_CODE.test(f.code));
+  const sorted = valid.map((f, i) => ({ f, i })).sort((a, b) => rank(a.f.severity) - rank(b.f.severity) || a.i - b.i);
+  const codes: string[] = [];
+  for (const { f } of sorted) if (!codes.includes(f.code) && codes.length < MAX_DIAGNOSIS_CODES) codes.push(f.code);
+  const top = sorted[0]?.f.severity;
+  return { codes, severity: (SEVERITIES as readonly unknown[]).includes(top) ? (top as Severity) : null };
 }
 
 export interface OutcomesSummary {
@@ -125,8 +167,59 @@ const DAY_MS = 86_400_000;
 
 /** The task in a run title (`Implement <task> #<issue> attempt <n>`, `Repair …`), or null. */
 export function taskFromTitle(title: string | null | undefined): string | null {
-  const m = /^(?:Implement|Repair) (\S+) #[1-9][0-9]{0,8} attempt [1-9][0-9]?$/.exec(title ?? '');
+  const m = /^(?:Implement|Repair) (\S+) #[1-9][0-9]{0,8} attempt [1-9][0-9]?$/.exec(title ?? '') ?? /^Review (\S+) PR #[1-9][0-9]{0,8}$/.exec(title ?? '');
   return m && isTaskId(m[1]) ? m[1] : null;
+}
+
+/** A controller `review_dispatched` record (live): the review it asked for. */
+export interface ReviewDispatch {
+  task: string;
+  pr: number;
+  at: string;
+}
+
+/** The controller's live review dispatches in the loaded audit events. */
+export function reviewDispatches(events: readonly { type: string; timestamp: string; payload: Record<string, unknown> }[]): ReviewDispatch[] {
+  const out: ReviewDispatch[] = [];
+  for (const e of events) {
+    const { task, pr, dry_run } = e.payload;
+    if (e.type !== 'review_dispatched' || dry_run !== false || !isTaskId(task) || typeof pr !== 'number' || !Number.isSafeInteger(pr) || pr <= 0) continue;
+    out.push({ task, pr, at: e.timestamp });
+  }
+  return out;
+}
+
+/** How long after a review dispatch its run may be created and still be that dispatch's run. */
+export const REVIEW_MATCH_MINUTES = 30;
+
+/**
+ * Untitled review runs ("Review one factory PR", before review.md had a run-name) → the dispatch
+ * each started after: created at or after the dispatch, within 30 minutes; the nearest pairs first,
+ * and at most one run per dispatch (and one dispatch per run). Unmatched runs are absent.
+ * Pass every untitled run, including ones already attributed (`task` known, e.g. carried over from
+ * an earlier collection, or titled): those can only take a dispatch of their own task and claim it
+ * first, so the dispatch they used stays reserved and is never handed to another run later.
+ */
+export function matchReviewRuns(runs: readonly { run_id: number; created_at: string; task?: string | null }[], dispatches: readonly ReviewDispatch[]): Map<number, ReviewDispatch> {
+  const pairs: { run: number; d: ReviewDispatch; gap: number; known: boolean }[] = [];
+  for (const r of runs) {
+    const created = Date.parse(r.created_at);
+    for (const d of dispatches) {
+      if (r.task && d.task !== r.task) continue;
+      const gap = created - Date.parse(d.at);
+      if (Number.isFinite(gap) && gap >= 0 && gap <= REVIEW_MATCH_MINUTES * 60_000) pairs.push({ run: r.run_id, d, gap, known: Boolean(r.task) });
+    }
+  }
+  // Attributed runs claim their dispatch first, whatever the gap; then the nearest pairs.
+  pairs.sort((a, b) => Number(b.known) - Number(a.known) || a.gap - b.gap || a.run - b.run);
+  const out = new Map<number, ReviewDispatch>();
+  const used = new Set<ReviewDispatch>();
+  for (const p of pairs) {
+    if (out.has(p.run) || used.has(p.d)) continue;
+    out.set(p.run, p.d);
+    used.add(p.d);
+  }
+  return out;
 }
 
 /** A factory PR's task: its `Factory-Task:` trailer, else its `[factory] <task>: port <Class>` title. */
@@ -279,7 +372,7 @@ export type EvalResult = { ok: true; items: OutcomeItem[] } | { ok: false; error
  * evaluation failed), or none (`error`). A carried-over run (no result) keeps its previous record.
  * Never dropped.
  */
-export function runRecord(run: ListedRun, prev: OutcomeRun | undefined, result: EvalResult | undefined, aic: number | null | undefined, task: string | null, evaluatedAt: string): OutcomeRun {
+export function runRecord(run: ListedRun, prev: OutcomeRun | undefined, result: EvalResult | undefined, aic: number | null | undefined, task: string | null, evaluatedAt: string, diagnosis?: Diagnosis | null): OutcomeRun {
   const base = {
     run_id: run.run_id,
     workflow: run.workflow,
@@ -288,6 +381,7 @@ export function runRecord(run: ListedRun, prev: OutcomeRun | undefined, result: 
     created_at: run.created_at,
     aic: aic ?? prev?.aic ?? null,
     conclusion: run.conclusion,
+    diagnosis: diagnosis ?? prev?.diagnosis ?? null,
   };
   if (result === undefined) {
     if (!prev) return { ...base, eval: 'error', evaluated_at: null, items: [] };
@@ -342,12 +436,28 @@ const count = (v: unknown, at: string): number => (typeof v === 'number' && Numb
 const aicValue = (v: unknown, at: string): number | null => (v === null || (typeof v === 'number' && Number.isFinite(v) && v >= 0) ? v : fail(`${at}: aic must be a finite number >= 0 or null`));
 
 const ITEM_KEYS = ['type', 'object_url', 'outcome_status', 'evidence_strength', 'zero_touch'];
-const RUN_KEYS = ['run_id', 'workflow', 'task', 'drill', 'created_at', 'aic', 'conclusion', 'eval', 'evaluated_at', 'items'];
+/** Run records before `diagnosis` existed (read only from the audit log, as diagnosis null). */
+const LEGACY_RUN_KEYS = ['run_id', 'workflow', 'task', 'drill', 'created_at', 'aic', 'conclusion', 'eval', 'evaluated_at', 'items'];
+const RUN_KEYS = [...LEGACY_RUN_KEYS, 'diagnosis'];
+const DIAGNOSIS_KEYS = ['codes', 'severity'];
+
+function validateDiagnosis(v: unknown, at: string): Diagnosis | null {
+  if (v === null) return null;
+  const d = exact(v, DIAGNOSIS_KEYS, at);
+  if (!Array.isArray(d.codes) || d.codes.length > MAX_DIAGNOSIS_CODES) fail(`${at}.codes: not an array of at most ${MAX_DIAGNOSIS_CODES}`);
+  const codes = d.codes as unknown[];
+  codes.forEach((c, i) => {
+    if (typeof c !== 'string' || !DIAGNOSIS_CODE.test(c)) fail(`${at}.codes[${i}]: not a snake_case code`);
+  });
+  if (new Set(codes).size !== codes.length) fail(`${at}.codes: duplicates`);
+  const severity = d.severity === null ? null : (oneOf(d.severity, SEVERITIES, `${at}.severity`) as Severity);
+  return { codes: codes as string[], severity };
+}
 const SUMMARY_KEYS = ['runs', 'items', 'accepted', 'rejected', 'ignored', 'pending', 'unknown', 'other', 'zero_touch', 'eval_stale', 'eval_error', 'aic'];
 const SNAPSHOT_KEYS = ['version', 'repo', 'gh_aw_version', 'evaluated_at', 'mode', 'runs', 'summary'];
 
 /** Strictly validates run records (exact keys, enums, ids, URLs of this repo, caps). */
-export function validateRuns(value: unknown, repo: string): OutcomeRun[] {
+export function validateRuns(value: unknown, repo: string, opts: { legacy?: boolean } = {}): OutcomeRun[] {
   if (!Array.isArray(value)) return fail('runs: not an array');
   if (value.length > MAX_RUNS) fail(`runs: more than ${MAX_RUNS}`);
   const url = objectUrlPattern(repo);
@@ -355,7 +465,8 @@ export function validateRuns(value: unknown, repo: string): OutcomeRun[] {
   let total = 0;
   return value.map((rv, n) => {
     const at = `runs[${n}]`;
-    const r = exact(rv, RUN_KEYS, at);
+    const legacy = opts.legacy === true && isObj(rv) && !('diagnosis' in rv);
+    const r = exact(rv, legacy ? LEGACY_RUN_KEYS : RUN_KEYS, at);
     if (typeof r.run_id !== 'number' || !Number.isSafeInteger(r.run_id) || r.run_id <= 0) fail(`${at}.run_id: not a positive integer`);
     const id = r.run_id as number;
     if (seen.has(id)) fail(`${at}: duplicate run ${id}`);
@@ -398,6 +509,7 @@ export function validateRuns(value: unknown, repo: string): OutcomeRun[] {
       eval: ev,
       evaluated_at: evaluatedAt,
       items,
+      diagnosis: legacy ? null : validateDiagnosis(r.diagnosis, `${at}.diagnosis`),
     };
   });
 }
@@ -480,7 +592,7 @@ export function latestSnapshotHash(audit: AuditLog, repo: string): { run_id: num
   const e = audit.newestOfType(OUTCOMES_EVENT);
   if (!e || typeof e.payload.source_run_id !== 'number') return null;
   try {
-    return { run_id: e.payload.source_run_id, hash: runsHash(validateRuns(e.payload.runs, repo)) };
+    return { run_id: e.payload.source_run_id, hash: runsHash(validateRuns(e.payload.runs, repo, { legacy: true })) };
   } catch {
     return null;
   }
@@ -587,7 +699,7 @@ export function previousRuns(audit: AuditLog, repo: string): Map<number, Outcome
   const e = audit.newestOfType(OUTCOMES_EVENT);
   if (!e) return null;
   try {
-    return new Map(validateRuns(e.payload.runs, repo).map((r) => [r.run_id, r]));
+    return new Map(validateRuns(e.payload.runs, repo, { legacy: true }).map((r) => [r.run_id, r]));
   } catch {
     return null;
   }
