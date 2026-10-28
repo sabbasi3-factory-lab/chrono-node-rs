@@ -92,6 +92,7 @@ const record = (id: number, over: Partial<OutcomeRun> = {}): OutcomeRun => ({
   eval: 'ok',
   evaluated_at: ago(1),
   items: [item()],
+  diagnosis: null,
   ...over,
 });
 const snapshotText = (runs: OutcomeRun[], mutate?: (s: Record<string, unknown>) => void): string => {

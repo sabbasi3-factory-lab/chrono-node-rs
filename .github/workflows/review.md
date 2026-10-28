@@ -25,6 +25,9 @@ on:
         required: true
         type: string
 
+# The task and PR in the run name let the outcomes collector join review runs to tasks. Keep the format.
+run-name: "Review ${{ github.event.inputs.task }} PR #${{ github.event.inputs.pr }}"
+
 permissions:
   contents: read
   pull-requests: read

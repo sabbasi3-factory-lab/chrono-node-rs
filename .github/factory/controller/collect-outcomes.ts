@@ -16,7 +16,11 @@ import { AuditLog } from './audit.ts';
 import { createClient, paginate } from './github.ts';
 import {
   buildSnapshot,
+  diagnosisFromAudit,
   itemsFromGhAw,
+  matchReviewRuns,
+  needsDiagnosis,
+  reviewDispatches,
   previousRuns,
   referencedNumbers,
   runRecord,
@@ -29,7 +33,9 @@ import {
   workflowOfPath,
   AGENT_WORKFLOWS,
   RUN_CONCLUSIONS,
+  type Diagnosis,
   type EvalResult,
+  type ReviewDispatch,
   type ListedRun,
   type OutcomeRun,
   type OutcomesSnapshot,
@@ -55,6 +61,8 @@ export interface CollectDeps {
   log: (line: string) => void;
   /** Previous runs (tests); default: read the newest outcomes_snapshot from the audit branch. */
   previous?: Map<number, OutcomeRun> | null;
+  /** The controller's review dispatches (tests); default: read from the audit branch with `previous`. */
+  reviewDispatches?: ReviewDispatch[];
 }
 
 /** Every completed run of the three agent workflows, newest first. */
@@ -119,10 +127,12 @@ export async function collect(deps: CollectDeps): Promise<{ snapshot: OutcomesSn
   const concurrency = deps.concurrency ?? 4;
   const timeoutMs = deps.timeoutMs ?? 180_000;
   let previous = deps.previous;
+  let dispatches = deps.reviewDispatches ?? [];
   if (previous === undefined) {
     const audit = new AuditLog(client, { repo, factoryVersion: 'collector', historyDays: 14 });
     await audit.load(now);
     previous = previousRuns(audit, repo);
+    dispatches = deps.reviewDispatches ?? reviewDispatches(audit.events);
   }
   log(previous ? `previous snapshot: ${previous.size} run(s)` : 'previous snapshot: none (full backfill)');
   const listed = await listAgentRuns(client, repo);
@@ -158,13 +168,37 @@ export async function collect(deps: CollectDeps): Promise<{ snapshot: OutcomesSn
   const needAic = listed.filter((r) => (previous?.get(r.run_id)?.aic ?? null) === null).map((r) => r.run_id);
   const aic = await readAic(ghAw, repo, needAic, deps.workDir, log);
 
+  // gh-aw audit of implement runs that failed or opened no PR, once per run: a run with a diagnosis
+  // keeps it; a failed audit stays null and is retried next collection.
+  const diagnoses = new Map<number, Diagnosis>();
+  const toAudit = listed.filter((run) => {
+    if (previous?.get(run.run_id)?.diagnosis) return false;
+    const result = results.get(run.run_id);
+    return needsDiagnosis(run, result?.ok ? result.items : (previous?.get(run.run_id)?.items ?? []));
+  });
+  if (toAudit.length > 0) log(`auditing ${toAudit.length} implement run(s) without a PR or success`);
+  await pool(toAudit, concurrency, async (run) => {
+    try {
+      const stdout = await ghAw(['audit', String(run.run_id), '--repo', repo, '--json', '--no-baseline', '-o', join(deps.workDir, 'audit')], { timeoutMs });
+      diagnoses.set(run.run_id, diagnosisFromAudit(JSON.parse(stdout)));
+    } catch (err) {
+      log(`run ${run.run_id}: audit failed (${(err as Error).message.split('\n')[0]!.slice(0, 200)}); retried next collection`);
+    }
+  });
+
+  // Review runs from before review.md had a run-name: the controller's review dispatch each followed.
+  const reviewTasks = matchReviewRuns(
+    listed.filter((r) => r.workflow === 'review' && taskFromTitle(r.title) === null && !previous?.get(r.run_id)?.task),
+    dispatches,
+  );
+
   const refCache = new Map<string, string | null>();
   const runs: OutcomeRun[] = [];
   const evaluatedAt = now.toISOString().replace(/\.\d{3}Z$/, 'Z');
   for (const run of listed) {
     const prev = previous?.get(run.run_id);
     const result = results.get(run.run_id);
-    let task = taskFromTitle(run.title) ?? prev?.task ?? null;
+    let task = taskFromTitle(run.title) ?? prev?.task ?? reviewTasks.get(run.run_id)?.task ?? null;
     if (task === null) {
       const items = result?.ok ? result.items : (prev?.items ?? []);
       for (const ref of referencedNumbers(items)) {
@@ -181,7 +215,7 @@ export async function collect(deps: CollectDeps): Promise<{ snapshot: OutcomesSn
         if (task) break;
       }
     }
-    runs.push(runRecord(run, prev, result, aic.get(run.run_id), task, evaluatedAt));
+    runs.push(runRecord(run, prev, result, aic.get(run.run_id), task, evaluatedAt, diagnoses.get(run.run_id)));
   }
   // A previously recorded run missing from this listing (being re-run, so not `completed` right now,
   // or deleted) is carried forward unchanged, so the snapshot stays complete.
