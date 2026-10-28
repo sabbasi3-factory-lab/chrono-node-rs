@@ -138,6 +138,10 @@ export async function collect(deps: CollectDeps): Promise<{ snapshot: OutcomesSn
     try {
       const stdout = await ghAw(['outcomes', String(run.run_id), '--repo', repo, '--json', '-o', join(deps.workDir, 'outcomes')], { timeoutMs });
       const r = itemsFromGhAw(JSON.parse(stdout), run.run_id, repo);
+      // gh-aw couldn't check an item: a failed evaluation (previous items kept as stale, retried),
+      // never a settled `ok` that would replace good items.
+      const errored = r.items.filter((i) => i.outcome_status === 'error').length;
+      if (errored > 0) throw new Error(`gh-aw reported ${errored} item(s) with outcome_status error`);
       dropped += r.dropped_urls;
       results.set(run.run_id, { ok: true, items: r.items });
     } catch (err) {
@@ -149,7 +153,9 @@ export async function collect(deps: CollectDeps): Promise<{ snapshot: OutcomesSn
   });
   if (dropped > 0) log(`${dropped} object URL(s) outside this repo's PR/issue URL form were recorded as null`);
 
-  const needAic = sel.evaluate.filter((r) => (previous?.get(r.run_id)?.aic ?? null) === null).map((r) => r.run_id);
+  // Every listed run still without credits, whether or not its outcomes are evaluated now: a failed
+  // `gh aw logs` during a backfill is retried on the next collection, not only while unsettled.
+  const needAic = listed.filter((r) => (previous?.get(r.run_id)?.aic ?? null) === null).map((r) => r.run_id);
   const aic = await readAic(ghAw, repo, needAic, deps.workDir, log);
 
   const refCache = new Map<string, string | null>();
@@ -177,6 +183,12 @@ export async function collect(deps: CollectDeps): Promise<{ snapshot: OutcomesSn
     }
     runs.push(runRecord(run, prev, result, aic.get(run.run_id), task, evaluatedAt));
   }
+  // A previously recorded run missing from this listing (being re-run, so not `completed` right now,
+  // or deleted) is carried forward unchanged, so the snapshot stays complete.
+  const listedIds = new Set(listed.map((r) => r.run_id));
+  const unlisted = previous ? [...previous.values()].filter((p) => !listedIds.has(p.run_id)) : [];
+  if (unlisted.length > 0) log(`${unlisted.length} recorded run(s) not in the current listing carried over unchanged: ${unlisted.map((p) => p.run_id).join(', ')}`);
+  runs.push(...unlisted);
   const snapshot = buildSnapshot(repo, now, sel.mode, runs);
   // Self-check against the controller's own validator: never upload what it would refuse.
   validateSnapshot(JSON.stringify(snapshot), repo);

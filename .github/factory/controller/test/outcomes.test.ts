@@ -12,6 +12,7 @@ import {
   buildSnapshot,
   evaluationReason,
   ingestOutcomes,
+  newestFirst,
   isDrill,
   isTarget,
   itemsFromGhAw,
@@ -528,14 +529,20 @@ describe('outcomes: controller ingestion', () => {
     repository: { full_name: REPO },
     head_repository: { full_name: REPO },
     updated_at: ago(0.1),
+    head_sha: MAIN_TIP,
     ...over,
   });
 
-  function world(runs: Record<string, unknown>[], text = snapshotText([record(1), record(2, { task: 'drill/repair-ok', drill: true })])): FakeGitHub & { downloads: number } {
-    const gh = new FakeGitHub(REPO) as FakeGitHub & { downloads: number };
+  function world(runs: Record<string, unknown>[], text = snapshotText([record(1), record(2, { task: 'drill/repair-ok', drill: true })])): FakeGitHub & { downloads: number; listPaths: string[] } {
+    const gh = new FakeGitHub(REPO) as FakeGitHub & { downloads: number; listPaths: string[] };
     gh.downloads = 0;
-    gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/outcomes\\.yml/runs$`), () => ({ data: { workflow_runs: runs } }));
+    gh.listPaths = [];
+    gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/outcomes\\.yml/runs$`), (path) => {
+      gh.listPaths.push(path);
+      return { data: { workflow_runs: runs } };
+    });
     gh.addRoute('GET', new RegExp(`^${r}/actions/runs/\\d+/artifacts$`), () => ({ data: { artifacts: [{ id: 77, name: 'outcomes', expired: false, size_in_bytes: 1000 }] } }));
+    compareRoute(gh);
     gh.addRoute('GET', new RegExp(`^${r}/actions/artifacts/77/zip$`), () => {
       gh.downloads++;
       return { data: zip({ 'outcomes.json': text }) };
@@ -586,6 +593,7 @@ describe('outcomes: controller ingestion', () => {
       gh.downloads = 0;
       let runs = [outcomesRun({ id: 900 })];
       gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/outcomes\\.yml/runs$`), () => ({ data: { workflow_runs: runs } }));
+      compareRoute(gh);
       gh.addRoute('GET', new RegExp(`^${r}/actions/runs/\\d+/artifacts$`), () => ({ data: { artifacts: [{ id: 77, name: 'outcomes', expired: false, size_in_bytes: 1000 }] } }));
       gh.addRoute('GET', new RegExp(`^${r}/actions/artifacts/77/zip$`), () => {
         gh.downloads++;
@@ -677,7 +685,157 @@ describe('outcomes: controller ingestion', () => {
   });
 });
 
+
+describe('outcomes: review fixes (PR #150)', () => {
+  const outcomesRun = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
+    id: 900, run_attempt: 1, status: 'completed', conclusion: 'success', path: '.github/workflows/outcomes.yml', head_branch: 'main', event: 'schedule',
+    repository: { full_name: REPO }, head_repository: { full_name: REPO }, created_at: ago(0.2), run_started_at: ago(0.2), updated_at: ago(0.1), head_sha: MAIN_TIP, ...over,
+  });
+  function world(runs: Record<string, unknown>[]): FakeGitHub & { listPaths: string[]; compares: number } {
+    const gh = new FakeGitHub(REPO) as FakeGitHub & { listPaths: string[]; compares: number };
+    gh.listPaths = [];
+    gh.compares = 0;
+    gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/outcomes\\.yml/runs$`), (path) => {
+      gh.listPaths.push(path);
+      return { data: { workflow_runs: runs } };
+    });
+    gh.addRoute('GET', new RegExp(`^${r}/actions/runs/\\d+/artifacts$`), (path) => ({ data: { artifacts: [{ id: Number(/runs\/(\d+)/.exec(path)![1]), name: 'outcomes', expired: false, size_in_bytes: 1000 }] } }));
+    gh.addRoute('GET', new RegExp(`^${r}/actions/artifacts/\\d+/zip$`), () => ({ data: zip({ 'outcomes.json': snapshotText([record(1)]) }) }));
+    const counted = new FakeGitHub(REPO);
+    compareRoute(counted);
+    gh.addRoute('GET', new RegExp(`^${r}/compare/`), (path, body) => {
+      gh.compares++;
+      return counted.routes[0]!.handler(path, body);
+    });
+    return gh;
+  }
+  const load = async (gh: FakeGitHub): Promise<AuditLog> => {
+    const audit = new AuditLog(gh, { repo: REPO, factoryVersion: 'a'.repeat(40) });
+    await audit.load(NOW);
+    return audit;
+  };
+
+  it('1: an item with outcome_status error is a failed evaluation: previous items kept as stale, retried next time', async () => {
+    const gh = new FakeGitHub(REPO);
+    runsRoute(gh, { implement: [{ id: 1 }], repair: [], review: [] });
+    const previous = new Map<number, OutcomeRun>([[1, record(1)]]);
+    const ghAw: GhAw = async (args) => (args[0] === 'logs' ? JSON.stringify({ runs: [] }) : JSON.stringify({ run_id: 1, items: [{ type: 'create_pull_request', object_url: PR_URL(54), outcome_status: 'error', evidence_strength: 'none' }] }));
+    const { snapshot, failures } = await collect({ client: gh, repo: REPO, ghAw, now: NOW, full: true, workDir: 'w', log: () => {}, previous });
+    assert.equal(snapshot.runs[0]!.eval, 'stale');
+    assert.deepEqual(snapshot.runs[0]!.items, previous.get(1)!.items);
+    assert.match(failures[0]!.error, /outcome_status error/);
+    const next = new Map(snapshot.runs.map((x) => [x.run_id, x]));
+    assert.equal(evaluationReason(listed(1), next.get(1), NOW, false), 'previous_stale', 'retried, even though the run is old and settled');
+  });
+
+  it('2: missing aic is retried for every listed run, including settled carried ones', async () => {
+    const gh = new FakeGitHub(REPO);
+    runsRoute(gh, { implement: [{ id: 1 }, { id: 2 }], repair: [], review: [] });
+    // Run 1: old and settled (carried), aic null after a failed backfill. Run 2: has aic.
+    const previous = new Map<number, OutcomeRun>([[1, record(1, { aic: null })], [2, record(2, { aic: 4 })]]);
+    let input = '';
+    const ghAw: GhAw = async (args, opts) => {
+      if (args[0] !== 'logs') throw new Error('nothing should be evaluated');
+      input = opts.input ?? '';
+      return JSON.stringify({ runs: [{ run_id: 1, aic: 7.25 }] });
+    };
+    const { snapshot } = await collect({ client: gh, repo: REPO, ghAw, now: NOW, full: false, workDir: 'w', log: () => {}, previous });
+    assert.equal(input, '1\n');
+    const by = new Map(snapshot.runs.map((x) => [x.run_id, x]));
+    assert.equal(by.get(1)!.aic, 7.25);
+    assert.deepEqual({ ...by.get(1)!, aic: null }, previous.get(1), 'otherwise carried unchanged');
+    assert.equal(by.get(2)!.aic, 4);
+  });
+
+  it('3: a recorded run missing from the listing (being re-run, or deleted) is carried forward unchanged', async () => {
+    const gh = new FakeGitHub(REPO);
+    runsRoute(gh, { implement: [{ id: 2 }, { id: 3, status: 'in_progress', conclusion: null }], repair: [], review: [] });
+    const previous = new Map<number, OutcomeRun>([[1, record(1)], [2, record(2)], [3, record(3)]]);
+    const ghAw: GhAw = async (args) => (args[0] === 'logs' ? JSON.stringify({ runs: [] }) : JSON.stringify({ run_id: Number(args[1]), items: [item()] }));
+    const { snapshot } = await collect({ client: gh, repo: REPO, ghAw, now: NOW, full: false, workDir: 'w', log: () => {}, previous });
+    assert.deepEqual(snapshot.runs.map((x) => x.run_id), [3, 2, 1]);
+    const by = new Map(snapshot.runs.map((x) => [x.run_id, x]));
+    assert.deepEqual(by.get(1), previous.get(1));
+    assert.deepEqual(by.get(3), previous.get(3));
+    assert.doesNotThrow(() => validateSnapshot(JSON.stringify(snapshot), REPO));
+  });
+
+  it('4: no branch filter on the run list, so a pull_request_target run (PR branch) is ingested', async () => {
+    const gh = world([outcomesRun({ id: 950, event: 'pull_request_target', head_branch: 'factory/en-casual-date', head_sha: 'f'.repeat(40) })]);
+    assert.deepEqual(await ingestOutcomes(gh, REPO, await load(gh), NOW), { status: 'ingested', run_id: 950, runs: 1, items: 1 });
+    assert.ok(gh.listPaths.length >= 1 && gh.listPaths.every((p) => !/[?&]branch=/.test(p)), gh.listPaths.join(' '));
+    assert.equal(gh.compares, 0, 'no compare for pull_request_target');
+    // Every other event still needs head_branch main; forks never pass.
+    assert.equal(outcomesRunIneligible(outcomesRun({ event: 'workflow_run', head_branch: 'factory/x' }), REPO, NOW), 'wrong_branch');
+    assert.equal(outcomesRunIneligible(outcomesRun({ event: 'pull_request_target', head_branch: 'x', head_repository: { full_name: 'fork/chrono-node-rs' } }), REPO, NOW), 'wrong_repo');
+  });
+
+  it('4: lists at most INGEST_LIST_PAGES pages, stopping early past the re-run horizon', async () => {
+    const gh = new FakeGitHub(REPO);
+    let pages = 0;
+    gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/outcomes\\.yml/runs$`), (path) => {
+      pages++;
+      const page = Number(new URLSearchParams(path.split('?')[1]).get('page') ?? '1');
+      return { data: { workflow_runs: [outcomesRun({ id: 1000 - page, conclusion: 'failure', created_at: ago(page) })] }, next: `${r}/actions/workflows/outcomes.yml/runs?status=success&per_page=100&page=${page + 1}` };
+    });
+    assert.deepEqual(await ingestOutcomes(gh, REPO, await load(gh), NOW), { status: 'none' });
+    assert.equal(pages, 3);
+    const old = new FakeGitHub(REPO);
+    let oldPages = 0;
+    old.addRoute('GET', new RegExp(`^${r}/actions/workflows/outcomes\\.yml/runs$`), () => {
+      oldPages++;
+      return { data: { workflow_runs: [outcomesRun({ created_at: ago(31), conclusion: 'failure' })] }, next: `${r}/actions/workflows/outcomes.yml/runs?page=2` };
+    });
+    await ingestOutcomes(old, REPO, await load(old), NOW);
+    assert.equal(oldPages, 1);
+  });
+
+  it('5: the newest evaluation is the most recently completed run, not the highest id', async () => {
+    const gh = world([
+      outcomesRun({ id: 950, updated_at: ago(1), run_started_at: ago(1.01) }),
+      outcomesRun({ id: 900, run_attempt: 2, created_at: ago(2), run_started_at: ago(0.02), updated_at: ago(0.01) }),
+    ]);
+    const audit = await load(gh);
+    assert.equal((await ingestOutcomes(gh, REPO, audit, NOW)).status, 'ingested');
+    const e = audit.newestOfType('outcomes_snapshot')!;
+    assert.equal(e.payload.source_run_id, 900);
+    assert.equal(e.payload.source_run_attempt, 2);
+    // Ties on completion time: start time, then attempt, then id.
+    const tie = [outcomesRun({ id: 1, run_attempt: 1 }), outcomesRun({ id: 1, run_attempt: 3 }), outcomesRun({ id: 2, run_attempt: 1 })].sort(newestFirst);
+    assert.deepEqual(tie.map((x) => `${String(x.id)}/${String(x.run_attempt)}`), ['1/3', '2/1', '1/1']);
+  });
+
+  it('hardening: a non-pull_request_target run must be on main (compare), else it is skipped this poll', async () => {
+    // A run dispatched on a tag named `main` (diverged commit), newest; an older legit run.
+    const gh = world([outcomesRun({ id: 960, event: 'workflow_dispatch', head_sha: 'c'.repeat(40), updated_at: ago(0.01) }), outcomesRun({ id: 940, head_sha: 'b'.repeat(40), updated_at: ago(0.05) })]);
+    const logs: string[] = [];
+    const audit = await load(gh);
+    assert.deepEqual(await ingestOutcomes(gh, REPO, audit, NOW, (l) => logs.push(l)), { status: 'ingested', run_id: 940, runs: 1, items: 1 });
+    assert.ok(logs.some((l) => /skipping run 960/.test(l)));
+    // A compare error fails closed (skipped); a malformed sha is never compared.
+    const err = world([outcomesRun({ id: 970, head_sha: 'e'.repeat(40) })]);
+    assert.deepEqual(await ingestOutcomes(err, REPO, await load(err), NOW), { status: 'none' });
+    const bad = world([outcomesRun({ id: 971, head_sha: 'main' })]);
+    assert.deepEqual(await ingestOutcomes(bad, REPO, await load(bad), NOW), { status: 'none' });
+    assert.equal(bad.compares, 0);
+    // Compared only for a candidate not yet ingested.
+    gh.compares = 0;
+    assert.equal((await ingestOutcomes(gh, REPO, audit, NOW)).status, 'duplicate');
+    assert.equal(gh.compares, 1, 'only the still-unrecorded tag run is compared again; the recorded one stops the search');
+  });
+});
+
 // ---------------------------------------------------------------- helpers
+
+const MAIN_TIP = 'a'.repeat(40);
+/** compare/<sha>...main: MAIN_TIP is main; 'b…' is behind main (an ancestor); anything else diverged; 'e…' errors. */
+function compareRoute(gh: FakeGitHub): void {
+  gh.addRoute('GET', new RegExp(`^${r}/compare/[0-9a-f]{40}\\.\\.\\.main$`), (path) => {
+    const sha = /compare\/([0-9a-f]{40})/.exec(path)![1]!;
+    if (sha.startsWith('e')) return { status: 500, data: null };
+    return { data: { status: sha === MAIN_TIP ? 'identical' : sha.startsWith('b') ? 'ahead' : 'diverged' } };
+  });
+}
 
 function runsRoute(gh: FakeGitHub, byWorkflow: Record<'implement' | 'repair' | 'review', Record<string, unknown>[]>): void {
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/(implement|repair|review)\\.lock\\.yml/runs$`), (path) => {

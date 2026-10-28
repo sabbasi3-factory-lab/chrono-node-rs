@@ -492,22 +492,70 @@ export type IngestResult =
   | { status: 'none' }
   | { status: 'duplicate'; run_id: number };
 
+/** Outcomes runs listed per poll: newest-created first, at most this many pages of 100. */
+export const INGEST_LIST_PAGES = 3;
+
+/** Newest evaluation first: completion time, then start time, then attempt, then id. */
+export function newestFirst(a: Rec, b: Rec): number {
+  const t = (v: unknown): number => (typeof v === 'string' && Number.isFinite(Date.parse(v)) ? Date.parse(v) : 0);
+  return t(b.updated_at) - t(a.updated_at) || t(b.run_started_at) - t(a.run_started_at) || (b.run_attempt as number) - (a.run_attempt as number) || (b.id as number) - (a.id as number);
+}
+
 /**
- * Appends one `outcomes_snapshot` for the newest eligible outcomes run, unless already recorded.
- * Reads only (run list, artifact list, artifact zip) plus the audit append. Throws on anything
- * unreadable or invalid; the caller logs it and goes on (fail-soft).
+ * Whether a run's commit is on main (equal to, or an ancestor of, main's tip): one compare call.
+ * Closes a ref merely *named* `main` (e.g. a tag) being used to dispatch the workflow. Any error → no.
  */
-export async function ingestOutcomes(client: GitHubClient, repo: string, audit: AuditLog, now: Date): Promise<IngestResult> {
-  const res = await client.request('GET', `/repos/${repo}/actions/workflows/${OUTCOMES_WORKFLOW_FILE}/runs?branch=main&status=success&per_page=20`, { allowStatuses: [404] });
-  if (res.status === 404) return { status: 'none' };
-  const runs = (Array.isArray(rec(res.data).workflow_runs) ? (rec(res.data).workflow_runs as unknown[]) : []).map(rec);
-  const run = runs.filter((r) => outcomesRunIneligible(r, repo, now) === null).sort((a, b) => (b.id as number) - (a.id as number))[0];
+export async function commitOnMain(client: GitHubClient, repo: string, sha: unknown): Promise<boolean> {
+  if (typeof sha !== 'string' || !/^[0-9a-f]{40}$/.test(sha)) return false;
+  try {
+    const res = await client.request('GET', `/repos/${repo}/compare/${sha}...main?per_page=1`);
+    const status = rec(res.data).status;
+    return status === 'identical' || status === 'ahead';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Appends one `outcomes_snapshot` for the newest eligible outcomes run, unless already recorded
+ * (or an `outcomes_checked` marker when its runs are unchanged). Reads only (run list, compare,
+ * artifact list, artifact zip) plus the audit append. Throws on anything unreadable or invalid;
+ * the caller logs it and goes on (fail-soft).
+ *
+ * No `branch=` filter on the list: a `pull_request_target` run's head_branch is the PR's branch,
+ * so `outcomesRunIneligible` applies the per-event checks instead. The newest evaluation is the
+ * most recently COMPLETED run (a re-run of an older collector run is newer than a higher run id).
+ */
+export async function ingestOutcomes(client: GitHubClient, repo: string, audit: AuditLog, now: Date, log: (line: string) => void = () => {}): Promise<IngestResult> {
+  const listed: Rec[] = [];
+  let next: string | null = `/repos/${repo}/actions/workflows/${OUTCOMES_WORKFLOW_FILE}/runs?status=success&per_page=100`;
+  for (let page = 0; next && page < INGEST_LIST_PAGES; page++) {
+    const res = await client.request('GET', next, { allowStatuses: [404] });
+    if (res.status === 404) return { status: 'none' };
+    const runs = (Array.isArray(rec(res.data).workflow_runs) ? (rec(res.data).workflow_runs as unknown[]) : []).map(rec);
+    listed.push(...runs);
+    // Older pages hold only runs created before the re-run horizon: nothing there can be fresh.
+    const oldest = runs.at(-1)?.created_at;
+    if (typeof oldest === 'string' && now.getTime() - Date.parse(oldest) > 30 * DAY_MS) break;
+    next = res.next;
+  }
+  const candidates = listed.filter((r) => outcomesRunIneligible(r, repo, now) === null).sort(newestFirst);
+  let run: Rec | undefined;
+  for (const c of candidates) {
+    const sourceIds = outcomesSourceIds(c.id as number, c.run_attempt as number);
+    // Checked before anything else: recorded as a snapshot, or already found unchanged.
+    if (audit.hasDedupeKey(dedupeKey(OUTCOMES_EVENT, sourceIds)) || audit.hasDedupeKey(dedupeKey(OUTCOMES_CHECKED_EVENT, sourceIds))) return { status: 'duplicate', run_id: c.id as number };
+    if (c.event !== 'pull_request_target' && !(await commitOnMain(client, repo, c.head_sha))) {
+      log(`outcomes: skipping run ${String(c.id)} attempt ${String(c.run_attempt)} this poll: its commit isn't on main (or couldn't be checked)`);
+      continue;
+    }
+    run = c;
+    break;
+  }
   if (!run) return { status: 'none' };
   const id = run.id as number;
   const attempt = run.run_attempt as number;
   const sourceIds = outcomesSourceIds(id, attempt);
-  // Checked before any download: recorded as a snapshot, or already found unchanged.
-  if (audit.hasDedupeKey(dedupeKey(OUTCOMES_EVENT, sourceIds)) || audit.hasDedupeKey(dedupeKey(OUTCOMES_CHECKED_EVENT, sourceIds))) return { status: 'duplicate', run_id: id };
 
   const artifacts = (await paginate(client, `/repos/${repo}/actions/runs/${id}/artifacts?name=${OUTCOMES_ARTIFACT}&per_page=100`, (d) => (Array.isArray(rec(d).artifacts) ? (rec(d).artifacts as unknown[]) : []))).map(rec).filter((a) => a.name === OUTCOMES_ARTIFACT);
   if (artifacts.length !== 1) throw new Error(`outcomes run ${id} has ${artifacts.length} ${OUTCOMES_ARTIFACT} artifacts`);

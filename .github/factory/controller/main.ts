@@ -289,7 +289,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
   // measurement, recorded in both modes; fail-soft, so it never blocks the poll or dispatch.
   if (!deps.snapshot) {
     try {
-      const o = await ingestOutcomes(client, repo, audit, now);
+      const o = await ingestOutcomes(client, repo, audit, now, log);
       if (o.status === 'ingested') log(`outcomes: recorded run ${o.run_id} (${o.runs} agent runs, ${o.items} items)`);
       else if (o.status === 'unchanged') log(`outcomes: run ${o.run_id} unchanged since run ${o.same_as}; not recorded again`);
     } catch (err) {

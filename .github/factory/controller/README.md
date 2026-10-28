@@ -426,7 +426,8 @@ push, check run) get accepted, rejected, ignored, or is it still pending?
    (`linux-amd64` release asset, SHA-256 pinned in the workflow from the v0.92.0 `checksums.txt`). It
    reads the newest `outcomes_snapshot` from the audit branch (read-only), lists every completed agent
    run (REST), picks the runs to evaluate (below), runs `gh aw outcomes` for them (4 at a time, 180 s
-   each), reads gh-aw's `aic` for runs that don't have one yet (`gh aw logs --stdin`), and uploads one
+   each), reads gh-aw's `aic` for every listed run that doesn't have one yet, evaluated now or not
+   (`gh aw logs --stdin`; so a failed read is retried next collection), and uploads one
    **complete** snapshot (every run) as the `outcomes` artifact (7 days). It checks the snapshot with the
    controller's own validator before uploading.
 2. The controller (every poll, including the `workflow_run` poll the finished `outcomes` run triggers)
@@ -453,8 +454,11 @@ bursts queue rather than race.
   newer trigger can replace an older queued one. The replaced trigger's run is still pending in the
   previous snapshot, so the next targeted run re-evaluates it anyway; anything older than 14 days is
   left to the daily sweep.
-- A run whose evaluation fails keeps its previous items, marked `stale`; with none it's `error`. No run
-  is ever dropped.
+- A run whose evaluation fails keeps its previous items, marked `stale`; with none it's `error`. That
+  includes gh-aw returning an item with `outcome_status: error` (it couldn't check it): never recorded
+  as a settled `ok`. A `stale`/`error` run is retried on every collection, whatever its age.
+- No run is ever dropped: a recorded run missing from the current listing (being re-run, so not
+  `completed` right now, or deleted) is carried forward unchanged.
 
 **Task join.** The run title (`Implement <task> #<issue> attempt <n>`, `Repair …`); otherwise the PR
 (or task issue) the run's items point at (`Factory-Task:` trailer, then a `[factory] <task>: port …`
@@ -475,12 +479,26 @@ controller's existing App path (`contents: write` on the protected `audit` branc
 list runs and download artifacts); **no new App permission** and no allowlist change were needed (the
 ingest makes only GETs plus the existing audit Git Data writes, in both modes).
 
+**Which outcomes run.** The controller lists `outcomes.yml` runs with `status=success` and **no
+`branch=` filter** (a `pull_request_target` run's `head_branch` is the PR's branch, so a filter would
+drop every PR-close collection): newest-created first, at most 3 pages of 100, stopping at a page that
+reaches past the 30-day re-run horizon. It takes the **most recently completed** eligible run
+(`updated_at`, then `run_started_at`, then attempt, then id): a re-run of an older collector run is a
+newer evaluation than a higher run id. If that run (id + attempt) is already recorded, nothing happens.
+
 **Ingest gate** (`outcomesRunIneligible`): the run is `completed`/`success`, its `path` is
-`.github/workflows/outcomes.yml`, `repository` and `head_repository` are this repo, its event is
-`schedule`, `workflow_dispatch`, `workflow_run` or `pull_request_target` (never `pull_request`), its
-`head_branch` is `main` (except `pull_request_target`, whose head branch is the PR's; it runs main's
-workflow, and outcomes.yml only accepts PRs into `main`), and it finished in the last 72 h (well inside
-the 7-day audit window the dedupe check reads). Exactly one unexpired `outcomes` artifact ≤ 2 MB holding
+`.github/workflows/outcomes.yml`, `repository` and `head_repository` are this repo (agent PRs are
+same-repo, so a fork never passes), its event is `schedule`, `workflow_dispatch`, `workflow_run` or
+`pull_request_target` (never `pull_request`), and it finished in the last 72 h (well inside the 7-day
+audit window the dedupe check reads).
+- `pull_request_target`: any `head_branch` (GitHub runs the default branch's workflow file for this
+  event, and outcomes.yml only accepts PRs into `main`).
+- Every other event: `head_branch == main`, **and** its `head_sha` is on main: one
+  `GET compare/<head_sha>...main` (only for a candidate not yet recorded) must say `identical` or
+  `ahead`. This closes a ref merely *named* `main` (a tag) being used to dispatch the workflow. A
+  failed or other answer skips that run for this poll (logged) and the next older candidate is tried.
+
+Exactly one unexpired `outcomes` artifact ≤ 2 MB holding
 `outcomes.json` ≤ 1 MB, validated strictly (`validateSnapshot`): exact keys at every level, gh-aw's
 enums, numeric run ids, task ids or null, object URLs matching
 `^https://github.com/sabbasi3-factory-lab/chrono-node-rs/(pull|issues)/\d+(#issuecomment-\d+)?$` or null,
