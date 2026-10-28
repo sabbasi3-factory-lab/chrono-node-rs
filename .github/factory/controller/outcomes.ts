@@ -13,7 +13,7 @@
 // AI credits (`aic`) belong to the RUN, so they are on the run record and never repeated per item:
 // summing `runs[].aic` counts every credit exactly once.
 
-import { dedupeKey, isoSeconds, type AuditLog } from './audit.ts';
+import { dedupeKey, isoSeconds, sha256Hex, type AuditLog } from './audit.ts';
 import { canonicalize } from './canonical.ts';
 import { paginate } from './github.ts';
 import { readZip } from './spend.ts';
@@ -21,6 +21,8 @@ import { isTaskId, parsePrTrailers, parseTaskMarker } from './tasks.ts';
 import type { GitHubClient, JsonObject, PendingEvent } from './types.ts';
 
 export const OUTCOMES_EVENT = 'outcomes_snapshot';
+/** A tiny marker: this outcomes run was checked and its runs were unchanged (nothing else recorded). */
+export const OUTCOMES_CHECKED_EVENT = 'outcomes_checked';
 export const OUTCOMES_WORKFLOW_FILE = 'outcomes.yml';
 export const OUTCOMES_WORKFLOW_PATH = `.github/workflows/${OUTCOMES_WORKFLOW_FILE}`;
 export const OUTCOMES_ARTIFACT = 'outcomes';
@@ -464,8 +466,29 @@ export function outcomesFields(snapshot: OutcomesSnapshot, sourceRunId: number, 
   };
 }
 
+/**
+ * Content hash of the runs, without the volatile per-run `evaluated_at` (the snapshot's own
+ * `evaluated_at` and source run id/attempt aren't part of `runs`). Equal hash = same outcomes.
+ */
+export function runsHash(runs: readonly OutcomeRun[]): string {
+  const stable = [...runs].sort((a, b) => b.run_id - a.run_id).map(({ evaluated_at: _volatile, ...rest }) => rest);
+  return `sha256:${sha256Hex(canonicalize(stable as unknown as JsonObject[]))}`;
+}
+
+/** The newest recorded snapshot's source run id and runs hash, or null (none in the loaded window, or unreadable). */
+export function latestSnapshotHash(audit: AuditLog, repo: string): { run_id: number; hash: string } | null {
+  const e = audit.newestOfType(OUTCOMES_EVENT);
+  if (!e || typeof e.payload.source_run_id !== 'number') return null;
+  try {
+    return { run_id: e.payload.source_run_id, hash: runsHash(validateRuns(e.payload.runs, repo)) };
+  } catch {
+    return null;
+  }
+}
+
 export type IngestResult =
   | { status: 'ingested'; run_id: number; runs: number; items: number }
+  | { status: 'unchanged'; run_id: number; same_as: number }
   | { status: 'none' }
   | { status: 'duplicate'; run_id: number };
 
@@ -483,7 +506,8 @@ export async function ingestOutcomes(client: GitHubClient, repo: string, audit: 
   const id = run.id as number;
   const attempt = run.run_attempt as number;
   const sourceIds = outcomesSourceIds(id, attempt);
-  if (audit.hasDedupeKey(dedupeKey(OUTCOMES_EVENT, sourceIds))) return { status: 'duplicate', run_id: id };
+  // Checked before any download: recorded as a snapshot, or already found unchanged.
+  if (audit.hasDedupeKey(dedupeKey(OUTCOMES_EVENT, sourceIds)) || audit.hasDedupeKey(dedupeKey(OUTCOMES_CHECKED_EVENT, sourceIds))) return { status: 'duplicate', run_id: id };
 
   const artifacts = (await paginate(client, `/repos/${repo}/actions/runs/${id}/artifacts?name=${OUTCOMES_ARTIFACT}&per_page=100`, (d) => (Array.isArray(rec(d).artifacts) ? (rec(d).artifacts as unknown[]) : []))).map(rec).filter((a) => a.name === OUTCOMES_ARTIFACT);
   if (artifacts.length !== 1) throw new Error(`outcomes run ${id} has ${artifacts.length} ${OUTCOMES_ARTIFACT} artifacts`);
@@ -495,6 +519,15 @@ export async function ingestOutcomes(client: GitHubClient, repo: string, audit: 
   const text = readZip(zip.data, [OUTCOMES_FILE], MAX_OUTCOMES_ZIP_BYTES).get(OUTCOMES_FILE);
   if (text === undefined) throw new Error(`outcomes run ${id}'s artifact has no ${OUTCOMES_FILE}`);
   const snapshot = validateSnapshot(text, repo);
+  // Size guard: an unchanged snapshot isn't recorded again. Only a ~300-byte `outcomes_checked`
+  // marker is, so later polls skip this run without downloading it.
+  const hash = runsHash(snapshot.runs);
+  const latest = latestSnapshotHash(audit, repo);
+  if (latest && latest.hash === hash) {
+    const checked: PendingEvent = { type: OUTCOMES_CHECKED_EVENT, source_ids: sourceIds, fields: { source_run_id: id, source_run_attempt: attempt, runs_hash: hash, same_as_run_id: latest.run_id }, dry_run: false };
+    await audit.append(checked, now);
+    return { status: 'unchanged', run_id: id, same_as: latest.run_id };
+  }
   const pending: PendingEvent = { type: OUTCOMES_EVENT, source_ids: sourceIds, fields: outcomesFields(snapshot, id, attempt), dry_run: false };
   const appended = await audit.append(pending, now);
   if (!appended) return { status: 'duplicate', run_id: id };

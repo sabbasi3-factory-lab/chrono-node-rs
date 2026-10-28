@@ -291,6 +291,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     try {
       const o = await ingestOutcomes(client, repo, audit, now);
       if (o.status === 'ingested') log(`outcomes: recorded run ${o.run_id} (${o.runs} agent runs, ${o.items} items)`);
+      else if (o.status === 'unchanged') log(`outcomes: run ${o.run_id} unchanged since run ${o.same_as}; not recorded again`);
     } catch (err) {
       log(`outcomes: not ingested (${(err as Error).message}); retried next poll`);
     }

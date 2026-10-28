@@ -117,7 +117,8 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `merged` | PR node id | `pr`, `merge_commit_sha`, `merged_at`, `task` |
 | `human_action` | review node id | `action: review`, `pr`, `reviewer`, `state`, `submitted_at` (non-bot reviewers only) |
 | `heartbeat` | `hour:YYYY-MM-DDTHH` | `hour`, `run_id`, `trigger`, `open_pr_count`, `decision_count`, `factory_enabled` |
-| `outcomes_snapshot` | `outcomes_run:<id>`, `attempt:<n>` (the outcomes workflow run that produced it) | `source_run_id`, `source_run_attempt`, `gh_aw_version`, `evaluated_at`, `mode`, `runs`, `summary` (see **Outcomes**); `dry_run: false` in both modes |
+| `outcomes_snapshot` | `outcomes_run:<id>`, `attempt:<n>` (the outcomes workflow run that produced it) | `source_run_id`, `source_run_attempt`, `gh_aw_version`, `evaluated_at`, `mode`, `runs`, `summary` (see **Outcomes**); `dry_run: false` in both modes. Only when the runs changed |
+| `outcomes_checked` | the same as `outcomes_snapshot` | `source_run_id`, `source_run_attempt`, `runs_hash`, `same_as_run_id`: that outcomes run's runs were unchanged (~600 bytes, instead of a ~33 KB snapshot) |
 | decision types | the planner's `source_ids` + `reason:<reason>` + `effect:<effect>` (a changed reason for the same subject is recorded; an identical retry dedupes) | `reason`, `effect`, and when set: `task`, `issue`, `pr`, `attempt`, `contract_sha`, `run_id`, `failure_signature` |
 
 - **Facts:** the controller observes only facts whose own GitHub timestamp is within the last 24 h. That
@@ -484,7 +485,18 @@ the 7-day audit window the dedupe check reads). Exactly one unexpired `outcomes`
 enums, numeric run ids, task ids or null, object URLs matching
 `^https://github.com/sabbasi3-factory-lab/chrono-node-rs/(pull|issues)/\d+(#issuecomment-\d+)?$` or null,
 `aic` finite ≥ 0 or null, ≤ 1000 runs, ≤ 100 items per run, ≤ 5000 items, and a summary equal to the
-one recomputed from the runs. Dedupe: `outcomes_run:<id>` + `attempt:<n>`, checked before the download.
+one recomputed from the runs. Dedupe: `outcomes_run:<id>` + `attempt:<n>`, checked (for both event
+types) before the download.
+
+**Size guard: unchanged snapshots aren't recorded again.** After validation the controller compares
+`runsHash` (SHA-256 of the canonical runs, newest first, without the per-run `evaluated_at`) with the
+newest recorded `outcomes_snapshot`. The snapshot's own `evaluated_at`, `mode` and source run id/attempt
+aren't part of `runs`, so a change in only those is no change. Unchanged → no snapshot, only an
+`outcomes_checked` marker (~600 bytes) with the same dedupe source ids, so later polls skip that outcomes
+run before downloading it (one run list per poll, nothing else). A marker per checked run was chosen
+over re-downloading the newest run's artifact on every poll until a newer one exists. With no snapshot
+in the loaded 7 days, the run is recorded (at most one refresh a week). The collector also logs
+`unchanged since the previous snapshot` when it sees the same.
 Any failure is logged (`outcomes: not ingested (…)`) and retried next poll; it never blocks the poll or
 dispatch.
 
@@ -504,9 +516,24 @@ summary: { runs, items, accepted, rejected, ignored, pending, unknown, other, ze
 ```
 
 Each snapshot is complete, so a reader needs only the newest one. `other` counts gh-aw's remaining
-statuses. Size: 62 runs and 102 items are about 33 KB (well inside the 200-char string rule and any Git
-limit), but every poll loads 7 days of audit files, so at ~10 snapshots a day this grows with the run
-count; past ~300 runs, split it (for example one event per run whose record changed, plus a small index).
+statuses.
+
+**Expected growth.** A snapshot is ~530 bytes per agent run: 62 runs (102 items) are ~33 KB today. A
+new snapshot is recorded only when something changes, which for one task is:
+- the implement run completes (a new run, its PR `pending`): 1;
+- auto-strict: the review run completes: +1;
+- each repair: its run completes: +1 (its push item may settle with the PR);
+- the PR is merged or closed (`accepted`/`rejected`): 1.
+
+So **~2 snapshots per task** for an auto task, ~3 for auto-strict, +1 per repair: about 2–5 × 33 KB ≈
+66–165 KB per task today, growing with the run count since each snapshot carries every run. Every other
+trigger (the daily sweep, a re-run, a trigger whose outcome doesn't move) adds only a ~600-byte
+`outcomes_checked`. Example: 10 tasks a day ≈ 25 snapshots ≈ 0.8 MB/day now, ≈ 5.6 MB in the 7 days
+each poll loads; the dashboard reads the whole history.
+
+**Follow-up: split past ~300 runs.** At ~300 runs a snapshot is ~160 KB and the above is ~4 MB/day. Then
+switch to one small event per run whose record changed (plus a tiny index event with the summary and the
+runs hash), so the size per change no longer grows with history.
 
 **Live drill (after merge).** Budget: about 10 minutes from the PR close to the audit event.
 1. Merge or close an agent PR (or let the queue merge one). Note the time.

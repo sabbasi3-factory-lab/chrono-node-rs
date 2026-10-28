@@ -568,13 +568,75 @@ describe('outcomes: controller ingestion', () => {
     assert.deepEqual(await ingestOutcomes(gh, REPO, audit, NOW), { status: 'duplicate', run_id: 900 });
     // The collector reads it back as the previous snapshot.
     assert.deepEqual([...previousRuns(audit, REPO)!.keys()].sort(), [1, 2]);
-    // A re-run attempt of the same outcomes run is a new evaluation.
+    // A re-run attempt of the same outcomes run is a new evaluation (unchanged content: only a marker).
     const gh2 = world([outcomesRun({ run_attempt: 2 })]);
     for (const [k, v] of gh.refs) gh2.refs.set(k, v);
     for (const [k, v] of gh.commits) gh2.commits.set(k, v);
     for (const [k, v] of gh.trees) gh2.trees.set(k, v);
     for (const [k, v] of gh.blobs) gh2.blobs.set(k, v);
-    assert.equal((await ingestOutcomes(gh2, REPO, await load(gh2), NOW)).status, 'ingested');
+    assert.equal((await ingestOutcomes(gh2, REPO, await load(gh2), NOW)).status, 'unchanged');
+  });
+
+  describe('size guard: unchanged snapshots are not recorded again', () => {
+    const base = [record(1), record(2, { items: [item({ outcome_status: 'pending', zero_touch: null })] })];
+    /** Ingests outcomes run 900 (base), then run 901 with `next`; returns the audit events and 901's result. */
+    async function twice(next: string): Promise<{ events: string[]; second: Awaited<ReturnType<typeof ingestOutcomes>>; downloads: number; audit: AuditLog; gh: FakeGitHub & { downloads: number } }> {
+      let current = snapshotText(base);
+      const gh = new FakeGitHub(REPO) as FakeGitHub & { downloads: number };
+      gh.downloads = 0;
+      let runs = [outcomesRun({ id: 900 })];
+      gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/outcomes\\.yml/runs$`), () => ({ data: { workflow_runs: runs } }));
+      gh.addRoute('GET', new RegExp(`^${r}/actions/runs/\\d+/artifacts$`), () => ({ data: { artifacts: [{ id: 77, name: 'outcomes', expired: false, size_in_bytes: 1000 }] } }));
+      gh.addRoute('GET', new RegExp(`^${r}/actions/artifacts/77/zip$`), () => {
+        gh.downloads++;
+        return { data: zip({ 'outcomes.json': current }) };
+      });
+      assert.equal((await ingestOutcomes(gh, REPO, await load(gh), NOW)).status, 'ingested');
+      current = next;
+      runs = [outcomesRun({ id: 901, event: 'workflow_run' })];
+      const later = new Date(NOW.getTime() + 60_000);
+      const audit = new AuditLog(gh, { repo: REPO, factoryVersion: 'a'.repeat(40) });
+      await audit.load(later);
+      const second = await ingestOutcomes(gh, REPO, audit, later);
+      return { events: audit.events.map((e) => e.type), second, downloads: gh.downloads, audit, gh };
+    }
+    const withVolatile = (mutate: (s: Record<string, unknown>) => void): string => snapshotText(base, mutate);
+
+    it('unchanged: no new snapshot, one tiny marker, and no further download', async () => {
+      const t = await twice(snapshotText(base));
+      assert.deepEqual(t.second, { status: 'unchanged', run_id: 901, same_as: 900 });
+      assert.deepEqual(t.events, ['outcomes_snapshot', 'outcomes_checked']);
+      const marker = t.audit.events[1]!;
+      assert.ok(canonicalize(marker).length < 1000, `the marker is tiny (${canonicalize(marker).length} bytes)`);
+      assert.equal(marker.payload.same_as_run_id, 900);
+      // Later polls skip run 901 before downloading it.
+      assert.deepEqual(await ingestOutcomes(t.gh, REPO, t.audit, new Date(NOW.getTime() + 120_000)), { status: 'duplicate', run_id: 901 });
+      assert.equal(t.gh.downloads, 2);
+    });
+
+    it('volatile-only changes (evaluated_at, per-run evaluated_at, mode, source run): no new snapshot', async () => {
+      const t = await twice(
+        withVolatile((s) => {
+          s.evaluated_at = ago(-0.01);
+          s.mode = 'targeted';
+          for (const run of s.runs as Record<string, unknown>[]) run.evaluated_at = ago(-0.01);
+        }),
+      );
+      assert.equal(t.second.status, 'unchanged');
+      assert.deepEqual(t.events, ['outcomes_snapshot', 'outcomes_checked']);
+    });
+
+    it('one item changes: one new snapshot', async () => {
+      const changed = [record(1), record(2, { items: [item({ outcome_status: 'accepted', zero_touch: true })] })];
+      const t = await twice(snapshotText(changed));
+      assert.equal(t.second.status, 'ingested');
+      assert.deepEqual(t.events, ['outcomes_snapshot', 'outcomes_snapshot']);
+    });
+
+    it('a new run, or a changed aic, is a change', async () => {
+      assert.equal((await twice(snapshotText([...base, record(3)]))).second.status, 'ingested');
+      assert.equal((await twice(snapshotText([record(1, { aic: 13 }), base[1]!]))).second.status, 'ingested');
+    });
   });
 
   it('ingests the newest eligible run only', async () => {

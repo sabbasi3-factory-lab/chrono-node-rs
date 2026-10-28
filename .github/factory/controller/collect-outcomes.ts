@@ -20,6 +20,7 @@ import {
   previousRuns,
   referencedNumbers,
   runRecord,
+  runsHash,
   selectRuns,
   taskFromPr,
   taskFromReference,
@@ -179,6 +180,7 @@ export async function collect(deps: CollectDeps): Promise<{ snapshot: OutcomesSn
   const snapshot = buildSnapshot(repo, now, sel.mode, runs);
   // Self-check against the controller's own validator: never upload what it would refuse.
   validateSnapshot(JSON.stringify(snapshot), repo);
+  if (previous && runsHash([...previous.values()]) === runsHash(snapshot.runs)) log('unchanged since the previous snapshot: the controller will record only an outcomes_checked marker');
   return { snapshot, failures };
 }
 
