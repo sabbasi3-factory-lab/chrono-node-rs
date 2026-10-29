@@ -29,10 +29,8 @@ on:
   # unblocked tasks right after a merge instead of waiting for cron (and `labeled` then dispatches).
   issues:
     types: [labeled, unlabeled, closed]
-  # "outcomes": ingest the finished collector run's snapshot at once (every poll also picks up the
-  # newest one not yet recorded, so a dropped or replaced run of this workflow loses nothing).
   workflow_run:
-    workflows: ["ci", "gates", "Review one factory PR", "outcomes"]
+    workflows: ["ci", "gates", "Review one factory PR"]
     types: [completed]
   pull_request_target:
     types: [opened, reopened, closed, enqueued, dequeued, ready_for_review]

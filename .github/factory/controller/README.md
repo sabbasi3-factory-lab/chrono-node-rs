@@ -117,9 +117,6 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `merged` | PR node id | `pr`, `merge_commit_sha`, `merged_at`, `task` |
 | `human_action` | review node id | `action: review`, `pr`, `reviewer`, `state`, `submitted_at` (non-bot reviewers only) |
 | `heartbeat` | `hour:YYYY-MM-DDTHH` | `hour`, `run_id`, `trigger`, `open_pr_count`, `decision_count`, `factory_enabled` |
-| `outcomes_snapshot` | `outcomes_run:<id>`, `attempt:<n>` (the outcomes workflow run that produced it) | `source_run_id`, `source_run_attempt`, `gh_aw_version`, `evaluated_at`, `mode`, `runs`, `summary` (see **Outcomes**); `dry_run: false` in both modes. Only when the runs changed |
-| `outcomes_checked` | the same as `outcomes_snapshot` | `source_run_id`, `source_run_attempt`, `runs_hash`, `same_as_run_id`: that outcomes run's runs were unchanged (~600 bytes, instead of a ~33 KB snapshot) |
-| `diagnosis_posted` | `diagnosis:<run id>` | `run_id`, `issue`, `reason`, `codes`, `severity`: the gh-aw audit diagnosis comment for that implement run was posted (live only; see **Diagnosis follow-up**) |
 | decision types | the planner's `source_ids` + `reason:<reason>` + `effect:<effect>` (a changed reason for the same subject is recorded; an identical retry dedupes) | `reason`, `effect`, and when set: `task`, `issue`, `pr`, `attempt`, `contract_sha`, `run_id`, `failure_signature` |
 
 - **Facts:** the controller observes only facts whose own GitHub timestamp is within the last 24 h. That
@@ -416,203 +413,6 @@ status, aic}]`, `runs_total`) with **`dry_run: false` in both modes** (it's a me
 decision), deduped on the total and its sources, so it's only re-recorded when something changed. The
 planner uses the fresh measurement directly; fixture mode uses the snapshot's value.
 
-## Outcomes (`outcomes.ts`, `collect-outcomes.ts`, `.github/workflows/outcomes.yml`)
-
-The factory's results measure is gh-aw's own **Outcomes** evaluation (`gh aw outcomes <run-id>`, gh-aw
-v0.92.0) of every agent run of `implement`, `repair` and `review`: did each safe output (PR, comment,
-push, check run) get accepted, rejected, ignored, or is it still pending?
-
-**Flow.**
-1. `outcomes.yml` (plain Actions, no AI) runs `collect-outcomes.ts` with the pinned gh-aw binary
-   (`linux-amd64` release asset, SHA-256 pinned in the workflow from the v0.92.0 `checksums.txt`). It
-   reads the newest `outcomes_snapshot` from the audit branch (read-only), lists every completed agent
-   run (REST), picks the runs to evaluate (below), runs `gh aw outcomes` for them (4 at a time, 180 s
-   each), reads gh-aw's `aic` for every listed run that doesn't have one yet, evaluated now or not
-   (`gh aw logs --stdin`; so a failed read is retried next collection), and uploads one
-   **complete** snapshot (every run) as the `outcomes` artifact (7 days). It checks the snapshot with the
-   controller's own validator before uploading.
-2. The controller (every poll, including the `workflow_run` poll the finished `outcomes` run triggers)
-   ingests the newest eligible outcomes run that isn't recorded yet: one `outcomes_snapshot` event.
-
-**Triggers (event-driven, daily backstop).** Concurrency group `factory-outcomes`, never cancelled, so
-bursts queue rather than race.
-
-| trigger | when | evaluates |
-|---|---|---|
-| `pull_request_target` `closed` into `main` | an agent PR (`user.login == 'sabbasi3-factory-agent[bot]'`) is merged or closed: its outcome is final. Merge-queue merges fire it too (PR #149: merged 23:46:39Z, `pull_request_target` runs from 23:46:42Z), so no `repository_dispatch` fallback is needed | **targeted**: that PR's runs |
-| `workflow_run` `completed` of `Implement one factory task`, `Repair one factory PR`, `Review one factory PR` (the lock files' `name:`, not their `run-name:`), on `main` | a run's new outputs appear (pending at first) | **targeted**: that run |
-| `schedule` (daily 05:23 UTC), `workflow_dispatch` (`full`: everything) | backstop | **sweep** |
-
-**Which runs are evaluated** (`evaluationReason`); every other run is carried over unchanged:
-- **No previous snapshot, or `full`**: all runs (the backfill), whatever the trigger.
-- **Sweep**: new runs, runs whose last evaluation failed (`stale`/`error`), runs with any `pending` or
-  `unknown` item, and runs created less than 14 days ago (their outcomes may still change).
-- **Targeted** ("targets + recent open"): the target(s), new runs, runs whose last evaluation failed,
-  and runs created less than 14 days ago that still have a `pending`/`unknown` item. A PR's runs are
-  those whose previous items point at `/pull/<n>` (or `/issues/<n>`), plus implement and repair runs of
-  its task (run title, or the previous record's task, matching the PR's `Factory-Task:` trailer, read
-  through the API). Why the extra runs: GitHub keeps only **one pending run** per concurrency group, so a
-  newer trigger can replace an older queued one. The replaced trigger's run is still pending in the
-  previous snapshot, so the next targeted run re-evaluates it anyway; anything older than 14 days is
-  left to the daily sweep.
-- A run whose evaluation fails keeps its previous items, marked `stale`; with none it's `error`. That
-  includes gh-aw returning an item with `outcome_status: error` (it couldn't check it): never recorded
-  as a settled `ok`. A `stale`/`error` run is retried on every collection, whatever its age.
-- No run is ever dropped: a recorded run missing from the current listing (being re-run, so not
-  `completed` right now, or deleted) is carried forward unchanged.
-
-**Task join.** The run title (`Implement <task> #<issue> attempt <n>`, `Repair …`, and since review.md
-has a `run-name:`, `Review <task> PR #<pr>`); otherwise, for review runs titled `Review one factory PR`
-(before that), the controller's live `review_dispatched` record each run started after: created at or
-after it, within 30 minutes, nearest pairs first, one run per dispatch (the collector reads them from the
-audit branch, 14 days). Every review run takes part in the matching: titled runs and runs already
-attributed (listed, or carried over from the previous snapshot) claim a dispatch of their own task first,
-so a dispatch used on an earlier collection is never given to a second run; otherwise the PR (or task issue) the run's items point at (`Factory-Task:`
-trailer, then a `[factory] <task>: port …` title, or the issue's task marker); otherwise null. A task once
-found is kept. `drill/*` tasks are kept and marked `drill: true`. (Review runs still count as
-unattributed in `spend.ts`: its run-name match covers implement and repair only, unchanged.)
-
-**Diagnosis (gh-aw `audit`).** For each implement run that didn't succeed or completed without a
-`create_pull_request` item, the collector runs `gh aw audit <run> --repo … --json --no-baseline` once
-(4 at a time, same timeout) and keeps only `key_findings[].code` (stable, enum-like; at most 5, most
-severe first, each matching `^[a-z][a-z0-9_]{0,63}$`) and the highest `severity`
-(`critical`/`high`/`medium`/`low`, else null). Titles, descriptions, assessments and recommendations are
-free text and never kept. A run with a diagnosis keeps it; a failed audit stores `diagnosis: null` and is
-retried next collection. Snapshots recorded before this field existed are read as `diagnosis: null`
-(the ingest validator requires the field).
-
-**AI credits belong to the run.** `aic` is gh-aw's figure for the whole run (`gh aw logs`), stored once
-on the run record and never per item, so summing `runs[].aic` counts every credit exactly once. It can
-differ from the controller's own spend measurement (`spend.ts`) for the same run (run 40602104871: 22.56
-vs 33.84); that is a separate cross-check and isn't reconciled here.
-
-**Permissions, and why the collector has no App token.** `outcomes.yml` has `permissions: {}` at the top
-and its one job gets only `actions: read`, `contents: read`, `pull-requests: read`, `issues: read` (its
-own `GITHUB_TOKEN`); it checks out `main` with `persist-credentials: false` and never checks out or runs
-PR code. Only the PR number and the run id reach the script (through `env:`); everything else is read
-through the API. It can't write anything: the only output is the artifact. The audit write stays on the
-controller's existing App path (`contents: write` on the protected `audit` branch, `actions: read` to
-list runs and download artifacts); **no new App permission** and no allowlist change were needed (the
-ingest makes only GETs plus the existing audit Git Data writes, in both modes).
-
-**Which outcomes run.** The controller lists `outcomes.yml` runs with `status=success` and **no
-`branch=` filter** (a `pull_request_target` run's `head_branch` is the PR's branch, so a filter would
-drop every PR-close collection): newest-created first, at most 3 pages of 100, stopping at a page that
-reaches past the 30-day re-run horizon. It takes the **most recently completed** eligible run
-(`updated_at`, then `run_started_at`, then attempt, then id): a re-run of an older collector run is a
-newer evaluation than a higher run id. If that run (id + attempt) is already recorded, nothing happens.
-
-**Ingest gate** (`outcomesRunIneligible`): the run is `completed`/`success`, its `path` is
-`.github/workflows/outcomes.yml`, `repository` and `head_repository` are this repo (agent PRs are
-same-repo, so a fork never passes), its event is `schedule`, `workflow_dispatch`, `workflow_run` or
-`pull_request_target` (never `pull_request`), and it finished in the last 72 h (well inside the 7-day
-audit window the dedupe check reads).
-- `pull_request_target`: any `head_branch` (GitHub runs the default branch's workflow file for this
-  event, and outcomes.yml only accepts PRs into `main`).
-- Every other event: `head_branch == main`, **and** its `head_sha` is on main: one
-  `GET compare/<head_sha>...main` (only for a candidate not yet recorded) must say `identical` or
-  `ahead`. This closes a ref merely *named* `main` (a tag) being used to dispatch the workflow. A
-  failed or other answer skips that run for this poll (logged) and the next older candidate is tried.
-
-Exactly one unexpired `outcomes` artifact ≤ 2 MB holding
-`outcomes.json` ≤ 1 MB, validated strictly (`validateSnapshot`): exact keys at every level, gh-aw's
-enums, numeric run ids, task ids or null, object URLs matching
-`^https://github.com/sabbasi3-factory-lab/chrono-node-rs/(pull|issues)/\d+(#issuecomment-\d+)?$` or null,
-`aic` finite ≥ 0 or null, ≤ 1000 runs, ≤ 100 items per run, ≤ 5000 items, and a summary equal to the
-one recomputed from the runs. Dedupe: `outcomes_run:<id>` + `attempt:<n>`, checked (for both event
-types) before the download.
-
-**Size guard: unchanged snapshots aren't recorded again.** After validation the controller compares
-`runsHash` (SHA-256 of the canonical runs, newest first, without the per-run `evaluated_at`) with the
-newest recorded `outcomes_snapshot`. The snapshot's own `evaluated_at`, `mode` and source run id/attempt
-aren't part of `runs`, so a change in only those is no change. Unchanged → no snapshot, only an
-`outcomes_checked` marker (~600 bytes) with the same dedupe source ids, so later polls skip that outcomes
-run before downloading it (one run list per poll, nothing else). A marker per checked run was chosen
-over re-downloading the newest run's artifact on every poll until a newer one exists. With no snapshot
-in the loaded 7 days, the run is recorded (at most one refresh a week). The collector also logs
-`unchanged since the previous snapshot` when it sees the same.
-Any failure is logged (`outcomes: not ingested (…)`) and retried next poll; it never blocks the poll or
-dispatch.
-
-**Event payload** (`outcomes_snapshot`, besides the common fields; `dry_run: false` in both modes):
-
-```
-source_run_id, source_run_attempt, gh_aw_version: "v0.92.0", evaluated_at,
-mode: "full" | "incremental" (sweep) | "targeted",
-runs: [{ run_id, workflow: "implement"|"repair"|"review", task | null, drill, created_at,
-         aic | null, conclusion, eval: "ok"|"stale"|"error", evaluated_at | null,
-         diagnosis: null | { codes: [≤ 5 snake_case codes], severity: "critical"|"high"|"medium"|"low"|null },
-         items: [{ type, object_url | null,
-                   outcome_status: "accepted"|"rejected"|"ignored"|"pending"|"unknown"|
-                                   "skipped"|"lifecycle"|"lifecycle_close"|"error",
-                   evidence_strength: "strong"|"medium"|"weak"|"none", zero_touch | null }] }],
-summary: { runs, items, accepted, rejected, ignored, pending, unknown, other, zero_touch,
-           eval_stale, eval_error, aic }
-```
-
-Each snapshot is complete, so a reader needs only the newest one. `other` counts gh-aw's remaining
-statuses.
-
-**Expected growth.** A snapshot is ~530 bytes per agent run: 62 runs (102 items) are ~33 KB today. A
-new snapshot is recorded only when something changes, which for one task is:
-- the implement run completes (a new run, its PR `pending`): 1;
-- auto-strict: the review run completes: +1;
-- each repair: its run completes: +1 (its push item may settle with the PR);
-- the PR is merged or closed (`accepted`/`rejected`): 1.
-
-So **~2 snapshots per task** for an auto task, ~3 for auto-strict, +1 per repair: about 2–5 × 33 KB ≈
-66–165 KB per task today, growing with the run count since each snapshot carries every run. Every other
-trigger (the daily sweep, a re-run, a trigger whose outcome doesn't move) adds only a ~600-byte
-`outcomes_checked`. Example: 10 tasks a day ≈ 25 snapshots ≈ 0.8 MB/day now, ≈ 5.6 MB in the 7 days
-each poll loads; the dashboard reads the whole history.
-
-**Follow-up: split past ~300 runs.** At ~300 runs a snapshot is ~160 KB and the above is ~4 MB/day. Then
-switch to one small event per run whose record changed (plus a tiny index event with the summary and the
-runs hash), so the size per change no longer grows with history.
-
-**Live drill (after merge).** Budget: about 10 minutes from the PR close to the audit event.
-1. Merge or close an agent PR (or let the queue merge one). Note the time.
-2. Within ~1 min an `outcomes` run starts (`pull_request_target`, Actions → outcomes). If it shows as
-   skipped, the PR's author wasn't the agent App.
-3. It finishes in ~1–3 min (a dozen evaluations at ~5–10 s, 4 at a time). Its log says
-   `trigger: PR #<n> (task …)` and `evaluating <k>`; the `outcomes` artifact is attached.
-4. Within ~1 min a `controller` run starts (`workflow_run`), or the next poll does. Its log says
-   `outcomes: recorded run <id> (…)`.
-5. On the `audit` branch, the newest `audit/YYYY/MM/DD.jsonl` has an `outcomes_snapshot` with
-   `source_run_id` = that outcomes run, `mode: targeted`, and the PR's run with `create_pull_request`
-   `accepted` (merged) or `rejected` (closed).
-6. Re-running the controller records nothing more (deduped).
-
-## Diagnosis follow-up (`diagnosis.ts`, live only)
-
-When the task issue's **newest** live `needs_human` record (any reason; older ones are never
-considered) is `implement_failed` or `implement_no_pr` with the implement run's id (the run
-`finishedImplementWithoutPr` matched), the task issue is still open and with a person (`needs-human`, or the hand-off was recorded in
-this poll), and the newest `outcomes_snapshot` holds a diagnosis with at least one code for **that run**,
-it posts ONE comment on the task issue. So an earlier attempt's diagnosis is never posted during a later
-hand-off (a later attempt whose own diagnosis isn't in yet, or a different reason such as `gates_failed`):
-
-```
-**Factory controller** · diagnosis of implement run <id> (`<reason>`)
-
-gh-aw audit (severity: <severity>):
-- <sentence for code 1>
-- <sentence for code 2>
-- <sentence for code 3>
-
-Run: https://github.com/<repo>/actions/runs/<id>. For details, run `gh aw audit <id>` locally.
-
-<!-- factory-diagnosis: <id> -->
-```
-
-The sentences come from a fixed table (`DIAGNOSIS_TEXT`, gh-aw v0.92.0's documented codes); an unknown
-code is shown as `` `code` ``; at most 3 lines. Nothing from gh-aw, the agent or the issue is quoted.
-Once per run: the comment (skipped if one with its marker exists), then a `diagnosis_posted` event
-(dedupe `diagnosis:<run id>`). At most 5 per poll. It uses the existing live comment allowlist (body
-starts with the template marker, ≤ 2,000 chars): no new permission. Dry-run only logs
-`[dry-run] would post …`. Any failure is logged and retried next poll; it never blocks the hand-off or
-the poll.
-
 ## Modes: dry-run and live
 
 **Dry-run** (default, and whenever `FACTORY_ENABLED` isn't exactly `"true"`, including unset, `TRUE`, `1`):
@@ -708,9 +508,6 @@ and is redone next poll, but never fails the run.
 | `observe.ts` | snapshot → observed fact events |
 | `history.ts` | task history and spend from non-dry-run audit events |
 | `spend.ts` | today's implement and reviewer spend from gh-aw usage artifacts (reserved / measured / unknown) |
-| `outcomes.ts` | gh-aw Outcomes: run selection, task join, snapshot building, strict validation, ingest |
-| `diagnosis.ts` | the gh-aw audit diagnosis follow-up comment (live only, once per implement run) |
-| `collect-outcomes.ts` | the outcomes collector (run by `outcomes.yml`, read-only, no App key) |
 | `heartbeat.ts` | heartbeat due check and hour-bucket dedupe |
 | `executor.ts` | the mode switch (`isLive`), dry-run logger, live effects, decision → event |
 | `project.ts` | Project #1 "Factory status" sync (desired status, read, exact update) |
@@ -718,3 +515,23 @@ and is redone next poll, but never fails the run.
 | `policies.ts` | pinned policy loader and validation |
 | `fake.ts` | in-memory GitHub fake (tests and `--fixture`) |
 | `main.ts` | entrypoint |
+
+## Outcomes
+
+`.github/workflows/outcomes.yml` (plain code, no AI) records gh-aw's own verdict on every agent run (implement, repair, review) in `outcomes.json` on the `outcomes` branch, which the dashboard reads. The controller isn't involved.
+
+- **When:**
+  - an agent PR closes (merged, including through the merge queue, or not);
+  - an agent run completes;
+  - daily;
+  - by hand (`full` re-evaluates everything).
+- **What:** `gh aw outcomes <run> --json` (pinned v0.92.0, checksum-verified) for runs that are new, or still pending or unknown and under 14 days old. Other runs keep their previous result.
+- **File contents, per run:** `run_id`, `workflow`, `title`, `created_at`, `aic`, `task` and `drill`, plus `items` (`type`, `object_url`, `outcome_status`, `zero_touch`). Then a `summary`.
+  - `task` comes from the run title, else from the agent PR's title.
+  - `aic` is gh-aw's **agent-only** figure. Full cost (agent + threat detection) stays in `spend_snapshot`.
+- **Least privilege:**
+  - `evaluate` runs gh-aw with a read-only token.
+  - `publish` holds `contents: write`, runs no third-party code, and commits only when the file changed.
+  - PR code is never checked out.
+  - A ruleset lets only GitHub Actions update the `outcomes` branch.
+- **Drill:** close or merge an agent PR. The `outcomes` run should start within seconds, and `outcomes.json` should update a few minutes later.
