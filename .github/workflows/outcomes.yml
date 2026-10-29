@@ -1,20 +1,13 @@
 name: outcomes
 
-# gh-aw Outcomes collector (plain code, no AI): evaluates every agent run of implement, repair and
-# review with the pinned gh-aw's `outcomes` command and uploads one complete snapshot as the
-# `outcomes` artifact. The controller (App token) ingests it into the audit log as an
-# `outcomes_snapshot`; this job holds no App key and its token is read-only.
-# Event-driven, with a daily sweep as the backstop (see .github/factory/controller/README.md, Outcomes):
-# - pull_request_target closed (agent PRs only): that PR's outcome became final. Merge-queue merges
-#   fire it too (verified: PR #149). PR code is never checked out or run, and no PR field but its
-#   number reaches the script (through env).
-# - workflow_run completed (implement, repair, review): that run's new outputs (pending at first).
-# - schedule / workflow_dispatch (`full` re-evaluates everything): pending/unknown and recent runs,
-#   and the full backfill when there's no previous snapshot.
+# gh-aw Outcomes for every agent run (implement, repair, review), published as outcomes.json on the
+# `outcomes` branch for the dashboard. Plain code, no AI. Two jobs so no write token sits next to a
+# downloaded binary: `evaluate` runs gh-aw with a read-only token; `publish` only commits the file.
+# Never checks out or runs PR code. See .github/factory/controller/README.md, "Outcomes".
 
 on:
   pull_request_target:
-    types: [closed]
+    types: [closed] # merge-queue merges fire it too
     branches: [main]
   workflow_run:
     workflows: ["Implement one factory task", "Repair one factory PR", "Review one factory PR"]
@@ -24,80 +17,98 @@ on:
     - cron: "23 5 * * *"
   workflow_dispatch:
     inputs:
-      full:
-        description: "Re-evaluate every agent run (full backfill)"
-        type: boolean
-        required: false
-        default: false
+      full: { description: "Re-evaluate every run", type: boolean, default: false }
 
 permissions: {}
 
-# Bursts queue rather than race. GitHub keeps one pending run per group (a newer one replaces it);
-# a targeted run also re-evaluates every recent run still pending or unknown, so nothing is lost.
-concurrency:
-  group: factory-outcomes
-  cancel-in-progress: false
-
 jobs:
-  collect:
+  evaluate:
     if: >-
       github.repository == 'sabbasi3-factory-lab/chrono-node-rs' &&
-      (github.event_name != 'pull_request_target' || github.event.pull_request.user.login == 'sabbasi3-factory-agent[bot]') &&
-      (github.event_name != 'workflow_run' || github.event.workflow_run.repository.full_name == github.repository)
+      (github.event_name != 'pull_request_target' || github.event.pull_request.user.login == 'sabbasi3-factory-agent[bot]')
+    # Job-level (after the `if:`), so a skipped event never displaces a queued evaluation.
+    concurrency: { group: factory-outcomes, cancel-in-progress: false }
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      actions: read
-      contents: read
-      pull-requests: read
-      issues: read
-    defaults:
-      run:
-        working-directory: .github/factory/controller
+    permissions: { actions: read, contents: read, pull-requests: read, issues: read }
+    env:
+      GH_TOKEN: ${{ github.token }}
+      R: ${{ github.repository }}
+      FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.full && 'true' || 'false' }}
+      PR: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.number || '' }}
     steps:
-      - name: Check out main (never PR code)
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: main
-          persist-credentials: false
-
-      - name: Set up Node 24
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: .github/factory/controller/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      # Pinned gh-aw release binary, verified against the v0.92.0 release checksums.txt entry for
-      # linux-amd64 (never `curl | sh`, never an unpinned extension install).
       - name: Install gh-aw v0.92.0 (checksum pinned)
-        env:
-          GH_AW_URL: https://github.com/github/gh-aw/releases/download/v0.92.0/linux-amd64
-          GH_AW_SHA256: 4f1753b20416024b15ff2cbea3f5a8745d7473bd8c73d99b4e8a79d69bb0fe83
         run: |
-          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" "$GH_AW_URL"
-          echo "$GH_AW_SHA256  $RUNNER_TEMP/gh-aw" | sha256sum -c -
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v0.92.0/linux-amd64
+          echo "4f1753b20416024b15ff2cbea3f5a8745d7473bd8c73d99b4e8a79d69bb0fe83  $RUNNER_TEMP/gh-aw" | sha256sum -c -
           chmod 0755 "$RUNNER_TEMP/gh-aw"
-          "$RUNNER_TEMP/gh-aw" version
+      - name: Evaluate new and pending runs
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          G="$RUNNER_TEMP/gh-aw"; mkdir -p oc
+          # Previous file: start empty only if the branch doesn't exist; any other read error fails the job.
+          if gh api "repos/$R/branches" --paginate -q '.[].name' | grep -qx outcomes; then
+            gh api "repos/$R/contents/outcomes.json?ref=outcomes" -H "Accept: application/vnd.github.raw" > prev.json
+          else echo '{"runs":[]}' > prev.json; fi
+          "$G" logs implement repair review --repo "$R" --json -c 1000 --start-date 2026-10-01 -o logs > logs.json
+          gh pr list --repo "$R" --state all --author app/sabbasi3-factory-agent -L 1000 --json number,title > prs.json
+          # Evaluate: new runs; failed or pending/unknown ones under 14 days old; the closing PR's runs; all if full.
+          jq -r --slurpfile p prev.json --arg full "$FULL" --arg pr "$PR" --arg cut "$(date -u -d '-14 days' +%FT%TZ)" '
+            ($p[0].runs | map({key: (.run_id|tostring), value: .}) | from_entries) as $prev
+            | .runs[] | select(.status == "completed") | $prev[(.run_id|tostring)] as $o
+            | select($full == "true" or $o == null
+                or ($pr != "" and any($o.items[]; (.object_url // "") | test("/pull/\($pr)$")))
+                or (.created_at > $cut and (($o.eval_failed // false)
+                    or any($o.items[]; .outcome_status == "pending" or .outcome_status == "unknown"))))
+            | .run_id' logs.json > todo.txt
+          echo "evaluating $(wc -l < todo.txt) run(s)"
+          # A run's result counts only if it parses and has no item-level `error`; otherwise it's retried.
+          xargs -r -P 4 -I{} sh -c 'timeout 180 "$0" outcomes {} --repo "$1" --json -o work > oc/{}.json 2>/dev/null &&
+            jq -e "(.items | type == \"array\") and all(.items[]; .outcome_status != \"error\")" oc/{}.json > /dev/null || rm -f oc/{}.json' "$G" "$R" < todo.txt
+          if compgen -G 'oc/*.json' > /dev/null; then
+            jq -s 'map({key: (.run_id|tostring), value: [.items[] | {type, object_url, outcome_status, zero_touch}]}) | from_entries' oc/*.json > fresh.json
+          else echo '{}' > fresh.json; fi
+          # One file: every listed run (fresh result, else the previous one), plus previous runs no longer listed.
+          jq -n --slurpfile l logs.json --slurpfile p prev.json --slurpfile prs prs.json --slurpfile f fresh.json '
+            ($p[0].runs | map({key: (.run_id|tostring), value: .}) | from_entries) as $prev
+            | ($prs[0] | map({key: (.number|tostring), value: (.title | capture("^\\[factory\\] (?<t>[a-z0-9/_-]+):").t? // null)}) | from_entries) as $prtask
+            | [$l[0].runs[] | select(.status == "completed")] as $listed
+            | [$listed[] | (.run_id|tostring) as $id | $f[0][$id] as $new | $prev[$id] as $o
+                | ($new // $o.items // []) as $items
+                | {run_id, workflow: (.workflow_path | capture("workflows/(?<w>[a-z]+)\\.").w), title: .display_title, created_at, aic,
+                   task: ((.display_title | capture("^(Implement|Repair|Review) (?<t>[a-z0-9]+/[a-z0-9_-]+) ").t? )
+                          // ([$items[].object_url // "" | capture("/pull/(?<n>[0-9]+)").n? | $prtask[.]] | map(select(.)) | first) // null),
+                   items: $items, eval_failed: ($new == null and ($o == null or ($o.eval_failed // false)))}
+                | .drill = ((.task // "") | startswith("drill/"))] as $fresh
+            | ($fresh | map(.run_id)) as $ids
+            | ($fresh + [$p[0].runs[] | select(.run_id as $r | $ids | index($r) | not)]) as $runs
+            | {generated_at: (now | todate), gh_aw_version: "v0.92.0", runs: $runs,
+               summary: ([$runs[].items[].outcome_status] | group_by(.) | map({key: .[0], value: length}) | from_entries)}' > outcomes.json
+          jq -c '.summary + {runs: (.runs | length), eval_failed: ([.runs[] | select(.eval_failed)] | length)}' outcomes.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with: { name: outcomes, path: "${{ runner.temp }}/outcomes.json", retention-days: 7, if-no-files-found: error }
 
-      - name: Collect outcomes
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GH_AW_BIN: ${{ runner.temp }}/gh-aw
-          OUTCOMES_FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.full && 'true' || 'false' }}
-          # Numbers only; the script reads everything else about the PR through the API.
-          OUTCOMES_PR: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.number || '' }}
-          OUTCOMES_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || '' }}
-        run: node collect-outcomes.ts --out "$RUNNER_TEMP/outcomes/outcomes.json" --work "$RUNNER_TEMP/gh-aw-work" --concurrency 4 --timeout 180
-
-      - name: Upload outcomes artifact
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: outcomes
-          path: ${{ runner.temp }}/outcomes/outcomes.json
-          retention-days: 7
-          if-no-files-found: error
+  publish:
+    needs: evaluate
+    concurrency: { group: factory-outcomes-publish, cancel-in-progress: false }
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: write }
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with: { name: outcomes, path: new }
+      - name: Commit outcomes.json to the outcomes branch (if changed)
+        env: { GH_TOKEN: "${{ github.token }}", R: "${{ github.repository }}" }
+        run: |
+          set -euo pipefail
+          jq -e '(.runs | type == "array") and all(.runs[]; (.run_id | type == "number") and (.items | type == "array"))' new/outcomes.json > /dev/null
+          git init -q pub && cd pub
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" \
+            fetch -q --depth 1 "https://github.com/$R" outcomes 2>/dev/null && git checkout -q FETCH_HEAD || git checkout -q --orphan outcomes
+          if [ -f outcomes.json ] && cmp -s <(jq -S 'del(.generated_at)' outcomes.json) <(jq -S 'del(.generated_at)' ../new/outcomes.json); then
+            echo "unchanged"; exit 0
+          fi
+          cp ../new/outcomes.json . && git add outcomes.json
+          git -c user.name=github-actions[bot] -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -qm "outcomes: $(jq -c .summary outcomes.json)"
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push -q "https://github.com/$R" HEAD:refs/heads/outcomes
