@@ -21,15 +21,13 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: factory-outcomes
-  cancel-in-progress: false
-
 jobs:
   evaluate:
     if: >-
       github.repository == 'sabbasi3-factory-lab/chrono-node-rs' &&
       (github.event_name != 'pull_request_target' || github.event.pull_request.user.login == 'sabbasi3-factory-agent[bot]')
+    # Job-level (after the `if:`), so a skipped event never displaces a queued evaluation.
+    concurrency: { group: factory-outcomes, cancel-in-progress: false }
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions: { actions: read, contents: read, pull-requests: read, issues: read }
@@ -37,6 +35,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       R: ${{ github.repository }}
       FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.full && 'true' || 'false' }}
+      PR: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.number || '' }}
     steps:
       - name: Install gh-aw v0.92.0 (checksum pinned)
         run: |
@@ -48,37 +47,51 @@ jobs:
         run: |
           set -euo pipefail
           G="$RUNNER_TEMP/gh-aw"; mkdir -p oc
-          gh api "repos/$R/contents/outcomes.json?ref=outcomes" -H "Accept: application/vnd.github.raw" > prev.json 2>/dev/null || echo '{"runs":[]}' > prev.json
+          # Previous file: start empty only if the branch doesn't exist; any other read error fails the job.
+          if gh api "repos/$R/branches" --paginate -q '.[].name' | grep -qx outcomes; then
+            gh api "repos/$R/contents/outcomes.json?ref=outcomes" -H "Accept: application/vnd.github.raw" > prev.json
+          else echo '{"runs":[]}' > prev.json; fi
           "$G" logs implement repair review --repo "$R" --json -c 1000 --start-date 2026-10-01 -o logs > logs.json
           gh pr list --repo "$R" --state all --author app/sabbasi3-factory-agent -L 1000 --json number,title > prs.json
-          # Evaluate runs not yet recorded, or still pending/unknown and under 14 days old (or all, if full).
-          jq -r --slurpfile p prev.json --arg full "$FULL" --arg cut "$(date -u -d '-14 days' +%FT%TZ)" '
+          # Evaluate: new runs; failed or pending/unknown ones under 14 days old; the closing PR's runs; all if full.
+          jq -r --slurpfile p prev.json --arg full "$FULL" --arg pr "$PR" --arg cut "$(date -u -d '-14 days' +%FT%TZ)" '
             ($p[0].runs | map({key: (.run_id|tostring), value: .}) | from_entries) as $prev
-            | .runs[] | select(.status == "completed")
-            | select($full == "true" or ($prev[(.run_id|tostring)] | . == null
-                or (.created_at > $cut and any(.items[]; .outcome_status == "pending" or .outcome_status == "unknown"))))
+            | .runs[] | select(.status == "completed") | $prev[(.run_id|tostring)] as $o
+            | select($full == "true" or $o == null
+                or ($pr != "" and any($o.items[]; (.object_url // "") | test("/pull/\($pr)$")))
+                or (.created_at > $cut and (($o.eval_failed // false)
+                    or any($o.items[]; .outcome_status == "pending" or .outcome_status == "unknown"))))
             | .run_id' logs.json > todo.txt
           echo "evaluating $(wc -l < todo.txt) run(s)"
-          xargs -r -P 4 -I{} sh -c 'timeout 180 "$0" outcomes {} --repo "$1" --json -o work > oc/{}.json 2>/dev/null || rm -f oc/{}.json' "$G" "$R" < todo.txt
-          # One file: every run (fresh result, else the previous one), its task and the item outcomes.
-          jq -n --slurpfile l logs.json --slurpfile p prev.json --slurpfile prs prs.json --argjson oc "$(jq -s 'map({key: (.run_id|tostring), value: .items}) | from_entries' oc/*.json 2>/dev/null || echo '{}')" '
-            ($p[0].runs | map({key: (.run_id|tostring), value: .items}) | from_entries) as $prev
+          # A run's result counts only if it parses and has no item-level `error`; otherwise it's retried.
+          xargs -r -P 4 -I{} sh -c 'timeout 180 "$0" outcomes {} --repo "$1" --json -o work > oc/{}.json 2>/dev/null &&
+            jq -e "(.items | type == \"array\") and all(.items[]; .outcome_status != \"error\")" oc/{}.json > /dev/null || rm -f oc/{}.json' "$G" "$R" < todo.txt
+          if compgen -G 'oc/*.json' > /dev/null; then
+            jq -s 'map({key: (.run_id|tostring), value: [.items[] | {type, object_url, outcome_status, zero_touch}]}) | from_entries' oc/*.json > fresh.json
+          else echo '{}' > fresh.json; fi
+          # One file: every listed run (fresh result, else the previous one), plus previous runs no longer listed.
+          jq -n --slurpfile l logs.json --slurpfile p prev.json --slurpfile prs prs.json --slurpfile f fresh.json '
+            ($p[0].runs | map({key: (.run_id|tostring), value: .}) | from_entries) as $prev
             | ($prs[0] | map({key: (.number|tostring), value: (.title | capture("^\\[factory\\] (?<t>[a-z0-9/_-]+):").t? // null)}) | from_entries) as $prtask
-            | [$l[0].runs[] | select(.status == "completed") | (.run_id|tostring) as $id
-                | (($oc[$id] // $prev[$id] // []) | map({type, object_url, outcome_status, zero_touch})) as $items
+            | [$l[0].runs[] | select(.status == "completed")] as $listed
+            | [$listed[] | (.run_id|tostring) as $id | $f[0][$id] as $new | $prev[$id] as $o
+                | ($new // $o.items // []) as $items
                 | {run_id, workflow: (.workflow_path | capture("workflows/(?<w>[a-z]+)\\.").w), title: .display_title, created_at, aic,
                    task: ((.display_title | capture("^(Implement|Repair|Review) (?<t>[a-z0-9]+/[a-z0-9_-]+) ").t? )
                           // ([$items[].object_url // "" | capture("/pull/(?<n>[0-9]+)").n? | $prtask[.]] | map(select(.)) | first) // null),
-                   items: $items}
-                | .drill = ((.task // "") | startswith("drill/"))] as $runs
+                   items: $items, eval_failed: ($new == null and ($o == null or ($o.eval_failed // false)))}
+                | .drill = ((.task // "") | startswith("drill/"))] as $fresh
+            | ($fresh | map(.run_id)) as $ids
+            | ($fresh + [$p[0].runs[] | select(.run_id as $r | $ids | index($r) | not)]) as $runs
             | {generated_at: (now | todate), gh_aw_version: "v0.92.0", runs: $runs,
                summary: ([$runs[].items[].outcome_status] | group_by(.) | map({key: .[0], value: length}) | from_entries)}' > outcomes.json
-          jq '.summary + {runs: (.runs | length)}' -c outcomes.json
+          jq -c '.summary + {runs: (.runs | length), eval_failed: ([.runs[] | select(.eval_failed)] | length)}' outcomes.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: outcomes, path: "${{ runner.temp }}/outcomes.json", retention-days: 7, if-no-files-found: error }
 
   publish:
     needs: evaluate
+    concurrency: { group: factory-outcomes-publish, cancel-in-progress: false }
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: { contents: write }

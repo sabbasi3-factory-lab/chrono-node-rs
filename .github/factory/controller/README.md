@@ -525,7 +525,12 @@ and is redone next poll, but never fails the run.
   - an agent run completes;
   - daily;
   - by hand (`full` re-evaluates everything).
-- **What:** `gh aw outcomes <run> --json` (pinned v0.92.0, checksum-verified) for runs that are new, or still pending or unknown and under 14 days old. Other runs keep their previous result.
+- **What:** `gh aw outcomes <run> --json` (pinned v0.92.0, checksum-verified) for:
+  - runs that are new;
+  - runs whose evaluation failed (`eval_failed`), or that are still pending or unknown, while under 14 days old;
+  - any run of the PR that just closed.
+
+  A failed evaluation (unreadable output, or an item with status `error`) keeps the previous result. Runs no longer listed by `gh aw logs` are kept as they were.
 - **File contents, per run:** `run_id`, `workflow`, `title`, `created_at`, `aic`, `task` and `drill`, plus `items` (`type`, `object_url`, `outcome_status`, `zero_touch`). Then a `summary`.
   - `task` comes from the run title, else from the agent PR's title.
   - `aic` is gh-aw's **agent-only** figure. Full cost (agent + threat detection) stays in `spend_snapshot`.
@@ -533,5 +538,5 @@ and is redone next poll, but never fails the run.
   - `evaluate` runs gh-aw with a read-only token.
   - `publish` holds `contents: write`, runs no third-party code, and commits only when the file changed.
   - PR code is never checked out.
-  - A ruleset lets only GitHub Actions update the `outcomes` branch.
+  - The `outcomes` branch is append-only: no delete and no force-push, with no bypass (ruleset 26097950). Anyone with write access could still push to it, but GitHub doesn't allow GitHub Actions as a ruleset bypass actor, and the data is display-only with trusted writers, so no extra secret or App key is added to this `pull_request_target` workflow.
 - **Drill:** close or merge an agent PR. The `outcomes` run should start within seconds, and `outcomes.json` should update a few minutes later.
