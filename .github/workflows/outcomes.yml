@@ -37,6 +37,9 @@ jobs:
       FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.full && 'true' || 'false' }}
       PR: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.number || '' }}
     steps:
+      # gh-aw resolves workflow names from local .github/workflows; main's only, no credentials kept.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: main, persist-credentials: false, sparse-checkout: .github/workflows }
       - name: Install gh-aw v0.92.0 (checksum pinned)
         run: |
           curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v0.92.0/linux-amd64
@@ -51,7 +54,7 @@ jobs:
           if gh api "repos/$R/branches" --paginate -q '.[].name' | grep -qx outcomes; then
             gh api "repos/$R/contents/outcomes.json?ref=outcomes" -H "Accept: application/vnd.github.raw" > prev.json
           else echo '{"runs":[]}' > prev.json; fi
-          "$G" logs implement repair review --repo "$R" --json -c 1000 --start-date 2026-10-01 -o logs > logs.json
+          (cd "$GITHUB_WORKSPACE" && "$G" logs implement repair review --repo "$R" --json -c 1000 --start-date 2026-10-01 -o "$RUNNER_TEMP/logs") > logs.json
           gh pr list --repo "$R" --state all --author app/sabbasi3-factory-agent -L 1000 --json number,title > prs.json
           # Evaluate: new runs; failed or pending/unknown ones under 14 days old; the closing PR's runs; all if full.
           jq -r --slurpfile p prev.json --arg full "$FULL" --arg pr "$PR" --arg cut "$(date -u -d '-14 days' +%FT%TZ)" '
