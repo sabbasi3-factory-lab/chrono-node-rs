@@ -8,12 +8,65 @@ import type { BudgetsPolicy } from './types.ts';
 export const CAPPED_WORKFLOWS = { implement: 'implement', repair: 'repair', review: 'reviewer_agent' } as const;
 export type CappedWorkflow = keyof typeof CAPPED_WORKFLOWS;
 
-/**
- * The AI-credits caps inside one top-level job of a compiled lock file. gh-aw ≤ v0.92 inlines
- * `"maxAiCredits":N` in the firewall config; v1 sets `GH_AW_MAX_AI_CREDITS="N"` (and the env
- * `GH_AW_MAX_AI_CREDITS: "N"`) and the config reads `maxAiCredits\":${GH_AW_MAX_AI_CREDITS}`. Any
- * other value expression in the config (another variable) reads as NaN, so it never matches.
- */
+// gh-aw v1 sets the cap in bash (`GH_AW_MAX_AI_CREDITS="N"`, env `GH_AW_MAX_AI_CREDITS: "N"`) and the
+// firewall config reads it (`\"maxAiCredits\":${GH_AW_MAX_AI_CREDITS}`); its opt-in admission can
+// replace it at run time. Every line that names the cap or admission must be one of these template
+// lines, so no other assignment form (unquoted, `+=`, `export`, a variable, GITHUB_ENV, an admission
+// env) can slip past. gh-aw ≤ v0.92 inlined `"maxAiCredits":N` instead and only has the env line.
+const CAP_ASSIGNMENT = /^GH_AW_MAX_AI_CREDITS(?:="([^"]*)"|: "([^"]*)")$/;
+const ADMISSION_OVERRIDE = 'GH_AW_MAX_AI_CREDITS="$GH_AW_ADMISSION_MAX_AI_CREDITS"';
+const CONFIG_REF = '\\"maxAiCredits\\":${GH_AW_MAX_AI_CREDITS},';
+const TEMPLATE_LINES = new Set([
+  'if [[ ! "$GH_AW_MAX_AI_CREDITS" =~ ^[0-9]+$ ]]; then',
+  ADMISSION_OVERRIDE,
+  'if [[ "${GH_AW_ADMISSION_RESULT:-}" == "admitted" && -z "${GH_AW_ADMISSION_MAX_AI_CREDITS:-}" ]]; then',
+  'if [[ "${GH_AW_ADMISSION_RESULT:-}" == "admitted" && -n "${GH_AW_ADMISSION_MAX_AI_CREDITS:-}" ]]; then',
+  'if [[ ! "$GH_AW_ADMISSION_MAX_AI_CREDITS" =~ ^[1-9][0-9]{0,9}$ ]] || (( GH_AW_ADMISSION_MAX_AI_CREDITS > 2147483647 )); then',
+  'unset GH_AW_ADMISSION_RESULT GH_AW_ADMISSION_MAX_AI_CREDITS',
+  "if: ${{ env.GH_AW_ADMISSION_RESULT != 'admitted' && env.GH_AW_MAX_DAILY_AI_CREDITS != '' }}",
+  "if: always() && env.GH_AW_ADMISSION_RESULT != 'admitted' && env.GH_AW_MAX_DAILY_AI_CREDITS != ''",
+]);
+const CAP_TOKEN = /\bGH_AW_MAX_AI_CREDITS\b|GH_AW_ADMISSION_/g;
+
+/** The first line naming the cap, admission or a v1 `maxAiCredits` config that isn't gh-aw's template, or null. */
+export function unexpectedCapLine(lock: string): string | null {
+  for (const raw of lock.split('\n')) {
+    const tokens = raw.match(CAP_TOKEN) ?? [];
+    // A v1 config key, or any printf that writes the firewall config.
+    const config = raw.includes('\\"maxAiCredits') || (/^\s*printf\b/.test(raw) && raw.includes('awf-config.json'));
+    if (tokens.length === 0 && !config) continue;
+    const line = raw.trim();
+    if (!config && (TEMPLATE_LINES.has(line) || CAP_ASSIGNMENT.test(line))) continue;
+    if (configLineOk(line) || line === CHROOT_CONFIG_LINE) continue;
+    // gh-aw ≤ v0.92's single-quoted literal config: its values are checked by jobCaps.
+    if (line.startsWith("printf '%s\\n' '{") && tokens.length === 0 && !line.includes('\\"')) continue;
+    return line.slice(0, 120);
+  }
+  return null;
+}
+
+// Writes back the chroot patch of the config (jq on the file gh-aw just wrote; no cap involved).
+const CHROOT_CONFIG_LINE = 'printf \'%s\\n\' "$_GH_AW_CHROOT_JSON" > "${RUNNER_TEMP}/gh-aw/awf-config.json"';
+
+// The whole firewall-config line: printf of one double-quoted string (escaped quotes, backslashes,
+// `$`, backticks, or the cap variable; no other expansion) redirected to the config file, nothing else.
+const CONFIG_LINE = /^printf '%s\\n' "((?:[^"\\$`]|\\["\\$`]|\$\{GH_AW_MAX_AI_CREDITS\})*)" > "\$\{RUNNER_TEMP\}\/gh-aw\/awf-config\.json"$/;
+
+/** The decoded JSON has one `maxAiCredits` key (JSON keeps the last duplicate), and its value is the cap variable. */
+function configLineOk(line: string): boolean {
+  const m = CONFIG_LINE.exec(line);
+  if (!m || m[1]!.split('${GH_AW_MAX_AI_CREDITS}').length !== 2) return false;
+  const json = m[1]!.replace('${GH_AW_MAX_AI_CREDITS}', '"__cap__"').replace(/\\(["\\$`])/g, '$1');
+  // No JSON escapes at all, so no key can be spelled another way (`maxAi\u0043redits`).
+  if (json.includes('\\') || json.split('"maxAiCredits"').length !== 2) return false;
+  try {
+    return (JSON.parse(json) as { apiProxy?: { maxAiCredits?: unknown } }).apiProxy?.maxAiCredits === '__cap__';
+  } catch {
+    return false;
+  }
+}
+
+/** The AI-credits caps inside one top-level job of a compiled lock file (either format). */
 function jobCaps(lock: string, job: string): number[] {
   const start = lock.search(new RegExp(`^  ${job}:\\s*$`, 'm'));
   if (start < 0) return [];
@@ -23,15 +76,14 @@ function jobCaps(lock: string, job: string): number[] {
   // The whole value, not its digit prefix (500.5 or 500e2 must not read as 500).
   const num = (v: string): number => (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(v) ? Number(v) : NaN);
   const legacy = [...body.matchAll(/(?<!\\)"maxAiCredits":\s*([^,}\s]+)/g)].map((m) => num(m[1]!));
-  // `GH_AW_MAX_AI_CREDITS="$GH_AW_ADMISSION_MAX_AI_CREDITS"` is v1's admission override, inert unless
-  // admission is on (refused by lockCapsMismatch); any other expression reads as NaN.
-  const v1 = [...body.matchAll(/\bGH_AW_MAX_AI_CREDITS(?:=|:\s*)"([^"]*)"/g)].filter((m) => m[1] !== '$GH_AW_ADMISSION_MAX_AI_CREDITS').map((m) => num(m[1]!));
-  // The whole config value up to its delimiter, so `${GH_AW_MAX_AI_CREDITS}0` (= 5000) is not a match.
-  const configRefs = [...body.matchAll(/maxAiCredits\\":\s*((?:\$\{\w+\}|[^,}\s\\])*)/g)].map((m) => m[1]!);
-  const bad = configRefs.filter((v) => v !== '${GH_AW_MAX_AI_CREDITS}').map(() => NaN);
-  // v1 assignments only cap anything if the firewall config reads them: no reference at all is a mismatch.
-  if (v1.length > 0 && configRefs.length === 0) bad.push(NaN);
-  return [...legacy, ...v1, ...bad];
+  const v1: number[] = [];
+  for (const line of body.split('\n').map((l) => l.trim())) {
+    const m = CAP_ASSIGNMENT.exec(line);
+    if (m && line !== ADMISSION_OVERRIDE) v1.push(num((m[1] ?? m[2])!));
+  }
+  // v1 assignments cap nothing unless this job's firewall config reads them.
+  if (v1.length > 0 && !body.includes(CONFIG_REF)) v1.push(NaN);
+  return [...legacy, ...v1];
 }
 
 /** Null when every lock enforces exactly the policy's caps; otherwise why not. */
@@ -41,8 +93,8 @@ export function lockCapsMismatch(locks: Record<CappedWorkflow, string | null>, p
     const lock = locks[wf];
     if (lock === null) return `${wf}.lock.yml could not be read`;
     if (/GH_AW_DEFAULT_(DETECTION_)?MAX_AI_CREDITS/.test(lock)) return `${wf}.lock.yml lets a variable set an AI-credits cap`;
-    // gh-aw v1 admission (opt-in) can replace the cap with a runtime allowance; the factory doesn't opt in.
-    if (/^\s+GH_AW_ADMISSION_(RESULT|MAX_AI_CREDITS):/m.test(lock) || /GH_AW_ADMISSION_(RESULT|MAX_AI_CREDITS)=[^=~]/.test(lock.replaceAll('GH_AW_MAX_AI_CREDITS="$GH_AW_ADMISSION_MAX_AI_CREDITS"', '')) || /^ {2}admission:\s*$/m.test(lock)) return `${wf}.lock.yml lets admission set an AI-credits cap`;
+    const odd = unexpectedCapLine(lock);
+    if (odd !== null) return `${wf}.lock.yml sets an AI-credits cap outside gh-aw's template: ${odd}`;
     const agent = jobCaps(lock, 'agent');
     const detection = jobCaps(lock, 'detection');
     const want = perRun[key] as number;
