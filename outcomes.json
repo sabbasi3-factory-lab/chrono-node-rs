@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-03T21:28:30Z",
+  "generated_at": "2026-11-03T21:31:15Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
     {
@@ -19,6 +19,54 @@
         {
           "type": "create_pull_request",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/186",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41720591370,
+      "workflow": "implement",
+      "title": "Implement fr/specific-time-expression-parser #180 attempt 1",
+      "created_at": "2026-11-03T21:18:26Z",
+      "aic": 26.20482,
+      "task": "fr/specific-time-expression-parser",
+      "items": [
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/188",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/180#issuecomment-6615810135",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41720397971,
+      "workflow": "implement",
+      "title": "Implement de/specific-time-expression-parser #170 attempt 1",
+      "created_at": "2026-11-03T21:17:12Z",
+      "aic": 27.54693,
+      "task": "de/specific-time-expression-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/170#issuecomment-6615791740",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/187",
           "outcome_status": "pending",
           "zero_touch": null
         }
@@ -66,7 +114,7 @@
       "workflow": "implement",
       "title": "Implement en/extract-year-suffix-refiner #37 attempt 1",
       "created_at": "2026-10-27T23:04:21Z",
-      "aic": 21.11302,
+      "aic": 0,
       "task": "en/extract-year-suffix-refiner",
       "items": [
         {
@@ -1359,7 +1407,7 @@
   ],
   "summary": {
     "accepted": 46,
-    "pending": 33,
+    "pending": 37,
     "rejected": 11,
     "unknown": 14
   }
