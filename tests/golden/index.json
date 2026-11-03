@@ -41,6 +41,54 @@
       "skipped": 0,
       "skipped_by_reason": {}
     },
+    "de/casual": {
+      "source": "upstream/test/de/de_casual.test.ts",
+      "cases": 34,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "de/dash": {
+      "source": "upstream/test/de/de_dash.test.ts",
+      "cases": 4,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "de/month_name_little_endian": {
+      "source": "upstream/test/de/de_month_name_little_endian.test.ts",
+      "cases": 20,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "de/time_exp": {
+      "source": "upstream/test/de/de_time_exp.test.ts",
+      "cases": 19,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "de/time_units_casual_relative": {
+      "source": "upstream/test/de/de_time_units_casual_relative.test.ts",
+      "cases": 11,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "de/time_units_within": {
+      "source": "upstream/test/de/de_time_units_within.test.ts",
+      "cases": 15,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "de/weekday": {
+      "source": "upstream/test/de/de_weekday.test.ts",
+      "cases": 9,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "de/year": {
+      "source": "upstream/test/de/de_year.test.ts",
+      "cases": 10,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
     "en/casual": {
       "source": "upstream/test/en/en_casual.test.ts",
       "cases": 44,
@@ -105,11 +153,9 @@
     },
     "en/time_exp": {
       "source": "upstream/test/en/en_time_exp.test.ts",
-      "cases": 55,
-      "skipped": 5,
-      "skipped_by_reason": {
-        "custom-configuration": 5
-      }
+      "cases": 60,
+      "skipped": 0,
+      "skipped_by_reason": {}
     },
     "en/time_units_ago": {
       "source": "upstream/test/en/en_time_units_ago.test.ts",
@@ -160,6 +206,54 @@
     "en/year_month_day": {
       "source": "upstream/test/en/en_year_month_day.test.ts",
       "cases": 17,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "fr/casual": {
+      "source": "upstream/test/fr/fr_casual.test.ts",
+      "cases": 18,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "fr/little_endian": {
+      "source": "upstream/test/fr/fr_little_endian.test.ts",
+      "cases": 32,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "fr/slash": {
+      "source": "upstream/test/fr/fr_slash.test.ts",
+      "cases": 5,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "fr/time_exp": {
+      "source": "upstream/test/fr/fr_time_exp.test.ts",
+      "cases": 54,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "fr/time_units_ago": {
+      "source": "upstream/test/fr/fr_time_units_ago.test.ts",
+      "cases": 8,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "fr/time_units_casual_relative": {
+      "source": "upstream/test/fr/fr_time_units_casual_relative.test.ts",
+      "cases": 13,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "fr/time_units_within": {
+      "source": "upstream/test/fr/fr_time_units_within.test.ts",
+      "cases": 15,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "fr/weekday": {
+      "source": "upstream/test/fr/fr_weekday.test.ts",
+      "cases": 8,
       "skipped": 0,
       "skipped_by_reason": {}
     }

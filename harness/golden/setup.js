@@ -40,6 +40,9 @@ jest.useFakeTimers({
 
 const { Chrono, ParsingContext } = require(path.join(UPSTREAM, "src/chrono"));
 const en = require(path.join(UPSTREAM, "src/locales/en"));
+const de = require(path.join(UPSTREAM, "src/locales/de"));
+const fr = require(path.join(UPSTREAM, "src/locales/fr"));
+S.registerUpstreamAliases((p) => require(path.join(UPSTREAM, "src", p)));
 
 // Named configurations the Rust crate reproduces. Anything else is "custom" and skipped.
 const KNOWN_CONFIGS = new Map();
@@ -50,6 +53,10 @@ addKnown("en.casual", new Chrono(en.configuration.createCasualConfiguration(fals
 addKnown("en.strict", new Chrono(en.configuration.createConfiguration(true, false)));
 addKnown("en.GB.casual", new Chrono(en.configuration.createCasualConfiguration(true)));
 addKnown("en.GB.strict", new Chrono(en.configuration.createConfiguration(true, true)));
+addKnown("de.casual", new Chrono(de.createCasualConfiguration()));
+addKnown("de.strict", new Chrono(de.createConfiguration(true)));
+addKnown("fr.casual", new Chrono(fr.createCasualConfiguration()));
+addKnown("fr.strict", new Chrono(fr.createConfiguration(true)));
 
 function configName(chrono) {
     return KNOWN_CONFIGS.get(JSON.stringify(S.describeConfiguration(chrono))) ?? null;
@@ -65,14 +72,14 @@ function trace(chrono, text, ref, option) {
     let results = [];
     for (const parser of chrono.parsers) {
         const found = Chrono.executeParser(context, parser);
-        if (found.length > 0) parsers.add(parser.constructor.name);
+        if (found.length > 0) parsers.add(S.stepName(parser));
         results = results.concat(found);
     }
     results.sort((a, b) => a.index - b.index);
     for (const refiner of chrono.refiners) {
         const before = snapshot(results);
         results = refiner.refine(context, results);
-        if (snapshot(results) !== before) refiners.add(refiner.constructor.name);
+        if (snapshot(results) !== before) refiners.add(S.stepName(refiner));
     }
     return { results, parsers: [...parsers].sort(), refiners: [...refiners].sort() };
 }

@@ -12,21 +12,21 @@ Port **behaviour, line by line**, not intent. The judge is chrono-node's real ou
 
 | Upstream | Rust |
 |---|---|
-| `src/locales/en/parsers/ENFooParser.ts` | `src/locales/en/parsers/foo.rs` |
-| `src/locales/en/refiners/ENFooRefiner.ts` | `src/locales/en/refiners/foo.rs` |
+| `src/locales/<lang>/parsers/XXFooParser.ts` | `src/locales/<lang>/parsers/foo.rs` (`en`, `de`, `fr`) |
+| `src/locales/<lang>/refiners/XXFooRefiner.ts` | `src/locales/<lang>/refiners/foo.rs` |
 | `src/common/parsers/FooParser.ts` | `src/common/parsers/foo.rs` |
 | `src/common/refiners/FooRefiner.ts` | `src/common/refiners/foo.rs` |
 | `src/calculation/*.ts` | `src/calculation/*.rs` |
 | `src/utils/*.ts` | `src/core/utils/*.rs` |
 
-**Don't edit any `mod` list or registry.** `build.rs` registers every `.rs` file in a `parsers/` or `refiners/` directory. A file whose name starts with `_` is skipped, so you can use one for helpers. The configuration (`src/locales/en/configuration.rs`) already has a slot for every upstream step. Your file fills the slot whose name equals your `UPSTREAM` constant.
+**Don't edit any `mod` list or registry.** `build.rs` registers every `.rs` file in a `parsers/` or `refiners/` directory. A file whose name starts with `_` is skipped, so you can use one for helpers. Each locale's configuration (`src/locales/<lang>/configuration.rs`) already has a slot for every upstream step. Your file fills the slot whose name equals your `UPSTREAM` constant. Each locale's `constants.rs` is already ported in full; German's shared `DECasualTimeParser.extractTimeComponents` is in `src/locales/de/casual_time_components.rs`.
 
 ## 3. The shape of a parser file
 
 ```rust
 //! upstream `locales/en/parsers/ENWeekdayParser.ts`.
 
-pub const UPSTREAM: &str = "ENWeekdayParser";          // exact upstream class name
+pub const UPSTREAM: &str = "ENWeekdayParser";          // exact upstream class name (see below)
 
 pub fn create(flags: &Flags) -> Box<dyn Parser> {       // flags = upstream constructor args
     Box::new(WithWordBoundary::new(EnWeekdayParser))     // wrapper = upstream base class
@@ -39,6 +39,8 @@ pub fn create(flags: &Flags) -> Box<dyn Parser> {       // flags = upstream cons
 | `AbstractTimeExpressionParser` | implement `TimeExpressionParser` and wrap it in `TimeExpression`. `super.x(...)` calls become `time_expression::x(...)`. |
 | plain `Parser` | implement `Parser` (`pattern`, `extract`) directly |
 | `Refiner` | implement `Refiner::refine(&self, context, Vec<ParsingResult>) -> Vec<ParsingResult>` |
+
+`UPSTREAM` is the upstream class name, except where that name isn't unique: `DETimeUnitRelativeFormatParser.ts` and `FRTimeUnitRelativeFormatParser.ts` declare classes named `…TimeUnitAgoFormatParser`. The harness names those two after their file (`harness/lib/serialize.js`), so use the file name there, as the configuration slot does.
 
 Constructor arguments come from `flags.get("strictMode")` and so on, using upstream's property names. Examples to copy: `parsers/casual_date.rs` (simple), `parsers/weekday.rs` (dictionary + modifiers), `parsers/time_expression.rs` (abstract base with overrides).
 

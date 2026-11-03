@@ -102,6 +102,27 @@ function deepEqualPlain(a, b) {
  *   SlashDateFormatParser(littleEndian) stores numeric groupNumberMonth / groupNumberDay
  *   (US: month first, so groupNumberMonth < groupNumberDay; GB: the reverse).
  */
+// Upstream classes whose name isn't unique: FRTimeUnitRelativeFormatParser.ts declares another
+// `FRTimeUnitAgoFormatParser` class (and DE's file declares `DETimeUnitAgoFormatParser`). Callers
+// register those constructors here under their file name, so every step name is unique.
+const STEP_ALIASES = new Map();
+function aliasStep(ctor, name) {
+    STEP_ALIASES.set(ctor, name);
+}
+
+/** The step's upstream name: its class name, or its file name where they differ (see above). */
+function stepName(step) {
+    return STEP_ALIASES.get(step.constructor) ?? step.constructor.name;
+}
+
+/** Registers the aliases above, given a function that loads an upstream module by its src path. */
+function registerUpstreamAliases(load) {
+    for (const lang of ["de", "fr"]) {
+        const name = `${lang.toUpperCase()}TimeUnitRelativeFormatParser`;
+        aliasStep(load(`locales/${lang}/parsers/${name}`).default, name);
+    }
+}
+
 function describeStep(step) {
     const flags = {};
     for (const key of Object.keys(step)) {
@@ -110,7 +131,7 @@ function describeStep(step) {
     if (typeof step.groupNumberMonth === "number" && typeof step.groupNumberDay === "number") {
         flags.littleEndian = step.groupNumberMonth > step.groupNumberDay;
     }
-    return { name: step.constructor.name, flags: sortKeys(flags) };
+    return { name: stepName(step), flags: sortKeys(flags) };
 }
 
 function describeConfiguration(chrono) {
@@ -128,4 +149,6 @@ module.exports = {
     serializeReference,
     serializeOptions,
     describeConfiguration,
+    stepName,
+    registerUpstreamAliases,
 };

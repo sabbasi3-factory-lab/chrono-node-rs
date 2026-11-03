@@ -1,0 +1,205 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/de/de_dash.test.ts",
+  "cases": [
+    {
+      "id": "de/dash#1",
+      "text": "30-12-16",
+      "config": "de.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "30-12-16",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 12,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-12-30T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single date expression with dash notation"
+    },
+    {
+      "id": "de/dash#2",
+      "text": "Freitag 30-12-16",
+      "config": "de.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser",
+          "DEWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Freitag 30-12-16",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 12,
+              "weekday": 5,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-12-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single date expression with dash notation"
+    },
+    {
+      "id": "de/dash#3",
+      "text": "30.12.16",
+      "config": "de.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "30.12.16",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 12,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-12-30T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single date expression with dot notation"
+    },
+    {
+      "id": "de/dash#4",
+      "text": "Freitag 30.12.16",
+      "config": "de.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser",
+          "DEWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Freitag 30.12.16",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 12,
+              "weekday": 5,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-12-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single date expression with dot notation"
+    }
+  ]
+}

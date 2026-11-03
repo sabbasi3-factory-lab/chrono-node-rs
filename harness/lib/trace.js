@@ -17,14 +17,14 @@ function trace(chronoModule, chrono, text, ref, option) {
     let results = [];
     for (const parser of chrono.parsers) {
         const found = Chrono.executeParser(context, parser);
-        if (found.length > 0) parsers.add(parser.constructor.name);
+        if (found.length > 0) parsers.add(S.stepName(parser));
         results = results.concat(found);
     }
     results.sort((a, b) => a.index - b.index);
     for (const refiner of chrono.refiners) {
         const before = snapshot(results);
         results = refiner.refine(context, results);
-        if (snapshot(results) !== before) refiners.add(refiner.constructor.name);
+        if (snapshot(results) !== before) refiners.add(S.stepName(refiner));
     }
     return { results, parsers: [...parsers].sort(), refiners: [...refiners].sort() };
 }

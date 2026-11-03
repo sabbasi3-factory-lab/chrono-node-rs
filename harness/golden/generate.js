@@ -2,11 +2,11 @@
 "use strict";
 // Golden-test generator.
 //
-//   node golden/generate.js           regenerate tests/golden/{core,en}/*.json
+//   node golden/generate.js           regenerate tests/golden/{core,en,de,fr}/*.json
 //   node golden/generate.js --check   regenerate into a temp dir and fail if tests/golden differs
 //
-// Runs chrono-node's own core and English tests from upstream/ under jest, with TZ=UTC and a
-// frozen "now", and records every parse call plus chrono-node's real output (see setup.js).
+// Runs chrono-node's own core, English, German and French tests from upstream/ under jest, with
+// TZ=UTC and a frozen "now", and records every parse call plus chrono-node's real output (see setup.js).
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -15,7 +15,7 @@ const { spawnSync } = require("child_process");
 const HARNESS = path.resolve(__dirname, "..");
 const REPO = path.resolve(HARNESS, "..");
 const GOLDEN = path.join(REPO, "tests/golden");
-const AREAS = ["core", "en"];
+const AREAS = ["core", "en", "de", "fr"];
 
 // Used only where an upstream test passes no reference date.
 const DEFAULT_REFERENCE = "2012-08-10T12:00:00.000Z";
