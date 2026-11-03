@@ -1,24 +1,17 @@
 {
-  "generated_at": "2026-11-03T15:24:26Z",
+  "generated_at": "2026-11-03T15:49:31Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
     {
-      "run_id": 40603377444,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T23:37:19Z",
-      "aic": 6.79698,
-      "task": null,
-      "items": [
-        {
-          "type": "create_check_run",
-          "object_url": null,
-          "outcome_status": "unknown",
-          "zero_touch": null
-        }
-      ],
+      "run_id": 41662949515,
+      "workflow": "implement",
+      "title": "Implement drill/v1-upgrade-smoke #1 attempt 1",
+      "created_at": "2026-11-03T15:21:00Z",
+      "aic": 10.61304,
+      "task": "drill/v1-upgrade-smoke",
+      "items": [],
       "eval_failed": false,
-      "drill": false
+      "drill": true
     },
     {
       "run_id": 40602104871,
@@ -38,24 +31,6 @@
           "type": "add_comment",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/29#issuecomment-6456168650",
           "outcome_status": "pending",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
-      "run_id": 40600669407,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T23:13:51Z",
-      "aic": 7.94821,
-      "task": null,
-      "items": [
-        {
-          "type": "create_check_run",
-          "object_url": null,
-          "outcome_status": "unknown",
           "zero_touch": null
         }
       ],
@@ -111,24 +86,6 @@
       "drill": false
     },
     {
-      "run_id": 40597824802,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T22:50:28Z",
-      "aic": 8.11495,
-      "task": null,
-      "items": [
-        {
-          "type": "create_check_run",
-          "object_url": null,
-          "outcome_status": "unknown",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
       "run_id": 40596540014,
       "workflow": "implement",
       "title": "Implement common/merge-weekday-component-refiner #30 attempt 1",
@@ -147,24 +104,6 @@
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/146",
           "outcome_status": "accepted",
           "zero_touch": true
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
-      "run_id": 40594899486,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T22:26:58Z",
-      "aic": 8.04149,
-      "task": null,
-      "items": [
-        {
-          "type": "create_check_run",
-          "object_url": null,
-          "outcome_status": "unknown",
-          "zero_touch": null
         }
       ],
       "eval_failed": false,
@@ -195,30 +134,6 @@
       "drill": false
     },
     {
-      "run_id": 40579719272,
-      "workflow": "repair",
-      "title": "Repair common/forward-date-refiner #28 attempt 2",
-      "created_at": "2026-10-27T20:37:33Z",
-      "aic": 40.95154,
-      "task": "common/forward-date-refiner",
-      "items": [
-        {
-          "type": "push_to_pull_request_branch",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/143",
-          "outcome_status": "unknown",
-          "zero_touch": null
-        },
-        {
-          "type": "add_comment",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/28#issuecomment-6453102584",
-          "outcome_status": "pending",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
       "run_id": 40578028303,
       "workflow": "implement",
       "title": "Implement common/forward-date-refiner #28 attempt 1",
@@ -236,24 +151,6 @@
           "type": "add_comment",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/28#issuecomment-6452859548",
           "outcome_status": "pending",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
-      "run_id": 40575927702,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T20:12:18Z",
-      "aic": 10.3491,
-      "task": null,
-      "items": [
-        {
-          "type": "create_check_run",
-          "object_url": null,
-          "outcome_status": "unknown",
           "zero_touch": null
         }
       ],
@@ -285,48 +182,6 @@
       "drill": false
     },
     {
-      "run_id": 40571286937,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T19:40:52Z",
-      "aic": 9.7041,
-      "task": null,
-      "items": [
-        {
-          "type": "create_check_run",
-          "object_url": null,
-          "outcome_status": "unknown",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
-      "run_id": 40569371014,
-      "workflow": "repair",
-      "title": "Repair common/slash-date-format-parser #32 attempt 2",
-      "created_at": "2026-10-27T19:28:05Z",
-      "aic": 25.60345,
-      "task": "common/slash-date-format-parser",
-      "items": [
-        {
-          "type": "push_to_pull_request_branch",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/141",
-          "outcome_status": "unknown",
-          "zero_touch": null
-        },
-        {
-          "type": "add_comment",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/32#issuecomment-6451695969",
-          "outcome_status": "pending",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
       "run_id": 40567340999,
       "workflow": "implement",
       "title": "Implement common/slash-date-format-parser #32 attempt 1",
@@ -344,24 +199,6 @@
           "type": "add_comment",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/32#issuecomment-6451381038",
           "outcome_status": "pending",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
-      "run_id": 40565504005,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T19:02:40Z",
-      "aic": 11.51015,
-      "task": null,
-      "items": [
-        {
-          "type": "create_check_run",
-          "object_url": null,
-          "outcome_status": "unknown",
           "zero_touch": null
         }
       ],
@@ -387,24 +224,6 @@
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/140",
           "outcome_status": "accepted",
           "zero_touch": true
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
-      "run_id": 40557832553,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T18:12:46Z",
-      "aic": 12.68825,
-      "task": null,
-      "items": [
-        {
-          "type": "create_check_run",
-          "object_url": null,
-          "outcome_status": "unknown",
-          "zero_touch": null
         }
       ],
       "eval_failed": false,
@@ -525,24 +344,6 @@
       "drill": true
     },
     {
-      "run_id": 40537130138,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T16:03:28Z",
-      "aic": 5.79444,
-      "task": null,
-      "items": [
-        {
-          "type": "create_check_run",
-          "object_url": null,
-          "outcome_status": "unknown",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
       "run_id": 40535558259,
       "workflow": "implement",
       "title": "Implement drill/post-merge #113 attempt 1",
@@ -567,30 +368,6 @@
       "drill": true
     },
     {
-      "run_id": 40533397812,
-      "workflow": "repair",
-      "title": "Repair drill/gate-mutation #115 attempt 2",
-      "created_at": "2026-10-27T15:40:59Z",
-      "aic": 15.18225,
-      "task": "drill/gate-mutation",
-      "items": [
-        {
-          "type": "add_comment",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/115#issuecomment-6446510476",
-          "outcome_status": "accepted",
-          "zero_touch": null
-        },
-        {
-          "type": "push_to_pull_request_branch",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/124",
-          "outcome_status": "rejected",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": true
-    },
-    {
       "run_id": 40532105173,
       "workflow": "implement",
       "title": "Implement drill/gate-mutation #115 attempt 1",
@@ -608,24 +385,6 @@
           "type": "create_pull_request",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/124",
           "outcome_status": "rejected",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": true
-    },
-    {
-      "run_id": 40529907028,
-      "workflow": "repair",
-      "title": "Repair drill/full-regression #112 attempt 2",
-      "created_at": "2026-10-27T15:19:58Z",
-      "aic": 12.82803,
-      "task": "drill/full-regression",
-      "items": [
-        {
-          "type": "add_comment",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/112#issuecomment-6445987695",
-          "outcome_status": "accepted",
           "zero_touch": null
         }
       ],
@@ -657,24 +416,6 @@
       "drill": true
     },
     {
-      "run_id": 40526169909,
-      "workflow": "repair",
-      "title": "Repair drill/gate-semver #114 attempt 2",
-      "created_at": "2026-10-27T14:57:27Z",
-      "aic": 13.7821,
-      "task": "drill/gate-semver",
-      "items": [
-        {
-          "type": "add_comment",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/114#issuecomment-6445428318",
-          "outcome_status": "accepted",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": true
-    },
-    {
       "run_id": 40525078828,
       "workflow": "implement",
       "title": "Implement drill/gate-semver #114 attempt 1",
@@ -699,24 +440,6 @@
       "drill": true
     },
     {
-      "run_id": 40522824021,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T14:37:03Z",
-      "aic": 8.03692,
-      "task": null,
-      "items": [
-        {
-          "type": "create_check_run",
-          "object_url": null,
-          "outcome_status": "unknown",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
       "run_id": 40521579238,
       "workflow": "implement",
       "title": "Implement drill/reviewer-objects #111 attempt 1",
@@ -734,30 +457,6 @@
           "type": "add_comment",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/111#issuecomment-6444759339",
           "outcome_status": "accepted",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": true
-    },
-    {
-      "run_id": 40445201999,
-      "workflow": "repair",
-      "title": "Repair drill/repair-unaided #100 attempt 2",
-      "created_at": "2026-10-27T03:37:29Z",
-      "aic": 15.2284,
-      "task": "drill/repair-unaided",
-      "items": [
-        {
-          "type": "push_to_pull_request_branch",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/108",
-          "outcome_status": "unknown",
-          "zero_touch": null
-        },
-        {
-          "type": "add_comment",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/100#issuecomment-6433176334",
-          "outcome_status": "pending",
           "zero_touch": null
         }
       ],
@@ -813,24 +512,6 @@
       "drill": true
     },
     {
-      "run_id": 40424674013,
-      "workflow": "repair",
-      "title": "Repair drill/repair-escalate #94 attempt 2",
-      "created_at": "2026-10-27T00:10:25Z",
-      "aic": 12.77473,
-      "task": "drill/repair-escalate",
-      "items": [
-        {
-          "type": "add_comment",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/94#issuecomment-6430446922",
-          "outcome_status": "accepted",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": true
-    },
-    {
       "run_id": 40424044221,
       "workflow": "implement",
       "title": "Implement drill/repair-escalate #94 attempt 1",
@@ -851,41 +532,6 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
-      "drill": true
-    },
-    {
-      "run_id": 40373118569,
-      "workflow": "repair",
-      "title": "Repair drill/repair-ok #93 attempt 2",
-      "created_at": "2026-10-26T17:55:19Z",
-      "aic": 17.59652,
-      "task": "drill/repair-ok",
-      "items": [
-        {
-          "type": "add_comment",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/93#issuecomment-6423736112",
-          "outcome_status": "accepted",
-          "zero_touch": null
-        },
-        {
-          "type": "push_to_pull_request_branch",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/96",
-          "outcome_status": "unknown",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": true
-    },
-    {
-      "run_id": 40370478103,
-      "workflow": "repair",
-      "title": "Repair drill/repair-ok #93 attempt 2",
-      "created_at": "2026-10-26T17:38:14Z",
-      "aic": 14.26356,
-      "task": "drill/repair-ok",
-      "items": [],
       "eval_failed": false,
       "drill": true
     },
@@ -1316,6 +962,371 @@
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/54",
           "outcome_status": "accepted",
           "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40579719272,
+      "workflow": "repair",
+      "title": "Repair common/forward-date-refiner #28 attempt 2",
+      "created_at": "2026-10-27T20:37:33Z",
+      "aic": 40.95154,
+      "task": "common/forward-date-refiner",
+      "items": [
+        {
+          "type": "push_to_pull_request_branch",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/143",
+          "outcome_status": "unknown",
+          "zero_touch": null
+        },
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/28#issuecomment-6453102584",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40569371014,
+      "workflow": "repair",
+      "title": "Repair common/slash-date-format-parser #32 attempt 2",
+      "created_at": "2026-10-27T19:28:05Z",
+      "aic": 25.60345,
+      "task": "common/slash-date-format-parser",
+      "items": [
+        {
+          "type": "push_to_pull_request_branch",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/141",
+          "outcome_status": "unknown",
+          "zero_touch": null
+        },
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/32#issuecomment-6451695969",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40533397812,
+      "workflow": "repair",
+      "title": "Repair drill/gate-mutation #115 attempt 2",
+      "created_at": "2026-10-27T15:40:59Z",
+      "aic": 15.18225,
+      "task": "drill/gate-mutation",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/115#issuecomment-6446510476",
+          "outcome_status": "accepted",
+          "zero_touch": null
+        },
+        {
+          "type": "push_to_pull_request_branch",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/124",
+          "outcome_status": "rejected",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": true
+    },
+    {
+      "run_id": 40529907028,
+      "workflow": "repair",
+      "title": "Repair drill/full-regression #112 attempt 2",
+      "created_at": "2026-10-27T15:19:58Z",
+      "aic": 12.82803,
+      "task": "drill/full-regression",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/112#issuecomment-6445987695",
+          "outcome_status": "accepted",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": true
+    },
+    {
+      "run_id": 40526169909,
+      "workflow": "repair",
+      "title": "Repair drill/gate-semver #114 attempt 2",
+      "created_at": "2026-10-27T14:57:27Z",
+      "aic": 13.7821,
+      "task": "drill/gate-semver",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/114#issuecomment-6445428318",
+          "outcome_status": "accepted",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": true
+    },
+    {
+      "run_id": 40445201999,
+      "workflow": "repair",
+      "title": "Repair drill/repair-unaided #100 attempt 2",
+      "created_at": "2026-10-27T03:37:29Z",
+      "aic": 15.2284,
+      "task": "drill/repair-unaided",
+      "items": [
+        {
+          "type": "push_to_pull_request_branch",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/108",
+          "outcome_status": "unknown",
+          "zero_touch": null
+        },
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/100#issuecomment-6433176334",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": true
+    },
+    {
+      "run_id": 40424674013,
+      "workflow": "repair",
+      "title": "Repair drill/repair-escalate #94 attempt 2",
+      "created_at": "2026-10-27T00:10:25Z",
+      "aic": 12.77473,
+      "task": "drill/repair-escalate",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/94#issuecomment-6430446922",
+          "outcome_status": "accepted",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": true
+    },
+    {
+      "run_id": 40373118569,
+      "workflow": "repair",
+      "title": "Repair drill/repair-ok #93 attempt 2",
+      "created_at": "2026-10-26T17:55:19Z",
+      "aic": 17.59652,
+      "task": "drill/repair-ok",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/93#issuecomment-6423736112",
+          "outcome_status": "accepted",
+          "zero_touch": null
+        },
+        {
+          "type": "push_to_pull_request_branch",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/96",
+          "outcome_status": "unknown",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": true
+    },
+    {
+      "run_id": 40370478103,
+      "workflow": "repair",
+      "title": "Repair drill/repair-ok #93 attempt 2",
+      "created_at": "2026-10-26T17:38:14Z",
+      "aic": 14.26356,
+      "task": "drill/repair-ok",
+      "items": [],
+      "eval_failed": false,
+      "drill": true
+    },
+    {
+      "run_id": 40603377444,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T23:37:19Z",
+      "aic": 6.79698,
+      "task": null,
+      "items": [
+        {
+          "type": "create_check_run",
+          "object_url": null,
+          "outcome_status": "unknown",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40600669407,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T23:13:51Z",
+      "aic": 7.94821,
+      "task": null,
+      "items": [
+        {
+          "type": "create_check_run",
+          "object_url": null,
+          "outcome_status": "unknown",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40597824802,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T22:50:28Z",
+      "aic": 8.11495,
+      "task": null,
+      "items": [
+        {
+          "type": "create_check_run",
+          "object_url": null,
+          "outcome_status": "unknown",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40594899486,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T22:26:58Z",
+      "aic": 8.04149,
+      "task": null,
+      "items": [
+        {
+          "type": "create_check_run",
+          "object_url": null,
+          "outcome_status": "unknown",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40575927702,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T20:12:18Z",
+      "aic": 10.3491,
+      "task": null,
+      "items": [
+        {
+          "type": "create_check_run",
+          "object_url": null,
+          "outcome_status": "unknown",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40571286937,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T19:40:52Z",
+      "aic": 9.7041,
+      "task": null,
+      "items": [
+        {
+          "type": "create_check_run",
+          "object_url": null,
+          "outcome_status": "unknown",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40565504005,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T19:02:40Z",
+      "aic": 11.51015,
+      "task": null,
+      "items": [
+        {
+          "type": "create_check_run",
+          "object_url": null,
+          "outcome_status": "unknown",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40557832553,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T18:12:46Z",
+      "aic": 12.68825,
+      "task": null,
+      "items": [
+        {
+          "type": "create_check_run",
+          "object_url": null,
+          "outcome_status": "unknown",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40537130138,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T16:03:28Z",
+      "aic": 5.79444,
+      "task": null,
+      "items": [
+        {
+          "type": "create_check_run",
+          "object_url": null,
+          "outcome_status": "unknown",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 40522824021,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T14:37:03Z",
+      "aic": 8.03692,
+      "task": null,
+      "items": [
+        {
+          "type": "create_check_run",
+          "object_url": null,
+          "outcome_status": "unknown",
+          "zero_touch": null
         }
       ],
       "eval_failed": false,
