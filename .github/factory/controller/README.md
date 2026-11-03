@@ -525,7 +525,13 @@ and is redone next poll, but never fails the run.
   - an agent run completes;
   - daily;
   - by hand.
-- **What:** `gh aw logs … --outcomes --json` (pinned v1.0.1, checksum-verified; gh-aw v1 moved outcome evaluation into `logs` and removed the `outcomes` command), once per completed agent run, 4 at a time. It re-checks every run's current GitHub state, so pending items move on. One call per run because a malformed manifest aborts the whole call (gh-aw `collectLogsOutcomes`), and one bad run must not block the rest. A run gh-aw doesn't list (no artifacts, e.g. cancelled early) is skipped.
+- **What:** `gh aw logs … --outcomes --json` (pinned v1.0.1, checksum-verified; gh-aw v1 moved outcome evaluation into `logs` and removed the `outcomes` command), once per run, 4 at a time, for:
+  - runs that are new;
+  - runs whose evaluation failed (`eval_failed`), or that are still pending or unknown, while under 14 days old;
+  - any run of the PR that just closed;
+  - every run, when started by hand with `full`.
+
+  One call per run because a malformed manifest aborts the whole call (gh-aw `collectLogsOutcomes`), and one bad run must not block the rest. No new call starts after 15 minutes. A run gh-aw doesn't list (no artifacts, e.g. cancelled early) is skipped.
 
   A failed evaluation (the call fails, `eval_error`, or an item with status `error`) keeps the previous result. Runs no longer listed by `gh aw logs` are kept as they were.
 - **File contents, per run:** `run_id`, `workflow`, `title`, `created_at`, `aic`, `task` and `drill`, plus `items` (`type`, `object_url`, `outcome_status`, `zero_touch`). Then a `summary`.

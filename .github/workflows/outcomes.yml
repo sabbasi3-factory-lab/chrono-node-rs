@@ -16,6 +16,8 @@ on:
   schedule:
     - cron: "23 5 * * *"
   workflow_dispatch:
+    inputs:
+      full: { description: "Re-evaluate every run", type: boolean, default: false }
 
 permissions: {}
 
@@ -32,6 +34,8 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       R: ${{ github.repository }}
+      FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.full && 'true' || 'false' }}
+      PR: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.number || '' }}
     steps:
       # gh-aw resolves workflow names from local .github/workflows; main's only, no credentials kept.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -49,21 +53,35 @@ jobs:
           if gh api "repos/$R/branches" --paginate -q '.[].name' | grep -qx outcomes; then
             gh api "repos/$R/contents/outcomes.json?ref=outcomes" -H "Accept: application/vnd.github.raw" > prev.json
           else echo '{"runs":[]}' > prev.json; fi
-          # Completed agent runs (plain API listing), then gh-aw v1's `logs --outcomes` (the `outcomes`
-          # command is gone) once per run, 4 at a time: a malformed manifest aborts the whole call, so
-          # one bad run must not block the rest. A failed call keeps that run's previous record; a run
-          # gh-aw doesn't list (no artifacts, e.g. cancelled before the agent) is skipped, as before.
+          # Completed agent runs (plain API listing). Evaluate: new runs; failed, pending or unknown ones
+          # under 14 days old; the closing PR's runs; all if `full`. gh-aw v1's `logs --outcomes` (the
+          # `outcomes` command is gone) runs once per run, 4 at a time: a malformed manifest aborts the
+          # whole call, so one bad run must not block the rest. A failed or unstarted call keeps that
+          # run's previous record; a run gh-aw doesn't list (no artifacts,
+          # e.g. cancelled early) is skipped, as before.
           for w in implement repair review; do
             gh api "repos/$R/actions/workflows/$w.lock.yml/runs?status=completed&created=>=2026-10-01&per_page=100" --paginate \
               -q '.workflow_runs[] | {run_id: .id, workflow: "'"$w"'", title: .display_title, created_at}'
           done | jq -s . > listed.json
-          mkdir -p r && jq -r '.[].run_id' listed.json | (cd "$GITHUB_WORKSPACE" && xargs -r -n 1 -P 4 sh -c '
+          jq -r --slurpfile p prev.json --arg full "$FULL" --arg pr "$PR" --arg cut "$(date -u -d '-14 days' +%FT%TZ)" '
+            ($p[0].runs | map({key: (.run_id|tostring), value: .}) | from_entries) as $prev
+            | .[] | $prev[(.run_id|tostring)] as $o
+            | select($full == "true" or $o == null
+                or ($pr != "" and any($o.items[]; (.object_url // "") | test("/pull/\($pr)$")))
+                or (.created_at > $cut and (($o.eval_failed // false)
+                    or any($o.items[]; .outcome_status == "pending" or .outcome_status == "unknown"))))
+            | .run_id' listed.json > todo.txt
+          echo "evaluating $(wc -l < todo.txt) of $(jq length listed.json) run(s)"
+          # No new call starts after 15 minutes (each is capped at 5), so the job stays within its 30.
+          mkdir -p r && export DEADLINE=$(( $(date +%s) + 900 )) && (cd "$GITHUB_WORKSPACE" && xargs -r -n 1 -P 4 sh -c '
+            [ "$(date +%s)" -lt "$DEADLINE" ] || exit 0
             out="$2/r/$3.json"
             timeout 300 "$0" logs implement repair review --repo "$1" --json -c 1 --start-date 2026-10-01 \
               --after-run-id $(($3 - 1)) --before-run-id $(($3 + 1)) --outcomes -o "$2/logs/$3" > "$out" 2>/dev/null &&
             jq -e --argjson id "$3" "(.runs // []) as \$r | (\$r | length == 0) or (\$r | length == 1 and .[0].run_id == \$id)" "$out" > /dev/null || rm -f "$out"' \
-            "$RUNNER_TEMP/gh-aw" "$R" "$RUNNER_TEMP")
-          echo "evaluated $(find r -name '*.json' | wc -l) of $(jq length listed.json) run(s)"
+            "$RUNNER_TEMP/gh-aw" "$R" "$RUNNER_TEMP" < "$RUNNER_TEMP/todo.txt")
+          [ "$(date +%s)" -lt "$DEADLINE" ] || echo "::warning::outcome evaluation hit its 15-minute budget; unevaluated runs keep their previous records"
+          echo "evaluated $(find r -name '*.json' | wc -l) of $(wc -l < todo.txt) run(s)"
           if compgen -G 'r/*.json' > /dev/null; then
             jq -n 'reduce inputs as $x ({}; . + {(input_filename | capture("(?<id>[0-9]+)\\.json$").id): $x})' r/*.json > fresh.json
           else echo '{}' > fresh.json; fi
