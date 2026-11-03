@@ -58,8 +58,12 @@ post-steps:
     run: |
       f=/tmp/gh-aw/work-queue.intents.jsonl
       [ -f "$f" ] || exit 0  # nothing staged (e.g. the kill switch stopped the run): nothing to publish
-      jq -c --arg want "$WANT" 'select(.intent_id == $want and .kind == "dispatch_next")' "$f" > "$f.trusted"
-      [ "$(wc -l < "$f.trusted")" -eq 1 ] || { echo "::error::expected exactly one trusted dispatch request"; exit 1; }
+      # On any filter or validation failure, empty the published file so nothing unfiltered reaches the queue.
+      if ! jq -c --arg want "$WANT" 'select(.intent_id == $want and .kind == "dispatch_next")' "$f" > "$f.trusted" \
+         || [ "$(wc -l < "$f.trusted")" -ne 1 ]; then
+        : > "$f"; rm -f "$f.trusted"
+        echo "::error::expected exactly one trusted dispatch request"; exit 1
+      fi
       [ "$(wc -l < "$f")" -eq 1 ] || echo "::warning::dropped $(( $(wc -l < "$f") - 1 )) intent(s) the agent staged"
       mv "$f.trusted" "$f"
 
