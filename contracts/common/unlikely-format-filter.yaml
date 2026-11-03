@@ -4,7 +4,7 @@ id: common/unlikely-format-filter
 title: Port UnlikelyFormatFilter
 tier: auto-strict
 area: common-refiners
-priority: 13
+priority: 17
 source: upstream/src/common/refiners/UnlikelyFormatFilter.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: UnlikelyFormatFilter
@@ -25,10 +25,12 @@ acceptance:
         - en/time_units_ago
         - en/timezone_exp
         - en/year_month_day
+        - fr/little_endian
+        - fr/time_exp
   - differential:
       phrases: 2000
       seed: 42
       match: chrono-node@d4fe7e3
   - clippy: deny-warnings
   - public_api: unchanged-except-added
-golden_cases: 34
+golden_cases: 37

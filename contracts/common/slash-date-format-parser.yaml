@@ -4,7 +4,7 @@ id: common/slash-date-format-parser
 title: Port SlashDateFormatParser
 tier: auto-strict
 area: common-parsers
-priority: 11
+priority: 9
 source: upstream/src/common/parsers/SlashDateFormatParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: SlashDateFormatParser
@@ -17,16 +17,22 @@ acceptance:
       step: SlashDateFormatParser
       areas:
         - core/system
+        - de/dash
+        - de/time_units_casual_relative
+        - de/weekday
         - en/general
         - en/merging_relative_dates
         - en/negative_cases
         - en/slash
         - en/time_exp
         - en/weekday
+        - fr/slash
+        - fr/time_exp
+        - fr/weekday
   - differential:
       phrases: 2000
       seed: 42
       match: chrono-node@d4fe7e3
   - clippy: deny-warnings
   - public_api: unchanged-except-added
-golden_cases: 40
+golden_cases: 63

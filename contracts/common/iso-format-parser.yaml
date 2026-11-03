@@ -4,7 +4,7 @@ id: common/iso-format-parser
 title: Port ISOFormatParser
 tier: auto-strict
 area: common-parsers
-priority: 6
+priority: 10
 source: upstream/src/common/parsers/ISOFormatParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ISOFormatParser
@@ -25,10 +25,11 @@ acceptance:
         - en/time_units_later
         - en/timezone_exp
         - en/year_month_day
+        - fr/time_exp
   - differential:
       phrases: 2000
       seed: 42
       match: chrono-node@d4fe7e3
   - clippy: deny-warnings
   - public_api: unchanged-except-added
-golden_cases: 55
+golden_cases: 58

@@ -4,7 +4,7 @@ id: common/forward-date-refiner
 title: Port ForwardDateRefiner
 tier: auto-strict
 area: common-refiners
-priority: 19
+priority: 31
 source: upstream/src/common/refiners/ForwardDateRefiner.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ForwardDateRefiner
@@ -23,10 +23,11 @@ acceptance:
         - en/slash
         - en/time_exp
         - en/weekday
+        - fr/weekday
   - differential:
       phrases: 2000
       seed: 42
       match: chrono-node@d4fe7e3
   - clippy: deny-warnings
   - public_api: unchanged-except-added
-golden_cases: 16
+golden_cases: 17

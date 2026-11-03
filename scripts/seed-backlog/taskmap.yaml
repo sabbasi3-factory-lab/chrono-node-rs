@@ -1,4 +1,4 @@
-# Task map for core + English (DESIGN §6). The owner approves this file; the seed script turns it
+# Task map for core, English, German and French (DESIGN §6). The owner approves this file; the seed script turns it
 # into contracts/*.yaml deterministically. Change this file (by reviewed PR), never the contracts.
 #
 # Each task ports ONE upstream step into ONE Rust file (shared bases were ported by hand in
@@ -12,7 +12,8 @@ version: 1
 upstream_root: upstream/src
 
 # Ported by hand in Stage 0 (no contracts, no issues). Listed so the script can check that every
-# step in the English configuration is either done or a task.
+# step in every named configuration is either done or a task. The German and French Stage 0
+# (configuration, constants, DE extractTimeComponents) has no steps of its own.
 done:
   - { step: ENCasualDateParser, rust: src/locales/en/parsers/casual_date.rs }
   - { step: ENWeekdayParser, rust: src/locales/en/parsers/weekday.rs }
@@ -77,6 +78,34 @@ tasks:
   - { id: en/merge-relative-after-date-refiner, step: ENMergeRelativeAfterDateRefiner, source: locales/en/refiners/ENMergeRelativeAfterDateRefiner.ts, rust: src/locales/en/refiners/merge_relative_after_date.rs, area: en-refiners }
   - { id: en/merge-relative-follow-by-date-refiner, step: ENMergeRelativeFollowByDateRefiner, source: locales/en/refiners/ENMergeRelativeFollowByDateRefiner.ts, rust: src/locales/en/refiners/merge_relative_follow_by_date.rs, area: en-refiners }
   - { id: en/unlikely-format-filter, step: ENUnlikelyFormatFilter, source: locales/en/refiners/ENUnlikelyFormatFilter.ts, rust: src/locales/en/refiners/unlikely_format_filter.rs, area: en-refiners }
+
+  # `class`: the class the upstream file declares, where it differs from `step`. Both
+  # `…TimeUnitRelativeFormatParser.ts` files declare a `…TimeUnitAgoFormatParser` class (French
+  # already has a real one), so the step, the Rust `UPSTREAM` and the golden data use the file name.
+  # --- German parsers and refiners (auto tier) ---
+  - { id: de/casual-date-parser, step: DECasualDateParser, source: locales/de/parsers/DECasualDateParser.ts, rust: src/locales/de/parsers/casual_date.rs, area: de-casual }
+  - { id: de/casual-time-parser, step: DECasualTimeParser, source: locales/de/parsers/DECasualTimeParser.ts, rust: src/locales/de/parsers/casual_time.rs, area: de-casual }
+  - { id: de/time-expression-parser, step: DETimeExpressionParser, source: locales/de/parsers/DETimeExpressionParser.ts, rust: src/locales/de/parsers/time_expression.rs, area: de-time }
+  - { id: de/specific-time-expression-parser, step: DESpecificTimeExpressionParser, source: locales/de/parsers/DESpecificTimeExpressionParser.ts, rust: src/locales/de/parsers/specific_time_expression.rs, area: de-time }
+  - { id: de/month-name-little-endian-parser, step: DEMonthNameLittleEndianParser, source: locales/de/parsers/DEMonthNameLittleEndianParser.ts, rust: src/locales/de/parsers/month_name_little_endian.rs, area: de-dates }
+  - { id: de/weekday-parser, step: DEWeekdayParser, source: locales/de/parsers/DEWeekdayParser.ts, rust: src/locales/de/parsers/weekday.rs, area: de-dates }
+  - { id: de/time-unit-relative-format-parser, step: DETimeUnitRelativeFormatParser, source: locales/de/parsers/DETimeUnitRelativeFormatParser.ts, rust: src/locales/de/parsers/time_unit_relative_format.rs, area: de-relative, class: DETimeUnitAgoFormatParser }
+  - { id: de/time-unit-within-format-parser, step: DETimeUnitWithinFormatParser, source: locales/de/parsers/DETimeUnitWithinFormatParser.ts, rust: src/locales/de/parsers/time_unit_within_format.rs, area: de-relative }
+  - { id: de/merge-date-range-refiner, step: DEMergeDateRangeRefiner, source: locales/de/refiners/DEMergeDateRangeRefiner.ts, rust: src/locales/de/refiners/merge_date_range.rs, area: de-refiners }
+  - { id: de/merge-date-time-refiner, step: DEMergeDateTimeRefiner, source: locales/de/refiners/DEMergeDateTimeRefiner.ts, rust: src/locales/de/refiners/merge_date_time.rs, area: de-refiners }
+
+  # --- French parsers and refiners (auto tier) ---
+  - { id: fr/casual-date-parser, step: FRCasualDateParser, source: locales/fr/parsers/FRCasualDateParser.ts, rust: src/locales/fr/parsers/casual_date.rs, area: fr-casual }
+  - { id: fr/casual-time-parser, step: FRCasualTimeParser, source: locales/fr/parsers/FRCasualTimeParser.ts, rust: src/locales/fr/parsers/casual_time.rs, area: fr-casual }
+  - { id: fr/time-expression-parser, step: FRTimeExpressionParser, source: locales/fr/parsers/FRTimeExpressionParser.ts, rust: src/locales/fr/parsers/time_expression.rs, area: fr-time }
+  - { id: fr/specific-time-expression-parser, step: FRSpecificTimeExpressionParser, source: locales/fr/parsers/FRSpecificTimeExpressionParser.ts, rust: src/locales/fr/parsers/specific_time_expression.rs, area: fr-time }
+  - { id: fr/month-name-little-endian-parser, step: FRMonthNameLittleEndianParser, source: locales/fr/parsers/FRMonthNameLittleEndianParser.ts, rust: src/locales/fr/parsers/month_name_little_endian.rs, area: fr-dates }
+  - { id: fr/weekday-parser, step: FRWeekdayParser, source: locales/fr/parsers/FRWeekdayParser.ts, rust: src/locales/fr/parsers/weekday.rs, area: fr-dates }
+  - { id: fr/time-unit-relative-format-parser, step: FRTimeUnitRelativeFormatParser, source: locales/fr/parsers/FRTimeUnitRelativeFormatParser.ts, rust: src/locales/fr/parsers/time_unit_relative_format.rs, area: fr-relative, class: FRTimeUnitAgoFormatParser }
+  - { id: fr/time-unit-ago-format-parser, step: FRTimeUnitAgoFormatParser, source: locales/fr/parsers/FRTimeUnitAgoFormatParser.ts, rust: src/locales/fr/parsers/time_unit_ago_format.rs, area: fr-relative }
+  - { id: fr/time-unit-within-format-parser, step: FRTimeUnitWithinFormatParser, source: locales/fr/parsers/FRTimeUnitWithinFormatParser.ts, rust: src/locales/fr/parsers/time_unit_within_format.rs, area: fr-relative }
+  - { id: fr/merge-date-range-refiner, step: FRMergeDateRangeRefiner, source: locales/fr/refiners/FRMergeDateRangeRefiner.ts, rust: src/locales/fr/refiners/merge_date_range.rs, area: fr-refiners }
+  - { id: fr/merge-date-time-refiner, step: FRMergeDateTimeRefiner, source: locales/fr/refiners/FRMergeDateTimeRefiner.ts, rust: src/locales/fr/refiners/merge_date_time.rs, area: fr-refiners }
 
 # Acceptance defaults written into every contract.
 acceptance:

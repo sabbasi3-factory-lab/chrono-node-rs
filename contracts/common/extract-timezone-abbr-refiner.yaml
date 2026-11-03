@@ -4,7 +4,7 @@ id: common/extract-timezone-abbr-refiner
 title: Port ExtractTimezoneAbbrRefiner
 tier: auto-strict
 area: common-refiners
-priority: 10
+priority: 13
 source: upstream/src/common/refiners/ExtractTimezoneAbbrRefiner.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ExtractTimezoneAbbrRefiner
@@ -18,10 +18,12 @@ acceptance:
       areas:
         - core/system
         - core/system_timezone
+        - de/time_exp
         - en/casual
         - en/general
         - en/timezone_exp
         - en/year
+        - fr/time_exp
   - differential:
       phrases: 2000
       seed: 42
@@ -96,4 +98,4 @@ acceptance:
           expect:
             text: at 10:00 ABC
             timezoneOffset: 30
-golden_cases: 42
+golden_cases: 49

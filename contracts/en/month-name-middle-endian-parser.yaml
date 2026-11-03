@@ -4,7 +4,7 @@ id: en/month-name-middle-endian-parser
 title: Port ENMonthNameMiddleEndianParser
 tier: auto
 area: en-month-names
-priority: 3
+priority: 4
 source: upstream/src/locales/en/parsers/ENMonthNameMiddleEndianParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ENMonthNameMiddleEndianParser
