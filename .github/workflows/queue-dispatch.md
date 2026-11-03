@@ -44,6 +44,22 @@ steps:
           { version: 3, intent_id: `dispatch:${context.runId}:${context.runAttempt}:default`, kind: 'dispatch_next', parameters });
         core.info(`staged dispatch_next ${JSON.stringify(parameters)}`);
 
+# Trusted, after the agent: the agent's work-queue tools can stage intents too (a dispatcher may
+# submit), so keep only the one dispatch request staged above, or fail.
+post-steps:
+  - name: Keep only the trusted dispatch request
+    # always(): the collected file is uploaded even when the agent fails, so filter it then too.
+    if: always()
+    env:
+      WANT: dispatch:${{ github.run_id }}:${{ github.run_attempt }}:default
+    run: |
+      f=/tmp/gh-aw/work-queue.intents.jsonl
+      [ -f "$f" ] || exit 0  # nothing staged (e.g. the kill switch stopped the run): nothing to publish
+      jq -c --arg want "$WANT" 'select(.intent_id == $want and .kind == "dispatch_next")' "$f" > "$f.trusted"
+      [ "$(wc -l < "$f.trusted")" -eq 1 ] || { echo "::error::expected exactly one trusted dispatch request"; exit 1; }
+      [ "$(wc -l < "$f")" -eq 1 ] || echo "::warning::dropped $(( $(wc -l < "$f") - 1 )) intent(s) the agent staged"
+      mv "$f.trusted" "$f"
+
 safe-outputs:
   github-token: ${{ secrets.GITHUB_TOKEN }}
   dispatch-workflow:

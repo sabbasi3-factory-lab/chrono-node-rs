@@ -36,11 +36,9 @@ steps:
     run: '[ "$FACTORY_ENABLED" = "true" ] || { echo "::error::kill switch: FACTORY_ENABLED is not \"true\""; exit 1; }'
 
 safe-outputs:
-  github-app:
-    client-id: ${{ vars.FACTORY_AGENT_APP_ID }}
-    private-key: ${{ secrets.FACTORY_AGENT_PRIVATE_KEY }}
-    owner: sabbasi3-factory-lab
-    repositories: [chrono-node-rs]
+  # Queue controls use the built-in token; only the PR goes through the agent App (which has no
+  # Actions write, and needs none).
+  github-token: ${{ secrets.GITHUB_TOKEN }}
   report-failure-as-issue: false
   report-failed-jobs: false
   report-missing-tool:
@@ -50,6 +48,11 @@ safe-outputs:
   report-incomplete:
     create-issue: false
   create-pull-request:
+    github-app:
+      client-id: ${{ vars.FACTORY_AGENT_APP_ID }}
+      private-key: ${{ secrets.FACTORY_AGENT_PRIVATE_KEY }}
+      owner: sabbasi3-factory-lab
+      repositories: [chrono-node-rs]
     max: 1
     draft: true
     title-prefix: "[queue-probe] "
