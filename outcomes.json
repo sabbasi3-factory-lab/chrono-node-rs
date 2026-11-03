@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-03T22:03:12Z",
+  "generated_at": "2026-11-03T22:05:25Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
     {
@@ -19,8 +19,8 @@
         {
           "type": "create_pull_request",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/194",
-          "outcome_status": "pending",
-          "zero_touch": null
+          "outcome_status": "accepted",
+          "zero_touch": true
         }
       ],
       "eval_failed": false,
@@ -67,8 +67,8 @@
         {
           "type": "create_pull_request",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/193",
-          "outcome_status": "pending",
-          "zero_touch": null
+          "outcome_status": "accepted",
+          "zero_touch": true
         }
       ],
       "eval_failed": false,
@@ -848,30 +848,6 @@
       "drill": false
     },
     {
-      "run_id": 39907938626,
-      "workflow": "implement",
-      "title": "Implement one factory task",
-      "created_at": "2026-10-23T05:49:56Z",
-      "aic": 19.48486,
-      "task": "en/year-month-name-parser",
-      "items": [
-        {
-          "type": "create_pull_request",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/75",
-          "outcome_status": "accepted",
-          "zero_touch": true
-        },
-        {
-          "type": "add_comment",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/51#issuecomment-6358452307",
-          "outcome_status": "pending",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
       "run_id": 39905746714,
       "workflow": "implement",
       "title": "Implement one factory task",
@@ -892,7 +868,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -916,7 +892,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -940,7 +916,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -964,7 +940,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -988,7 +964,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1012,7 +988,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1036,7 +1012,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1060,7 +1036,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1084,7 +1060,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1108,7 +1084,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1132,7 +1108,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1156,7 +1132,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1180,7 +1156,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1204,7 +1180,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1228,8 +1204,30 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
+    },
+    {
+      "run_id": 40546169425,
+      "workflow": "repair",
+      "title": "Repair drill/gate-code-health #117 attempt 2",
+      "created_at": "2026-10-27T16:58:47Z",
+      "aic": null,
+      "task": "drill/gate-code-health",
+      "items": [],
+      "eval_failed": true,
+      "drill": true
+    },
+    {
+      "run_id": 40540690149,
+      "workflow": "repair",
+      "title": "Repair drill/gate-perf #116 attempt 2",
+      "created_at": "2026-10-27T16:25:01Z",
+      "aic": null,
+      "task": "drill/gate-perf",
+      "items": [],
+      "eval_failed": true,
+      "drill": true
     },
     {
       "run_id": 40533397812,
@@ -1312,7 +1310,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": true
     },
     {
@@ -1354,7 +1352,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": true
     },
     {
@@ -1383,7 +1381,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1401,7 +1399,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1419,7 +1417,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1437,7 +1435,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1455,7 +1453,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1473,7 +1471,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1491,7 +1489,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1509,7 +1507,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1527,7 +1525,18 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
+      "drill": false
+    },
+    {
+      "run_id": 40534964393,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T15:50:28Z",
+      "aic": null,
+      "task": null,
+      "items": [],
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1545,13 +1554,37 @@
           "zero_touch": null
         }
       ],
+      "eval_failed": true,
+      "drill": false
+    },
+    {
+      "run_id": 39907938626,
+      "workflow": "implement",
+      "title": "Implement one factory task",
+      "created_at": "2026-10-23T05:49:56Z",
+      "aic": 19.48486,
+      "task": "en/year-month-name-parser",
+      "items": [
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/75",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        },
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/51#issuecomment-6358452307",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
       "eval_failed": false,
       "drill": false
     }
   ],
   "summary": {
-    "accepted": 53,
-    "pending": 42,
+    "accepted": 55,
+    "pending": 40,
     "rejected": 11,
     "unknown": 14
   }
