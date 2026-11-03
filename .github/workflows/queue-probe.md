@@ -14,7 +14,7 @@ permissions:
 
 engine:
   id: copilot
-  # The implement worker's model: claude-haiku-5.5 skipped work_queue_claim_finish in two attempts.
+  # The implement worker's model (the real worker's behaviour is what this probe checks).
   model: claude-sonnet-5.5
 
 timeout-minutes: 15
@@ -25,7 +25,9 @@ network:
 
 tools:
   edit:
-  bash: ["echo", "cat", "ls", "mkdir"]  # no git: create_pull_request picks up the file change itself
+  # gh-aw adds git add/checkout/commit and the `work-queue` CLI wrapper (the only way to reach the
+  # work-queue tools: a direct MCP call is denied in non-interactive Copilot CLI).
+  bash: ["echo", "cat", "ls", "mkdir"]
   work-queue:
     worker: true
     require-assignment: true
@@ -71,10 +73,14 @@ safe-outputs:
 
 # Work-queue probe worker
 
-Process only the original claims in `work_queue_assignment`. There is one Claim.
+Process only the original claims in `work_queue_assignment`. There is one Claim, with handle `h1`.
 
-1. Create the file `drill/queue-probe/<the Claim's work.task.probe value>.txt` containing one line: `queue probe`. Don't commit; `create_pull_request` picks up the change.
-2. Open one pull request with `create_pull_request`, passing the Claim's original handle as `claim_handle`. Title: `Add work-queue delivery check file <the same probe value>`. Body: `Adds one file to verify that the work queue records this pull request as delivered. It will be closed without merging.`
-3. Call `work_queue_claim_finish` with that `claim_handle` and outcome `"completed"`.
+Run each command separately (no `&&` chains):
 
-If you can't do this, call `report_incomplete` with the reason. Don't do anything else.
+1. Create the file `drill/queue-probe/<the Claim's work.task.probe value>.txt` containing one line: `queue probe`.
+2. `git checkout -b queue-probe/<probe value>`, then `git add` that file, then `git commit -m "Add work-queue delivery check file <probe value>"`.
+3. Open one pull request with `create_pull_request` on that branch, with `claim_handle` `h1`. Title: `Add work-queue delivery check file <probe value>`. Body: `Adds one file to verify that the work queue records this pull request as delivered. It will be closed without merging.`
+4. Finish the Claim through the `work-queue` command in bash (the work-queue tools are only available this way):
+   `work-queue work_queue_claim_finish '{"claim_handle":"h1","outcome":"completed"}'`
+
+If you can't open the pull request, run `work-queue work_queue_claim_finish '{"claim_handle":"h1","outcome":"cancelled"}'` instead. Don't do anything else.

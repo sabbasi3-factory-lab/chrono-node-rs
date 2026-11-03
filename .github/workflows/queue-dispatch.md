@@ -86,5 +86,6 @@ safe-outputs:
 A trusted step has already staged one `dispatch_next` request. Don't call `work_queue_submit`,
 `work_queue_dispatch_next` or `dispatch_workflow`.
 
-Call `work_queue_read` once with `{"pool":"default","limit":8}` and report what it shows with
+Read the queue once through the `work-queue` command in bash (the work-queue tools are only available
+this way): `work-queue work_queue_read '{"pool":"default","limit":8}'`. Report what it shows with
 `noop`, in one or two sentences. Don't do anything else.
