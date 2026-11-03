@@ -2,7 +2,7 @@
 description: >
   Port one chrono-node step to Rust for one factory task. Dispatched by the controller with the
   task id, issue, attempt and pinned contract SHA. Opens at most one PR through the agent App.
-# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v0.92.0):
+# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.0.1):
 #   gh aw compile implement
 on:
   workflow_dispatch:
@@ -141,9 +141,9 @@ safe-outputs:
   # carrying agent-supplied text from a run whose detection didn't succeed.
   report-failure-as-issue: false
   report-failed-jobs: false
-  missing-tool:
+  report-missing-tool:
     create-issue: false
-  missing-data:
+  report-missing-data:
     create-issue: false
   report-incomplete:
     create-issue: false

@@ -3,7 +3,7 @@ description: >
   Repair one factory PR whose `ci` failed (Evergreen, DESIGN §7). Dispatched by the controller with
   the task, issue, PR, attempt, pinned contract SHA, the failed head and its trusted failure
   signature. Pushes at most one fix to the same PR branch through the agent App.
-# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v0.92.0):
+# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.0.1):
 #   gh aw compile repair
 on:
   workflow_dispatch:
@@ -201,9 +201,9 @@ safe-outputs:
     repositories: [chrono-node-rs]
   report-failure-as-issue: false
   report-failed-jobs: false
-  missing-tool:
+  report-missing-tool:
     create-issue: false
-  missing-data:
+  report-missing-data:
     create-issue: false
   report-incomplete:
     create-issue: false

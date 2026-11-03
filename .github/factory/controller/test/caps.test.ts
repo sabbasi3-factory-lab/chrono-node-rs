@@ -25,17 +25,32 @@ describe('the spend bound is real: compiled caps equal the policy', () => {
     const agentStart = locks.implement.search(/^ {2}agent:\s*$/m);
     const detStart = locks.implement.search(/^ {2}detection:\s*$/m);
     assert.ok(agentStart > 0 && detStart > agentStart);
+    const agentCap = (l: string, v: string) => l.slice(0, detStart).replaceAll('GH_AW_MAX_AI_CREDITS="500"', `GH_AW_MAX_AI_CREDITS="${v}"`) + l.slice(detStart);
+    const repairDet = locks.repair.search(/^ {2}detection:\s*$/m);
     const cases: [string, Record<CappedWorkflow, string | null>, typeof per, RegExp][] = [
-      ['agent cap 600 in implement', { ...locks, implement: locks.implement.slice(0, detStart).replace('"maxAiCredits":500', '"maxAiCredits":600') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml agent cap 600/],
-      ['detection cap 450 in repair', { ...locks, repair: locks.repair.replace(/("maxAiCredits":)400(?![\s\S]*"maxAiCredits":400)/, '$1450') }, per, /repair\.lock\.yml detection cap 450/],
+      ['agent cap 600 in implement', { ...locks, implement: agentCap(locks.implement, '600') }, per, /implement\.lock\.yml agent cap 600/],
+      ['detection cap 450 in repair', { ...locks, repair: locks.repair.slice(0, repairDet) + locks.repair.slice(repairDet).replaceAll('GH_AW_MAX_AI_CREDITS="400"', 'GH_AW_MAX_AI_CREDITS="450"') }, per, /repair\.lock\.yml detection cap 450/],
       ['a variable can set a cap', { ...locks, review: `${locks.review}\n# \${{ vars.GH_AW_DEFAULT_DETECTION_MAX_AI_CREDITS }}\n` }, per, /lets a variable set/],
-      ['a non-integer cap 500.5', { ...locks, implement: locks.implement.slice(0, detStart).replace('"maxAiCredits":500', '"maxAiCredits":500.5') + locks.implement.slice(detStart) }, per, /agent cap 500\.5/],
-      ['an exponent cap 500e2 (= 50000)', { ...locks, implement: locks.implement.slice(0, detStart).replace('"maxAiCredits":500', '"maxAiCredits":500e2') + locks.implement.slice(detStart) }, per, /agent cap 50000/],
+      ['admission can set a cap', { ...locks, review: locks.review.replace(/^ {2}agent:\s*$/m, '  agent:\n    env:\n      GH_AW_ADMISSION_RESULT: admitted') }, per, /lets admission set/],
+      ['a step exports an admission result', { ...locks, repair: `${locks.repair}\n          echo "GH_AW_ADMISSION_RESULT=admitted" >> "$GITHUB_ENV"\n` }, per, /lets admission set/],
+      ['the firewall config reads another variable', { ...locks, implement: locks.implement.slice(0, detStart).replace('maxAiCredits\\":${GH_AW_MAX_AI_CREDITS}', 'maxAiCredits\\":${OTHER}') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml agent cap .*NaN/],
+      ['the config appends to the variable (${GH_AW_MAX_AI_CREDITS}0 = 5000)', { ...locks, implement: locks.implement.slice(0, detStart).replace('maxAiCredits\\":${GH_AW_MAX_AI_CREDITS}', 'maxAiCredits\\":${GH_AW_MAX_AI_CREDITS}0') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml agent cap .*NaN/],
+      ['the config no longer reads the cap', { ...locks, implement: locks.implement.slice(0, detStart).replace('\\"maxAiCredits\\":${GH_AW_MAX_AI_CREDITS},', '') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml agent cap .*NaN/],
+      ['a non-integer cap 500.5', { ...locks, implement: agentCap(locks.implement, '500.5') }, per, /agent cap 500\.5/],
+      ['an exponent cap 500e2 (= 50000)', { ...locks, implement: agentCap(locks.implement, '500e2') }, per, /agent cap 50000/],
       ['a lock that cannot be read', { ...locks, repair: null }, per, /repair\.lock\.yml could not be read/],
-      ['policy raises implement to 700', locks, { ...per, implement: 700 }, /agent cap 500 ≠ per_run\.implement 700/],
-      ['policy lowers threat_detection', locks, { ...per, threat_detection: 300 }, /detection cap 400 ≠ per_run\.threat_detection 300/],
+      ['policy raises implement to 700', locks, { ...per, implement: 700 }, /agent cap 500(,500)* ≠ per_run\.implement 700/],
+      ['policy lowers threat_detection', locks, { ...per, threat_detection: 300 }, /detection cap 400(,400)* ≠ per_run\.threat_detection 300/],
     ];
     for (const [what, l, p, re] of cases) assert.match(String(lockCapsMismatch(l, p)), re, what);
+  });
+
+  it('reads the pre-v1 format too (runs compiled by gh-aw v0.92 inline "maxAiCredits":N)', async () => {
+    const per = (await testPolicies()).budgets.per_run;
+    const legacy = (agent: number) => `  agent:\n    run: '{"maxAiCredits":${agent}}'\n  detection:\n    run: '{"maxAiCredits":400}'\n`;
+    const l = { implement: legacy(500), repair: legacy(300), review: legacy(200) };
+    assert.equal(lockCapsMismatch(l, per), null);
+    assert.match(String(lockCapsMismatch({ ...l, implement: legacy(600) }, per)), /implement\.lock\.yml agent cap 600/);
   });
 });
 
