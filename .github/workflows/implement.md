@@ -130,6 +130,75 @@ steps:
   - name: chrono-node judge (golden data + comparison harness)
     working-directory: harness
     run: npm ci --ignore-scripts --no-audit --no-fund && npm run build:upstream
+  # Experiment task_context, variant `upfront` only: a deterministic file with the step's upstream
+  # source, its golden cases and the upstream tests behind them (gitignored target/, never in a PR).
+  - name: Up-front task context (experiment task_context = upfront)
+    # The activation job's output (the compiler doesn't rewrite `experiments.*` in custom steps).
+    if: needs.activation.outputs.task_context == 'upfront'
+    working-directory: harness
+    env:
+      TASK: ${{ github.event.inputs.task }}
+    run: node context/task-context.js "$TASK" "$GITHUB_WORKSPACE/target/factory-context/task.md"
+
+# One measured prompt experiment (owner rule: every prompt change is an experiment). gh-aw picks
+# the least-used variant per run in the activation job and records run_id -> variant in
+# assignments.json on the experiments/implement branch, which joins to Outcomes by run id.
+experiments:
+  storage: repo
+  task_context:
+    variants: [self_discover, upfront]
+    description: >-
+      self_discover (control, unchanged): the agent finds the upstream source, tests and golden
+      cases itself. upfront: a deterministic pre-step writes them to target/factory-context/task.md
+      and the prompt points to it.
+    hypothesis: >-
+      H0: no difference in first-try merge rate. H1: upfront raises the share of tasks merged on
+      the first attempt with no repair.
+    # Computed from Outcomes (gh-aw can't observe a PR's merge), joined by run id.
+    metric: first_try_merge_rate
+    secondary_metrics:
+      - repairs_per_task
+      - reviewer_objections
+      - ai_credits
+      - eval:scope_only
+      - eval:upstream_cited
+      - eval:tests_not_weakened
+      - eval:porting_followed
+    guardrail_metrics:
+      - name: success_rate      # runs that open a PR
+        threshold: ">=0.8"
+      - name: needs_human_rate
+        direction: min
+        threshold: 0.2
+      - name: revert_rate
+        direction: min
+        threshold: 0
+    min_samples: 10
+    analysis_type: proportion_test
+
+# Yes/no checks on every run, judged from the agent's output (its PR body), not from the diff;
+# the trusted gates job checks the diff itself. The Output section requires the sections they read.
+evals:
+  # One small pinned judge model for all questions (the default would be the agent's model).
+  model: claude-haiku-4.5
+  questions:
+    - id: scope_only
+      question: >-
+        Does the pull request body's "Files changed" section list only the file it names as the
+        contract scope, and no other file?
+    - id: upstream_cited
+      question: >-
+        Does the pull request body's "Upstream evidence" section cite an upstream file and line, or a
+        golden case id, for every expected value or behaviour it states?
+    - id: tests_not_weakened
+      question: >-
+        Does the pull request body's "Tests" section state that no test, assertion or golden case was
+        removed, skipped, ignored or loosened?
+    - id: porting_followed
+      question: >-
+        Does the pull request body's "PORTING patterns" section name the PORTING.md patterns the port
+        follows (for example the wrapper for the upstream base class, JsRegex for regexes, js_clone
+        for upstream clone, UTF-16 lengths)?
 
 safe-outputs:
   github-app:
@@ -187,6 +256,9 @@ You are porting **one step of chrono-node** (a natural-language date parser in T
 1. The contract: `contracts/${{ github.event.inputs.task }}.yaml`. It is the definition of done. It names the upstream `source` file, the single Rust file you may change (`scope`), and the acceptance checks.
 2. `PORTING.md`: the patterns to copy and the traps to avoid. Follow it exactly.
 3. The upstream source under `upstream/src/` (pinned; read-only), plus a similar file that is already ported (for example `src/locales/en/parsers/weekday.rs`).
+{{#if experiments.task_context == 'upfront' }}
+4. `target/factory-context/task.md`, prepared for this task before you started: the upstream source of the step, every golden case that needs it (input and chrono-node's exact output) and the upstream tests behind those cases. Read it before writing code, and take expected values from it.
+{{#endif}}
 
 ## Do
 
@@ -209,5 +281,10 @@ You are porting **one step of chrono-node** (a natural-language date parser in T
   Contract-SHA: ${{ github.event.inputs.contract_sha }}
   ```
 
-  Above them, briefly say what you ported and paste the summary lines of the golden run (`checked`/`pending`/`failed` and how many checked cases need the step) and of the comparison.
+  Above them, use these sections, in this order:
+  - `## Summary`: what you ported, plus the summary lines of the golden run (`checked`/`pending`/`failed` and how many checked cases need the step) and of the comparison.
+  - `## Files changed`: the contract scope file (say it is the scope), then every file the PR changes.
+  - `## Upstream evidence`: for each expected value or behaviour you state, the upstream file and line (`upstream/src/...:NN` or `upstream/test/...:NN`) or the golden case id it comes from.
+  - `## Tests`: whether any test, assertion or golden case was removed, skipped, ignored or loosened (it must not be).
+  - `## PORTING patterns`: the PORTING.md patterns the port follows (base-class wrapper, `JsRegex`, `js_clone`, UTF-16 lengths, ...).
 - Add **one** short comment on issue #${{ github.event.inputs.issue }} with the PR link, or with the reason you couldn't open one.
