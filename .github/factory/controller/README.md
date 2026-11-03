@@ -525,9 +525,9 @@ and is redone next poll, but never fails the run.
   - an agent run completes;
   - daily;
   - by hand.
-- **What:** one `gh aw logs implement repair review --json --outcomes` call (pinned v1.0.1, checksum-verified; gh-aw v1 moved outcome evaluation into `logs` and removed the `outcomes` command). It evaluates every listed run's current GitHub state, so pending items are re-checked each time.
+- **What:** `gh aw logs … --outcomes --json` (pinned v1.0.1, checksum-verified; gh-aw v1 moved outcome evaluation into `logs` and removed the `outcomes` command), once per completed agent run, 4 at a time. It re-checks every run's current GitHub state, so pending items move on. One call per run because a malformed manifest aborts the whole call (gh-aw `collectLogsOutcomes`), and one bad run must not block the rest. A run gh-aw doesn't list (no artifacts, e.g. cancelled early) is skipped.
 
-  A failed evaluation (`eval_error`, or an item with status `error`) keeps the previous result. Runs no longer listed by `gh aw logs` are kept as they were.
+  A failed evaluation (the call fails, `eval_error`, or an item with status `error`) keeps the previous result. Runs no longer listed by `gh aw logs` are kept as they were.
 - **File contents, per run:** `run_id`, `workflow`, `title`, `created_at`, `aic`, `task` and `drill`, plus `items` (`type`, `object_url`, `outcome_status`, `zero_touch`). Then a `summary`.
   - `task` comes from the run title, else from the agent PR's title.
   - `aic` is gh-aw's **agent-only** figure. Full cost (agent + threat detection) stays in `spend_snapshot`.

@@ -26,8 +26,12 @@ function jobCaps(lock: string, job: string): number[] {
   // `GH_AW_MAX_AI_CREDITS="$GH_AW_ADMISSION_MAX_AI_CREDITS"` is v1's admission override, inert unless
   // admission is on (refused by lockCapsMismatch); any other expression reads as NaN.
   const v1 = [...body.matchAll(/\bGH_AW_MAX_AI_CREDITS(?:=|:\s*)"([^"]*)"/g)].filter((m) => m[1] !== '$GH_AW_ADMISSION_MAX_AI_CREDITS').map((m) => num(m[1]!));
-  const configRefs = [...body.matchAll(/maxAiCredits\\":\s*(\$\{\w+\}|[^,}\s]+)/g)].map((m) => (m[1] === '${GH_AW_MAX_AI_CREDITS}' ? null : NaN));
-  return [...legacy, ...v1, ...configRefs.filter((c): c is number => c !== null)];
+  // The whole config value up to its delimiter, so `${GH_AW_MAX_AI_CREDITS}0` (= 5000) is not a match.
+  const configRefs = [...body.matchAll(/maxAiCredits\\":\s*((?:\$\{\w+\}|[^,}\s\\])*)/g)].map((m) => m[1]!);
+  const bad = configRefs.filter((v) => v !== '${GH_AW_MAX_AI_CREDITS}').map(() => NaN);
+  // v1 assignments only cap anything if the firewall config reads them: no reference at all is a mismatch.
+  if (v1.length > 0 && configRefs.length === 0) bad.push(NaN);
+  return [...legacy, ...v1, ...bad];
 }
 
 /** Null when every lock enforces exactly the policy's caps; otherwise why not. */

@@ -34,6 +34,8 @@ describe('the spend bound is real: compiled caps equal the policy', () => {
       ['admission can set a cap', { ...locks, review: locks.review.replace(/^ {2}agent:\s*$/m, '  agent:\n    env:\n      GH_AW_ADMISSION_RESULT: admitted') }, per, /lets admission set/],
       ['a step exports an admission result', { ...locks, repair: `${locks.repair}\n          echo "GH_AW_ADMISSION_RESULT=admitted" >> "$GITHUB_ENV"\n` }, per, /lets admission set/],
       ['the firewall config reads another variable', { ...locks, implement: locks.implement.slice(0, detStart).replace('maxAiCredits\\":${GH_AW_MAX_AI_CREDITS}', 'maxAiCredits\\":${OTHER}') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml agent cap .*NaN/],
+      ['the config appends to the variable (${GH_AW_MAX_AI_CREDITS}0 = 5000)', { ...locks, implement: locks.implement.slice(0, detStart).replace('maxAiCredits\\":${GH_AW_MAX_AI_CREDITS}', 'maxAiCredits\\":${GH_AW_MAX_AI_CREDITS}0') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml agent cap .*NaN/],
+      ['the config no longer reads the cap', { ...locks, implement: locks.implement.slice(0, detStart).replace('\\"maxAiCredits\\":${GH_AW_MAX_AI_CREDITS},', '') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml agent cap .*NaN/],
       ['a non-integer cap 500.5', { ...locks, implement: agentCap(locks.implement, '500.5') }, per, /agent cap 500\.5/],
       ['an exponent cap 500e2 (= 50000)', { ...locks, implement: agentCap(locks.implement, '500e2') }, per, /agent cap 50000/],
       ['a lock that cannot be read', { ...locks, repair: null }, per, /repair\.lock\.yml could not be read/],

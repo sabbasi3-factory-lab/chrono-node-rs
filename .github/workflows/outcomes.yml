@@ -49,24 +49,38 @@ jobs:
           if gh api "repos/$R/branches" --paginate -q '.[].name' | grep -qx outcomes; then
             gh api "repos/$R/contents/outcomes.json?ref=outcomes" -H "Accept: application/vnd.github.raw" > prev.json
           else echo '{"runs":[]}' > prev.json; fi
-          # gh-aw v1 evaluates outcomes inside `logs` (the `outcomes` command is gone): one call, every run.
-          (cd "$GITHUB_WORKSPACE" && "$RUNNER_TEMP/gh-aw" logs implement repair review --repo "$R" --json -c 1000 --start-date 2026-10-01 \
-            --outcomes -o "$RUNNER_TEMP/logs") > logs.json
-          jq -e '(.continuations // []) | length == 0' logs.json > /dev/null || echo "::warning::gh aw logs hit its run limit; older runs keep their previous results"
+          # Completed agent runs (plain API listing), then gh-aw v1's `logs --outcomes` (the `outcomes`
+          # command is gone) once per run, 4 at a time: a malformed manifest aborts the whole call, so
+          # one bad run must not block the rest. A failed call keeps that run's previous record; a run
+          # gh-aw doesn't list (no artifacts, e.g. cancelled before the agent) is skipped, as before.
+          for w in implement repair review; do
+            gh api "repos/$R/actions/workflows/$w.lock.yml/runs?status=completed&created=>=2026-10-01&per_page=100" --paginate \
+              -q '.workflow_runs[] | {run_id: .id, workflow: "'"$w"'", title: .display_title, created_at}'
+          done | jq -s . > listed.json
+          mkdir -p r && jq -r '.[].run_id' listed.json | (cd "$GITHUB_WORKSPACE" && xargs -r -n 1 -P 4 sh -c '
+            out="$2/r/$3.json"
+            timeout 300 "$0" logs implement repair review --repo "$1" --json -c 1 --start-date 2026-10-01 \
+              --after-run-id $(($3 - 1)) --before-run-id $(($3 + 1)) --outcomes -o "$2/logs/$3" > "$out" 2>/dev/null &&
+            jq -e --argjson id "$3" "(.runs // []) as \$r | (\$r | length == 0) or (\$r | length == 1 and .[0].run_id == \$id)" "$out" > /dev/null || rm -f "$out"' \
+            "$RUNNER_TEMP/gh-aw" "$R" "$RUNNER_TEMP")
+          echo "evaluated $(find r -name '*.json' | wc -l) of $(jq length listed.json) run(s)"
+          if compgen -G 'r/*.json' > /dev/null; then
+            jq -n 'reduce inputs as $x ({}; . + {(input_filename | capture("(?<id>[0-9]+)\\.json$").id): $x})' r/*.json > fresh.json
+          else echo '{}' > fresh.json; fi
           gh pr list --repo "$R" --state all --author app/sabbasi3-factory-agent -L 1000 --json number,title > prs.json
           # One file: every listed run, plus previous runs no longer listed. A run whose evaluation failed
-          # (eval_error, or an item-level `error`) keeps its previous items and is retried next time.
-          jq -n --slurpfile l logs.json --slurpfile p prev.json --slurpfile prs prs.json '
+          # (call failed, eval_error, or an item-level `error`) keeps its previous items and is retried next time.
+          jq -n --slurpfile l listed.json --slurpfile p prev.json --slurpfile prs prs.json --slurpfile f fresh.json '
             ($p[0].runs | map({key: (.run_id|tostring), value: .}) | from_entries) as $prev
-            | (($l[0].outcomes // []) | map({key: (.run_id|tostring), value: .}) | from_entries) as $oc
             | ($prs[0] | map({key: (.number|tostring), value: (.title | capture("^\\[factory\\] (?<t>[a-z0-9/_-]+):").t? // null)}) | from_entries) as $prtask
-            | [$l[0].runs[] | select(.status == "completed")] as $listed
-            | [$listed[] | (.run_id|tostring) as $id | $oc[$id] as $e | $prev[$id] as $o
+            | [$l[0][] | (.run_id|tostring) as $id | $f[0][$id] as $new | $prev[$id] as $o
+                | select($new == null or ($new.runs | length) == 1)
+                | ($new.runs[0] // null) as $run | ($new.outcomes[0] // null) as $e
                 | ($e != null and ($e.eval_error // null) == null and all($e.items[]; .outcome_status != "error")) as $ok
                 | (if $ok then [$e.items[] | {type, object_url: ((.object_url // "") | if . == "" then null else . end), outcome_status, zero_touch: (.zero_touch // null)}]
                    else ($o.items // []) end) as $items
-                | {run_id, workflow: (.workflow_path | capture("workflows/(?<w>[a-z]+)\\.").w), title: .display_title, created_at, aic,
-                   task: ((.display_title | capture("^(Implement|Repair|Review) (?<t>[a-z0-9]+/[a-z0-9_-]+) ").t? )
+                | {run_id, workflow, title, created_at, aic: ($run.aic // $o.aic // null),
+                   task: ((.title | capture("^(Implement|Repair|Review) (?<t>[a-z0-9]+/[a-z0-9_-]+) ").t? )
                           // ([$items[].object_url // "" | capture("/pull/(?<n>[0-9]+)").n? | $prtask[.]] | map(select(.)) | first) // null),
                    items: $items, eval_failed: (($ok | not) and ($o == null or ($o.eval_failed // false)))}
                 | .drill = ((.task // "") | startswith("drill/"))] as $fresh
