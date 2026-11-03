@@ -16,8 +16,6 @@ on:
   schedule:
     - cron: "23 5 * * *"
   workflow_dispatch:
-    inputs:
-      full: { description: "Re-evaluate every run", type: boolean, default: false }
 
 permissions: {}
 
@@ -34,59 +32,47 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       R: ${{ github.repository }}
-      FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.full && 'true' || 'false' }}
-      PR: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.number || '' }}
     steps:
       # gh-aw resolves workflow names from local .github/workflows; main's only, no credentials kept.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { ref: main, persist-credentials: false, sparse-checkout: .github/workflows }
-      - name: Install gh-aw v0.92.0 (checksum pinned)
+      - name: Install gh-aw v1.0.1 (checksum pinned)
         run: |
-          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v0.92.0/linux-amd64
-          echo "4f1753b20416024b15ff2cbea3f5a8745d7473bd8c73d99b4e8a79d69bb0fe83  $RUNNER_TEMP/gh-aw" | sha256sum -c -
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
+          echo "746d0b41d5fb87e2c010b8ac23a464436bb745ff89fbd19a3456431942c37652  $RUNNER_TEMP/gh-aw" | sha256sum -c -
           chmod 0755 "$RUNNER_TEMP/gh-aw"
-      - name: Evaluate new and pending runs
+      - name: Evaluate every run
         working-directory: ${{ runner.temp }}
         run: |
           set -euo pipefail
-          G="$RUNNER_TEMP/gh-aw"; mkdir -p oc
           # Previous file: start empty only if the branch doesn't exist; any other read error fails the job.
           if gh api "repos/$R/branches" --paginate -q '.[].name' | grep -qx outcomes; then
             gh api "repos/$R/contents/outcomes.json?ref=outcomes" -H "Accept: application/vnd.github.raw" > prev.json
           else echo '{"runs":[]}' > prev.json; fi
-          (cd "$GITHUB_WORKSPACE" && "$G" logs implement repair review --repo "$R" --json -c 1000 --start-date 2026-10-01 -o "$RUNNER_TEMP/logs") > logs.json
+          # gh-aw v1 evaluates outcomes inside `logs` (the `outcomes` command is gone): one call, every run.
+          (cd "$GITHUB_WORKSPACE" && "$RUNNER_TEMP/gh-aw" logs implement repair review --repo "$R" --json -c 1000 --start-date 2026-10-01 \
+            --outcomes -o "$RUNNER_TEMP/logs") > logs.json
+          jq -e '(.continuations // []) | length == 0' logs.json > /dev/null || echo "::warning::gh aw logs hit its run limit; older runs keep their previous results"
           gh pr list --repo "$R" --state all --author app/sabbasi3-factory-agent -L 1000 --json number,title > prs.json
-          # Evaluate: new runs; failed or pending/unknown ones under 14 days old; the closing PR's runs; all if full.
-          jq -r --slurpfile p prev.json --arg full "$FULL" --arg pr "$PR" --arg cut "$(date -u -d '-14 days' +%FT%TZ)" '
+          # One file: every listed run, plus previous runs no longer listed. A run whose evaluation failed
+          # (eval_error, or an item-level `error`) keeps its previous items and is retried next time.
+          jq -n --slurpfile l logs.json --slurpfile p prev.json --slurpfile prs prs.json '
             ($p[0].runs | map({key: (.run_id|tostring), value: .}) | from_entries) as $prev
-            | .runs[] | select(.status == "completed") | $prev[(.run_id|tostring)] as $o
-            | select($full == "true" or $o == null
-                or ($pr != "" and any($o.items[]; (.object_url // "") | test("/pull/\($pr)$")))
-                or (.created_at > $cut and (($o.eval_failed // false)
-                    or any($o.items[]; .outcome_status == "pending" or .outcome_status == "unknown"))))
-            | .run_id' logs.json > todo.txt
-          echo "evaluating $(wc -l < todo.txt) run(s)"
-          # A run's result counts only if it parses and has no item-level `error`; otherwise it's retried.
-          xargs -r -P 4 -I{} sh -c 'timeout 180 "$0" outcomes {} --repo "$1" --json -o work > oc/{}.json 2>/dev/null &&
-            jq -e "(.items | type == \"array\") and all(.items[]; .outcome_status != \"error\")" oc/{}.json > /dev/null || rm -f oc/{}.json' "$G" "$R" < todo.txt
-          if compgen -G 'oc/*.json' > /dev/null; then
-            jq -s 'map({key: (.run_id|tostring), value: [.items[] | {type, object_url, outcome_status, zero_touch}]}) | from_entries' oc/*.json > fresh.json
-          else echo '{}' > fresh.json; fi
-          # One file: every listed run (fresh result, else the previous one), plus previous runs no longer listed.
-          jq -n --slurpfile l logs.json --slurpfile p prev.json --slurpfile prs prs.json --slurpfile f fresh.json '
-            ($p[0].runs | map({key: (.run_id|tostring), value: .}) | from_entries) as $prev
+            | (($l[0].outcomes // []) | map({key: (.run_id|tostring), value: .}) | from_entries) as $oc
             | ($prs[0] | map({key: (.number|tostring), value: (.title | capture("^\\[factory\\] (?<t>[a-z0-9/_-]+):").t? // null)}) | from_entries) as $prtask
             | [$l[0].runs[] | select(.status == "completed")] as $listed
-            | [$listed[] | (.run_id|tostring) as $id | $f[0][$id] as $new | $prev[$id] as $o
-                | ($new // $o.items // []) as $items
+            | [$listed[] | (.run_id|tostring) as $id | $oc[$id] as $e | $prev[$id] as $o
+                | ($e != null and ($e.eval_error // null) == null and all($e.items[]; .outcome_status != "error")) as $ok
+                | (if $ok then [$e.items[] | {type, object_url: ((.object_url // "") | if . == "" then null else . end), outcome_status, zero_touch: (.zero_touch // null)}]
+                   else ($o.items // []) end) as $items
                 | {run_id, workflow: (.workflow_path | capture("workflows/(?<w>[a-z]+)\\.").w), title: .display_title, created_at, aic,
                    task: ((.display_title | capture("^(Implement|Repair|Review) (?<t>[a-z0-9]+/[a-z0-9_-]+) ").t? )
                           // ([$items[].object_url // "" | capture("/pull/(?<n>[0-9]+)").n? | $prtask[.]] | map(select(.)) | first) // null),
-                   items: $items, eval_failed: ($new == null and ($o == null or ($o.eval_failed // false)))}
+                   items: $items, eval_failed: (($ok | not) and ($o == null or ($o.eval_failed // false)))}
                 | .drill = ((.task // "") | startswith("drill/"))] as $fresh
             | ($fresh | map(.run_id)) as $ids
             | ($fresh + [$p[0].runs[] | select(.run_id as $r | $ids | index($r) | not)]) as $runs
-            | {generated_at: (now | todate), gh_aw_version: "v0.92.0", runs: $runs,
+            | {generated_at: (now | todate), gh_aw_version: "v1.0.1", runs: $runs,
                summary: ([$runs[].items[].outcome_status] | group_by(.) | map({key: .[0], value: length}) | from_entries)}' > outcomes.json
           jq -c '.summary + {runs: (.runs | length), eval_failed: ([.runs[] | select(.eval_failed)] | length)}' outcomes.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

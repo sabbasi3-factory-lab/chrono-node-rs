@@ -1,6 +1,6 @@
 # Model smoke test (DESIGN §8, Stage 0): which models can this Copilot seat actually use?
 # Manual only. Lists the models the seat sees, then sends each candidate a one-word prompt with
-# the same Copilot CLI version gh-aw v0.92.0 pins (1.0.96). Costs one small request per model.
+# the same Copilot CLI version gh-aw v1.0.1 pins (1.0.103). Costs one small request per model.
 # Human tier: changes need the owner's review.
 name: model-smoke
 
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      COPILOT_CLI_VERSION: "1.0.96"
+      COPILOT_CLI_VERSION: "1.0.103"
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

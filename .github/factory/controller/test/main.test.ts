@@ -373,7 +373,7 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
     const drift = async () => {
       const out: Record<string, string> = {};
       for (const wf of ['implement', 'repair', 'review']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
-      out.implement = out.implement!.replace(/("maxAiCredits":)500/, '$1600');
+      out.implement = out.implement!.replace('GH_AW_MAX_AI_CREDITS="500"', 'GH_AW_MAX_AI_CREDITS="600"');
       return out as Record<'implement' | 'repair' | 'review', string>;
     };
     const gh = liveWorld(204, 0, unreadableSpendWorld(true));
@@ -391,7 +391,7 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
     const drift = async () => {
       const out: Record<string, string> = {};
       for (const wf of ['implement', 'repair', 'review']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
-      out.implement = out.implement!.replace(/("maxAiCredits":)500/, '$1600');
+      out.implement = out.implement!.replace('GH_AW_MAX_AI_CREDITS="500"', 'GH_AW_MAX_AI_CREDITS="600"');
       return out as Record<'implement' | 'repair' | 'review', string>;
     };
     const gh = liveWorld(204, 0, unreadableSpendWorld(true));
