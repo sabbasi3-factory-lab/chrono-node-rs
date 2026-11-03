@@ -1,7 +1,223 @@
 {
-  "generated_at": "2026-11-03T22:05:25Z",
+  "generated_at": "2026-11-03T22:50:07Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 41731930071,
+      "workflow": "implement",
+      "title": "Implement de/time-expression-parser #171 attempt 1",
+      "created_at": "2026-11-03T22:34:09Z",
+      "aic": 20.0054,
+      "task": "de/time-expression-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/171#issuecomment-6617313203",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/203",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41731729226,
+      "workflow": "implement",
+      "title": "Implement fr/time-expression-parser #181 attempt 1",
+      "created_at": "2026-11-03T22:32:47Z",
+      "aic": 19.59577,
+      "task": "fr/time-expression-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/181#issuecomment-6617270511",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/202",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41731490137,
+      "workflow": "implement",
+      "title": "Implement de/merge-date-range-refiner #167 attempt 1",
+      "created_at": "2026-11-03T22:31:09Z",
+      "aic": 19.40861,
+      "task": "de/merge-date-range-refiner",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/167#issuecomment-6617232497",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/201",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41729664428,
+      "workflow": "implement",
+      "title": "Implement fr/merge-date-time-refiner #178 attempt 1",
+      "created_at": "2026-11-03T22:18:40Z",
+      "aic": 18.55995,
+      "task": "fr/merge-date-time-refiner",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/178#issuecomment-6616951003",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/200",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41729652833,
+      "workflow": "implement",
+      "title": "Implement fr/casual-time-parser #176 attempt 1",
+      "created_at": "2026-11-03T22:18:35Z",
+      "aic": 21.3838,
+      "task": "fr/casual-time-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/176#issuecomment-6616940169",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/199",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41729426166,
+      "workflow": "implement",
+      "title": "Implement fr/time-unit-ago-format-parser #182 attempt 1",
+      "created_at": "2026-11-03T22:17:04Z",
+      "aic": 18.31845,
+      "task": "fr/time-unit-ago-format-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/182#issuecomment-6616914811",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/198",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41727537238,
+      "workflow": "implement",
+      "title": "Implement fr/casual-date-parser #175 attempt 1",
+      "created_at": "2026-11-03T22:04:42Z",
+      "aic": 21.41872,
+      "task": "fr/casual-date-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/175#issuecomment-6616664433",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/196",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41727525190,
+      "workflow": "implement",
+      "title": "Implement de/casual-date-parser #165 attempt 1",
+      "created_at": "2026-11-03T22:04:37Z",
+      "aic": 22.5226,
+      "task": "de/casual-date-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/165#issuecomment-6616665397",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/197",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41727096489,
+      "workflow": "implement",
+      "title": "Implement fr/time-unit-relative-format-parser #183 attempt 1",
+      "created_at": "2026-11-03T22:01:47Z",
+      "aic": 22.74174,
+      "task": "fr/time-unit-relative-format-parser",
+      "items": [
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/195",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        },
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/183#issuecomment-6616619709",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
     {
       "run_id": 41725524422,
       "workflow": "implement",
@@ -848,6 +1064,30 @@
       "drill": false
     },
     {
+      "run_id": 39907938626,
+      "workflow": "implement",
+      "title": "Implement one factory task",
+      "created_at": "2026-10-23T05:49:56Z",
+      "aic": 19.48486,
+      "task": "en/year-month-name-parser",
+      "items": [
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/75",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        },
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/51#issuecomment-6358452307",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
       "run_id": 39905746714,
       "workflow": "implement",
       "title": "Implement one factory task",
@@ -868,7 +1108,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -892,7 +1132,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -916,7 +1156,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -940,7 +1180,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -964,7 +1204,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -988,7 +1228,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1012,7 +1252,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1036,7 +1276,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1060,7 +1300,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1084,7 +1324,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1108,7 +1348,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1132,7 +1372,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1156,7 +1396,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1180,7 +1420,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1204,30 +1444,8 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
-    },
-    {
-      "run_id": 40546169425,
-      "workflow": "repair",
-      "title": "Repair drill/gate-code-health #117 attempt 2",
-      "created_at": "2026-10-27T16:58:47Z",
-      "aic": null,
-      "task": "drill/gate-code-health",
-      "items": [],
-      "eval_failed": true,
-      "drill": true
-    },
-    {
-      "run_id": 40540690149,
-      "workflow": "repair",
-      "title": "Repair drill/gate-perf #116 attempt 2",
-      "created_at": "2026-10-27T16:25:01Z",
-      "aic": null,
-      "task": "drill/gate-perf",
-      "items": [],
-      "eval_failed": true,
-      "drill": true
     },
     {
       "run_id": 40533397812,
@@ -1310,7 +1528,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": true
     },
     {
@@ -1352,7 +1570,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": true
     },
     {
@@ -1381,7 +1599,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1399,7 +1617,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1417,7 +1635,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1435,7 +1653,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1453,7 +1671,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1471,7 +1689,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1489,7 +1707,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1507,7 +1725,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1525,18 +1743,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
-      "drill": false
-    },
-    {
-      "run_id": 40534964393,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T15:50:28Z",
-      "aic": null,
-      "task": null,
-      "items": [],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1554,37 +1761,46 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
-      "run_id": 39907938626,
-      "workflow": "implement",
-      "title": "Implement one factory task",
-      "created_at": "2026-10-23T05:49:56Z",
-      "aic": 19.48486,
-      "task": "en/year-month-name-parser",
-      "items": [
-        {
-          "type": "create_pull_request",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/75",
-          "outcome_status": "accepted",
-          "zero_touch": true
-        },
-        {
-          "type": "add_comment",
-          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/51#issuecomment-6358452307",
-          "outcome_status": "pending",
-          "zero_touch": null
-        }
-      ],
-      "eval_failed": false,
+      "run_id": 40546169425,
+      "workflow": "repair",
+      "title": "Repair drill/gate-code-health #117 attempt 2",
+      "created_at": "2026-10-27T16:58:47Z",
+      "aic": null,
+      "task": "drill/gate-code-health",
+      "items": [],
+      "eval_failed": true,
+      "drill": true
+    },
+    {
+      "run_id": 40540690149,
+      "workflow": "repair",
+      "title": "Repair drill/gate-perf #116 attempt 2",
+      "created_at": "2026-10-27T16:25:01Z",
+      "aic": null,
+      "task": "drill/gate-perf",
+      "items": [],
+      "eval_failed": true,
+      "drill": true
+    },
+    {
+      "run_id": 40534964393,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T15:50:28Z",
+      "aic": null,
+      "task": null,
+      "items": [],
+      "eval_failed": true,
       "drill": false
     }
   ],
   "summary": {
-    "accepted": 55,
-    "pending": 40,
+    "accepted": 64,
+    "pending": 49,
     "rejected": 11,
     "unknown": 14
   }
