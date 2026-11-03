@@ -8,7 +8,6 @@ Node tools that run the **real chrono-node** from `upstream/` as the judge for t
 |---|---|---|
 | Golden-test generator | `npm run golden` / `npm run golden:check` | Records chrono-node's outputs for its own core, English, German and French test cases into `tests/golden/`. See `tests/golden/README.md`. |
 | Comparison harness | `npm run build:upstream`, then `npm run compare -- [--seed N] [--phrases N] [--rust PATH] [--report FILE]` | Generates seeded random phrases and random reference dates, runs them through chrono-node and the Rust `chrono-rs-json` CLI, and compares the outputs. See below. |
-| Task context | `node context/task-context.js <task-id> <out-file>` | For the `implement` workflow's `task_context: upfront` experiment variant: writes one contract's upstream source, every golden case that needs its step, and the upstream `test(...)` blocks behind them. Deterministic; tested in `npm run test:gates`. |
 
 Setup: Node 24 or later, then `npm ci` in this directory. Dependency versions are pinned exactly and match `upstream/package-lock.json`.
 

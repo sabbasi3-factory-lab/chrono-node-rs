@@ -11,7 +11,7 @@
     "golden:check": "node golden/generate.js --check",
     "build:upstream": "tsc -p tsconfig.upstream.json",
     "compare": "node compare/compare.js",
-    "test:gates": "node --test \"gates/test/*.test.js\" \"context/*.test.js\""
+    "test:gates": "node --test \"gates/test/*.test.js\""
   },
   "devDependencies": {
     "@types/jest": "29.5.14",

@@ -132,13 +132,100 @@ steps:
     run: npm ci --ignore-scripts --no-audit --no-fund && npm run build:upstream
   # Experiment task_context, variant `upfront` only: a deterministic file with the step's upstream
   # source, its golden cases and the upstream tests behind them (gitignored target/, never in a PR).
+  # The generator is inline here, not a repo script, so the control arm has no one-command way to
+  # produce the same file. harness/gates/test/implement-context.test.js runs this exact script.
   - name: Up-front task context (experiment task_context = upfront)
     # The activation job's output (the compiler doesn't rewrite `experiments.*` in custom steps).
     if: needs.activation.outputs.task_context == 'upfront'
     working-directory: harness
     env:
       TASK: ${{ github.event.inputs.task }}
-    run: node context/task-context.js "$TASK" "$GITHUB_WORKSPACE/target/factory-context/task.md"
+      OUT: ${{ github.workspace }}/target/factory-context/task.md
+    run: |
+      node - <<'JS'
+      "use strict";
+      // Writes one contract's upstream source, every golden case that needs its step and the upstream
+      // test(...) blocks behind them. Deterministic: it only reads the repository.
+      const fs = require("fs");
+      const path = require("path");
+      const YAML = require("yaml");
+
+      const REPO = path.resolve("..");
+      const read = (rel) => fs.readFileSync(path.join(REPO, rel), "utf8");
+
+      /** A golden case without the fields every case shares (system time zone UTC, empty options). */
+      function compactCase(c) {
+          const { system_timezone, options, ...rest } = c;
+          return Object.keys(options).length ? { ...rest, options } : rest;
+      }
+
+      /** The top-level `test("<name>", ...)` blocks of an upstream test file whose name is in `names`. */
+      function testBlocks(source, names) {
+          const blocks = [];
+          let current = null;
+          for (const line of source.split("\n")) {
+              const m = /^test\(\s*(["'`])(.*?)\1/.exec(line);
+              if (m) {
+                  current = { name: m[2], lines: [] };
+                  blocks.push(current);
+              }
+              if (current) current.lines.push(line);
+          }
+          return blocks
+              .filter((b) => names.has(b.name))
+              .map((b) => b.lines.join("\n").trimEnd())
+              .join("\n\n");
+      }
+
+      function build(task) {
+          if (!/^[a-z0-9-]+(\/[a-z0-9-]+)+$/.test(task)) throw new Error(`invalid task id ${JSON.stringify(task)}`);
+          const contract = YAML.parse(read(`contracts/${task}.yaml`));
+          const golden = contract.acceptance.find((a) => a.golden).golden;
+          const index = JSON.parse(read("tests/golden/index.json"));
+
+          const cases = [];
+          const tests = new Map(); // upstream test file -> names of the tests behind those cases
+          for (const area of golden.areas) {
+              for (const c of JSON.parse(read(`tests/golden/${area}.json`)).cases) {
+                  if (![...c.requires.parsers, ...c.requires.refiners].includes(golden.step)) continue;
+                  cases.push(c);
+                  const file = index.files[area].source;
+                  if (!tests.has(file)) tests.set(file, new Set());
+                  tests.get(file).add(c.upstream_test);
+              }
+          }
+
+          const fence = (lang, text) => "````" + lang + "\n" + text.replace(/\n$/, "") + "\n````\n";
+          const out = [
+              `# Task context: ${task} (${golden.step})`,
+              "",
+              "Generated from `upstream/` and `tests/golden/` at this commit, before the agent started.",
+              "Expected values here are chrono-node's real output.",
+              "",
+              `## Upstream source: \`${contract.source}\``,
+              "",
+              fence("ts", read(contract.source)),
+              `## Golden cases that need ${golden.step} (${cases.length})`,
+              "",
+              "One JSON object per line, as in `tests/golden/<area>.json`.",
+              "",
+              fence("jsonl", cases.map((c) => JSON.stringify(compactCase(c))).join("\n")),
+              "## Upstream tests behind those cases",
+              "",
+              "Only the `test(...)` blocks that produced the cases above.",
+              "",
+          ];
+          for (const [file, names] of [...tests].sort(([a], [b]) => (a < b ? -1 : 1))) {
+              out.push(`### \`${file}\``, "", fence("ts", testBlocks(read(file), names)));
+          }
+          return out.join("\n");
+      }
+
+      const text = build(process.env.TASK);
+      fs.mkdirSync(path.dirname(process.env.OUT), { recursive: true });
+      fs.writeFileSync(process.env.OUT, text);
+      console.log(`wrote ${process.env.OUT} (${Buffer.byteLength(text)} bytes)`);
+      JS
 
 # One measured prompt experiment (owner rule: every prompt change is an experiment). gh-aw picks
 # the least-used variant per run in the activation job and records run_id -> variant in
