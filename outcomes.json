@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-29T14:32:48Z",
-  "gh_aw_version": "v0.92.0",
+  "generated_at": "2026-11-03T15:24:26Z",
+  "gh_aw_version": "v1.0.1",
   "runs": [
     {
       "run_id": 40603377444,
@@ -883,7 +883,7 @@
       "workflow": "repair",
       "title": "Repair drill/repair-ok #93 attempt 2",
       "created_at": "2026-10-26T17:38:14Z",
-      "aic": 0,
+      "aic": 14.26356,
       "task": "drill/repair-ok",
       "items": [],
       "eval_failed": false,
