@@ -58,6 +58,15 @@ test("validate catches missing steps, duplicates, wrong class and bad paths", ()
     assert.match(p, /Missing is neither done nor a task/);
 });
 
+test("validate uses `class` where the upstream file declares a different class name", () => {
+    const files = new Map([...upstreamFiles, ["upstream/src/locales/fr/parsers/FRRel.ts", "export default class FRAgo {}"]]);
+    const task = { id: "fr/rel", step: "FRRel", source: "locales/fr/parsers/FRRel.ts", rust: "src/locales/fr/parsers/rel.rs", area: "x" };
+    const withClass = { ...taskmap, tasks: [...taskmap.tasks, { ...task, class: "FRAgo" }] };
+    assert.deepStrictEqual(lib.validate({ taskmap: withClass, upstreamFiles: files, configurations }), []);
+    const without = { ...taskmap, tasks: [...taskmap.tasks, task] };
+    assert.match(lib.validate({ taskmap: without, upstreamFiles: files, configurations }).join("\n"), /has no class FRRel/);
+});
+
 test("tiers come from policy; unknown paths are human", () => {
     assert.strictEqual(lib.tierFor(["src/locales/en/parsers/a.rs"], TIERS), "auto");
     assert.strictEqual(lib.tierFor(["src/common/refiners/c.rs"], TIERS), "human");

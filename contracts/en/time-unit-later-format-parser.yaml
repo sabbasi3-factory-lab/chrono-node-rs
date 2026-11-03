@@ -4,7 +4,7 @@ id: en/time-unit-later-format-parser
 title: Port ENTimeUnitLaterFormatParser
 tier: auto
 area: en-relative
-priority: 14
+priority: 21
 source: upstream/src/locales/en/parsers/ENTimeUnitLaterFormatParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ENTimeUnitLaterFormatParser

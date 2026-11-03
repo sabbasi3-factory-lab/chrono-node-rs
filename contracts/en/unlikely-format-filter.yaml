@@ -4,7 +4,7 @@ id: en/unlikely-format-filter
 title: Port ENUnlikelyFormatFilter
 tier: auto
 area: en-refiners
-priority: 25
+priority: 45
 source: upstream/src/locales/en/refiners/ENUnlikelyFormatFilter.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ENUnlikelyFormatFilter

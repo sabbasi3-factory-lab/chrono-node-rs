@@ -9,7 +9,7 @@
 //   node seed.js labels [--check]    create the factory's labels (.github/factory/labels.json) and the
 //                                    contracts' tier:/area: labels if missing (--check: only report)
 //
-// Inputs: upstream/ (pinned), tests/golden/ (requires per case), the four English configurations
+// Inputs: upstream/ (pinned), tests/golden/ (requires per case), the named configurations
 // (tests/golden/configurations.json), factory policies/tiers.yaml at the pinned factory version
 // (.github/factory/factory-version), and taskmap.yaml.
 const fs = require("fs");
@@ -52,7 +52,7 @@ async function loadInputs() {
     const configurations = JSON.parse(read("tests/golden/configurations.json")).configurations;
     const cases = [];
     const posix = (p) => p.split(path.sep).join("/");
-    for (const file of walk(path.join(REPO, "tests/golden"), (p) => /\/(core|en)\/[^/]+\.json$/.test(posix(p)))) {
+    for (const file of walk(path.join(REPO, "tests/golden"), (p) => /\/(core|en|de|fr)\/[^/]+\.json$/.test(posix(p)))) {
         const area = path.relative(path.join(REPO, "tests/golden"), file).replace(/\\/g, "/").replace(/\.json$/, "");
         for (const c of JSON.parse(fs.readFileSync(file, "utf8")).cases) {
             cases.push({ area, requires: [...c.requires.parsers, ...c.requires.refiners] });

@@ -73,7 +73,9 @@ function validate({ taskmap, upstreamFiles, configurations }) {
         const src = `${taskmap.upstream_root}/${t.source}`;
         const text = upstreamFiles.get(src);
         if (text === undefined) problems.push(`${t.id}: missing upstream file ${src}`);
-        else if (!new RegExp(`class\\s+${t.step}\\b`).test(text)) problems.push(`${t.id}: ${src} has no class ${t.step}`);
+        // `class` overrides the declared class name where upstream reuses one (the step keeps the
+        // file name, as harness/lib/serialize.js names it).
+        else if (!new RegExp(`class\\s+${t.class || t.step}\\b`).test(text)) problems.push(`${t.id}: ${src} has no class ${t.class || t.step}`);
         if (!t.area || !/^[a-z0-9-]+$/.test(t.area)) problems.push(`${t.id}: bad area`);
         if (t.unit !== undefined) {
             const u = t.unit;
@@ -93,7 +95,7 @@ function validate({ taskmap, upstreamFiles, configurations }) {
             problems.push(`${t.id}: source and rust path disagree on parser/refiner`);
         }
     }
-    // Every step of every English configuration must be done or a task.
+    // Every step of every named configuration (English, German, French) must be done or a task.
     for (const [name, cfg] of Object.entries(configurations)) {
         for (const s of [...cfg.parsers, ...cfg.refiners]) {
             if (!seen.step.has(s.name)) problems.push(`${name} step ${s.name} is neither done nor a task`);

@@ -4,7 +4,7 @@ id: en/slash-month-format-parser
 title: Port ENSlashMonthFormatParser
 tier: auto
 area: en-numeric-dates
-priority: 21
+priority: 36
 source: upstream/src/locales/en/parsers/ENSlashMonthFormatParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ENSlashMonthFormatParser
