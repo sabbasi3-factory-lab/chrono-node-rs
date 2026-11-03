@@ -1,0 +1,369 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/fr/fr_weekday.test.ts",
+  "cases": [
+    {
+      "id": "fr/weekday#1",
+      "text": "Lundi",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Lundi",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 6,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/weekday#2",
+      "text": "Lundi (forward dates only)",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Lundi",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/weekday#3",
+      "text": "Jeudi",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Jeudi",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 9,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/weekday#4",
+      "text": "Dimanche",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Dimanche",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 12,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/weekday#5",
+      "text": "la deadline était vendredi dernier...",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 18,
+          "text": "vendredi dernier",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 3,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/weekday#6",
+      "text": "Planifions une réuinion vendredi prochain",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-04-18T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 24,
+          "text": "vendredi prochain",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 24,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2015
+            },
+            "date": "2015-04-24T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/weekday#7",
+      "text": "Dimanche 7 décembre 2014",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Dimanche 7 décembre 2014",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 12,
+              "weekday": 0,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-12-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Overlap"
+    },
+    {
+      "id": "fr/weekday#8",
+      "text": "Dimanche 7/12/2014",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Dimanche 7/12/2014",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 12,
+              "weekday": 0,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-12-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Overlap"
+    }
+  ]
+}

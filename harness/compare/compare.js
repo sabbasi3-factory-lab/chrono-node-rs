@@ -63,12 +63,17 @@ function loadUpstream() {
     if (!fs.existsSync(built)) throw new Error("run `npm run build:upstream` in harness/ first");
     const chronoModule = require(built);
     const chronoCore = require(path.join(HARNESS, ".build/chrono/chrono.js"));
-    const { Chrono, en } = chronoModule;
+    const { Chrono, en, de, fr } = chronoModule;
+    S.registerUpstreamAliases((p) => require(path.join(HARNESS, ".build/chrono", p)));
     const configs = {
         "en.casual": new Chrono(en.configuration.createCasualConfiguration(false)),
         "en.strict": new Chrono(en.configuration.createConfiguration(true, false)),
         "en.GB.casual": new Chrono(en.configuration.createCasualConfiguration(true)),
         "en.GB.strict": new Chrono(en.configuration.createConfiguration(true, true)),
+        "de.casual": new Chrono(de.createCasualConfiguration()),
+        "de.strict": new Chrono(de.createConfiguration(true)),
+        "fr.casual": new Chrono(fr.createCasualConfiguration()),
+        "fr.strict": new Chrono(fr.createConfiguration(true)),
     };
     return { chronoCore, configs };
 }

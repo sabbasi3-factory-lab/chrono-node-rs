@@ -14,7 +14,16 @@ use std::io::{self, BufRead, Write};
 use chrono_node::core::json::{parse_request, results_to_json};
 use serde_json::{json, Value};
 
-const CONFIGS: [&str; 4] = ["en.casual", "en.strict", "en.GB.casual", "en.GB.strict"];
+const CONFIGS: [&str; 8] = [
+    "en.casual",
+    "en.strict",
+    "en.GB.casual",
+    "en.GB.strict",
+    "de.casual",
+    "de.strict",
+    "fr.casual",
+    "fr.strict",
+];
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();

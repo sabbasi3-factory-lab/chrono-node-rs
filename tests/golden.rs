@@ -24,7 +24,7 @@ fn golden_dir() -> PathBuf {
 
 fn area_files() -> Vec<(String, PathBuf)> {
     let mut out = Vec::new();
-    for group in ["core", "en"] {
+    for group in ["core", "en", "de", "fr"] {
         let Ok(entries) = fs::read_dir(golden_dir().join(group)) else {
             continue;
         };

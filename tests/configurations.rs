@@ -5,7 +5,7 @@ use std::fs;
 use std::path::Path;
 
 use chrono_node::core::configuration::{Configuration, Slot};
-use chrono_node::locales::en::configuration::{create_casual_configuration, create_configuration};
+use chrono_node::locales::{de, en, fr};
 use serde_json::Value;
 
 fn check_slots(config: &str, kind: &str, rust: &[Slot], upstream: &Value) {
@@ -25,20 +25,39 @@ fn check_slots(config: &str, kind: &str, rust: &[Slot], upstream: &Value) {
     }
 }
 
-#[test]
-fn english_configurations_match_upstream() {
+fn check(configs: Vec<(&str, Configuration)>) {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden/configurations.json");
     let data: Value = serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
-    let configs: [(&str, Configuration); 4] = [
-        ("en.casual", create_casual_configuration(false)),
-        ("en.strict", create_configuration(true, false)),
-        ("en.GB.casual", create_casual_configuration(true)),
-        ("en.GB.strict", create_configuration(true, true)),
-    ];
     for (name, rust) in configs {
         let upstream = &data["configurations"][name];
         assert!(upstream.is_object(), "{name} missing from configurations.json");
         check_slots(name, "parsers", &rust.parsers, &upstream["parsers"]);
         check_slots(name, "refiners", &rust.refiners, &upstream["refiners"]);
     }
+}
+
+#[test]
+fn english_configurations_match_upstream() {
+    check(vec![
+        ("en.casual", en::configuration::create_casual_configuration(false)),
+        ("en.strict", en::configuration::create_configuration(true, false)),
+        ("en.GB.casual", en::configuration::create_casual_configuration(true)),
+        ("en.GB.strict", en::configuration::create_configuration(true, true)),
+    ]);
+}
+
+#[test]
+fn german_configurations_match_upstream() {
+    check(vec![
+        ("de.casual", de::configuration::create_casual_configuration(true)),
+        ("de.strict", de::configuration::create_configuration(true, true)),
+    ]);
+}
+
+#[test]
+fn french_configurations_match_upstream() {
+    check(vec![
+        ("fr.casual", fr::configuration::create_casual_configuration(true)),
+        ("fr.strict", fr::configuration::create_configuration(true, true)),
+    ]);
 }

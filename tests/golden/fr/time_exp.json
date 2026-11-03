@@ -1,0 +1,2722 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/fr/fr_time_exp.test.ts",
+  "cases": [
+    {
+      "id": "fr/time_exp#01",
+      "text": "8h10",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8h10",
+          "start": {
+            "known": {
+              "hour": 8,
+              "minute": 10
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#02",
+      "text": "8h10m",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8h10m",
+          "start": {
+            "known": {
+              "hour": 8,
+              "minute": 10
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#03",
+      "text": "8h10m00",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8h10m00",
+          "start": {
+            "known": {
+              "hour": 8,
+              "minute": 10,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#04",
+      "text": "8h10m00s",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8h10m00s",
+          "start": {
+            "known": {
+              "hour": 8,
+              "minute": 10,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#05",
+      "text": "8:10 PM",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8:10 PM",
+          "start": {
+            "known": {
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 10
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T20:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#06",
+      "text": "8h10 PM",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8h10 PM",
+          "start": {
+            "known": {
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 10
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T20:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#07",
+      "text": "1230pm",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1230pm",
+          "start": {
+            "known": {
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:30:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#08",
+      "text": "5:16p",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5:16p",
+          "start": {
+            "known": {
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 16
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T17:16:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#09",
+      "text": "5h16p",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5h16p",
+          "start": {
+            "known": {
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 16
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T17:16:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#10",
+      "text": "5h16mp",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5h16mp",
+          "start": {
+            "known": {
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 16
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T17:16:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#11",
+      "text": "5:16 p.m.",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5:16 p.m.",
+          "start": {
+            "known": {
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 16
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T17:16:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#12",
+      "text": "5h16 p.m.",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5h16 p.m.",
+          "start": {
+            "known": {
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 16
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T17:16:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#13",
+      "text": "RDV à 6.13 AM",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 4,
+          "text": "à 6.13 AM",
+          "start": {
+            "known": {
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 13
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:13:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#14",
+      "text": "13h-15h",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "13h-15h",
+          "start": {
+            "known": {
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#15",
+      "text": "13-15h",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "13-15h",
+          "start": {
+            "known": {
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#16",
+      "text": "1-3pm",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1-3pm",
+          "start": {
+            "known": {
+              "hour": 13,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#17",
+      "text": "11pm-2",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "11pm-2",
+          "start": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T23:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 2,
+              "minute": 0
+            },
+            "implied": {
+              "day": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-08-11T02:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fr/time_exp#18",
+      "text": "8:10 - 12.32",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8:10 - 12.32",
+          "start": {
+            "known": {
+              "hour": 8,
+              "minute": 10
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:10:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 32
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:32:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "fr/time_exp#19",
+      "text": "8:10 - 12h32",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8:10 - 12h32",
+          "start": {
+            "known": {
+              "hour": 8,
+              "minute": 10
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:10:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 32
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:32:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "fr/time_exp#20",
+      "text": " de 6:30pm à 11:00pm ",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 4,
+          "text": "6:30pm à 11:00pm",
+          "start": {
+            "known": {
+              "hour": 18,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T18:30:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T23:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "fr/time_exp#21",
+      "text": " 2012 à 10:12:59",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 6,
+          "text": "à 10:12:59",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 12,
+              "second": 59
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T10:12:59.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "fr/time_exp#22",
+      "text": "8:62",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible"
+    },
+    {
+      "id": "fr/time_exp#23",
+      "text": "25:12",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible"
+    },
+    {
+      "id": "fr/time_exp#24",
+      "text": "12h12:99s",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible"
+    },
+    {
+      "id": "fr/time_exp#25",
+      "text": "13.12 PM",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible"
+    },
+    {
+      "id": "fr/time_exp#26",
+      "text": "Quelque chose se passe le 2014-04-18 à 3h00",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 26,
+          "text": "2014-04-18 à 3h00",
+          "start": {
+            "known": {
+              "day": 18,
+              "hour": 3,
+              "minute": 0,
+              "month": 4,
+              "year": 2014
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-04-18T03:00:00.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date + Time Expression"
+    },
+    {
+      "id": "fr/time_exp#27",
+      "text": "Quelque chose se passe le 10 Août 2012 à 10:12:59",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 26,
+          "text": "10 Août 2012 à 10:12:59",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "minute": 12,
+              "month": 8,
+              "second": 59,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2012-08-10T10:12:59.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date + Time Expression"
+    },
+    {
+      "id": "fr/time_exp#28",
+      "text": "Quelque chose se passe le 15juin 2016 20h",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-07-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 26,
+          "text": "15juin 2016 20h",
+          "start": {
+            "known": {
+              "day": 15,
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 6,
+              "year": 2016
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2016-06-15T20:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date + Time Expression"
+    },
+    {
+      "id": "fr/time_exp#29",
+      "text": "Quelque chose se passe le 2014-04-18 7:00 - 8h00 ...",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 26,
+          "text": "2014-04-18 7:00 - 8h00",
+          "start": {
+            "known": {
+              "day": 18,
+              "hour": 7,
+              "minute": 0,
+              "month": 4,
+              "year": 2014
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-04-18T07:00:00.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 18,
+              "hour": 8,
+              "minute": 0,
+              "month": 4,
+              "year": 2014
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-04-18T08:00:00.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Date + Time Expression"
+    },
+    {
+      "id": "fr/time_exp#30",
+      "text": "Quelque chose se passe le 2014-04-18 de 7:00 à 20:00 ...",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "ISOFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 26,
+          "text": "2014-04-18 de 7:00 à 20:00",
+          "start": {
+            "known": {
+              "day": 18,
+              "hour": 7,
+              "minute": 0,
+              "month": 4,
+              "year": 2014
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-04-18T07:00:00.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 18,
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 4,
+              "year": 2014
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-04-18T20:00:00.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Date + Time Expression"
+    },
+    {
+      "id": "fr/time_exp#31",
+      "text": "Vendredi à 2 pm",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-04-28T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Vendredi à 2 pm",
+          "start": {
+            "known": {
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 0,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 29,
+              "millisecond": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-04-29T14:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone extraction"
+    },
+    {
+      "id": "fr/time_exp#32",
+      "text": "vendredi 2 pm EST",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-04-28T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner",
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vendredi 2 pm EST",
+          "start": {
+            "known": {
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 0,
+              "timezoneOffset": -300,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 29,
+              "millisecond": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-04-29T19:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone extraction"
+    },
+    {
+      "id": "fr/time_exp#33",
+      "text": "vendredi 15h CET",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-02-28T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner",
+          "FRMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vendredi 15h CET",
+          "start": {
+            "known": {
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0,
+              "timezoneOffset": 60,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 26,
+              "millisecond": 0,
+              "month": 2,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-02-26T14:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone extraction"
+    },
+    {
+      "id": "fr/time_exp#34",
+      "text": "vendredi 15h cest",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-02-28T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner",
+          "FRMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vendredi 15h cest",
+          "start": {
+            "known": {
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0,
+              "timezoneOffset": 120,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 26,
+              "millisecond": 0,
+              "month": 2,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-02-26T13:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone extraction"
+    },
+    {
+      "id": "fr/time_exp#35",
+      "text": "Vendredi à 2 pm est",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-04-28T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner",
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Vendredi à 2 pm est",
+          "start": {
+            "known": {
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 0,
+              "timezoneOffset": -300,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 29,
+              "millisecond": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-04-29T19:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone extraction"
+    },
+    {
+      "id": "fr/time_exp#36",
+      "text": "Vendredi à 2 pm j'ai rdv...",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-04-28T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Vendredi à 2 pm",
+          "start": {
+            "known": {
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 0,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 29,
+              "millisecond": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-04-29T14:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone extraction"
+    },
+    {
+      "id": "fr/time_exp#37",
+      "text": "Vendredi à 2 pm je vais faire quelque chose",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-04-28T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Vendredi à 2 pm",
+          "start": {
+            "known": {
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 0,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 29,
+              "millisecond": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-04-29T14:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone extraction"
+    },
+    {
+      "id": "fr/time_exp#38",
+      "text": "lundi 29/4/2013 630-930am",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "lundi 29/4/2013 630-930am",
+          "start": {
+            "known": {
+              "day": 29,
+              "hour": 6,
+              "minute": 30,
+              "month": 4,
+              "weekday": 1,
+              "year": 2013
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-04-29T06:30:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 29,
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 30,
+              "month": 4,
+              "weekday": 1,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-04-29T09:30:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#39",
+      "text": "mercredi 1/5/2013 1115am",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "mercredi 1/5/2013 1115am",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 11,
+              "meridiem": 0,
+              "minute": 15,
+              "month": 5,
+              "weekday": 3,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-05-01T11:15:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#40",
+      "text": "vendredi 3/5/2013 1230pm",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vendredi 3/5/2013 1230pm",
+          "start": {
+            "known": {
+              "day": 3,
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 30,
+              "month": 5,
+              "weekday": 5,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-05-03T12:30:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#41",
+      "text": "dimanche 6/5/2013  750am-910am",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "dimanche 6/5/2013  750am-910am",
+          "start": {
+            "known": {
+              "day": 6,
+              "hour": 7,
+              "meridiem": 0,
+              "minute": 50,
+              "month": 5,
+              "weekday": 0,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-05-06T07:50:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 6,
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 10,
+              "month": 5,
+              "weekday": 0,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-05-06T09:10:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#42",
+      "text": "lundi 13/5/2013 630-930am",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "lundi 13/5/2013 630-930am",
+          "start": {
+            "known": {
+              "day": 13,
+              "hour": 6,
+              "minute": 30,
+              "month": 5,
+              "weekday": 1,
+              "year": 2013
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-05-13T06:30:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 13,
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 30,
+              "month": 5,
+              "weekday": 1,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-05-13T09:30:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#43",
+      "text": "Vendredi 21/6/2013 2:30",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Vendredi 21/6/2013 2:30",
+          "start": {
+            "known": {
+              "day": 21,
+              "hour": 2,
+              "minute": 30,
+              "month": 6,
+              "weekday": 5,
+              "year": 2013
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-06-21T02:30:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#44",
+      "text": "mardi 7/2/2013 1-230 pm",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "mardi 7/2/2013 1-230 pm",
+          "start": {
+            "known": {
+              "day": 7,
+              "hour": 13,
+              "minute": 0,
+              "month": 2,
+              "weekday": 2,
+              "year": 2013
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-02-07T13:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 30,
+              "month": 2,
+              "weekday": 2,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-02-07T14:30:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#45",
+      "text": "mardi 7/2/2013 1-23h0",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "mardi 7/2/2013 1-23h0",
+          "start": {
+            "known": {
+              "day": 7,
+              "hour": 1,
+              "minute": 0,
+              "month": 2,
+              "weekday": 2,
+              "year": 2013
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-02-07T01:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 2,
+              "weekday": 2,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-02-07T23:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#46",
+      "text": "mardi 7/2/2013 1h-23h0m",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "mardi 7/2/2013 1h-23h0m",
+          "start": {
+            "known": {
+              "day": 7,
+              "hour": 1,
+              "minute": 0,
+              "month": 2,
+              "weekday": 2,
+              "year": 2013
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-02-07T01:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 2,
+              "weekday": 2,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-02-07T23:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#47",
+      "text": "Lundi, 24/6/2013, 7:00pm - 8:30pm",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Lundi, 24/6/2013, 7:00pm - 8:30pm",
+          "start": {
+            "known": {
+              "day": 24,
+              "hour": 19,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 6,
+              "weekday": 1,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-06-24T19:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 24,
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 30,
+              "month": 6,
+              "weekday": 1,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-06-24T20:30:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#48",
+      "text": "Jeudi6/5/2013 de 7h à 10h",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeUnitWithinFormatParser",
+          "FRWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Jeudi6/5/2013 de 7h à 10h",
+          "start": {
+            "known": {
+              "day": 6,
+              "hour": 7,
+              "minute": 0,
+              "month": 5,
+              "weekday": 4,
+              "year": 2013
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-05-06T07:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 6,
+              "hour": 10,
+              "minute": 0,
+              "month": 5,
+              "weekday": 4,
+              "year": 2013
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-05-06T10:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#49",
+      "text": "18h",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "18h",
+          "start": {
+            "known": {
+              "hour": 18,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T18:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#50",
+      "text": "18-22h",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "18-22h",
+          "start": {
+            "known": {
+              "hour": 18,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T18:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#51",
+      "text": "11h-13",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "11h-13",
+          "start": {
+            "known": {
+              "hour": 11,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T11:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#52",
+      "text": "à 12h",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "à 12h",
+          "start": {
+            "known": {
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#53",
+      "text": "Mercredi, 3 juil 2013 14h",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Mercredi, 3 juil 2013 14h",
+          "start": {
+            "known": {
+              "day": 3,
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 7,
+              "weekday": 3,
+              "year": 2013
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2013-07-03T14:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "fr/time_exp#54",
+      "text": "that I need to know or am I covered?",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random date + time expression"
+    }
+  ]
+}

@@ -1,0 +1,1446 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/fr/fr_little_endian.test.ts",
+  "cases": [
+    {
+      "id": "fr/little_endian#01",
+      "text": "10 Août 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Août 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#02",
+      "text": "8 Février",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8 Février",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 2
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-02-08T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#03",
+      "text": "1er Août 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1er Août 2012",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#04",
+      "text": "10 Août 234 AC",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Août 234 AC",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": -234
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000234-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#05",
+      "text": "10 Août 88 p. Chr. n.",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Août 88 p. Chr. n.",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#06",
+      "text": "Dim 15 Sept",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2013-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Dim 15 Sept",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 9,
+              "weekday": 0
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-09-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#07",
+      "text": "DIM 15SEPT",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2013-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "DIM 15SEPT",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 9,
+              "weekday": 0
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-09-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#08",
+      "text": "La date limite est le 10 Août",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 22,
+          "text": "10 Août",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#09",
+      "text": "La date limite est le Mardi 10 janvier",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 22,
+          "text": "Mardi 10 janvier",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 1,
+              "weekday": 2
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-01-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#10",
+      "text": "La date limite est Mar 10 Jan",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser",
+          "FRWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 19,
+          "text": "Mar 10 Jan",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 1,
+              "weekday": 2
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-01-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#11",
+      "text": "31 mars 2016",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "31 mars 2016",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 3,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-03-31T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "fr/little_endian#12",
+      "text": "10 - 22 août 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 - 22 août 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 22,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-22T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "fr/little_endian#13",
+      "text": "10 au 22 août 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 au 22 août 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 22,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-22T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "fr/little_endian#14",
+      "text": "10 août - 12 septembre",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "FRMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 août - 12 septembre",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-09-12T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "fr/little_endian#15",
+      "text": "10 août - 12 septembre 2013",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "FRMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 août - 12 septembre 2013",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 9,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-09-12T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "fr/little_endian#16",
+      "text": "12 juillet à 19:00",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12 juillet à 19:00",
+          "start": {
+            "known": {
+              "day": 12,
+              "hour": 19,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 7
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-07-12T19:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date/Time combined expression"
+    },
+    {
+      "id": "fr/little_endian#17",
+      "text": "5 mai 12:00",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 mai 12:00",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 12,
+              "minute": 0,
+              "month": 5
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-05-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date/Time combined expression"
+    },
+    {
+      "id": "fr/little_endian#18",
+      "text": "7 Mai 11:00",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "FRMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "7 Mai 11:00",
+          "start": {
+            "known": {
+              "day": 7,
+              "hour": 11,
+              "minute": 0,
+              "month": 5
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-05-07T11:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date/Time combined expression"
+    },
+    {
+      "id": "fr/little_endian#19",
+      "text": "10 Février 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Février 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 2,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-02-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Accentuated text parsing"
+    },
+    {
+      "id": "fr/little_endian#20",
+      "text": "10 Décembre 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Décembre 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 12,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-12-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Accentuated text parsing"
+    },
+    {
+      "id": "fr/little_endian#21",
+      "text": "10 Aout 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Aout 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Unaccentuated text parsing"
+    },
+    {
+      "id": "fr/little_endian#22",
+      "text": "10 Fevrier 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Fevrier 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 2,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-02-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Unaccentuated text parsing"
+    },
+    {
+      "id": "fr/little_endian#23",
+      "text": "10 Decembre 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Decembre 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 12,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-12-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Unaccentuated text parsing"
+    },
+    {
+      "id": "fr/little_endian#24",
+      "text": "32 Août 2014",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates"
+    },
+    {
+      "id": "fr/little_endian#25",
+      "text": "29 Février 2014",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates"
+    },
+    {
+      "id": "fr/little_endian#26",
+      "text": "32 Aout",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates"
+    },
+    {
+      "id": "fr/little_endian#27",
+      "text": "29 Fevrier",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2013-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates"
+    },
+    {
+      "id": "fr/little_endian#28",
+      "text": "12 juil. 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12 juil. 2012",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-07-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - French Month Abbreviated/Short Names"
+    },
+    {
+      "id": "fr/little_endian#29",
+      "text": "15 déc. 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 déc. 2012",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 12,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-12-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - French Month Abbreviated/Short Names"
+    },
+    {
+      "id": "fr/little_endian#30",
+      "text": "15 déc 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 déc 2012",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 12,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-12-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - French Month Abbreviated/Short Names"
+    },
+    {
+      "id": "fr/little_endian#31",
+      "text": "1 janv. 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 janv. 2012",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - French Month Abbreviated/Short Names"
+    },
+    {
+      "id": "fr/little_endian#32",
+      "text": "22 févr. 2012",
+      "config": "fr.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FRMonthNameLittleEndianParser",
+          "FRSpecificTimeExpressionParser",
+          "FRTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "22 févr. 2012",
+          "start": {
+            "known": {
+              "day": 22,
+              "month": 2,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-02-22T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - French Month Abbreviated/Short Names"
+    }
+  ]
+}

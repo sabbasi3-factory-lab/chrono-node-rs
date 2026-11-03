@@ -1,0 +1,471 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/de/de_year.test.ts",
+  "cases": [
+    {
+      "id": "de/year#01",
+      "text": "10. August 234 v.u.Z.",
+      "config": "de.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DEMonthNameLittleEndianParser",
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10. August 234 v.u.Z.",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": -234
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000234-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with v/nuZ Era label"
+    },
+    {
+      "id": "de/year#02",
+      "text": "10. August 88 nuZ",
+      "config": "de.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DEMonthNameLittleEndianParser",
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10. August 88 nuZ",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with v/nuZ Era label"
+    },
+    {
+      "id": "de/year#03",
+      "text": "10. August 88 uZ",
+      "config": "de.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DEMonthNameLittleEndianParser",
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10. August 88 uZ",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with v/nuZ Era label"
+    },
+    {
+      "id": "de/year#04",
+      "text": "10. August 88 d.g.Z.",
+      "config": "de.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DEMonthNameLittleEndianParser",
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10. August 88 d.g.Z.",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with v/nuZ Era label"
+    },
+    {
+      "id": "de/year#05",
+      "text": "10. August 234 v.Chr.",
+      "config": "de.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DEMonthNameLittleEndianParser",
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10. August 234 v.Chr.",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": -234
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000234-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with v/nChr Era label"
+    },
+    {
+      "id": "de/year#06",
+      "text": "10. August 88 nC",
+      "config": "de.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DEMonthNameLittleEndianParser",
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10. August 88 nC",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with v/nChr Era label"
+    },
+    {
+      "id": "de/year#07",
+      "text": "10. August 234 v.d.Z.",
+      "config": "de.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DEMonthNameLittleEndianParser",
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10. August 234 v.d.Z.",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": -234
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000234-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with v/ndgZ Era label"
+    },
+    {
+      "id": "de/year#08",
+      "text": "10. August 88 ndZ",
+      "config": "de.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DEMonthNameLittleEndianParser",
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10. August 88 ndZ",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with v/ndgZ Era label"
+    },
+    {
+      "id": "de/year#09",
+      "text": "10. August 234 v.d.g.Z.",
+      "config": "de.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DEMonthNameLittleEndianParser",
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10. August 234 v.d.g.Z.",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": -234
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000234-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with v/ndgZ Era label"
+    },
+    {
+      "id": "de/year#10",
+      "text": "10. August 88 ndgZ",
+      "config": "de.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "DEMonthNameLittleEndianParser",
+          "DESpecificTimeExpressionParser",
+          "DETimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10. August 88 ndgZ",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Year numbers with v/ndgZ Era label"
+    }
+  ]
+}
