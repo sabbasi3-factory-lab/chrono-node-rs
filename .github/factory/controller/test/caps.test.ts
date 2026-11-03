@@ -37,7 +37,7 @@ describe('the spend bound is real: compiled caps equal the policy', () => {
       ['a step exports an admission result', { ...locks, repair: `${locks.repair}\n          echo "GH_AW_ADMISSION_RESULT=admitted" >> "$GITHUB_ENV"\n` }, per, /outside gh-aw's template/],
       ['the firewall config reads another variable', { ...locks, implement: locks.implement.slice(0, detStart).replace('maxAiCredits\\":${GH_AW_MAX_AI_CREDITS}', 'maxAiCredits\\":${OTHER}') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml sets an AI-credits cap outside/],
       ['the config appends to the variable (${GH_AW_MAX_AI_CREDITS}0 = 5000)', { ...locks, implement: locks.implement.slice(0, detStart).replace('maxAiCredits\\":${GH_AW_MAX_AI_CREDITS}', 'maxAiCredits\\":${GH_AW_MAX_AI_CREDITS}0') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml sets an AI-credits cap outside/],
-      ['the config no longer reads the cap', { ...locks, implement: locks.implement.slice(0, detStart).replace('\\"maxAiCredits\\":${GH_AW_MAX_AI_CREDITS},', '') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml agent cap .*NaN/],
+      ['the config no longer reads the cap', { ...locks, implement: locks.implement.slice(0, detStart).replace('\\"maxAiCredits\\":${GH_AW_MAX_AI_CREDITS},', '') + locks.implement.slice(detStart) }, per, /implement\.lock\.yml sets an AI-credits cap outside/],
       // Independent review: other ways to change the cap, or turn admission on, after the template line.
       ['an unquoted reassignment', after(locks, 'GH_AW_MAX_AI_CREDITS=5000'), per, /outside gh-aw's template: GH_AW_MAX_AI_CREDITS=5000/],
       ['an appending reassignment', after(locks, 'GH_AW_MAX_AI_CREDITS+="0"'), per, /outside gh-aw's template/],
@@ -47,6 +47,10 @@ describe('the spend bound is real: compiled caps equal the policy', () => {
       ['a multiline GITHUB_ENV admission', after(locks, 'printf "GH_AW_ADMISSION_RESULT<<E\\nadmitted\\nE\\n" >> "$GITHUB_ENV"'), per, /outside gh-aw's template/],
       ['a duplicate maxAiCredits key in the config (last wins)', { ...locks, implement: locks.implement.replace('\\"maxAiCredits\\":${GH_AW_MAX_AI_CREDITS},', '\\"maxAiCredits\\":${GH_AW_MAX_AI_CREDITS},\\"maxAiCredits\\":5000,') }, per, /outside gh-aw's template/],
       ['a second config line with a literal cap', after(locks, `printf '%s\\n' "{\\"apiProxy\\":{\\"maxAiCredits\\":5000}}" > "\${RUNNER_TEMP}/gh-aw/awf-config.json"`), per, /outside gh-aw's template/],
+      // Copilot review of #156: a pipeline before the redirect, and a key spelled with a JSON escape.
+      ['a pipeline rewrites the config', { ...locks, implement: locks.implement.replace('}" > "${RUNNER_TEMP}/gh-aw/awf-config.json"', `}" | sed 's/500/5000/g' > "\${RUNNER_TEMP}/gh-aw/awf-config.json"`) }, per, /outside gh-aw's template/],
+      ['a unicode-escaped duplicate key', { ...locks, implement: locks.implement.replace('\\"maxAiCredits\\":${GH_AW_MAX_AI_CREDITS},', '\\"maxAiCredits\\":${GH_AW_MAX_AI_CREDITS},\\"maxAi\\\\u0043redits\\":5000,') }, per, /outside gh-aw's template/],
+      ['a unicode-escaped key in a second config write', after(locks, `printf '%s\\n' "{\\"apiProxy\\":{\\"maxAi\\\\u0043redits\\":5000}}" > "\${RUNNER_TEMP}/gh-aw/awf-config.json"`), per, /outside gh-aw's template/],
       ['a non-integer cap 500.5', { ...locks, implement: agentCap(locks.implement, '500.5') }, per, /agent cap 500\.5/],
       ['an exponent cap 500e2 (= 50000)', { ...locks, implement: agentCap(locks.implement, '500e2') }, per, /agent cap 50000/],
       ['a lock that cannot be read', { ...locks, repair: null }, per, /repair\.lock\.yml could not be read/],

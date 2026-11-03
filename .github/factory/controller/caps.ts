@@ -32,16 +32,38 @@ const CAP_TOKEN = /\bGH_AW_MAX_AI_CREDITS\b|GH_AW_ADMISSION_/g;
 export function unexpectedCapLine(lock: string): string | null {
   for (const raw of lock.split('\n')) {
     const tokens = raw.match(CAP_TOKEN) ?? [];
-    const config = raw.includes('\\"maxAiCredits');
+    // A v1 config key, or any printf that writes the firewall config.
+    const config = raw.includes('\\"maxAiCredits') || (/^\s*printf\b/.test(raw) && raw.includes('awf-config.json'));
     if (tokens.length === 0 && !config) continue;
     const line = raw.trim();
     if (!config && (TEMPLATE_LINES.has(line) || CAP_ASSIGNMENT.test(line))) continue;
-    // The firewall config line: one maxAiCredits key (JSON keeps the last duplicate), whose whole
-    // value is the variable, and no other mention of it.
-    if (line.startsWith("printf '%s\\n' \"{") && tokens.length === 1 && line.split(CONFIG_REF).length === 2 && line.split('maxAiCredits').length === 2) continue;
+    if (configLineOk(line) || line === CHROOT_CONFIG_LINE) continue;
+    // gh-aw ≤ v0.92's single-quoted literal config: its values are checked by jobCaps.
+    if (line.startsWith("printf '%s\\n' '{") && tokens.length === 0 && !line.includes('\\"')) continue;
     return line.slice(0, 120);
   }
   return null;
+}
+
+// Writes back the chroot patch of the config (jq on the file gh-aw just wrote; no cap involved).
+const CHROOT_CONFIG_LINE = 'printf \'%s\\n\' "$_GH_AW_CHROOT_JSON" > "${RUNNER_TEMP}/gh-aw/awf-config.json"';
+
+// The whole firewall-config line: printf of one double-quoted string (escaped quotes, backslashes,
+// `$`, backticks, or the cap variable; no other expansion) redirected to the config file, nothing else.
+const CONFIG_LINE = /^printf '%s\\n' "((?:[^"\\$`]|\\["\\$`]|\$\{GH_AW_MAX_AI_CREDITS\})*)" > "\$\{RUNNER_TEMP\}\/gh-aw\/awf-config\.json"$/;
+
+/** The decoded JSON has one `maxAiCredits` key (JSON keeps the last duplicate), and its value is the cap variable. */
+function configLineOk(line: string): boolean {
+  const m = CONFIG_LINE.exec(line);
+  if (!m || m[1]!.split('${GH_AW_MAX_AI_CREDITS}').length !== 2) return false;
+  const json = m[1]!.replace('${GH_AW_MAX_AI_CREDITS}', '"__cap__"').replace(/\\(["\\$`])/g, '$1');
+  // No JSON escapes at all, so no key can be spelled another way (`maxAi\u0043redits`).
+  if (json.includes('\\') || json.split('"maxAiCredits"').length !== 2) return false;
+  try {
+    return (JSON.parse(json) as { apiProxy?: { maxAiCredits?: unknown } }).apiProxy?.maxAiCredits === '__cap__';
+  } catch {
+    return false;
+  }
 }
 
 /** The AI-credits caps inside one top-level job of a compiled lock file (either format). */
