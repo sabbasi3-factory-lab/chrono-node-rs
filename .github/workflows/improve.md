@@ -77,9 +77,11 @@ steps:
       (cd harness && npm ci --ignore-scripts --no-audit --no-fund && node review/budget-gate.js)
   - name: Install gh-aw v1.0.1 (checksum pinned)
     run: |
-      curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
-      echo "746d0b41d5fb87e2c010b8ac23a464436bb745ff89fbd19a3456431942c37652  $RUNNER_TEMP/gh-aw" | sha256sum -c -
-      chmod 0755 "$RUNNER_TEMP/gh-aw"
+      # Not $RUNNER_TEMP/gh-aw: the compiled agent job already uses that directory for its scripts.
+      mkdir -p "$RUNNER_TEMP/gh-aw-cli"
+      curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw-cli/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
+      echo "746d0b41d5fb87e2c010b8ac23a464436bb745ff89fbd19a3456431942c37652  $RUNNER_TEMP/gh-aw-cli/gh-aw" | sha256sum -c -
+      chmod 0755 "$RUNNER_TEMP/gh-aw-cli/gh-aw"
   - name: gh aw logs, last 7 days (implement, repair, review)
     env:
       GH_TOKEN: ${{ github.token }}
@@ -87,7 +89,7 @@ steps:
       mkdir -p "$RUNNER_TEMP/review-logs"
       for wf in implement repair review; do
         # Kept only if the call succeeds; otherwise that workflow's runs are missing from the data.
-        if "$RUNNER_TEMP/gh-aw" logs "$wf" --start-date -1w -c 200 --json -o "$RUNNER_TEMP/aw-logs" > "$RUNNER_TEMP/${wf}.tmp"; then
+        if "$RUNNER_TEMP/gh-aw-cli/gh-aw" logs "$wf" --start-date -1w -c 200 --json -o "$RUNNER_TEMP/aw-logs" > "$RUNNER_TEMP/${wf}.tmp"; then
           mv "$RUNNER_TEMP/${wf}.tmp" "$RUNNER_TEMP/review-logs/${wf}.json"
         else
           echo "::warning::gh aw logs ${wf} failed: its runs are missing from the data"

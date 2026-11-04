@@ -24,8 +24,8 @@ test("areas: eligible only with 15+ tasks merged since the area's last change (w
 });
 
 test("compactRuns and summaryMd", () => {
-    const runs = compactRuns({ runs: [{ run_id: 1, workflow_name: "Implement en/a #1 attempt 1", model: "m", conclusion: "success", duration: "5m", aic: 20, token_usage: 100, friction: { friction_ratio: 0, cost: { turns: 3 } } }] }, "implement");
-    assert.deepStrictEqual(runs[0], { workflow: "implement", run_id: 1, title: "Implement en/a #1 attempt 1", model: "m", conclusion: "success", duration: "5m", aic: 20, tokens: 100, turns: 3, friction_ratio: 0, created_at: undefined });
+    const runs = compactRuns({ runs: [{ run_id: 1, workflow_name: "Implement en/a #1 attempt 1", model: "m", conclusion: "success", duration: "5m", aic: 20, token_usage: 100, turns: 9, friction: { friction_ratio: 0, cost: { turns: 0 } } }] }, "implement");
+    assert.deepStrictEqual(runs[0], { workflow: "implement", run_id: 1, title: "Implement en/a #1 attempt 1", model: "m", conclusion: "success", duration: "5m", aic: 20, tokens: 100, turns: 9, friction_ratio: 0, created_at: undefined });
     const md = summaryMd(auditCounts([]), runs, [{ area: "prompt:implement", last_change: null, tasks_since: 0, eligible: false }], { runs: [], summary: {} });
     assert.match(md, /\| prompt:implement \| unknown \| 0 \| no \|/);
     assert.match(md, /\| implement \| 1 \| 1 \| 20\.0 \| 20\.0 \|/);
@@ -42,4 +42,15 @@ test("budget gate: today's live total plus the worst case must stay under the pa
     assert.ok(!gate({ snapshots: [snap(10, "2026-11-09")], budgets, now }).ok, "yesterday's");
     assert.ok(!gate({ snapshots: [snap(10, "2026-11-10", true)], budgets, now }).ok, "dry run");
     assert.ok(!gate({ snapshots: [snap(null)], budgets, now }).ok, "unknown total");
+});
+
+test("first tries see repairs from before the window; eligibility uses the merge time; even-count medians average", () => {
+    const merged = ev("merged", "2026-11-04T00:30:00Z", { task: "en/a" });
+    const early = ev("repair_dispatched", "2026-11-02T23:00:00Z", { task: "en/a" });
+    assert.strictEqual(auditCounts([merged], [early]).merged_first_try, 0);
+    // Recorded after the change, but merged before it: not counted.
+    const late = Array.from({ length: 15 }, (_, i) => ev("merged", "2026-11-09T00:00:00Z", { task: `en/t${i}`, merged_at: "2026-11-07T00:00:00Z" }));
+    assert.deepStrictEqual(areas({ "prompt:x": "2026-11-08T00:00:00Z" }, late, NOW).map((a) => [a.tasks_since, a.eligible]), [[0, false]]);
+    const runs = [20, 100].map((aic, i) => ({ workflow: "implement", run_id: i, conclusion: "success", aic }));
+    assert.match(summaryMd(auditCounts([]), runs, [], { runs: [], summary: {} }), /\| implement \| 2 \| 2 \| 120\.0 \| 60\.0 \|/);
 });

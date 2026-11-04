@@ -34,10 +34,14 @@ async function gh(apiPath, accept = "application/vnd.github+json") {
     return accept.endsWith("raw") ? res.text() : res.json();
 }
 
-/** Audit events of the window (non-dry-run), from the `audit` branch (fetched by the workflow). */
-function auditEvents(now) {
+/**
+ * Non-dry-run audit events from the `audit` branch (fetched by the workflow), `days` back. The
+ * window is WINDOW_DAYS; repairs are read 2 days further back, since a task lives at most 24 h
+ * (limits.yaml max_wall_clock_hours), so a merge early in the window still sees its repairs.
+ */
+function auditEvents(now, days = WINDOW_DAYS) {
     const out = [];
-    for (let d = 0; d <= WINDOW_DAYS; d++) {
+    for (let d = 0; d <= days; d++) {
         const day = new Date(now.getTime() - d * 86_400_000).toISOString().slice(0, 10).replace(/-/g, "/");
         let text = "";
         try {
@@ -47,12 +51,15 @@ function auditEvents(now) {
         }
         for (const line of text.split("\n")) if (line.trim()) out.push(JSON.parse(line));
     }
-    const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString();
+    const since = new Date(now.getTime() - days * 86_400_000).toISOString();
     return out.filter((e) => e.timestamp >= since && e.payload && e.payload.dry_run === false).sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1));
 }
 
-/** Counts that matter for a review, from the audit events. Pure. */
-function auditCounts(events) {
+/** When a merge happened: the PR's own merge time, not when the controller recorded it. */
+const mergedAt = (e) => e.payload.merged_at || e.timestamp;
+
+/** Counts that matter for a review, from the window's events (+ earlier repairs, for first tries). Pure. */
+function auditCounts(events, earlierRepairs = []) {
     const byKey = {};
     const merged = new Set();
     const needsHuman = {};
@@ -65,7 +72,8 @@ function auditCounts(events) {
         if (e.type === "repair_dispatched" && e.payload.task) repairsByTask[e.payload.task] = (repairsByTask[e.payload.task] || 0) + 1;
     }
     const tasks = [...merged];
-    const firstTry = tasks.filter((t) => !repairsByTask[t]).length;
+    const repairedEver = new Set([...Object.keys(repairsByTask), ...earlierRepairs.filter((e) => e.type === "repair_dispatched" && e.payload.task).map((e) => e.payload.task)]);
+    const firstTry = tasks.filter((t) => !repairedEver.has(t)).length;
     return {
         events: events.length,
         by_type_reason: Object.fromEntries(Object.entries(byKey).sort()),
@@ -87,7 +95,7 @@ function compactRuns(logs, workflow) {
         duration: r.duration,
         aic: r.aic,
         tokens: r.token_usage,
-        turns: r.friction && r.friction.cost ? r.friction.cost.turns : undefined,
+        turns: r.turns,
         friction_ratio: r.friction ? r.friction.friction_ratio : undefined,
         created_at: r.created_at,
     }));
@@ -98,7 +106,7 @@ function areas(lastChange, events, now) {
     const windowStart = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString();
     return Object.entries(lastChange).map(([area, changed]) => {
         const from = changed && changed > windowStart ? changed : windowStart;
-        const tasks = new Set(events.filter((e) => e.type === "merged" && e.payload.task && e.timestamp >= from).map((e) => e.payload.task));
+        const tasks = new Set(events.filter((e) => e.type === "merged" && e.payload.task && mergedAt(e) >= from).map((e) => e.payload.task));
         // An unknown last change is never eligible (fail closed: a lookup error mustn't open an area).
         return { area, last_change: changed, tasks_since: changed ? tasks.size : 0, eligible: Boolean(changed) && tasks.size >= MIN_TASKS };
     });
@@ -115,7 +123,9 @@ function summaryMd(counts, runs, areaList, outcomes) {
     for (const r of runs) (by[r.workflow] ||= []).push(r);
     for (const [wf, rs] of Object.entries(by)) {
         const aic = rs.map((r) => r.aic || 0).sort((a, b) => a - b);
-        lines.push(`| ${wf} | ${rs.length} | ${rs.filter((r) => r.conclusion === "success").length} | ${aic.reduce((a, b) => a + b, 0).toFixed(1)} | ${(aic[Math.floor(aic.length / 2)] || 0).toFixed(1)} |`);
+        const mid = aic.length / 2;
+        const median = aic.length === 0 ? 0 : aic.length % 2 ? aic[Math.floor(mid)] : (aic[mid - 1] + aic[mid]) / 2;
+        lines.push(`| ${wf} | ${rs.length} | ${rs.filter((r) => r.conclusion === "success").length} | ${aic.reduce((a, b) => a + b, 0).toFixed(1)} | ${median.toFixed(1)} |`);
     }
     lines.push("", "## Outcomes (gh aw outcomes, outcomes branch)", "", `- runs in the window: ${outcomes.runs.length}; item statuses: ${JSON.stringify(outcomes.summary)}`);
     return lines.join("\n") + "\n";
@@ -126,8 +136,10 @@ async function main() {
     const logsDir = opt("--logs");
     const now = new Date(opt("--now") || Date.now());
     fs.mkdirSync(out, { recursive: true });
-    const events = auditEvents(now);
-    const counts = auditCounts(events);
+    const all = auditEvents(now, WINDOW_DAYS + 2);
+    const windowStart = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString();
+    const events = all.filter((e) => e.timestamp >= windowStart);
+    const counts = auditCounts(events, all.filter((e) => e.timestamp < windowStart));
 
     const runs = [];
     for (const wf of Object.keys(PROMPTS)) {
