@@ -124,11 +124,17 @@ jobs:
     timeout-minutes: 30
     outputs:
       tag: ${{ steps.check.outputs.tag }}
+      base: ${{ steps.base.outputs.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           persist-credentials: false
+
+      # The PR is built on exactly this commit (propose checks it out and aborts if main moved).
+      - name: Base commit
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -170,7 +176,8 @@ jobs:
 
       - name: Package the change
         run: |
-          git status --porcelain --untracked-files=all | awk '{print $2}' | grep -vE '^(upstream|tests/golden|contracts)/' && { echo "::error::unexpected changes outside upstream/, tests/golden/, contracts/"; exit 1; } || true
+          git status --porcelain --untracked-files=all > "$RUNNER_TEMP/status.txt"
+          if awk '{print $2}' "$RUNNER_TEMP/status.txt" | grep -vE '^(upstream|tests/golden|contracts)/' > /dev/null; then echo "::error::unexpected changes outside upstream/, tests/golden/, contracts/"; exit 1; fi
           mkdir -p "$RUNNER_TEMP/bump"
           tar cf "$RUNNER_TEMP/bump/change.tar" upstream tests/golden contracts
           cp "$RUNNER_TEMP/seed.status" "$RUNNER_TEMP/seed.log" "$RUNNER_TEMP/bump/"
@@ -190,6 +197,7 @@ jobs:
     env:
       FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
       TAG: ${{ needs.prepare.outputs.tag }}
+      BASE: ${{ needs.prepare.outputs.base }}
       ISSUE: ${{ github.event.issue.number }}
     steps:
       - name: Mode
@@ -219,7 +227,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.mode.outputs.live == 'true'
         with:
-          ref: main
+          ref: ${{ needs.prepare.outputs.base }}
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Open the bump PR (draft, human tier)
@@ -229,11 +237,18 @@ jobs:
           BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
           B: ${{ runner.temp }}/bump
         run: |
-          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::bad tag"; exit 1; }
-          # Only regular files and directories under the three prefixes (no links, no absolute or .. paths).
-          tar tvf "$B/change.tar" | awk '{print substr($1,1,1)}' | grep -qvE '^[-d]$' && { echo "::error::the artifact has links or special files"; exit 1; } || true
-          tar tf "$B/change.tar" | grep -vE '^(upstream|tests/golden|contracts)(/|$)' && { echo "::error::paths outside upstream/, tests/golden/, contracts/"; exit 1; } || true
-          tar tf "$B/change.tar" | grep -qE '(^|/)\.\.(/|$)' && { echo "::error::.. in a path"; exit 1; } || true
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ && "$BASE" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad tag or base"; exit 1; }
+          # The snapshot was made from BASE: if main moved, its newer files would be rolled back.
+          [ "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BASE" ] || { echo "::error::main moved since the bump was prepared: re-add upstream:bump to regenerate"; exit 1; }
+          # Listings saved by checked commands first (no pipe can hide a failure), then validated:
+          # only regular files and directories under the three prefixes, no absolute or .. paths.
+          tar tvf "$B/change.tar" > "$RUNNER_TEMP/types.txt"
+          tar tf "$B/change.tar" > "$RUNNER_TEMP/paths.txt"
+          [ -s "$RUNNER_TEMP/paths.txt" ] || { echo "::error::empty artifact"; exit 1; }
+          if cut -c1 "$RUNNER_TEMP/types.txt" | grep -vxE '[-d]' > /dev/null; then echo "::error::the artifact has links or special files"; exit 1; fi
+          if grep -vE '^(upstream|tests/golden|contracts)(/|$)' "$RUNNER_TEMP/paths.txt" > /dev/null; then echo "::error::paths outside upstream/, tests/golden/, contracts/"; exit 1; fi
+          if grep -E '(^|/)\.\.(/|$)' "$RUNNER_TEMP/paths.txt" > /dev/null; then echo "::error::.. in a path"; exit 1; fi
           rm -rf upstream tests/golden contracts && tar xf "$B/change.tar" --no-same-owner --no-same-permissions
           branch="factory/upstream/${TAG}"
           git config user.name "$BOT"

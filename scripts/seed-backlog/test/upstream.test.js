@@ -42,3 +42,18 @@ test("summarize maps changed upstream files to tasks, new steps, configurations,
     assert.deepStrictEqual(s.unported, ["src/locales/zh/parsers/ZHHansDateParser.ts"]);
     assert.deepStrictEqual(s.other, ["package.json"]);
 });
+
+test("summarize: a rename is a removal of the old path and an addition of the new one", () => {
+    const taskmap = { done: [], tasks: [{ id: "en/month-name-parser", step: "ENMonthNameParser", source: "locales/en/parsers/ENMonthNameParser.ts" }] };
+    const s = u.summarize(
+        [
+            { filename: "src/locales/en/parsers/ENMonthParser.ts", previous_filename: "src/locales/en/parsers/ENMonthNameParser.ts", status: "renamed" },
+            { filename: "src/locales/zh/parsers/ENMonthNameParser.ts", previous_filename: "src/locales/en/parsers/ENMonthNameParser.ts", status: "renamed" },
+        ],
+        taskmap,
+        ["en"],
+    );
+    assert.deepStrictEqual(s.removed_steps.map((x) => x.task), ["en/month-name-parser", "en/month-name-parser"]);
+    assert.deepStrictEqual(s.new_steps.map((x) => x.step), ["ENMonthParser"]);
+    assert.deepStrictEqual(s.unported, ["src/locales/zh/parsers/ENMonthNameParser.ts"]);
+});

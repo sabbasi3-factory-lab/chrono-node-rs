@@ -73,7 +73,11 @@ function summarize(files, taskmap, ported) {
     for (const t of taskmap.tasks || []) bySource.set(`src/${t.source}`, { step: t.step, task: t.id });
     const done = new Set((taskmap.done || []).map((d) => d.step));
     const out = { steps: [], new_steps: [], removed_steps: [], configuration: [], core: [], tests: [], unported: [], other: [] };
-    for (const f of files) {
+    // A rename is the old path removed plus the new path added, so a moved step's task shows up.
+    const expanded = files.flatMap((f) =>
+        f.status === "renamed" && f.previous_filename ? [{ filename: f.previous_filename, status: "removed" }, { filename: f.filename, status: "added" }] : [f],
+    );
+    for (const f of expanded) {
         const p = f.filename;
         const lang = /^src\/locales\/([a-z]{2})\//.exec(p)?.[1] || /^test\/([a-z]{2})\//.exec(p)?.[1] || null;
         if (lang && !ported.includes(lang)) {
@@ -169,14 +173,14 @@ async function check() {
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `status=${report.status}\ntag=${report.latest ? report.latest.tag : ""}\n`);
 }
 
-/** One issue per upstream version, ever: an existing one (open or closed) with the marker wins. */
+/** One issue per upstream version, ever: an existing one (any state, any labels) with the marker wins. */
 async function issue() {
     const r = JSON.parse(fs.readFileSync(opt("--report"), "utf8"));
     if (r.status !== "new_version") return console.log("nothing to file");
     const marker = MARKER(r.latest.tag, r.drill);
     for (let page = 1; ; page++) {
-        const batch = await gh("GET", `/repos/${SLUG}/issues?labels=upstream&state=all&per_page=100&page=${page}`);
-        const found = batch.find((i) => (i.body || "").includes(marker));
+        const batch = await gh("GET", `/repos/${SLUG}/issues?state=all&per_page=100&page=${page}`);
+        const found = batch.find((i) => !i.pull_request && (i.body || "").includes(marker));
         if (found) return console.log(`already filed: #${found.number}`);
         if (batch.length < 100) break;
     }
