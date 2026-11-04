@@ -17,6 +17,8 @@
     { "name": "drill", "color": "FEF2C0", "description": "A fire drill; nothing is really wrong" },
     { "name": "intake:proposed", "color": "0E8A16", "description": "The intake confirmed a port bug and proposed a fix task PR" },
     { "name": "intake:not-a-port-bug", "color": "EDEDED", "description": "chrono-node gives the same result: the port is faithful" },
-    { "name": "intake:not-ported-yet", "color": "EDEDED", "description": "Needs steps the port doesn't have yet" }
+    { "name": "intake:not-ported-yet", "color": "EDEDED", "description": "Needs steps the port doesn't have yet" },
+    { "name": "upstream", "color": "5319E7", "description": "A new chrono-node release (upstream sync)" },
+    { "name": "upstream:bump", "color": "5319E7", "description": "Draft the human-tier bump PR for this upstream release" }
   ]
 }

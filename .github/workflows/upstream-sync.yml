@@ -1,0 +1,270 @@
+# Upstream sync (DESIGN §6 "version sync"). Plain code, no AI. A port has to follow its source.
+#
+#   check (daily): the newest chrono-node release vs upstream/PINNED.md. On a new version: one
+#                  `upstream` issue (per version, ever) saying what it changes for us: ported steps
+#                  and their tasks, new and removed steps, configurations, core, upstream tests
+#                  (golden areas). scripts/seed-backlog/upstream.js.
+#   bump (the owner, or anyone with write access, labels that issue `upstream:bump`): drafts the
+#                  human-tier bump PR: upstream/ re-copied from the tag, PINNED.md, tests/golden/
+#                  regenerated, contracts re-seeded (new steps need task map entries: listed).
+# Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written.
+# Human tier: changes need the owner's review.
+name: upstream-sync
+
+on:
+  schedule:
+    - cron: "23 6 * * *"
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      drill_pinned_tag:
+        description: "Drill: pretend the pin is this older release (e.g. v2.10.0); the issue is labelled drill"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name != 'issues'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install the seed script
+        working-directory: scripts/seed-backlog
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Newest chrono-node release vs the pin
+        id: check
+        working-directory: ${{ runner.temp }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRILL: ${{ inputs.drill_pinned_tag }}
+        run: |
+          if [ -n "$DRILL" ]; then
+            [[ "$DRILL" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::drill_pinned_tag must look like v2.10.0"; exit 1; }
+            node "$GITHUB_WORKSPACE/scripts/seed-backlog/upstream.js" check --pinned-tag "$DRILL"
+          else
+            node "$GITHUB_WORKSPACE/scripts/seed-backlog/upstream.js" check
+          fi
+          if [ -f upstream-issue.md ]; then cat upstream-issue.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Mode
+        if: steps.check.outputs.status == 'new_version'
+        id: mode
+        env:
+          FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"; else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would file the issue above"; fi
+
+      - name: Create controller App token (issues only)
+        if: steps.mode.outputs.live == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-issues: write
+
+      # `issue` loads no third-party module (yaml is loaded only by `check`).
+      - name: File the issue (one per upstream version)
+        if: steps.mode.outputs.live == 'true'
+        working-directory: ${{ runner.temp }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node "$GITHUB_WORKSPACE/scripts/seed-backlog/upstream.js" issue --report upstream-report.json
+
+  # Labelling needs triage access; the bump needs write access. The permission API needs a token
+  # with push access, so this job has `contents: write` and runs only `gh api`.
+  authorize:
+    if: >-
+      github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'issues' &&
+      github.event.label.name == 'upstream:bump' && contains(github.event.issue.labels.*.name, 'upstream') &&
+      github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: write }
+    outputs:
+      ok: ${{ steps.who.outputs.ok }}
+    steps:
+      - name: Does the labeller have write access?
+        id: who
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SENDER: ${{ github.event.sender.login }}
+          REPO: ${{ github.repository }}
+        run: |
+          p=$(gh api "repos/${REPO}/collaborators/${SENDER}/permission" --jq .permission)
+          echo "${SENDER}: ${p}"
+          case "$p" in admin|maintain|write) echo "ok=true" >> "$GITHUB_OUTPUT" ;; *) echo "ok=false" >> "$GITHUB_OUTPUT" ;; esac
+
+  # Runs the new release's own tests (golden generation) and the seed script: no token beyond read.
+  prepare:
+    needs: authorize
+    if: needs.authorize.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
+      base: ${{ steps.base.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      # The PR is built on exactly this commit (propose checks it out and aborts if main moved).
+      - name: Base commit
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: The issue's version is still the newest release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          (cd scripts/seed-backlog && npm ci --ignore-scripts --no-audit --no-fund)
+          node scripts/seed-backlog/upstream.js check
+          want=$(grep -oE '<!-- factory-upstream: v[0-9]+\.[0-9]+\.[0-9]+ -->' <<<"$BODY" | head -1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || true)
+          got=$(jq -r '.latest.tag // ""' upstream-report.json)
+          [ "$(jq -r .status upstream-report.json)" = new_version ] && [ -n "$want" ] && [ "$want" = "$got" ] || { echo "::error::the issue is for ${want:-?}, the newest release is ${got:-?} (or already pinned)"; exit 1; }
+          echo "tag=$got" >> "$GITHUB_OUTPUT"
+          mv upstream-report.json "$RUNNER_TEMP/" && rm -f upstream-issue.md
+
+      - name: Re-copy upstream/ from the tag and update PINNED.md
+        env:
+          TAG: ${{ steps.check.outputs.tag }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/release"
+          curl -fsSL "https://codeload.github.com/wanasit/chrono/tar.gz/refs/tags/${TAG}" | tar xz -C "$RUNNER_TEMP/release" --strip-components=1
+          node scripts/seed-backlog/upstream.js stage --report "$RUNNER_TEMP/upstream-report.json" --from "$RUNNER_TEMP/release"
+
+      - name: Regenerate tests/golden (the new release's own tests, TZ=UTC)
+        working-directory: harness
+        run: npm ci --ignore-scripts --no-audit --no-fund && npm run golden
+
+      # New or removed steps make the task map invalid until a person adds them: then the contracts
+      # are left as they are and the PR says why.
+      - name: Re-seed contracts
+        working-directory: scripts/seed-backlog
+        run: |
+          if node seed.js contracts > "$RUNNER_TEMP/seed.log" 2>&1; then echo "ok" > "$RUNNER_TEMP/seed.status"; else echo "failed" > "$RUNNER_TEMP/seed.status"; git checkout -- ../../contracts; fi
+          cat "$RUNNER_TEMP/seed.log"
+
+      - name: Package the change
+        run: |
+          git status --porcelain --untracked-files=all > "$RUNNER_TEMP/status.txt"
+          if awk '{print $2}' "$RUNNER_TEMP/status.txt" | grep -vE '^(upstream|tests/golden|contracts)/' > /dev/null; then echo "::error::unexpected changes outside upstream/, tests/golden/, contracts/"; exit 1; fi
+          mkdir -p "$RUNNER_TEMP/bump"
+          tar cf "$RUNNER_TEMP/bump/change.tar" upstream tests/golden contracts
+          cp "$RUNNER_TEMP/seed.status" "$RUNNER_TEMP/seed.log" "$RUNNER_TEMP/bump/"
+          git diff --stat | tail -1 > "$RUNNER_TEMP/bump/stat.txt"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: upstream-bump
+          path: ${{ runner.temp }}/bump/
+          retention-days: 7
+
+  # Writes only: checkout, the App token action, tar, git and gh. No package and no upstream code runs.
+  propose:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+      BASE: ${{ needs.prepare.outputs.base }}
+      ISSUE: ${{ github.event.issue.number }}
+    steps:
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"; else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would open the bump PR for ${TAG}"; fi
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.mode.outputs.live == 'true'
+        with:
+          name: upstream-bump
+          path: ${{ runner.temp }}/bump
+
+      - name: Create controller App token
+        if: steps.mode.outputs.live == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.mode.outputs.live == 'true'
+        with:
+          ref: ${{ needs.prepare.outputs.base }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Open the bump PR (draft, human tier)
+        if: steps.mode.outputs.live == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
+          B: ${{ runner.temp }}/bump
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ && "$BASE" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad tag or base"; exit 1; }
+          # The snapshot was made from BASE: if main moved, its newer files would be rolled back.
+          [ "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BASE" ] || { echo "::error::main moved since the bump was prepared: re-add upstream:bump to regenerate"; exit 1; }
+          # Listings saved by checked commands first (no pipe can hide a failure), then validated:
+          # only regular files and directories under the three prefixes, no absolute or .. paths.
+          tar tvf "$B/change.tar" > "$RUNNER_TEMP/types.txt"
+          tar tf "$B/change.tar" > "$RUNNER_TEMP/paths.txt"
+          [ -s "$RUNNER_TEMP/paths.txt" ] || { echo "::error::empty artifact"; exit 1; }
+          if cut -c1 "$RUNNER_TEMP/types.txt" | grep -vxE '[-d]' > /dev/null; then echo "::error::the artifact has links or special files"; exit 1; fi
+          if grep -vE '^(upstream|tests/golden|contracts)(/|$)' "$RUNNER_TEMP/paths.txt" > /dev/null; then echo "::error::paths outside upstream/, tests/golden/, contracts/"; exit 1; fi
+          if grep -E '(^|/)\.\.(/|$)' "$RUNNER_TEMP/paths.txt" > /dev/null; then echo "::error::.. in a path"; exit 1; fi
+          rm -rf upstream tests/golden contracts && tar xf "$B/change.tar" --no-same-owner --no-same-permissions
+          branch="factory/upstream/${TAG}"
+          git config user.name "$BOT"
+          git config user.email "$(gh api "users/${BOT}" --jq .id)+${BOT}@users.noreply.github.com"
+          git switch -c "$branch"
+          git add -A -- upstream tests/golden contracts
+          git commit -q -m "upstream: chrono-node ${TAG} (#${ISSUE})"
+          git push origin "$branch"
+          seed=$(cat "$B/seed.status")
+          note="Contracts re-seeded: every \`source_sha\` moves to the new pin."
+          [ "$seed" = ok ] || note="**Contracts NOT re-seeded:** the task map needs entries for new or removed steps (seed script output below). Add them in this PR, then run \`node scripts/seed-backlog/seed.js contracts\`."
+          body=$(printf '%s\n' "Bump the pinned chrono-node to \`${TAG}\` (#${ISSUE}), drafted by the upstream sync (plain code, no AI)." "" \
+            "- \`upstream/\` re-copied from the tag (the file list in \`upstream/PINNED.md\`), Version and Commit updated" \
+            "- \`tests/golden/\` regenerated from the new release's own tests ($(cat "$B/stat.txt"))" \
+            "- ${note}" "" \
+            "**Human tier.** Check the issue's summary, the golden diff (behaviour changes the port must follow) and harness/ pins (\`harness/package.json\` must match \`upstream/package-lock.json\`)." \
+            "" "<details><summary>seed script</summary>" "" '```' "$(tail -40 "$B/seed.log")" '```' "</details>")
+          url=$(gh pr create --draft --base main --head "$branch" --title "upstream: chrono-node ${TAG}" --body "$body")
+          gh issue comment "$ISSUE" --body "**Upstream sync** (plain code, no AI) · bump drafted: ${url}"

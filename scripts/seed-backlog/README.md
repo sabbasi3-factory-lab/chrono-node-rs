@@ -42,3 +42,11 @@ Besides the task map, every fix case in `tests/golden/fixes/` (from the intake: 
 - "blocked by" links for `depends_on`
 
 Guards: it needs `FACTORY_SEED_APPLY=yes` and a token, and it refuses to run unless every generated contract is on `main` byte for byte.
+
+## Upstream sync (`upstream.js`)
+
+`.github/workflows/upstream-sync.yml` runs `node upstream.js check` daily: the newest chrono-node release vs `upstream/PINNED.md`. On a new version it files **one** `upstream` issue per version (a hidden `<!-- factory-upstream: vX.Y.Z -->` marker; never twice, even after it's closed) that maps the upstream diff to the port: changed ported steps and their tasks, new and removed steps (task map entries needed), configurations, core and shared bases, and upstream tests with their golden areas. Unported languages are only counted.
+
+Labelling the issue `upstream:bump` (someone with write access) drafts the human-tier bump PR: `upstream.js stage` re-copies the file list in `PINNED.md` from the tag and updates Version and Commit, then the golden generator and this script regenerate `tests/golden/` and `contracts/`. If the task map needs new entries, the contracts are left alone and the PR says so.
+
+Drill: run the workflow by hand with `drill_pinned_tag: v2.10.0` (or `node upstream.js check --pinned-tag v2.10.0` locally): the current release then looks new, and the issue is labelled `drill`. Staging the pinned tag itself (`stage` from its tarball) leaves `upstream/` byte-identical, which checks the copied file list.
