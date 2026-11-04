@@ -86,3 +86,18 @@ test("decide and the fixed comments", () => {
     assert.match(lib.reportComment("not_yet_ported", { missing: ["ENFooParser", "<script>"] }), /`ENFooParser`\. They/);
     assert.match(lib.reportComment("proposed", { fix: "en/fix-1", pr: 5 }), /#5/);
 });
+
+test("decide: chrono-node finding nothing while Rust finds a date needs a person (no step to scope)", () => {
+    assert.deepStrictEqual(lib.decide({ status: "mismatched", requires: { parsers: [], refiners: [] } }), { action: "report", reason: "no_upstream_result" });
+});
+
+test("checkDecision: only what intake.js writes reaches the comment step", () => {
+    assert.deepStrictEqual(lib.checkDecision({ action: "propose", fix: "en/fix-0123abcd", junk: 1 }), { action: "propose", fix: "en/fix-0123abcd" });
+    assert.throws(() => lib.checkDecision({ action: "propose", fix: "en/../x" }));
+    assert.throws(() => lib.checkDecision({ action: "report", reason: "invalid", detail: "@everyone click here" }));
+    assert.deepStrictEqual(lib.checkDecision({ action: "report", reason: "invalid", detail: lib.ERRORS.text }).detail, lib.ERRORS.text);
+    assert.throws(() => lib.checkDecision({ action: "report", reason: "something" }));
+    assert.deepStrictEqual(lib.checkDecision({ action: "report", reason: "not_yet_ported", detail: { missing: ["ENA", "<b>"] } }).detail, { missing: ["ENA"] });
+    assert.throws(() => lib.checkDecision({ action: "report", reason: "duplicate", detail: { fix: "en/fix-0123abcd", where: "x" } }));
+    assert.deepStrictEqual(lib.checkDecision({ action: "report", reason: "error", detail: "anything" }), { action: "report", reason: "error", detail: null });
+});

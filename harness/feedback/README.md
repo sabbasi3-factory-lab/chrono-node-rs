@@ -26,8 +26,8 @@ compare.js, fresh seed  ──►  factory:bug issue  ──►  re-run the requ
 
 A bug report is a request that can be re-run, so triage is deterministic.
 
-1. **Trigger:** an issue with `factory:bug`, opened by the monitor (controller App) or by someone with write access, or labelled `factory:bug` later by someone with write access. Others are ignored (a maintainer can add the label after checking the report).
-2. **Parse:** the form's headings (`.github/ISSUE_TEMPLATE/port-bug.yml`; the monitor writes the same ones). Every field is validated; anything unexpected gets a fixed "can't triage" comment.
+1. **Trigger:** the `factory:bug` label being added (also when an issue is created with it), by the monitor (controller App) or by someone with write access. Others are ignored (a maintainer can re-add the label after checking the report). `opened` isn't a trigger: it would triage every report twice.
+2. **Parse:** the form's headings (`.github/ISSUE_TEMPLATE/port-bug.yml`; the monitor writes the same ones). Every field is validated (the configuration must be one in `tests/golden/configurations.json`); anything unexpected gets a fixed "can't triage" comment.
 3. **Re-run:** `compare.js --requests` on `main`'s Rust CLI and the pinned chrono-node.
 4. **Decide:**
 
@@ -37,11 +37,12 @@ A bug report is a request that can be re-run, so triage is deterministic.
    | They agree | `intake:not-a-port-bug`, closed: the port is faithful; chrono-node bugs go upstream. |
    | Steps not ported | `intake:not-ported-yet`, closed. |
    | Already proposed or on `main` | A comment pointing at it. |
+   | Rust finds a date, chrono-node finds none | `needs-human`: no upstream step to blame, so the fix can't be scoped automatically. |
    | Couldn't run | `needs-human`. |
 
-5. **After the PR merges** (`link` job, push to `harness/golden/fixes/**`): `seed.js issues --apply --only <new fix ids>` creates the task issue (with the monitor marker), and the bug report is closed with a link to it. The controller takes the task like any other (auto-ready for the `auto` tier).
+5. **After the PR merges** (`link` job, push to `harness/golden/fixes/**`): `seed.js issues --plan --only <new fix ids>` plans the task issue (with the monitor marker) before any token exists; `intake.js tasks` creates it, and `intake.js link` closes the bug report with a link to it. The controller takes the task like any other (auto-ready for the `auto` tier).
 
-Comments are fixed templates; no issue text is echoed back. Writes happen only in live mode, in jobs that run no third-party code while the App token exists.
+Comments are fixed templates; no issue text is echoed back. Writes happen only in live mode. While the App token exists only `intake.js` runs (Node built-ins and this directory, no packages), and it re-validates what it reads from the triage job: the decision against the known reasons and messages, and exactly the three expected files for a PR.
 
 ## Fix tasks
 

@@ -9,15 +9,18 @@
 # - they agree     → "not a port bug" (chrono-node does the same), closed;
 # - not comparable → "not ported yet", closed;
 # - unparseable    → a comment asking for the form's fields.
-# When a fix contract merges (`link`), its task issue is created (seed.js issues --apply --only)
+# When a fix contract merges (`link`), its task issue is created (seed.js issues --plan --only, then
+# intake.js tasks)
 # and the bug report points at it. The controller takes the task from there like any other.
 # Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written (the triage still runs).
 # Human tier: changes need the owner's review.
 name: intake
 
+# `labeled` only: an issue created with the label (the form, the monitor) also fires `labeled`, with
+# the creator as sender, so `opened` would triage every report twice.
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
   push:
     branches: [main]
     paths: ["harness/golden/fixes/**"]
@@ -26,17 +29,39 @@ permissions:
   contents: read
 
 jobs:
-  triage:
+  # Only reports labelled by the monitor or by someone with write access are triaged. GitHub's
+  # permission API needs a token with push access, so this job has `contents: write` and runs
+  # nothing but checkout and one dependency-free script.
+  authorize:
     if: >-
       github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'issues' &&
-      contains(github.event.issue.labels.*.name, 'factory:bug') &&
-      (github.event.action == 'opened' || github.event.label.name == 'factory:bug')
+      github.event.label.name == 'factory:bug'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: write }
+    outputs:
+      authorized: ${{ steps.who.outputs.authorized }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: harness/feedback
+      - name: Does the labeller have write access?
+        id: who
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node harness/feedback/intake.js authorize --event "$GITHUB_EVENT_PATH"
+
+  triage:
+    needs: authorize
     concurrency:
       group: intake-${{ github.event.issue.number }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # Read-only token: the reporter's permission and an open fix PR's branch.
+    # Read-only token: an open fix PR's branch.
     permissions: { contents: read, issues: read }
     env:
       GH_TOKEN: ${{ github.token }}
@@ -55,11 +80,13 @@ jobs:
         with:
           node-version: 24
 
-      - name: Who reported it, and the request (issue text is data, validated field by field)
+      - name: The request (issue text is data, validated field by field)
         id: input
         working-directory: harness
+        env:
+          AUTHORIZED: ${{ needs.authorize.outputs.authorized }}
         run: |
-          node feedback/intake.js input --event "$GITHUB_EVENT_PATH" --out "$OUT"
+          node feedback/intake.js input --event "$GITHUB_EVENT_PATH" --out "$OUT" --authorized "$AUTHORIZED"
           if [ -f "$OUT/request.jsonl" ]; then echo "request=true" >> "$GITHUB_OUTPUT"; fi
 
       - name: Build the Rust CLI and chrono-node
@@ -160,11 +187,16 @@ jobs:
           fix=$(jq -r .fix "$OUT/decision.json")
           branch=$(jq -r .branch "$OUT/decision.json")
           [[ "$fix" =~ ^[a-z]{2}/fix-[0-9a-f]{8}$ && "$branch" == "factory/intake/${fix/\//-}" ]] || { echo "::error::bad decision"; exit 1; }
-          cp -r "$OUT/files/." .
+          # The artifact comes from a job that ran third-party and agent-written code: take exactly
+          # the three expected files, nothing else.
+          slug=${fix/\//-}
+          paths=("contracts/${fix}.yaml" "harness/golden/fixes/${slug}.json" "tests/golden/fixes/${slug}.json")
+          [ "$(find "$OUT/files" -type f | wc -l)" -eq 3 ] || { echo "::error::the artifact has unexpected files"; exit 1; }
+          for p in "${paths[@]}"; do [ -f "$OUT/files/$p" ] && [ ! -L "$OUT/files/$p" ] || { echo "::error::missing $p"; exit 1; }; install -D -m 644 "$OUT/files/$p" "$p"; done
           git config user.name "$BOT"
           git config user.email "$(gh api "users/${BOT}" --jq .id)+${BOT}@users.noreply.github.com"
           git switch -c "$branch"
-          git add contracts harness/golden/fixes tests/golden/fixes
+          git add -- "${paths[@]}"
           git commit -q -m "intake: fix task ${fix} (#${ISSUE})"
           git push origin "$branch"
           body=$(printf '%s\n' \
@@ -195,6 +227,7 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions: { contents: read, issues: read }
     env:
       FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
       GITHUB_REPOSITORY: ${{ github.repository }}
@@ -208,9 +241,18 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install the seed script (before any token exists)
-        working-directory: scripts/seed-backlog
-        run: npm ci --ignore-scripts --no-audit --no-fund
+      # Everything that loads a third-party module runs before the App token exists; the write
+      # step below is intake.js, which loads none and accepts only fix-task plan entries.
+      - name: Plan the task issues for new fix contracts (no write token)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ids=$(node harness/feedback/intake.js pending)
+          echo "fix contracts without a task issue: ${ids:-none}"
+          echo '[]' > "$RUNNER_TEMP/plan.json"
+          if [ -n "$ids" ]; then
+            (cd scripts/seed-backlog && npm ci --ignore-scripts --no-audit --no-fund && node seed.js issues --plan --only "$ids" > "$RUNNER_TEMP/plan.json")
+          fi
 
       - name: Mode
         id: mode
@@ -227,15 +269,11 @@ jobs:
           repositories: chrono-node-rs
           permission-issues: ${{ steps.mode.outputs.live == 'true' && 'write' || 'read' }}
 
-      - name: Task issues for new fix contracts, then link the bug reports
+      - name: Create the task issues, then link the bug reports
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           LIVE: ${{ steps.mode.outputs.live }}
         run: |
-          ids=$(node harness/feedback/intake.js pending)
-          echo "fix contracts without a task issue: ${ids:-none}"
-          if [ "$LIVE" != "true" ]; then echo "[dry-run] would create task issues and link bug reports"; exit 0; fi
-          if [ -n "$ids" ]; then
-            (cd scripts/seed-backlog && node seed.js labels && FACTORY_SEED_APPLY=yes node seed.js issues --apply --only "$ids")
-          fi
+          if [ "$LIVE" != "true" ]; then echo "[dry-run] would create:"; jq -r '.[].title' "$RUNNER_TEMP/plan.json"; exit 0; fi
+          node harness/feedback/intake.js tasks --plan "$RUNNER_TEMP/plan.json"
           node harness/feedback/intake.js link

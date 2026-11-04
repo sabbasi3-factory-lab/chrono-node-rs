@@ -145,40 +145,52 @@ function unfence(v) {
     return v.includes("```") ? undefined : v;
 }
 
+// Every reason parseReport can give (the comment step accepts only these).
+const ERRORS = {
+    body: "the issue body is missing or too long",
+    config: "Configuration must be one of the named configurations in tests/golden/configurations.json, such as `en.casual`",
+    text: "Text must be one block of 1-1000 characters",
+    date: "Reference date must be a UTC ISO instant such as `2024-02-29T12:00:00.000Z`",
+    timezone: "Reference timezone must be an abbreviation (e.g. `EST`) or minutes from UTC (e.g. `-300`)",
+    optionsBlock: "Options must be one JSON block",
+    optionsJson: "Options must be JSON",
+    options: 'Options may only be `{}` or `{"forwardDate": true}`',
+};
+
 /**
  * A bug report (the form, or the monitor's issue) as a request. Everything in an issue is data,
  * so anything unexpected is rejected with a reason, never guessed.
  * @returns {{request?: object, error?: string}}
  */
 function parseReport(body) {
-    if (typeof body !== "string" || body.length > 60000) return { error: "the issue body is missing or too long" };
+    if (typeof body !== "string" || body.length > 60000) return { error: ERRORS.body };
     const config = section(body, "Configuration");
-    if (!config || !CONFIG_RE.test(config)) return { error: "Configuration must be a named configuration such as `en.casual`" };
+    if (!config || !CONFIG_RE.test(config)) return { error: ERRORS.config };
     const text = unfence(section(body, "Text"));
-    if (typeof text !== "string" || text.length === 0 || text.length > 1000) return { error: "Text must be one block of 1-1000 characters" };
+    if (typeof text !== "string" || text.length === 0 || text.length > 1000) return { error: ERRORS.text };
     const instant = section(body, "Reference date");
     if (!instant || !INSTANT_RE.test(instant) || Number.isNaN(Date.parse(instant))) {
-        return { error: "Reference date must be a UTC ISO instant such as `2024-02-29T12:00:00.000Z`" };
+        return { error: ERRORS.date };
     }
     const tzRaw = section(body, "Reference timezone");
     let tz = null;
     if (tzRaw !== null) {
         if (/^[A-Z]{1,5}$/.test(tzRaw)) tz = tzRaw;
         else if (/^-?\d{1,3}$/.test(tzRaw) && Math.abs(Number(tzRaw)) <= 840) tz = Number(tzRaw);
-        else return { error: "Reference timezone must be an abbreviation (e.g. `EST`) or minutes from UTC (e.g. `-300`)" };
+        else return { error: ERRORS.timezone };
     }
     const optRaw = unfence(section(body, "Options"));
     let options = {};
-    if (optRaw === undefined) return { error: "Options must be one JSON block" };
+    if (optRaw === undefined) return { error: ERRORS.optionsBlock };
     if (optRaw !== null) {
         try {
             options = JSON.parse(optRaw);
         } catch {
-            return { error: "Options must be JSON" };
+            return { error: ERRORS.optionsJson };
         }
         const keys = options && typeof options === "object" && !Array.isArray(options) ? Object.keys(options) : null;
         if (!keys || keys.some((k) => k !== "forwardDate") || (keys.length === 1 && typeof options.forwardDate !== "boolean")) {
-            return { error: 'Options may only be `{}` or `{"forwardDate": true}`' };
+            return { error: ERRORS.options };
         }
     }
     const iso = new Date(instant).toISOString();
@@ -188,6 +200,10 @@ function parseReport(body) {
 
 /** What the intake does with one triaged request (an entry of compare.js --requests --report). */
 function decide(outcome) {
+    // chrono-node finds nothing but Rust does: no upstream step to blame, so a person locates it.
+    if (outcome && outcome.status === "mismatched" && outcome.requires && outcome.requires.parsers.length + outcome.requires.refiners.length === 0) {
+        return { action: "report", reason: "no_upstream_result" };
+    }
     if (outcome && outcome.status === "mismatched") return { action: "propose", reason: "mismatch" };
     if (outcome && outcome.status === "matched") return { action: "report", reason: "same_as_chrono_node" };
     if (outcome && outcome.status === "not_comparable") return { action: "report", reason: "not_yet_ported" };
@@ -211,13 +227,49 @@ function reportComment(reason, detail) {
     if (reason === "proposed") {
         return `${HEAD} · port bug confirmed\n\nThe Rust port and the pinned chrono-node disagree on this request. Proposed fix task \`${detail.fix}\` (contract + golden case, owner review): #${detail.pr}. When it merges, the task issue is created and linked here.`;
     }
+    if (reason === "no_upstream_result") {
+        return `${HEAD} · port bug, needs a person\n\nchrono-node finds no date here but the Rust port does, so no upstream step can be blamed and the fix can't be scoped automatically. Labelled \`needs-human\`.`;
+    }
     if (reason === "duplicate") {
         return `${HEAD} · already tracked\n\nThis request is already fix task \`${detail.fix}\`${detail.where ? ` (${detail.where})` : ""}.`;
     }
     return `${HEAD} · triage failed\n\nThe request couldn't be run through both implementations. A person needs to look.`;
 }
 
+const REASONS = new Set(["invalid", "same_as_chrono_node", "not_yet_ported", "duplicate", "error", "no_upstream_result"]);
+
+/**
+ * A decision read back from the triage job's artifact, reduced to what the comment step may use.
+ * Throws on anything that isn't exactly what intake.js writes.
+ */
+function checkDecision(d) {
+    const fail = () => {
+        throw new Error("decision.json isn't a valid intake decision");
+    };
+    if (!d || typeof d !== "object") fail();
+    if (d.action === "ignore") return { action: "ignore" };
+    if (d.action === "propose") {
+        if (typeof d.fix !== "string" || !/^[a-z]{2}\/fix-[0-9a-f]{8}$/.test(d.fix)) fail();
+        return { action: "propose", fix: d.fix };
+    }
+    if (d.action !== "report" || !REASONS.has(d.reason)) fail();
+    if (d.reason === "invalid") return Object.values(ERRORS).includes(d.detail) ? { action: "report", reason: "invalid", detail: d.detail } : fail();
+    if (d.reason === "not_yet_ported") {
+        const missing = d.detail && Array.isArray(d.detail.missing) ? d.detail.missing.filter((s) => typeof s === "string" && /^[A-Za-z0-9]{1,80}$/.test(s)).slice(0, 20) : [];
+        return { action: "report", reason: d.reason, detail: { missing } };
+    }
+    if (d.reason === "duplicate") {
+        const fix = d.detail && d.detail.fix;
+        const where = d.detail && d.detail.where;
+        if (typeof fix !== "string" || !/^[a-z]{2}\/fix-[0-9a-f]{8}$/.test(fix) || !["on main", "fix PR open"].includes(where)) fail();
+        return { action: "report", reason: d.reason, detail: { fix, where } };
+    }
+    return { action: "report", reason: d.reason, detail: null };
+}
+
 module.exports = {
+    ERRORS,
+    checkDecision,
     sha256,
     MONITOR_MARKER,
     MONITOR_MARKER_RE,
