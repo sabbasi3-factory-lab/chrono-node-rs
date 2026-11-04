@@ -16,8 +16,10 @@ reviewed like code and applied with the commands below (owner or coordinator, ad
 - **Bypass: repository admins, for pull requests only.** With one person owning the repo, the
   owner's own PRs can't get a second code owner's approval; the bypass keeps today's flow for them.
   In a team, drop the bypass so every human-tier change gets another owner's review.
-- **Generated onboarding PRs** (`harness/onboard/`) touch owned paths (`contracts/`,
-  `tests/golden/`), so they stay with the owner until their auto-merge policy adds carve-outs here.
+- **Generated onboarding PRs** (`harness/onboard/`): the approved languages' generated paths
+  (`contracts/<code>/`, `tests/golden/<module>/`, `harness/golden/coverage/<module>.json`) and the two
+  golden indexes have no owner, so tiers.yaml `onboarding` decides, as for intake fixes. A new
+  language in `onboarding.yaml` needs its three lines added here (a reviewed `.github/` change).
 
 Apply, check, roll back:
 

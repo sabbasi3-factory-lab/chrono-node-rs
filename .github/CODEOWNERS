@@ -18,3 +18,34 @@
 /contracts/*/fix-*.yaml
 /harness/golden/fixes/*.json
 /tests/golden/fixes/*.json
+
+# Owner-approved generated output (tiers.yaml `onboarding`, factory policies/onboarding.yaml languages):
+# a language-onboarding PR adds only harness/onboard/onboard.js output for one of these languages and
+# updates the two golden indexes; CI regenerates every file byte for byte. No owner, so the policy decides.
+# Hand-written changes to the indexes still fail golden:check unless upstream/ or harness/ (owned) change.
+/tests/golden/index.json
+/tests/golden/configurations.json
+/contracts/fi/
+/tests/golden/fi/
+/harness/golden/coverage/fi.json
+/contracts/id/
+/tests/golden/id/
+/harness/golden/coverage/id.json
+/contracts/nl/
+/tests/golden/nl/
+/harness/golden/coverage/nl.json
+/contracts/ru/
+/tests/golden/ru/
+/harness/golden/coverage/ru.json
+/contracts/uk/
+/tests/golden/uk/
+/harness/golden/coverage/uk.json
+/contracts/ar/
+/tests/golden/ar/
+/harness/golden/coverage/ar.json
+/contracts/zh-hans/
+/tests/golden/zh_hans/
+/harness/golden/coverage/zh_hans.json
+/contracts/zh-hant/
+/tests/golden/zh_hant/
+/harness/golden/coverage/zh_hant.json
