@@ -374,7 +374,7 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
       const out: Record<string, string> = {};
       for (const wf of ['implement', 'repair', 'review', 'improve']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
       out.implement = out.implement!.replace('GH_AW_MAX_AI_CREDITS="500"', 'GH_AW_MAX_AI_CREDITS="600"');
-      return out as Record<'implement' | 'repair' | 'review' | 'improve', string>;
+      return { ...(out as Record<'implement' | 'repair' | 'review' | 'improve', string>), triage: null };
     };
     const gh = liveWorld(204, 0, unreadableSpendWorld(true));
     let fail = true;
@@ -392,7 +392,7 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
       const out: Record<string, string> = {};
       for (const wf of ['implement', 'repair', 'review', 'improve']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
       out.implement = out.implement!.replace('GH_AW_MAX_AI_CREDITS="500"', 'GH_AW_MAX_AI_CREDITS="600"');
-      return out as Record<'implement' | 'repair' | 'review' | 'improve', string>;
+      return { ...(out as Record<'implement' | 'repair' | 'review' | 'improve', string>), triage: null };
     };
     const gh = liveWorld(204, 0, unreadableSpendWorld(true));
     const created: { title: string; labels: { name: string }[] }[] = [];

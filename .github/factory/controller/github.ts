@@ -55,6 +55,8 @@ export const IMPLEMENT_WORKFLOW = 'implement.lock.yml';
 /** This controller's own workflow (follow-up polls, follow-up.ts). */
 export const CONTROLLER_WORKFLOW = 'controller.yml';
 export const REVIEW_WORKFLOW = 'review.lock.yml';
+/** The needs-human pre-triage agent (triage.md). */
+export const TRIAGE_WORKFLOW = 'triage.lock.yml';
 /**
  * The reviewer App (`sabbasi3-factory-reviewer`): the only author whose `factory-review` check
  * runs count. Pinned in code, so changing a repository or org variable can't redirect it.

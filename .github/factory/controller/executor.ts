@@ -30,6 +30,10 @@
 //                                 If the dispatch fails, the record stands: no second review is
 //                                 sent, and with no verdict the PR goes to a person after
 //                                 REVIEW_TIMEOUT_MINUTES (fail closed, never a double spend).
+//   dispatch_workflow:triage    → record `triage_dispatched` (with its `cause`) first, then dispatch
+//                                 triage.lock.yml on main with {task, issue, pr, reason, run_id,
+//                                 failure_signature}. Never retried: at most one advisory comment
+//                                 per hand-off, and without it the person triages as before.
 //   open_revert                 → auto-strict regression on main: a commit with the merge's parent
 //                                 tree on top of the merge commit, on branch `factory/revert-<pr>`,
 //                                 and a templated PR to main (each step reuses what exists, so a
@@ -64,7 +68,7 @@
 //   is posted only if no comment with its marker exists yet.
 
 import { dedupeKey } from './audit.ts';
-import { REPAIR_WORKFLOW, CLOSE_COMPLETED, REVERT_BRANCH, REVERT_TITLE, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate, REVIEW_WORKFLOW } from './github.ts';
+import { REPAIR_WORKFLOW, CLOSE_COMPLETED, REVERT_BRANCH, REVERT_TITLE, COMMENT_MARKER, DONE_REMOVED_LABELS, ENQUEUE_MUTATION, IMPLEMENT_WORKFLOW, MAX_COMMENT_LENGTH, paginate, REVIEW_WORKFLOW, TRIAGE_WORKFLOW } from './github.ts';
 import { isRecorded, LABEL_NEEDS_HUMAN, LABEL_PICKED, LABEL_READY } from './planner.ts';
 import type { AuditEvent, Decision, GitHubClient, JsonObject, PendingEvent, PlannerEnv, ReasonCode } from './types.ts';
 
@@ -112,6 +116,7 @@ export function decisionEvent(d: Decision, live = false): PendingEvent {
   if (d.run_id !== null) fields.run_id = d.run_id;
   if (d.failure_signature !== null) fields.failure_signature = d.failure_signature;
   if (typeof d.head_sha === 'string') fields.head_sha = d.head_sha;
+  if (typeof d.cause === 'string') fields.cause = d.cause;
   // The reason and effect are part of the dedupe identity: a changed reason for
   // the same subject (missing_task_marker → contract_missing) is a new fact,
   // while an identical retry still dedupes.
@@ -411,6 +416,15 @@ export async function executeLive(decisions: Decision[], deps: LiveDeps): Promis
       await deps.record(ev); // first: a failed dispatch is never retried (fail closed via review_timeout)
       await deps.client.request('POST', `/repos/${deps.repo}/actions/workflows/${REVIEW_WORKFLOW}/dispatches`, {
         body: { ref: 'main', inputs: { task: d.task, pr: String(d.pr), head_sha: head, contract_sha: d.contract_sha } },
+      });
+    } else if (d.effect === 'dispatch_workflow:triage') {
+      if (d.task === null || d.issue === null || typeof d.cause !== 'string') throw new Error('triage decision is missing task, issue or cause');
+      await deps.record(ev); // first: one triage per needs-human hand-off, never retried
+      await deps.client.request('POST', `/repos/${deps.repo}/actions/workflows/${TRIAGE_WORKFLOW}/dispatches`, {
+        body: {
+          ref: 'main',
+          inputs: { task: d.task, issue: String(d.issue), pr: String(d.pr ?? 0), reason: d.cause, run_id: String(d.run_id ?? 0), failure_signature: d.failure_signature ?? '' },
+        },
       });
     } else if (d.effect === 'rerun_ci') {
       if (d.run_id === null) throw new Error('rerun decision has no run');

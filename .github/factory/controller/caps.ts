@@ -6,7 +6,9 @@
 import type { BudgetsPolicy } from './types.ts';
 
 // `improve` is the factory review (Loop 4, DESIGN §15): budgets.yaml per_run.factory_review.
-export const CAPPED_WORKFLOWS = { implement: 'implement', repair: 'repair', review: 'reviewer_agent', improve: 'factory_review' } as const;
+export const CAPPED_WORKFLOWS = { implement: 'implement', repair: 'repair', review: 'reviewer_agent', improve: 'factory_review', triage: 'needs_human_triage' } as const;
+/** Workflows the policy may leave out (no cap = off: never dispatched, lock not checked, runs not reserved). */
+export const OPTIONAL_WORKFLOWS: readonly CappedWorkflow[] = ['triage'];
 export type CappedWorkflow = keyof typeof CAPPED_WORKFLOWS;
 
 // Workflows with gh-aw's `evals` job (a third job that calls the model). gh-aw v1.0.1 has no separate
@@ -103,6 +105,7 @@ function jobCaps(lock: string, job: string): number[] {
 export function lockCapsMismatch(locks: Record<CappedWorkflow, string | null>, perRun: BudgetsPolicy['per_run'], only?: readonly CappedWorkflow[]): string | null {
   for (const [wf, key] of Object.entries(CAPPED_WORKFLOWS) as [CappedWorkflow, keyof typeof perRun][]) {
     if (only && !only.includes(wf)) continue;
+    if (OPTIONAL_WORKFLOWS.includes(wf) && (perRun[key] === undefined || perRun[key] === null)) continue;
     const lock = locks[wf];
     if (lock === null) return `${wf}.lock.yml could not be read`;
     if (/GH_AW_DEFAULT_(DETECTION_)?MAX_AI_CREDITS/.test(lock)) return `${wf}.lock.yml lets a variable set an AI-credits cap`;

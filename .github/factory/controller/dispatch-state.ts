@@ -46,7 +46,7 @@ export interface PrevState {
   payload: Record<string, unknown>;
 }
 
-const STARTS = new Set(['dispatched', 'repair_dispatched', 'review_dispatched']);
+const STARTS = new Set(['dispatched', 'repair_dispatched', 'review_dispatched', 'triage_dispatched']);
 const iso = (d: Date): string => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 export function dispatchStatus(

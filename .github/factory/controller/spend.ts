@@ -56,7 +56,8 @@ export const IMPLEMENT_WORKFLOW_FILE = 'implement.lock.yml';
 export const REPAIR_WORKFLOW_FILE = 'repair.lock.yml';
 export const REVIEW_WORKFLOW_FILE = 'review.lock.yml';
 export const IMPROVE_WORKFLOW_FILE = 'improve.lock.yml';
-const WORKFLOW_FILES: Record<CappedWorkflow, string> = { implement: IMPLEMENT_WORKFLOW_FILE, repair: REPAIR_WORKFLOW_FILE, review: REVIEW_WORKFLOW_FILE, improve: IMPROVE_WORKFLOW_FILE };
+export const TRIAGE_WORKFLOW_FILE = 'triage.lock.yml';
+const WORKFLOW_FILES: Record<CappedWorkflow, string> = { implement: IMPLEMENT_WORKFLOW_FILE, repair: REPAIR_WORKFLOW_FILE, review: REVIEW_WORKFLOW_FILE, improve: IMPROVE_WORKFLOW_FILE, triage: TRIAGE_WORKFLOW_FILE };
 /** Workflows that work on no task: their runs count toward the daily total, never toward a task's budget. */
 const TASKLESS_FILES = new Set([IMPROVE_WORKFLOW_FILE]);
 export const USAGE_ARTIFACT = 'usage';
@@ -175,6 +176,8 @@ export interface SpendCaps {
   factory_review: number;
   /** budgets.yaml per_run.threat_detection */
   threat_detection: number;
+  /** budgets.yaml per_run.needs_human_triage; absent or null = the triage agent is off (its runs aren't listed). */
+  needs_human_triage?: number | null;
 }
 
 // ---------------------------------------------------------------- zip (read-only, minimal)
@@ -384,8 +387,8 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   // Every AI workflow with its in-flight reservation (the caps of its AI jobs) and how many AI jobs
   // can each overshoot. A workflow whose runs can't be listed (including a missing workflow file)
   // makes spend unknown.
-  const workflows = (Object.keys(WORKFLOW_FILES) as CappedWorkflow[]).map((wf) => {
-    const cap = caps[CAPPED_WORKFLOWS[wf]];
+  const workflows = (Object.keys(WORKFLOW_FILES) as CappedWorkflow[]).filter((wf) => typeof caps[CAPPED_WORKFLOWS[wf]] === 'number').map((wf) => {
+    const cap = caps[CAPPED_WORKFLOWS[wf]] as number;
     const evals = EVALS_WORKFLOWS.includes(wf);
     return { file: WORKFLOW_FILES[wf], reserve: cap + caps.threat_detection + (evals ? cap : 0), jobs: evals ? 3 : 2 };
   });

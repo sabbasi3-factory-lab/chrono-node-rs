@@ -33,7 +33,8 @@ export interface BudgetsPolicy {
   per_task: { max_aic: number };
   factory_per_day: { max_aic: number; alert_at_pct: number; pause_at_pct: number };
   /** Per-run caps (gh-aw max-ai-credits); used to reserve spend for runs still going. */
-  per_run: { implement: number; repair: number; reviewer_agent: number; factory_review: number; threat_detection: number; overshoot?: Overshoot | null };
+  /** `needs_human_triage`: absent or null = the needs-human pre-triage agent is off (nothing dispatched, its lock not checked). */
+  per_run: { implement: number; repair: number; reviewer_agent: number; factory_review: number; threat_detection: number; needs_human_triage?: number | null; overshoot?: Overshoot | null };
 }
 
 /**
@@ -230,6 +231,10 @@ export interface TaskHistory {
   repair_dispatches?: { run_id: number; head: string; issue: number; attempt: number; at: string }[];
   /** Live reviewer-agent dispatches (from `review_dispatched` events): which PR head, against which contract, when. */
   reviews?: { pr: number; head: string; contract: string | null; at: string }[];
+  /** The latest live needs_human decision on this task (pre-triage input). */
+  needs_human?: { at: string; reason: string; issue: number | null; pr: number | null; run_id: number | null; failure_signature: string | null };
+  /** Live needs-human pre-triage dispatches (`triage_dispatched`). */
+  triages?: { at: string }[];
   /** Live auto-reverts (from `auto_revert` events): the reverted PR and its revert PR. */
   reverts?: { pr: number; revert_pr: number | null; revert_commit?: string | null; at: string }[];
 }
@@ -301,6 +306,7 @@ export type DecisionType =
   | 'dispatched'
   | 'auto_merge'
   | 'review_dispatched'
+  | 'triage_dispatched'
   | 'auto_ready'
   | 'auto_revert'
   | 'main_ci_rerun'
@@ -333,6 +339,7 @@ export type ReasonCode =
   | 'task_budget_unknown'
   | 'auto_merge_ready'
   | 'review_needed'
+  | 'triage_needed'
   | 'review_objected'
   | 'review_timeout'
   | 'review_contract_changed'
@@ -386,6 +393,7 @@ export type Effect =
   | 'dispatch_workflow:implement'
   | 'dispatch_workflow:repair'
   | 'dispatch_workflow:review'
+  | 'dispatch_workflow:triage'
   | 'enqueue_merge'
   | 'label:ready'
   | 'close_task'
@@ -414,6 +422,8 @@ export interface Decision {
   head_sha?: string | null;
   /** The merge commit on main to revert (auto_revert). */
   merge_commit_sha?: string | null;
+  /** The needs_human reason a needs-human pre-triage is for (triage_dispatched). */
+  cause?: ReasonCode | null;
   /** Deterministic GitHub IDs/SHAs this decision is about; feeds the dedupe key. */
   source_ids: string[];
 }
