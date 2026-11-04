@@ -107,3 +107,10 @@ test("decide: a trusted audit covers the requested crate's native code, not a ne
     const d = lib.decide(facts({ new_packages: pkgs, audited: true }), POLICY);
     assert.deepStrictEqual([d.verdict, d.soft, d.waived], ["borderline", ["native_code:foo-sys"], ["native_code:audited"]]);
 });
+
+test("buildScriptNetwork: a string with // never hides code after it; comments are still ignored", () => {
+    assert.ok(lib.buildScriptNetwork('fn main() { let u = "https://x.example/a"; Command::new("curl").arg(u); }', []));
+    assert.ok(!lib.buildScriptNetwork('fn main() { /* Command::new("curl") /* nested */ */ let u = "a//b"; }', []));
+    assert.ok(lib.buildScriptNetwork('fn main() { let u = r#"https://x"#; std::net::TcpStream::connect(u); }', []));
+    assert.strictEqual(lib.stripRustComments('a // c\nb /* x */ "d//e" \'/\''), 'a \nb   "d//e" \'/\'');
+});

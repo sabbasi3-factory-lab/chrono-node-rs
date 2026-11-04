@@ -209,12 +209,59 @@ function decide(facts, policy) {
     return { verdict: hard.length ? "fail" : soft.length ? "borderline" : "pass", hard, soft, waived };
 }
 
+/**
+ * Rust source without its comments (line, and nested block comments); string, raw string and
+ * char literals are kept as they are. A small lexer, not a regex, so `"//"` inside a string is
+ * never taken for a comment.
+ */
+function stripRustComments(src) {
+    let out = "";
+    let i = 0;
+    while (i < src.length) {
+        const c = src[i];
+        const n = src[i + 1];
+        if (c === "/" && n === "/") {
+            while (i < src.length && src[i] !== "\n") i++;
+        } else if (c === "/" && n === "*") {
+            let depth = 1;
+            i += 2;
+            while (i < src.length && depth > 0) {
+                if (src[i] === "/" && src[i + 1] === "*") (depth++, (i += 2));
+                else if (src[i] === "*" && src[i + 1] === "/") (depth--, (i += 2));
+                else i++;
+            }
+            out += " ";
+        } else if (c === "r" && /^r#*"/.test(src.slice(i, i + 260)) && !/[A-Za-z0-9_]/.test(src[i - 1] || "")) {
+            const hashes = /^r(#*)"/.exec(src.slice(i))[1];
+            const end = src.indexOf(`"${hashes}`, i + hashes.length + 2);
+            const stop = end < 0 ? src.length : end + hashes.length + 1;
+            out += src.slice(i, stop);
+            i = stop;
+        } else if (c === "'" && /^'(\\.|[^\\'])'/.test(src.slice(i, i + 4))) {
+            // a char literal (so '"' doesn't open a string)
+            const len = src[i + 1] === "\\" ? 4 : 3;
+            out += src.slice(i, i + len);
+            i += len;
+        } else if (c === '"') {
+            let j = i + 1;
+            while (j < src.length && src[j] !== '"') j += src[j] === "\\" ? 2 : 1;
+            out += src.slice(i, j + 1);
+            i = j + 1;
+        } else {
+            out += c;
+            i++;
+        }
+    }
+    return out;
+}
+
 /** Network use in a build script: an HTTP client, sockets, or shelling out to a downloader. */
 function buildScriptNetwork(source, buildDeps) {
     const clients = ["reqwest", "ureq", "curl", "hyper", "attohttpc", "minreq", "isahc", "surf", "ehttp", "tokio"];
     if (buildDeps.some((d) => clients.includes(norm(d)))) return true;
-    // Code, not comments: URLs in doc comments are common and harmless.
-    const code = String(source || "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+    // Code, not comments: URLs in doc comments are common and harmless. String literals are kept
+    // (a `"https://…"` string must not hide code after it on the same line).
+    const code = stripRustComments(String(source || ""));
     // git is fine for local queries (rev-parse); fetching commands aren't.
     return /\b(TcpStream|UdpSocket|TcpListener|std::net::|reqwest::|ureq::|curl::|hyper::)|Command::new\(\s*"(curl|wget|nc|fetch)"|"(clone|fetch|pull|ls-remote|submodule)"/.test(code);
 }
@@ -222,4 +269,4 @@ function buildScriptNetwork(source, buildDeps) {
 /** Native code: a `links` key, or a build dependency that compiles or links C/C++. */
 const isNative = (links, buildDeps) => Boolean(links) || buildDeps.some((d) => ["cc", "cmake", "bindgen", "pkg_config", "autotools", "vcpkg"].includes(norm(d)));
 
-module.exports = { norm, section, ERRORS, parseRequest, distance, nearMiss, licenceAllowed, audited, decide, buildScriptNetwork, isNative };
+module.exports = { stripRustComments, norm, section, ERRORS, parseRequest, distance, nearMiss, licenceAllowed, audited, decide, buildScriptNetwork, isNative };

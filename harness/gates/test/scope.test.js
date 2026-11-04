@@ -283,3 +283,12 @@ test("a fix contract (seed-backlog buildFixContracts) passes: its golden step is
         assert.match(rr.reasons.join(), /unsupported golden acceptance/);
     }
 });
+
+test("isStewardPr: the controller App's factory/deps/<crate>-<x.y.z> PRs only (they get the strict gates as factory PRs)", () => {
+    const { isStewardPr } = require("../scope-check");
+    const pr = (login, ref) => ({ user: { login }, head: { ref } });
+    assert.ok(isStewardPr(pr("sabbasi3-factory-controller[bot]", "factory/deps/smallvec-1.13.2")));
+    assert.ok(!isStewardPr(pr("sabbasi3-factory-agent[bot]", "factory/deps/smallvec-1.13.2")));
+    assert.ok(!isStewardPr(pr("sabbasi3", "factory/deps/smallvec-1.13.2")));
+    assert.ok(!isStewardPr(pr("sabbasi3-factory-controller[bot]", "factory/intake/en-fix-0123abcd")));
+});
