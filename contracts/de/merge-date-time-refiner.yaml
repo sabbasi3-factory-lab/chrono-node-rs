@@ -4,7 +4,7 @@ id: de/merge-date-time-refiner
 title: Port DEMergeDateTimeRefiner
 tier: auto
 area: de-refiners
-priority: 34
+priority: 50
 source: upstream/src/locales/de/refiners/DEMergeDateTimeRefiner.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: DEMergeDateTimeRefiner

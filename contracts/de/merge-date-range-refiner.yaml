@@ -4,7 +4,7 @@ id: de/merge-date-range-refiner
 title: Port DEMergeDateRangeRefiner
 tier: auto
 area: de-refiners
-priority: 42
+priority: 68
 source: upstream/src/locales/de/refiners/DEMergeDateRangeRefiner.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: DEMergeDateRangeRefiner

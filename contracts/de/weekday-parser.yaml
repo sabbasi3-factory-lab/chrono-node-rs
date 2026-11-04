@@ -4,7 +4,7 @@ id: de/weekday-parser
 title: Port DEWeekdayParser
 tier: auto
 area: de-dates
-priority: 28
+priority: 36
 source: upstream/src/locales/de/parsers/DEWeekdayParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: DEWeekdayParser

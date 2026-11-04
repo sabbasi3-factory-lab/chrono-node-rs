@@ -1,4 +1,4 @@
-# Task map for core, English, German and French (DESIGN §6). The owner approves this file; the seed script turns it
+# Task map for core, English, German, French, Swedish, Portuguese, Spanish and Japanese (DESIGN §6). The owner approves this file; the seed script turns it
 # into contracts/*.yaml deterministically. Change this file (by reviewed PR), never the contracts.
 #
 # Each task ports ONE upstream step into ONE Rust file (shared bases were ported by hand in
@@ -12,8 +12,8 @@ version: 1
 upstream_root: upstream/src
 
 # Ported by hand in Stage 0 (no contracts, no issues). Listed so the script can check that every
-# step in every named configuration is either done or a task. The German and French Stage 0
-# (configuration, constants, DE extractTimeComponents) has no steps of its own.
+# step in every named configuration is either done or a task. The German, French and wave-1
+# (sv, pt, es, ja) scaffolds (configuration, constants, DE extractTimeComponents) have no steps of their own.
 done:
   - { step: ENCasualDateParser, rust: src/locales/en/parsers/casual_date.rs }
   - { step: ENWeekdayParser, rust: src/locales/en/parsers/weekday.rs }
@@ -106,6 +106,44 @@ tasks:
   - { id: fr/time-unit-within-format-parser, step: FRTimeUnitWithinFormatParser, source: locales/fr/parsers/FRTimeUnitWithinFormatParser.ts, rust: src/locales/fr/parsers/time_unit_within_format.rs, area: fr-relative }
   - { id: fr/merge-date-range-refiner, step: FRMergeDateRangeRefiner, source: locales/fr/refiners/FRMergeDateRangeRefiner.ts, rust: src/locales/fr/refiners/merge_date_range.rs, area: fr-refiners }
   - { id: fr/merge-date-time-refiner, step: FRMergeDateTimeRefiner, source: locales/fr/refiners/FRMergeDateTimeRefiner.ts, rust: src/locales/fr/refiners/merge_date_time.rs, area: fr-refiners }
+
+  # --- Swedish parsers and refiners (auto tier) ---
+  - { id: sv/casual-date-parser, step: SVCasualDateParser, source: locales/sv/parsers/SVCasualDateParser.ts, rust: src/locales/sv/parsers/casual_date.rs, area: sv-casual }
+  - { id: sv/month-name-little-endian-parser, step: SVMonthNameLittleEndianParser, source: locales/sv/parsers/SVMonthNameLittleEndianParser.ts, rust: src/locales/sv/parsers/month_name_little_endian.rs, area: sv-dates }
+  - { id: sv/weekday-parser, step: SVWeekdayParser, source: locales/sv/parsers/SVWeekdayParser.ts, rust: src/locales/sv/parsers/weekday.rs, area: sv-dates }
+  - { id: sv/time-unit-casual-relative-format-parser, step: SVTimeUnitCasualRelativeFormatParser, source: locales/sv/parsers/SVTimeUnitCasualRelativeFormatParser.ts, rust: src/locales/sv/parsers/time_unit_casual_relative_format.rs, area: sv-relative }
+
+  # --- Portuguese parsers and refiners (auto tier) ---
+  - { id: pt/casual-date-parser, step: PTCasualDateParser, source: locales/pt/parsers/PTCasualDateParser.ts, rust: src/locales/pt/parsers/casual_date.rs, area: pt-casual }
+  - { id: pt/casual-time-parser, step: PTCasualTimeParser, source: locales/pt/parsers/PTCasualTimeParser.ts, rust: src/locales/pt/parsers/casual_time.rs, area: pt-casual }
+  - { id: pt/time-expression-parser, step: PTTimeExpressionParser, source: locales/pt/parsers/PTTimeExpressionParser.ts, rust: src/locales/pt/parsers/time_expression.rs, area: pt-time }
+  - { id: pt/month-name-little-endian-parser, step: PTMonthNameLittleEndianParser, source: locales/pt/parsers/PTMonthNameLittleEndianParser.ts, rust: src/locales/pt/parsers/month_name_little_endian.rs, area: pt-dates }
+  - { id: pt/weekday-parser, step: PTWeekdayParser, source: locales/pt/parsers/PTWeekdayParser.ts, rust: src/locales/pt/parsers/weekday.rs, area: pt-dates }
+  - { id: pt/merge-date-range-refiner, step: PTMergeDateRangeRefiner, source: locales/pt/refiners/PTMergeDateRangeRefiner.ts, rust: src/locales/pt/refiners/merge_date_range.rs, area: pt-refiners }
+  - { id: pt/merge-date-time-refiner, step: PTMergeDateTimeRefiner, source: locales/pt/refiners/PTMergeDateTimeRefiner.ts, rust: src/locales/pt/refiners/merge_date_time.rs, area: pt-refiners }
+
+  # --- Spanish parsers and refiners (auto tier) ---
+  - { id: es/casual-date-parser, step: ESCasualDateParser, source: locales/es/parsers/ESCasualDateParser.ts, rust: src/locales/es/parsers/casual_date.rs, area: es-casual }
+  - { id: es/casual-time-parser, step: ESCasualTimeParser, source: locales/es/parsers/ESCasualTimeParser.ts, rust: src/locales/es/parsers/casual_time.rs, area: es-casual }
+  - { id: es/time-expression-parser, step: ESTimeExpressionParser, source: locales/es/parsers/ESTimeExpressionParser.ts, rust: src/locales/es/parsers/time_expression.rs, area: es-time }
+  - { id: es/month-name-little-endian-parser, step: ESMonthNameLittleEndianParser, source: locales/es/parsers/ESMonthNameLittleEndianParser.ts, rust: src/locales/es/parsers/month_name_little_endian.rs, area: es-dates }
+  - { id: es/month-name-parser, step: ESMonthNameParser, source: locales/es/parsers/ESMonthNameParser.ts, rust: src/locales/es/parsers/month_name.rs, area: es-dates }
+  - { id: es/weekday-parser, step: ESWeekdayParser, source: locales/es/parsers/ESWeekdayParser.ts, rust: src/locales/es/parsers/weekday.rs, area: es-dates }
+  - { id: es/time-unit-within-format-parser, step: ESTimeUnitWithinFormatParser, source: locales/es/parsers/ESTimeUnitWithinFormatParser.ts, rust: src/locales/es/parsers/time_unit_within_format.rs, area: es-relative }
+  - { id: es/merge-date-range-refiner, step: ESMergeDateRangeRefiner, source: locales/es/refiners/ESMergeDateRangeRefiner.ts, rust: src/locales/es/refiners/merge_date_range.rs, area: es-refiners }
+  - { id: es/merge-date-time-refiner, step: ESMergeDateTimeRefiner, source: locales/es/refiners/ESMergeDateTimeRefiner.ts, rust: src/locales/es/refiners/merge_date_time.rs, area: es-refiners }
+
+  # --- Japanese parsers and refiners (auto tier) ---
+  # Upstream's Japanese classes are prefixed `JP` (the directory is `ja`).
+  - { id: ja/casual-date-parser, step: JPCasualDateParser, source: locales/ja/parsers/JPCasualDateParser.ts, rust: src/locales/ja/parsers/casual_date.rs, area: ja-casual }
+  - { id: ja/time-expression-parser, step: JPTimeExpressionParser, source: locales/ja/parsers/JPTimeExpressionParser.ts, rust: src/locales/ja/parsers/time_expression.rs, area: ja-time }
+  - { id: ja/standard-parser, step: JPStandardParser, source: locales/ja/parsers/JPStandardParser.ts, rust: src/locales/ja/parsers/standard.rs, area: ja-dates }
+  - { id: ja/slash-date-format-parser, step: JPSlashDateFormatParser, source: locales/ja/parsers/JPSlashDateFormatParser.ts, rust: src/locales/ja/parsers/slash_date_format.rs, area: ja-dates }
+  - { id: ja/weekday-parser, step: JPWeekdayParser, source: locales/ja/parsers/JPWeekdayParser.ts, rust: src/locales/ja/parsers/weekday.rs, area: ja-dates }
+  - { id: ja/weekday-with-parentheses-parser, step: JPWeekdayWithParenthesesParser, source: locales/ja/parsers/JPWeekdayWithParenthesesParser.ts, rust: src/locales/ja/parsers/weekday_with_parentheses.rs, area: ja-dates }
+  - { id: ja/merge-date-range-refiner, step: JPMergeDateRangeRefiner, source: locales/ja/refiners/JPMergeDateRangeRefiner.ts, rust: src/locales/ja/refiners/merge_date_range.rs, area: ja-refiners }
+  - { id: ja/merge-date-time-refiner, step: JPMergeDateTimeRefiner, source: locales/ja/refiners/JPMergeDateTimeRefiner.ts, rust: src/locales/ja/refiners/merge_date_time.rs, area: ja-refiners }
+  - { id: ja/merge-weekday-component-refiner, step: JPMergeWeekdayComponentRefiner, source: locales/ja/refiners/JPMergeWeekdayComponentRefiner.ts, rust: src/locales/ja/refiners/merge_weekday_component.rs, area: ja-refiners }
 
 # Acceptance defaults written into every contract.
 acceptance:

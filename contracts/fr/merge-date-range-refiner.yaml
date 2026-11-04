@@ -4,7 +4,7 @@ id: fr/merge-date-range-refiner
 title: Port FRMergeDateRangeRefiner
 tier: auto
 area: fr-refiners
-priority: 47
+priority: 74
 source: upstream/src/locales/fr/refiners/FRMergeDateRangeRefiner.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: FRMergeDateRangeRefiner

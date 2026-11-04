@@ -4,7 +4,7 @@ id: common/extract-timezone-offset-refiner
 title: Port ExtractTimezoneOffsetRefiner
 tier: auto-strict
 area: common-refiners
-priority: 30
+priority: 39
 source: upstream/src/common/refiners/ExtractTimezoneOffsetRefiner.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ExtractTimezoneOffsetRefiner

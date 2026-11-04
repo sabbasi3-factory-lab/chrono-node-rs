@@ -4,7 +4,7 @@ id: common/merge-weekday-component-refiner
 title: Port MergeWeekdayComponentRefiner
 tier: auto-strict
 area: common-refiners
-priority: 5
+priority: 4
 source: upstream/src/common/refiners/MergeWeekdayComponentRefiner.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: MergeWeekdayComponentRefiner
@@ -28,14 +28,20 @@ acceptance:
         - en/timezone_exp
         - en/weekday
         - en/year
+        - es/month_name_little_endian
+        - es/slash
+        - es/time_exp
         - fr/little_endian
         - fr/slash
         - fr/time_exp
         - fr/weekday
+        - pt/month_name_little_endian
+        - pt/slash
+        - pt/time_exp
   - differential:
       phrases: 2000
       seed: 42
       match: chrono-node@d4fe7e3
   - clippy: deny-warnings
   - public_api: unchanged-except-added
-golden_cases: 76
+golden_cases: 108

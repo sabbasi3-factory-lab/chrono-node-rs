@@ -4,7 +4,7 @@ id: en/merge-relative-after-date-refiner
 title: Port ENMergeRelativeAfterDateRefiner
 tier: auto
 area: en-refiners
-priority: 46
+priority: 73
 source: upstream/src/locales/en/refiners/ENMergeRelativeAfterDateRefiner.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ENMergeRelativeAfterDateRefiner
