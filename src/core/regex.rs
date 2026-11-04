@@ -70,6 +70,10 @@ const JS_WHITESPACE: &str =
     r"\t\n\x0B\x0C\r \x{A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}";
 const WORD: &str = "A-Za-z0-9_";
 const NON_WORD_IN_CLASS: &str = r"\x{0}-\x{2F}\x{3A}-\x{40}\x{5B}-\x{5E}\x{60}\x{7B}-\x{10FFFF}";
+/// `\W` inside a class under `iu`: `(?i)` closes a class under case folding, and U+017F / U+212A
+/// fold to `s` / `k`, so they must be left out (JS `iu` counts them as word characters).
+const NON_WORD_IN_CLASS_IU: &str =
+    r"\x{0}-\x{2F}\x{3A}-\x{40}\x{5B}-\x{5E}\x{60}\x{7B}-\x{17E}\x{180}-\x{2129}\x{212B}-\x{10FFFF}";
 const NON_DIGIT_IN_CLASS: &str = r"\x{0}-\x{2F}\x{3A}-\x{10FFFF}";
 const WORD_BOUNDARY: &str = r"(?:(?<=[A-Za-z0-9_])(?![A-Za-z0-9_])|(?<![A-Za-z0-9_])(?=[A-Za-z0-9_]))";
 const NOT_WORD_BOUNDARY: &str = r"(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_]))";
@@ -321,6 +325,7 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
     // Without `u`, `i` is applied by expansion (JS canonicalize), not by Rust's Unicode case
     // folding. With `u`, JS folds by simple case folding: Rust's `(?i)`.
     let ci = flags.contains('i') && !unicode;
+    let unicode_ci = flags.contains('i') && unicode;
     for f in flags.chars() {
         match f {
             'i' if unicode => inline.push('i'),
@@ -365,7 +370,11 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
                 }
                 'W' => {
                     if in_class {
-                        out.push_str(NON_WORD_IN_CLASS)
+                        out.push_str(if unicode_ci {
+                            NON_WORD_IN_CLASS_IU
+                        } else {
+                            NON_WORD_IN_CLASS
+                        })
                     } else {
                         out.push_str(&format!("[^{WORD}]"))
                     }
@@ -728,6 +737,24 @@ mod tests {
                 "/{src}/{flags} on {text:?}"
             );
         }
+        // `\W` and `\w` in and outside a class under `iu` (Copilot review of #208): s S k K ſ K a é !
+        let probe = ["s", "S", "k", "K", "ſ", "\u{212A}", "a", "é", "!"];
+        for (src, flags, want) in [
+            (r"^[\W]$", "iu", "000000011"),
+            (r"^\W$", "iu", "000000011"),
+            (r"^[\W]$", "i", "000011011"),
+            (r"^[\w]$", "iu", "111111100"),
+            (r"^[^\w]$", "iu", "000000011"),
+            (r"^[^\W]$", "iu", "111111100"),
+        ] {
+            let re = JsRegex::new(src, flags);
+            let got: String = probe.iter().map(|t| if re.is_match(t) { '1' } else { '0' }).collect();
+            assert_eq!(got, want, "/{src}/{flags}");
+        }
+        assert!(JsRegex::new(r"a\Bſ", "iu").is_match("aſ"));
+        assert!(!JsRegex::new(r"a\bſ", "iu").is_match("aſ"));
+        assert!(JsRegex::new(r"k\B\u212A", "iu").is_match("k\u{212A}"));
+        assert!(JsRegex::new(r"\bſ", "iu").is_match(" ſ"));
         assert_eq!(JsRegex::new(r"\u{1F600}", "u").exec("x😀").map(|m| m.index), Some(1));
         // Without `u`, `\p` stays unsupported (JS would read it as a literal `p`).
         assert!(JsRegex::try_new(r"\p{L}", "").is_err());
