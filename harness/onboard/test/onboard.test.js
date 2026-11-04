@@ -257,3 +257,23 @@ test("next CLI: a missing or empty input file waits (never 'none')", () => {
     assert.deepStrictEqual(next({ "merged.json": "object.json" }), { action: "wait", reason: "ledger_unreadable" });
     fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("next language: a recorded infra incident excuses the failed attempts before it (first-try rate only)", () => {
+    // The ledger is empty here: coverage is tested above; this is the first-try arithmetic.
+    const base = { policy, onboarded: ["fi"], candidates: ["id"], issues: [], openPRs: [], ledger: { runs: [], merged: [] } };
+    const at = (r, created_at) => ({ ...r, created_at });
+    const failed = (task, created_at) => ({ task, workflow: "implement", aic: 10, created_at, items: [] });
+    // fi/b: attempt 1 broke on a factory defect (no PR), attempt 2 after the re-drive merged zero-touch.
+    const outcomes = { runs: [at(run("fi/a", "implement", 10, true), "2026-11-04T20:00:00Z"), failed("fi/b", "2026-11-04T20:23:00Z"), at(run("fi/b", "implement", 10, true), "2026-11-04T23:28:00Z")] };
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes }), { action: "stop", reason: "first_try_rate:1/2" });
+    const incidents = [{ task: "fi/b", labeled_at: "2026-11-04T23:25:00Z" }];
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes, incidents }), { action: "onboard", code: "id", spent: 30, first_try: "2/2" });
+    // Narrow: an incident on another task, or recorded before the failed attempt, excuses nothing.
+    assert.strictEqual(lib.nextLanguage({ ...base, outcomes, incidents: [{ task: "fi/a", labeled_at: "2026-11-04T23:25:00Z" }] }).reason, "first_try_rate:1/2");
+    assert.strictEqual(lib.nextLanguage({ ...base, outcomes, incidents: [{ task: "fi/b", labeled_at: "2026-11-04T20:00:00Z" }] }).reason, "first_try_rate:1/2");
+    // Never excuses a repair, or a later implement run; spend always counts every run.
+    const repaired = { runs: [...outcomes.runs, at(run("fi/b", "repair", 10, true), "2026-11-04T23:40:00Z")] };
+    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: repaired, incidents }).reason, "first_try_rate:1/2");
+    const spent = { runs: [at(run("fi/a", "implement", 10, true), "2026-11-04T20:00:00Z"), { ...failed("fi/b", "2026-11-04T20:23:00Z"), aic: 995 }, at(run("fi/b", "implement", 10, true), "2026-11-04T23:28:00Z")] };
+    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: spent, incidents }).reason, "budget_spent:1015/1000");
+});

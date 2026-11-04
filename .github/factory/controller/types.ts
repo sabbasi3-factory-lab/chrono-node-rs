@@ -106,6 +106,21 @@ export interface IssueSnap {
   marker_status: MarkerStatus;
   /** When the issue was last reopened (only read for issues whose task has a recorded pick); null if never or unknown. */
   reopened_at?: string | null;
+  /** The `factory:infra-incident` record (only read for issues carrying the label); null if unreadable or incomplete. */
+  infra_incident?: InfraIncidentSnap | null;
+}
+
+/**
+ * A person's record that a task's earlier failed attempts were a factory defect, not agent work:
+ * who added the `factory:infra-incident` label (a user, never a bot or App) and when, and from their
+ * `Infra incident: <ref> <reason>` comment on the issue: the incident's reference (the fixing PR or
+ * incident issue; the audit log keeps IDs only) and the comment's URL (the prose reason).
+ */
+export interface InfraIncidentSnap {
+  actor: string;
+  labeled_at: string;
+  incident: string;
+  comment_url: string;
 }
 
 export interface ReviewSnap {

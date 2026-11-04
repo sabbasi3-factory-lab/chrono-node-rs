@@ -292,7 +292,8 @@ function drill(codes) {
  * --policy (factory policies/onboarding.yaml, may be missing), --outcomes (outcomes.json, may be
  * missing), --issues (open factory:task issues), --prs (open PRs), --runs (completed agent runs, Actions API: [{run_id, workflow, title, conclusion, created_at}]),
  * --merged (merged agent PRs: [{title}]). All but --policy and --outcomes are required lists; one
- * missing or unreadable makes the decision wait. Prints one JSON line.
+ * missing or unreadable makes the decision wait. --incidents (the audit log's events, jsonl; may be
+ * missing: then nothing is excused). Prints one JSON line.
  */
 function next() {
     const opt = (name) => {
@@ -313,6 +314,10 @@ function next() {
     const ledgerRuns = list("--runs");
     const merged = list("--merged")?.map((p) => (/^\[factory\] ([a-z0-9-]+\/[a-z0-9_-]+):/.exec(p.title || "") || [])[1]).filter(Boolean) ?? null;
     const ledger = ledgerRuns && merged ? { runs: ledgerRuns, merged } : null;
+    // Infra-incident records (the audit log's human_action infra_incident events, jsonl). Missing = none.
+    const incidents = readOr(opt("--incidents"), (t) => t.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l)), [])
+        .filter((e) => e && e.type === "human_action" && e.payload && e.payload.action === "infra_incident")
+        .map((e) => ({ task: e.payload.task, labeled_at: e.payload.labeled_at }));
     const decision = lib.nextLanguage({
         policy,
         onboarded: LOCALES.generatedLocales(REPO).map((l) => l.code),
@@ -321,6 +326,7 @@ function next() {
         issues,
         openPRs,
         ledger,
+        incidents,
     });
     console.log(JSON.stringify(decision));
 }
@@ -332,7 +338,7 @@ function main() {
     if (cmd === "candidates") return console.log(candidates().join("\n"));
     if (cmd === "next") return next();
     if (cmd === "drill") return drill(process.argv.slice(3));
-    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --outcomes F --issues F --prs F --runs F --merged F");
+    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --outcomes F --issues F --prs F --runs F --merged F [--incidents F]");
     process.exit(2);
 }
 

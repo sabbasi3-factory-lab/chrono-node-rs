@@ -62,6 +62,22 @@ export function observe(s: Snapshot, now: Date, windowHours = OBSERVE_WINDOW_HOU
     }
   }
 
+  // A person's infra-incident record on a task issue (factory:infra-incident + reason comment): kept
+  // in the audit log, where onboarding's first-try rate reads it (harness/onboard, onboard.yml).
+  for (const i of s.issues) {
+    const r = i.infra_incident;
+    if (!r || !i.task_id || !inWindow(r.labeled_at)) continue;
+    add(r.labeled_at, 'human_action', [`${i.node_id}/infra-incident/${r.labeled_at}`], {
+      action: 'infra_incident',
+      issue: i.number,
+      task: i.task_id,
+      actor: r.actor,
+      labeled_at: r.labeled_at,
+      incident: r.incident,
+      comment_url: r.comment_url,
+    });
+  }
+
   for (const run of s.check_runs) {
     if (run.status !== 'completed' || !run.conclusion || !inWindow(run.updated_at)) continue;
     const fields: JsonObject = {

@@ -88,6 +88,14 @@ jobs:
           done | jq -s . > "$d/runs.json"
           gh api --paginate "repos/$R/pulls?state=closed&per_page=100" \
             --jq '[.[] | select(.merged_at != null and .user.login == "sabbasi3-factory-agent[bot]") | {title}]' | jq -s 'add // []' > "$d/merged.json"
+          # Infra-incident records (a person's factory:infra-incident label, recorded by the controller as
+          # human_action/infra_incident): the first-try rate doesn't count attempts the factory broke.
+          # Unreadable = none (the rate then counts every attempt: stricter, never looser).
+          : > "$d/incidents.jsonl"
+          for f in $(gh api "repos/$R/git/trees/audit?recursive=1" --jq '.tree[] | select(.type == "blob" and (.path | test("^audit/[0-9]{4}/[0-9]{2}/[0-9]{2}\\.jsonl$"))) | .path' 2>/dev/null); do
+            gh api "repos/$R/contents/$f?ref=audit" -H "Accept: application/vnd.github.raw" 2>/dev/null \
+              | jq -c 'select(.type == "human_action" and .payload.action == "infra_incident")' >> "$d/incidents.jsonl" || true
+          done
 
       - name: Decision
         id: decision
@@ -103,7 +111,7 @@ jobs:
             fi
             decision=$(jq -nc --arg c "$CODE" '{action: "onboard", code: $c, reason: "dispatched"}')
           else
-            decision=$(node onboard/onboard.js next --policy "$d/policy.yaml" --outcomes "$d/outcomes.json" --issues "$d/issues.json" --prs "$d/prs.json" --runs "$d/runs.json" --merged "$d/merged.json")
+            decision=$(node onboard/onboard.js next --policy "$d/policy.yaml" --outcomes "$d/outcomes.json" --issues "$d/issues.json" --prs "$d/prs.json" --runs "$d/runs.json" --merged "$d/merged.json" --incidents "$d/incidents.jsonl")
           fi
           echo "$decision"
           echo "decision: \`$decision\`" >> "$GITHUB_STEP_SUMMARY"
