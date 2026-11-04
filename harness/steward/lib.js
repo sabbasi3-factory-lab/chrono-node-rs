@@ -179,7 +179,9 @@ function decide(facts, policy) {
     if (!(crate.downloads >= s.min_downloads)) soft.push("min_downloads");
     if (!((facts.now - Date.parse(crate.newest_release_at)) / day <= s.max_months_since_release * 30.44)) soft.push("max_months_since_release");
     if (pkgs.filter((p) => norm(p.name) !== norm(resolved.name)).length > s.max_new_transitive) soft.push("max_new_transitive");
-    if (s.native_code === false && pkgs.some((p) => p.native)) soft.push("native_code");
+    // Native code: the requested crate's own (an audit can cover it) and every other new crate's (it can't).
+    if (s.native_code === false && pkgs.some((p) => p.native && norm(p.name) === norm(resolved.name))) soft.push("native_code");
+    for (const p of pkgs) if (s.native_code === false && p.native && norm(p.name) !== norm(resolved.name)) soft.push(`native_code:${p.name}`);
     if (facts.changed_locked.length > 0) soft.push("changes_locked_versions");
 
     // Waivers: the owner's preapproved list covers every soft check but a change to locked versions;

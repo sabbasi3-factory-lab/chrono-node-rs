@@ -55,8 +55,9 @@ async function authorize() {
     const login = event.sender && event.sender.login;
     // An approval of a borderline request must come from a person with write access, never an App.
     const approval = opt("--approval") === "true";
+    const bot = (event.sender && event.sender.type === "Bot") || /\[bot\]$/.test(login || "");
     let ok = !approval && (login === AGENT_BOT || login === CONTROLLER_BOT);
-    if (!ok && login) {
+    if (!ok && login && !(approval && bot)) {
         const p = await gh("GET", `/repos/${REPO}/collaborators/${encodeURIComponent(login)}/permission`);
         ok = Boolean(p && ["admin", "maintain", "write"].includes(p.permission));
     }
@@ -122,10 +123,13 @@ async function check() {
     const newOnes = afterList.filter((p) => !before.has(p));
     // Locked packages the addition moved or removed (it should only add).
     const changed = [...new Set([...before].filter((p) => !after.has(p)).map((p) => p.split("@")[0]))].sort();
-    const byId = new Map(meta.packages.map((p) => [`${p.name}@${p.version}`, p]));
+    const byId = new Map(meta.packages.flatMap((p) => [[`${p.name}@${p.version}`, p], [p.id, p]]));
+    // The exact package the root now depends on (the resolve graph), not just any of that name:
+    // an older version may already be in the graph through another dependency.
     const root = meta.packages.find((p) => p.name === "chrono-node-rs");
-    const dep = root.dependencies.find((d) => lib.norm(d.name) === lib.norm(req.crate));
-    const resolvedPkg = meta.packages.find((p) => lib.norm(p.name) === lib.norm(req.crate) && dep && p.source && after.has(`${p.name}@${p.version}`));
+    const rootNode = meta.resolve && meta.resolve.nodes.find((n) => n.id === root.id);
+    const edge = rootNode && rootNode.deps.find((d) => lib.norm(d.name) === lib.norm(req.crate));
+    const resolvedPkg = edge ? byId.get(edge.pkg) || meta.packages.find((p) => p.id === edge.pkg) : null;
     if (!resolvedPkg) throw new Error("the added crate isn't in cargo metadata");
     const newPackages = newOnes.map((id) => {
         const p = byId.get(id);
@@ -251,7 +255,11 @@ async function comment() {
         );
         return label(["dependency:borderline", "needs-human"]);
     }
-    if (!/^[1-9]\d*$/.test(pr || "")) throw new Error("--pr is required for a pass");
+    if (!/^[1-9]\d*$/.test(pr || "")) {
+        // The checks passed but the PR couldn't be opened (e.g. the re-resolve differed): a person looks.
+        await post(`${HEAD} · passed, but no PR\n\nThe checks passed, but opening the PR failed (see the workflow run). Labelled \`needs-human\`.`);
+        return label(["needs-human"]);
+    }
     await post(`${HEAD} · ${d.approved ? "approved by the owner" : "passed"}\n\n\`${d.resolved.name} ${d.resolved.version}\` (${d.request.kind}) passed every hard check${d.approved ? "; the owner accepted the soft ones" : " and soft check"}.${waived} PR: #${pr} (auto-strict: the strict gates run on it, then it's queued). Agents can use the crate from the next run after it merges.`);
     return label(["dependency:pr-open"]);
 }
@@ -263,10 +271,12 @@ async function sweep() {
     for (let page = 1; ; page++) {
         const batch = await gh("GET", `/repos/${REPO}/issues?labels=dependency:borderline&state=open&per_page=100&page=${page}`);
         for (const i of batch) {
-            if (i.labels.some((l) => l.name === "dependency:approved")) continue;
             const events = await gh("GET", `/repos/${REPO}/issues/${i.number}/events?per_page=100`);
-            const at = events.filter((e) => e.event === "labeled" && e.label && e.label.name === "dependency:borderline").map((e) => Date.parse(e.created_at)).pop();
-            if (!at || now - at < hours * 3_600_000) continue;
+            const labeled = (name) => events.filter((e) => e.event === "labeled" && e.label && e.label.name === name);
+            const at = labeled("dependency:borderline").map((e) => Date.parse(e.created_at)).pop();
+            // An approval counts only if a person (not an App) added it after the borderline verdict.
+            const approved = labeled("dependency:approved").some((e) => e.actor && e.actor.type !== "Bot" && !/\[bot\]$/.test(e.actor.login || "") && Date.parse(e.created_at) >= at);
+            if (approved || !at || now - at < hours * 3_600_000) continue;
             await gh("POST", `/repos/${REPO}/issues/${i.number}/comments`, { body: `${HEAD} · rejected\n\nNo one approved this borderline request within ${hours} hours. Closing.` });
             await gh("POST", `/repos/${REPO}/issues/${i.number}/labels`, { labels: ["dependency:rejected"] });
             await gh("PATCH", `/repos/${REPO}/issues/${i.number}`, { state: "closed", state_reason: "not_planned" });

@@ -22,19 +22,19 @@ Plain code, no AI. Agents can't edit `Cargo.toml` (`tiers.yaml` `protected_from_
      - at least `min_downloads`
      - a release within `max_months_since_release`
      - at most `max_new_transitive` new transitive crates
-     - no native code (`links`, or `cc`/`cmake`/`bindgen`/`pkg-config` build dependencies)
+     - no native code (`links`, or `cc`/`cmake`/`bindgen`/`pkg-config` build dependencies): `native_code` for the requested crate, `native_code:<name>` for each new transitive crate
      - adding the crate doesn't move any locked version
    - **Waivers:**
      - `preapproved` (by kind; `wasm` counts as runtime) waives every soft check except moved locked versions
-     - a full `cargo vet` audit of that exact version from a `trusted_audits` source waives the crate's own trust signals: age, downloads, recency and native code. It must meet `safe-to-deploy` (dev: or `safe-to-run`). The sources are mozilla, google and bytecode-alliance.
+     - a full `cargo vet` audit of that exact version from a `trusted_audits` source waives the crate's own trust signals: age, downloads, recency and its own native code (not a new native transitive crate's). It must meet `safe-to-deploy` (dev: or `safe-to-run`). The sources are mozilla, google and bytecode-alliance.
      - an `exceptions` entry (crate, version prefix, kind) waives exactly what it lists
 3. **apply** (controller App; live only):
-   - **pass:** re-resolves exactly the checked version with `cargo add <name>@<version>`. It requires `Cargo.toml` to gain exactly one line, `Cargo.lock` to only add lines, and the added packages to be exactly the ones checked. Then it opens a PR on `factory/deps/<name>-<version>` and labels the issue `dependency:pr-open`.
+   - **pass:** re-resolves exactly the checked version (the root's resolved dependency in `cargo metadata`'s resolve graph, not any version of that name already in the lockfile) with `cargo add <name>@<version>`. It requires `Cargo.toml` to gain exactly one line, `Cargo.lock` to only add lines, and the added packages to be exactly the ones checked. Then it opens a PR on `factory/deps/<name>-<version>` and labels the issue `dependency:pr-open`.
    - **borderline:** `dependency:borderline` and `needs-human`, plus a comment listing the failed soft checks.
    - **fail:** a comment listing the failed hard checks; closed.
-   Comments are fixed templates. The decision is re-validated, because it comes from a job that resolved third-party crates.
-4. **sweep** (hourly): a borderline request still without `dependency:approved` 24 hours after it was labelled borderline is rejected (`limits.yaml` `borderline_dependency.auto_reject_after_hours`). An approval re-runs the check with the soft failures accepted. Hard failures are never accepted.
-5. **enqueue** (after `ci`/`gates` complete): a steward PR is auto-strict because `Cargo.toml` is in that tier, so CI runs the strict gates. The steward queues the PR once every one of these holds on the current head: the PR was opened by the controller App, it's on a `factory/deps/*` branch, it changes exactly `Cargo.toml` and `Cargo.lock`, `ci` and `gates` succeeded, and the full-regression step succeeded. The queue then merges it. Agents get the crate from the next run: `cargo vendor` and the offline docs in their setup steps pick it up.
+   Comments are fixed templates, and the comment step always runs: if opening the PR fails, the issue gets `needs-human`. The decision is re-validated, because it comes from a job that resolved third-party crates.
+4. **sweep** (hourly): a borderline request is rejected 24 hours after it was labelled borderline (`limits.yaml` `borderline_dependency.auto_reject_after_hours`) unless a person, not an App, added `dependency:approved` after that. An approval re-runs the check with the soft failures accepted. Hard failures are never accepted.
+5. **enqueue** (after each `ci` run on a steward branch, and hourly): a steward PR is auto-strict because `Cargo.toml` is in that tier, so CI runs the strict gates. The steward queues the PR once every one of these holds on the current head: the PR was opened by the controller App, it's on a `factory/deps/*` branch, it changes exactly `Cargo.toml` and `Cargo.lock`, `ci` succeeded on the head, `gates` succeeded for it (found through the run's `pull_requests[]`, since a `pull_request_target` run carries `main`'s SHA), and the full-regression step succeeded. The queue then merges it. Agents get the crate from the next run: `cargo vendor` and the offline docs in their setup steps pick it up.
 
 Kill switch: unless `FACTORY_ENABLED` is exactly `true`, nothing is written.
 

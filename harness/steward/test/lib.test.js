@@ -98,3 +98,12 @@ test("lockPackages and checkDecision", () => {
     assert.throws(() => checkDecision({ verdict: "invalid", error: "@everyone" }));
     assert.throws(() => checkDecision({ ...ok, resolved: { name: "smallvec", version: "1; rm -rf /" } }));
 });
+
+test("decide: a trusted audit covers the requested crate's native code, not a new native transitive crate", () => {
+    const pkgs = [
+        { name: "smallvec", version: "1.13.2", licence: "MIT", native: true },
+        { name: "foo-sys", version: "0.1.0", licence: "MIT", native: true },
+    ];
+    const d = lib.decide(facts({ new_packages: pkgs, audited: true }), POLICY);
+    assert.deepStrictEqual([d.verdict, d.soft, d.waived], ["borderline", ["native_code:foo-sys"], ["native_code:audited"]]);
+});
