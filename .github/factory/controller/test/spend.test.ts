@@ -6,7 +6,7 @@ import { attributedTask, jobInferred, readSpendToday, readZip, responseStats, ru
 import { readFileSync } from 'node:fs';
 import { NOW, REPO } from './helpers.ts';
 
-const CAPS = { implement: 500, repair: 300, reviewer_agent: 200, threat_detection: 400 };
+const CAPS = { implement: 500, repair: 300, reviewer_agent: 200, factory_review: 500, threat_detection: 400 };
 /** Today's part of a spend result (the per-task part is tested on its own). */
 const today = (r: Awaited<ReturnType<typeof readSpendToday>>) => ({ aic: r.aic, runs: r.runs });
 const r = `/repos/${REPO}`;
@@ -90,8 +90,11 @@ interface FakeRun {
   sha?: string;
 }
 
-function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; status?: string; attempt?: number }[] = [], repairListStatus = 200, reviewRuns: { id: number; status?: string }[] = [], reviewListStatus = 200): FakeGitHub {
+function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; status?: string; attempt?: number }[] = [], repairListStatus = 200, reviewRuns: { id: number; status?: string }[] = [], reviewListStatus = 200, improveRuns: { id: number; status?: string }[] = []): FakeGitHub {
   const gh = new FakeGitHub(REPO);
+  gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/improve\\.lock\\.yml/runs$`), () => ({
+    data: { workflow_runs: improveRuns.map((x) => ({ id: x.id, status: x.status ?? 'in_progress', run_attempt: 1, created_at: '2026-10-16T08:00:00Z', display_title: 'Factory review' })) },
+  }));
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/review\\.lock\\.yml/runs$`), () =>
     reviewListStatus === 200
       ? { data: { workflow_runs: reviewRuns.map((x) => ({ id: x.id, status: x.status ?? 'in_progress', run_attempt: 1, created_at: '2026-10-16T08:00:00Z' })) } }
@@ -161,6 +164,19 @@ describe('spend collector: today\'s implement spend', () => {
     const res = await readSpendToday(world([], 200, [], 200, [{ id: 50 }]), REPO, NOW, CAPS);
     assert.deepEqual(today(res), { aic: 600, runs: [{ run_id: 50, status: 'reserved', aic: 600 }] });
     for (const status of [404, 500]) assert.equal((await readSpendToday(world([], 200, [], 200, [], status), REPO, NOW, CAPS)).aic, null, String(status));
+  });
+
+  it('factory review (improve) runs count toward today\'s total (factory_review + detection = 900), never toward a task', async () => {
+    const res = await readSpendToday(world([], 200, [], 200, [], 200, [{ id: 70 }]), REPO, NOW, CAPS);
+    assert.deepEqual(today(res), { aic: 900, runs: [{ run_id: 70, status: 'reserved', aic: 900 }] });
+    assert.deepEqual(res.tasks, { by_task: {}, unattributed: 0, unknown_tasks: [] });
+  });
+
+  it('an unreadable factory review run from yesterday leaves every task\'s spend known', async () => {
+    const gh = world([], 200, [], 200, [], 200, []);
+    gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/actions/workflows/improve\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 71, status: 'completed', run_attempt: 2, created_at: '2026-10-15T08:00:00Z', run_started_at: '2026-10-15T09:00:00Z', display_title: 'Factory review' }] } }) });
+    const res = await readSpendToday(gh, REPO, NOW, CAPS);
+    assert.deepEqual([res.aic, res.tasks], [0, { by_task: {}, unattributed: 0, unknown_tasks: [] }]);
   });
 
   it('repair runs count too: in flight → reserved at repair + threat detection (700); unlistable → unknown', async () => {

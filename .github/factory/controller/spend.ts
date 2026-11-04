@@ -2,7 +2,8 @@
 // measures today's (UTC) factory spend from the implement workflow's own accounting, and
 // records it as a `spend_snapshot`. Plain code, no AI, read-only API calls.
 //
-// Per run of the AI workflows (implement, repair, and the reviewer agent's review) created today (UTC):
+// Per run of the AI workflows (implement, repair, the reviewer agent's review, and the factory
+// review `improve`, which counts toward no task) created today (UTC):
 //   - queued / in progress  → reserved at the per-run caps of every job that calls the model
 //                             (agent + threat detection, + evals for implement: caps.ts
 //                             EVALS_WORKFLOWS), unless every job has finished (see below)
@@ -54,7 +55,10 @@ import type { GitHubClient, JsonObject } from './types.ts';
 export const IMPLEMENT_WORKFLOW_FILE = 'implement.lock.yml';
 export const REPAIR_WORKFLOW_FILE = 'repair.lock.yml';
 export const REVIEW_WORKFLOW_FILE = 'review.lock.yml';
-const WORKFLOW_FILES: Record<CappedWorkflow, string> = { implement: IMPLEMENT_WORKFLOW_FILE, repair: REPAIR_WORKFLOW_FILE, review: REVIEW_WORKFLOW_FILE };
+export const IMPROVE_WORKFLOW_FILE = 'improve.lock.yml';
+const WORKFLOW_FILES: Record<CappedWorkflow, string> = { implement: IMPLEMENT_WORKFLOW_FILE, repair: REPAIR_WORKFLOW_FILE, review: REVIEW_WORKFLOW_FILE, improve: IMPROVE_WORKFLOW_FILE };
+/** Workflows that work on no task: their runs count toward the daily total, never toward a task's budget. */
+const TASKLESS_FILES = new Set([IMPROVE_WORKFLOW_FILE]);
 export const USAGE_ARTIFACT = 'usage';
 /** The implement workflow's last job: it needs every other job. */
 export const FINAL_JOB = 'conclusion';
@@ -167,6 +171,8 @@ export interface SpendCaps {
   repair: number;
   /** budgets.yaml per_run.reviewer_agent */
   reviewer_agent: number;
+  /** budgets.yaml per_run.factory_review */
+  factory_review: number;
   /** budgets.yaml per_run.threat_detection */
   threat_detection: number;
 }
@@ -486,13 +492,16 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
         continue;
       }
       // Yesterday's run: only per-task spend is unknown, and only its own task's when the audit log
-      // shows the controller dispatched it; otherwise every task's.
+      // shows the controller dispatched it; otherwise every task's. A taskless run (the factory
+      // review) affects no task's spend, readable or not.
+      if (TASKLESS_FILES.has(fileOf.get(run)!)) continue;
       const task = attributedTask(run, dispatches);
       if (task) unknownTasks.add(task);
       else taskUnknown = true;
       continue;
     }
     if (isToday) runs.push(r);
+    if (TASKLESS_FILES.has(fileOf.get(run)!)) continue;
     const task = taskOfRun(run);
     if (task) byTask[task] = round((byTask[task] ?? 0) + r.aic);
     else unattributed = round(unattributed + r.aic); // counts against every task
