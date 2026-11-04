@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { FACTORY_REPO, loadPolicies, parseFactoryVersion, parsePolicies, policyUrl, POLICY_NAMES, readFactoryVersion, type PolicyTexts } from '../policies.ts';
 
-const SHA = 'eb7722180c4a4f5f1ddfd579eef7a85bd4204aba';
+const SHA = '6215cc91e023e691834226e5a40fcdf17dc43388';
 const dir = new URL('./fixtures/policies/', import.meta.url);
 
 async function texts(): Promise<PolicyTexts> {
@@ -15,14 +15,14 @@ async function texts(): Promise<PolicyTexts> {
 describe('policies', () => {
   it('parses the pinned policy files', async () => {
     const p = parsePolicies(await texts());
-    assert.equal(p.limits.wip.start, 3);
+    assert.equal(p.limits.wip.start, 5, 'owner raised 3 → 5 (factory#35)');
     assert.equal(p.limits.wip.max, 10);
     assert.equal(p.limits.wip.adaptive.pause_dispatch_when_busy_jobs_over, 14);
     assert.equal(p.limits.wip.core_area, 1);
     assert.equal(p.limits.task.max_repairs, 2);
     assert.equal(p.limits.task.max_wall_clock_hours, 24);
     assert.equal(p.limits.human_queue.max_items, 5);
-    assert.equal(p.budgets.factory_per_day.max_aic, 10000);
+    assert.equal(p.budgets.factory_per_day.max_aic, 20000, 'owner raised 10000 → 20000 (factory#35)');
     assert.equal(p.budgets.factory_per_day.alert_at_pct, 80);
     assert.equal(p.budgets.factory_per_day.pause_at_pct, 100);
     assert.equal(p.tiers.tiers['auto-strict'].start_as, undefined, 'promoted (factory PR removing start_as: human)');
@@ -81,7 +81,7 @@ describe('policies', () => {
   it('loads when all files are served', async () => {
     const t = await texts();
     const p = await loadPolicies(SHA, async (url) => ({ ok: true, status: 200, text: async () => t[url.split('/').pop()!.replace('.yaml', '') as keyof PolicyTexts] }));
-    assert.equal(p.limits.wip.start, 3);
+    assert.equal(p.limits.wip.start, 5);
   });
 
   it('reads the factory-version file strictly', async () => {

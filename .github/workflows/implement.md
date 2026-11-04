@@ -35,7 +35,7 @@ permissions:
   # Inference uses the COPILOT_GITHUB_TOKEN PAT (DESIGN §4), not the Actions token.
   copilot-requests: none
 
-# Each dispatch gets its own slot, so admitted tasks (WIP up to 3) run in parallel.
+# Each dispatch gets its own slot, so admitted tasks (WIP up to 5, limits.yaml wip.start) run in parallel.
 concurrency:
   group: implement-${{ github.run_id }}
   job-discriminator: ${{ github.run_id }}
@@ -52,9 +52,9 @@ engine:
 
 timeout-minutes: 60
 
-# factory policies/budgets.yaml (v1): per_run.implement and per_workflow_per_day.implement.
+# factory policies/budgets.yaml (v1): per_run.implement and per_workflow_per_day.implement (6000 since factory#35).
 max-ai-credits: 500
-max-daily-ai-credits: 3000
+max-daily-ai-credits: 6000
 
 # Blocked by default: no ecosystems (no crates.io, docs.rs, npm or web). Inference goes through
 # gh-aw's API proxy. Crates come from the vendored copy prepared in `steps:` below.
