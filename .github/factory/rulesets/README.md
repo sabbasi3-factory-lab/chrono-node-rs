@@ -5,6 +5,12 @@ reviewed like code and applied with the commands below (owner or coordinator, ad
 
 ## `code-owner-review.json`: code-owner review for the human tier only
 
+**Status: deferred (coordinator, 2026-11-04): blocked on a build App identity.** Every build
+session's PR is authored by `sabbasi3`, the only code owner, who can't approve their own PR. So the
+rule would mean an admin bypass on every human-tier merge, which reviews nothing. Apply it once build
+sessions open PRs under their own App identity, and drop the admin bypass at the same time.
+CODEOWNERS itself is in force for review requests and documents the human tier.
+
 - `.github/CODEOWNERS` owns exactly the human tier of factory `policies/tiers.yaml`
   (`.github/`, `contracts/`, `harness/`, `tests/golden/`, `upstream/`, `NOTICE`), minus the three
   intake fix paths the `intake_fixes` policy merges without a person.
