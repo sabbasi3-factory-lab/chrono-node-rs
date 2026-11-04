@@ -133,6 +133,21 @@ jobs:
         working-directory: harness
         run: node onboard/onboard.js check
 
+      # The skeleton drill: onboard every candidate language in a throwaway copy and fail if a
+      # contract scope file's directory isn't generated (agents can't mkdir). Only when the PR
+      # changes what onboarding is generated from; about 10 s per language.
+      - name: Onboarding skeleton drill (every candidate language)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if git diff --name-only "$BASE_SHA" HEAD | grep -qE '^(harness/(onboard|golden|lib)/|scripts/seed-backlog/|upstream/|build\.rs$|\.github/workflows/onboard\.yml$)'; then
+            (cd scripts/seed-backlog && npm ci --ignore-scripts --no-audit --no-fund)
+            (cd harness && node onboard/onboard.js drill)
+          else
+            echo "no onboarding input changed; skipped"
+          fi
+
       # An onboarding PR also adds contracts: they must be exactly the seed script's output. Only on
       # those PRs, so a factory pin bump that changes a tier can't turn every PR red.
       - name: Onboarding PR contracts match the seed script

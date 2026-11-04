@@ -335,6 +335,44 @@ function renderModRs(m) {
     return lines.join("\n");
 }
 
+const KEEP = ".gitkeep";
+
+/**
+ * The module skeleton: one empty `.gitkeep` per directory under src/locales/<module>/ that a task's
+ * scope file goes in (always `parsers/` and `refiners/`, which build.rs auto-registers), so no
+ * agent ever needs mkdir. Fails closed on a scope file outside the locale's module.
+ * Returns Map<repo-relative path, "">, sorted.
+ */
+function moduleSkeleton(manifest, fragment) {
+    const root = `src/locales/${manifest.module}`;
+    const dirs = new Set([`${root}/parsers`, `${root}/refiners`]);
+    for (const t of fragment.tasks) {
+        if (!t.rust.startsWith(`${root}/`) || t.rust.split("/").includes("..")) throw new Error(`cannot onboard ${manifest.code}: ${t.id} would write ${t.rust}, outside ${root}/`);
+        for (let d = path.posix.dirname(t.rust); d !== root; d = path.posix.dirname(d)) dirs.add(d);
+    }
+    return new Map([...dirs].sort().map((d) => [`${d}/${KEEP}`, ""]));
+}
+
+/** Scope files (repo-relative) whose parent directory isn't in `exists`: what an agent would have to mkdir. */
+function missingScopeParents(scopes, exists) {
+    return scopes.filter((s) => !exists(path.posix.dirname(s))).sort();
+}
+
+/**
+ * Problems in onboard.yml's hand-off of the generated files (its text, parsed): the generate job's
+ * artifact must keep hidden files (actions/upload-artifact drops them by default) whenever the
+ * generator writes one, or apply's file-list check fails on every live onboarding.
+ */
+function workflowProblems(workflow, generatedPaths) {
+    const hidden = generatedPaths.filter((p) => p.split("/").some((part) => part.startsWith(".")));
+    if (hidden.length === 0) return [];
+    const uploads = Object.values(workflow.jobs || {})
+        .flatMap((j) => j.steps || [])
+        .filter((st) => String(st.uses || "").startsWith("actions/upload-artifact@") && st.with && st.with.name === "onboard");
+    if (uploads.length !== 1) return [`expected one upload of the "onboard" artifact, found ${uploads.length}`];
+    return uploads[0].with["include-hidden-files"] === true ? [] : [`the "onboard" artifact drops hidden files (${hidden[0]}, ...): set include-hidden-files: true`];
+}
+
 function slotLine(method, s) {
     const flags = Object.entries(s.flags || {});
     const arg = flags.length ? `Flags::of(&[${flags.map(([k, v]) => `("${k}", ${v})`).join(", ")}])` : "Flags::none()";
@@ -378,6 +416,9 @@ module.exports = {
     renderFragment,
     renderModRs,
     renderConfigurationRs,
+    moduleSkeleton,
+    missingScopeParents,
+    workflowProblems,
 };
 
 /**

@@ -5,7 +5,11 @@
 //
 //   node onboard/onboard.js add <code>   onboard one upstream locale (fi, it, zh-hans, ...)
 //   node onboard/onboard.js check        re-render every generated locale's files; fail on any difference
+//                                        (or a contract scope file without its directory)
+//   node onboard/onboard.js check --write   write them instead (after a generator change), then check
 //   node onboard/onboard.js candidates   upstream locales not onboarded yet, one per line
+//   node onboard/onboard.js drill [code...]   onboard each (default: every candidate) in a throwaway copy;
+//                                        fail if a contract scope file's directory isn't generated
 //   node onboard/onboard.js next ...     the scheduled pipeline's decision (see next() and lib.nextLanguage)
 //
 // `add` writes, all from the pinned chrono-node in upstream/ (built: npm run build:upstream):
@@ -13,6 +17,8 @@
 //   tests/golden/<module>/*.json, index.json,   the golden generator, now including the locale's tests
 //     configurations.json
 //   src/locales/<module>/mod.rs, configuration.rs   the configurations' slots, from configurations.json
+//   src/locales/<module>/{parsers,refiners,...}/.gitkeep   the module skeleton: every directory a task's
+//                                                   scope file goes in, so no agent needs mkdir
 //   scripts/seed-backlog/taskmap.d/<module>.yaml    one task per locale step, one support task per
 //                                                   shared file (constants.ts, a locale base class)
 //   contracts/<code>/*.yaml                     the seed script, from the task map fragment
@@ -136,7 +142,20 @@ function render(manifest) {
         [`src/locales/${manifest.module}/mod.rs`, lib.renderModRs(manifest)],
         [`src/locales/${manifest.module}/configuration.rs`, lib.renderConfigurationRs(manifest, configs)],
         [`scripts/seed-backlog/taskmap.d/${manifest.module}.yaml`, lib.renderFragment(fragment)],
+        ...lib.moduleSkeleton(manifest, fragment),
     ]);
+}
+
+/**
+ * Contract scope files of one locale whose parent directory doesn't exist: each would need an agent
+ * to mkdir, which its sandbox can't (and shouldn't) do. Empty when the skeleton is complete.
+ */
+function missingScopeParents(code) {
+    const dir = path.join(REPO, "contracts", code);
+    const scopes = (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith(".yaml")).sort() : []).flatMap(
+        (f) => YAML.parse(fs.readFileSync(path.join(dir, f), "utf8")).scope || [],
+    );
+    return lib.missingScopeParents(scopes, (d) => fs.existsSync(path.join(REPO, d)) && fs.statSync(path.join(REPO, d)).isDirectory());
 }
 
 function run(cmd, args, cwd) {
@@ -166,6 +185,8 @@ function add(code) {
             for (const [rel, text] of render(manifest)) fs.writeFileSync(path.join(REPO, rel), text);
         }
         run(process.execPath, [path.join(REPO, "scripts/seed-backlog/seed.js"), "contracts"], path.join(REPO, "scripts/seed-backlog"));
+        const missing = missingScopeParents(code);
+        if (missing.length > 0) throw new Error(`contract scope files without a directory (an agent can't mkdir): ${missing.join(", ")}`);
     } catch (e) {
         console.error(`onboarding ${code} failed. Undo: git checkout -- tests/golden contracts && git clean -fd src/locales/${manifest.module} tests/golden scripts/seed-backlog/taskmap.d contracts`);
         throw e;
@@ -173,7 +194,8 @@ function add(code) {
     console.log(`onboarded ${code}: src/locales/${manifest.module}/, tests/golden/${manifest.module}/, scripts/seed-backlog/taskmap.d/${manifest.module}.yaml, contracts/${code}/`);
 }
 
-function check() {
+/** `check --write`: re-render every generated locale in place (after a generator change), then check. */
+function check(write = false) {
     const diffs = [];
     const locales = LOCALES.generatedLocales(REPO);
     const expected = new Set();
@@ -184,8 +206,13 @@ function check() {
         for (const [rel, text] of render(m)) {
             expected.add(rel);
             const abs = path.join(REPO, rel);
-            if (!fs.existsSync(abs) || fs.readFileSync(abs, "utf8") !== text) diffs.push(rel);
+            if (write) {
+                fs.mkdirSync(path.dirname(abs), { recursive: true });
+                fs.writeFileSync(abs, text);
+            } else if (!fs.existsSync(abs) || fs.readFileSync(abs, "utf8") !== text) diffs.push(rel);
         }
+        if (write) continue;
+        diffs.push(...new Set(missingScopeParents(committed.code).map((s) => `${path.posix.dirname(s)}/ (a contract scope directory)`)));
     }
     // A fragment or coverage input without its locale (or one the generator wouldn't write) is stale too.
     const modules = new Set(locales.map((l) => l.module));
@@ -196,11 +223,68 @@ function check() {
             if (!f.endsWith(ext) || !modules.has(f.slice(0, -ext.length)) || !expected.has(rel)) diffs.push(rel);
         }
     }
+    if (write) return check(false);
     if (diffs.length > 0) {
         console.error(`generated locale files differ from a fresh generation: ${diffs.join(", ")}`);
         process.exit(1);
     }
     console.log(`generated locales match a fresh generation (${locales.map((l) => l.code).join(", ") || "none"})`);
+}
+
+const DRILL_SKIP = new Set([".git", "target", "node_modules", ".build"]);
+
+/**
+ * The skeleton drill: onboard each language (default: every candidate) in a throwaway copy of the
+ * repo, then assert every contract scope file's parent directory exists and the copy passes
+ * `check`. Writes nothing here. Needs the upstream build and scripts/seed-backlog's npm ci.
+ */
+function drill(codes) {
+    requireBuild();
+    const list = codes.length ? codes : candidates();
+    const failed = [];
+    for (const code of list) {
+        const tmp = fs.mkdtempSync(path.join(require("os").tmpdir(), `onboard-drill-${code}-`));
+        try {
+            fs.cpSync(REPO, tmp, { recursive: true, filter: (src) => !DRILL_SKIP.has(path.basename(src)) });
+            for (const rel of ["harness/node_modules", "harness/.build", "scripts/seed-backlog/node_modules"]) {
+                if (fs.existsSync(path.join(REPO, rel))) fs.symlinkSync(path.join(REPO, rel), path.join(tmp, rel));
+            }
+            const onboard = path.join(tmp, "harness/onboard/onboard.js");
+            const res = spawnSync(process.execPath, [onboard, "add", code], { cwd: path.join(tmp, "harness"), encoding: "utf8", maxBuffer: 1 << 28 });
+            if (res.status !== 0) {
+                // The generator failing closed (a hand decision) writes no contracts: nothing for an agent to trip on.
+                const refusal = /^cannot onboard [^\n]*/m.exec(res.stderr);
+                if (refusal) {
+                    console.log(`drill ${code}: skipped, onboarding refused (${refusal[0]})`);
+                    continue;
+                }
+                throw new Error(`add failed:\n${res.stdout}${res.stderr}`);
+            }
+            const scopes = fs.readdirSync(path.join(tmp, "contracts", code)).filter((f) => f.endsWith(".yaml"))
+                .flatMap((f) => YAML.parse(fs.readFileSync(path.join(tmp, "contracts", code, f), "utf8")).scope || []);
+            const files = scopes.filter((s) => s.startsWith("src/"));
+            if (files.length === 0) throw new Error("no contract has a scope file");
+            const missing = lib.missingScopeParents(files, (d) => fs.existsSync(path.join(tmp, d, ".gitkeep")) || d === `src/locales/${code.replace("-", "_")}`);
+            if (missing.length) throw new Error(`scope files without a committed directory: ${missing.join(", ")}`);
+            const modDir = `src/locales/${code.replace("-", "_")}`;
+            const generated = fs.readdirSync(path.join(tmp, modDir), { recursive: true }).map((f) => `${modDir}/${f.split(path.sep).join("/")}`);
+            const wf = YAML.parse(read(".github/workflows/onboard.yml"));
+            const wfProblems = lib.workflowProblems(wf, generated);
+            if (wfProblems.length) throw new Error(`onboard.yml: ${wfProblems.join("; ")}`);
+            const chk = spawnSync(process.execPath, [onboard, "check"], { cwd: path.join(tmp, "harness"), encoding: "utf8" });
+            if (chk.status !== 0) throw new Error(`check failed after add:\n${chk.stdout}${chk.stderr}`);
+            console.log(`drill ${code}: ok (${files.length} scope files, every parent directory generated)`);
+        } catch (e) {
+            failed.push(code);
+            console.error(`drill ${code}: FAILED: ${e.message}`);
+        } finally {
+            fs.rmSync(tmp, { recursive: true, force: true });
+        }
+    }
+    if (failed.length) {
+        console.error(`skeleton drill failed for ${failed.join(", ")}`);
+        process.exit(1);
+    }
 }
 
 /**
@@ -236,10 +320,11 @@ function next() {
 function main() {
     const [cmd, arg] = process.argv.slice(2);
     if (cmd === "add" && arg) return add(arg);
-    if (cmd === "check") return check();
+    if (cmd === "check") return check(arg === "--write");
     if (cmd === "candidates") return console.log(candidates().join("\n"));
     if (cmd === "next") return next();
-    console.error("usage: onboard.js add <code> | check | candidates | next --policy F --outcomes F --issues F --prs F");
+    if (cmd === "drill") return drill(process.argv.slice(3));
+    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --outcomes F --issues F --prs F");
     process.exit(2);
 }
 

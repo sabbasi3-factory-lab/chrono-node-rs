@@ -40,7 +40,7 @@ const lines = [
     }),
     "",
     "## Generated files",
-    `- \`src/locales/${locale.module}/locale.json\`, \`mod.rs\`, \`configuration.rs\`: manifest and the named configurations' slots (${Object.keys(locale.configs).join(", ")})`,
+    `- \`src/locales/${locale.module}/locale.json\`, \`mod.rs\`, \`configuration.rs\`: manifest and the named configurations' slots (${Object.keys(locale.configs).join(", ")}); \`parsers/\`, \`refiners/\`: the empty module skeleton, so every task's scope file has its directory`,
     `- \`tests/golden/${locale.module}/\`: ${areas.length} areas; \`tests/golden/index.json\`, \`configurations.json\`: this locale's entries added`,
     ...(coverage ? [`- \`harness/golden/coverage/${locale.module}.json\`: the coverage requests (the comparison's golden-text phrases, fixed seed)`] : []),
     `- \`scripts/seed-backlog/taskmap.d/${locale.module}.yaml\` and \`contracts/${code}/\`: the task map fragment and its contracts`,

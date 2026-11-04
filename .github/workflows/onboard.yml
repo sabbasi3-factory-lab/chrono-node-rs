@@ -131,13 +131,14 @@ jobs:
       - name: Exactly the generator's files
         run: |
           module=${CODE/-/_}
-          # New files: only under these paths; modified: only the two golden indexes.
+          # New files: only under these paths (the module skeleton's .gitkeep files included: every
+          # contract scope file's directory, so no agent needs mkdir); modified: only the two golden indexes.
           added=$(git status --porcelain --untracked-files=all | awk '$1 == "??" {print $2}' | sort)
           modified=$(git status --porcelain --untracked-files=all | awk '$1 != "??" {print $1" "$2}' | sort)
           [ "$modified" = "$(printf '%s\n' 'M tests/golden/configurations.json' 'M tests/golden/index.json')" ] || { echo "::error::unexpected modifications: $modified"; exit 1; }
-          bad=$(grep -vE "^(src/locales/${module}/(locale\.json|mod\.rs|configuration\.rs)|tests/golden/${module}/[a-z0-9_]+\.json|harness/golden/coverage/${module}\.json|scripts/seed-backlog/taskmap\.d/${module}\.yaml|contracts/${CODE}/[a-z0-9-]+\.yaml)$" <<<"$added" || true)
+          bad=$(grep -vE "^(src/locales/${module}/(locale\.json|mod\.rs|configuration\.rs|[a-z0-9_]+(/[a-z0-9_]+)*/\.gitkeep)|tests/golden/${module}/[a-z0-9_]+\.json|harness/golden/coverage/${module}\.json|scripts/seed-backlog/taskmap\.d/${module}\.yaml|contracts/${CODE}/[a-z0-9-]+\.yaml)$" <<<"$added" || true)
           [ -z "$bad" ] || { echo "::error::unexpected new files: $bad"; exit 1; }
-          for f in "src/locales/${module}/locale.json" "src/locales/${module}/mod.rs" "src/locales/${module}/configuration.rs" "scripts/seed-backlog/taskmap.d/${module}.yaml"; do
+          for f in "src/locales/${module}/locale.json" "src/locales/${module}/mod.rs" "src/locales/${module}/configuration.rs" "src/locales/${module}/parsers/.gitkeep" "src/locales/${module}/refiners/.gitkeep" "scripts/seed-backlog/taskmap.d/${module}.yaml"; do
             grep -qx "$f" <<<"$added" || { echo "::error::missing $f"; exit 1; }
           done
           mkdir -p "$OUT/files"
@@ -150,6 +151,9 @@ jobs:
         with:
           name: onboard
           path: /tmp/factory-onboard/
+          # The module skeleton is .gitkeep files: without this they'd be dropped, and apply's
+          # file-list check would fail (harness/onboard: workflowProblems, run by drill and tests).
+          include-hidden-files: true
           retention-days: 7
 
   # Writes, only when live. Runs no third-party code: the App token action, git and gh.
@@ -203,7 +207,7 @@ jobs:
           branch="factory/onboard/${CODE}"
           # The artifact comes from a job that ran third-party code: take only the listed files,
           # each matching the generator's paths again, regular files only.
-          re="^(src/locales/${module}/(locale\.json|mod\.rs|configuration\.rs)|tests/golden/${module}/[a-z0-9_]+\.json|tests/golden/(configurations|index)\.json|harness/golden/coverage/${module}\.json|scripts/seed-backlog/taskmap\.d/${module}\.yaml|contracts/${CODE}/[a-z0-9-]+\.yaml)$"
+          re="^(src/locales/${module}/(locale\.json|mod\.rs|configuration\.rs|[a-z0-9_]+(/[a-z0-9_]+)*/\.gitkeep)|tests/golden/${module}/[a-z0-9_]+\.json|tests/golden/(configurations|index)\.json|harness/golden/coverage/${module}\.json|scripts/seed-backlog/taskmap\.d/${module}\.yaml|contracts/${CODE}/[a-z0-9-]+\.yaml)$"
           listed=$(sort -u "$OUT/files.txt")
           shipped=$(cd "$OUT/files" && find . -type f | sed 's#^\./##' | sort)
           [ "$listed" = "$shipped" ] || { echo "::error::the artifact doesn't match its file list"; exit 1; }
