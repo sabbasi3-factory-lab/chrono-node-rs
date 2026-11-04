@@ -1,0 +1,245 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/fi/fi_time_exp.test.ts",
+  "cases": [
+    {
+      "id": "fi/time_exp#1",
+      "text": "klo 15:00",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FITimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "klo 15:00",
+          "start": {
+            "known": {
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression"
+    },
+    {
+      "id": "fi/time_exp#2",
+      "text": "kello 8:30",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FITimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "kello 8:30",
+          "start": {
+            "known": {
+              "hour": 8,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:30:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression"
+    },
+    {
+      "id": "fi/time_exp#3",
+      "text": "klo 13.00",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FITimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "klo 13.00",
+          "start": {
+            "known": {
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time expression"
+    },
+    {
+      "id": "fi/time_exp#4",
+      "text": "klo 10:00-12:00",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FITimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "klo 10:00-12:00",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T10:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Time range expression"
+    },
+    {
+      "id": "fi/time_exp#5",
+      "text": "15 elokuuta 2012 klo 14:00",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FIMonthNameLittleEndianParser",
+          "FITimeExpressionParser"
+        ],
+        "refiners": [
+          "FIMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 elokuuta 2012 klo 14:00",
+          "start": {
+            "known": {
+              "day": 15,
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-15T14:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date and time expression"
+    }
+  ]
+}

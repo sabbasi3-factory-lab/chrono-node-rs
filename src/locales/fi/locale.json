@@ -1,0 +1,11 @@
+{
+  "generator": "harness/onboard/onboard.js",
+  "code": "fi",
+  "module": "fi",
+  "upstream": "locales/fi",
+  "tests": "test/fi",
+  "configs": {
+    "fi.casual": "casual",
+    "fi.strict": "strict"
+  }
+}

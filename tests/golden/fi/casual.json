@@ -1,0 +1,666 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/fi/fi_casual.test.ts",
+  "cases": [
+    {
+      "id": "fi/casual#01",
+      "text": "tänään",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tänään",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fi/casual#02",
+      "text": "huomenna",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "huomenna",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T00:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fi/casual#03",
+      "text": "eilen",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "eilen",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T00:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fi/casual#04",
+      "text": "ylihuomenna",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "ylihuomenna",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-12T00:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fi/casual#05",
+      "text": "toissapäivänä",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "toissapäivänä",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-08T00:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "fi/casual#06",
+      "text": "tänään aamulla",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser",
+          "FICasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tänään aamulla",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "fi/casual#07",
+      "text": "tänään aamupäivällä",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser",
+          "FICasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tänään aamupäivällä",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 9,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T09:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "fi/casual#08",
+      "text": "tänään päivällä",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser",
+          "FICasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tänään päivällä",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/noon",
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "fi/casual#09",
+      "text": "tänään iltapäivällä",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser",
+          "FICasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tänään iltapäivällä",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon",
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "fi/casual#10",
+      "text": "tänään illalla",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser",
+          "FICasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tänään illalla",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 18,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T18:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "fi/casual#11",
+      "text": "tänään yöllä",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser",
+          "FICasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tänään yöllä",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "fi/casual#12",
+      "text": "tänään keskiyöllä",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualDateParser",
+          "FICasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tänään keskiyöllä",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight",
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "fi/casual#13",
+      "text": "iltapäivällä klo 5",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualTimeParser",
+          "FITimeExpressionParser"
+        ],
+        "refiners": [
+          "FIMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "iltapäivällä klo 5",
+          "start": {
+            "known": {
+              "hour": 17,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-08-10T17:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time keeps its meridiem when merged with an explicit time"
+    },
+    {
+      "id": "fi/casual#14",
+      "text": "illalla klo 8",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "FICasualTimeParser",
+          "FITimeExpressionParser"
+        ],
+        "refiners": [
+          "FIMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "illalla klo 8",
+          "start": {
+            "known": {
+              "hour": 20,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-08-10T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time keeps its meridiem when merged with an explicit time"
+    }
+  ]
+}
