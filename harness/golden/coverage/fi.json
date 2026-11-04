@@ -1,0 +1,44 @@
+{
+  "generator": "harness/onboard/onboard.js",
+  "module": "fi",
+  "requests": [
+    {
+      "step": "FIMergeDateRangeRefiner",
+      "text": "su – 5 päivää sitten tehtiin jotain\n",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2021-10-01T12:04:05.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "FIMergeDateRangeRefiner",
+      "text": "(15 elokuuta 2012 – tiistai)",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2005-02-28T23:18:32.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      }
+    },
+    {
+      "step": "FIMergeDateRangeRefiner",
+      "text": "(3 TAMMIKUUTA – seuraavat 2 päivää)",
+      "config": "fi.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2028-09-16T06:07:16.000Z",
+        "timezone_input": 600
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    }
+  ]
+}
