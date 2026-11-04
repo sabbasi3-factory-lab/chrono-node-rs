@@ -5,8 +5,8 @@
 //
 //   node feedback/monitor.js --report report.json --phrases N [--live] [--drill] [--max-new 3]
 //
-// - Dedupe: an open issue carrying `<!-- factory-monitor: <signature> -->` (the bug report, or the
-//   fix task it became) means the signature is known. The monitor's own report gets its
+// - Dedupe: an open issue created by the controller App carrying `<!-- factory-monitor: <signature> -->`
+//   (the bug report, or the fix task it became) means the signature is known. The monitor's own report gets its
 //   "Last seen" line updated; a task issue is left alone.
 // - At most --max-new new issues per run; the rest are listed in the run summary only.
 // - Labels: `monitor` + `factory:bug` (the intake triages it). A drill (--drill, from
@@ -41,7 +41,10 @@ async function main() {
     const groups = lib.groupMismatches(report.mismatches);
     const lines = [`## Monitor ${date}`, "", `seed \`${report.seed}\` · ${JSON.stringify(report.summary)}`, ""];
     const known = new Map();
+    // Only markers in issues the factory created count: a copied marker in someone else's issue
+    // must not suppress a report.
     for (const i of process.env.GH_TOKEN ? await openIssues() : []) {
+        if (!i.user || i.user.login !== lib.FACTORY_BOT) continue;
         const m = lib.MONITOR_MARKER_RE.exec(i.body || "");
         if (m && !known.has(m[1])) known.set(m[1], i);
     }

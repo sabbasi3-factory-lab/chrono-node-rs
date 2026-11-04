@@ -59,8 +59,9 @@ jobs:
           cargo build --locked --release --bin chrono-rs-json
           cd harness && npm ci --ignore-scripts --no-audit --no-fund && npm run build:upstream
 
-      # The comparison's exit code is ignored here: mismatches go to issues, errors fail the
-      # filing step below. The seed is printed as the last line and stored in the report.
+      # Mismatches go to issues and errors fail the filing step below, so a non-zero exit is only
+      # kept when the report has neither: then the run checked nothing meaningful (compare.js's
+      # vacuity guard) or crashed. The seed is printed as the last line and stored in the report.
       - name: Compare random phrases with chrono-node
         working-directory: harness
         env:
@@ -75,8 +76,12 @@ jobs:
             args+=(--seed "$SEED")
           fi
           [ "$DRILL" = "true" ] && args+=(--plant)
-          node compare/compare.js "${args[@]}" || true
-          test -s "$RUNNER_TEMP/monitor-report.json"
+          code=0
+          node compare/compare.js "${args[@]}" || code=$?
+          test -s "$RUNNER_TEMP/monitor-report.json" || { echo "::error::the comparison wrote no report (exit ${code})"; exit 1; }
+          if [ "$code" -ne 0 ] && [ "$(jq '(.mismatches | length) + (.errors | length)' "$RUNNER_TEMP/monitor-report.json")" -eq 0 ]; then
+            echo "::error::the comparison failed with nothing to file (exit ${code}): see its log"; exit 1
+          fi
 
       - name: Mode
         id: mode

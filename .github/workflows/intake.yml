@@ -136,8 +136,10 @@ jobs:
   apply:
     needs: triage
     if: needs.triage.outputs.action == 'propose' || needs.triage.outputs.action == 'report'
+    # Per report: a shared group keeps only one pending job, so a later report would replace an
+    # earlier one's pending apply. Different reports write different branches and issues.
     concurrency:
-      group: factory-intake
+      group: intake-apply-${{ github.event.issue.number }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -222,8 +224,9 @@ jobs:
   # A fix contract merged: create its task issue and point the bug report at it.
   link:
     if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'push'
+    # A replaced pending run is harmless here: the newest one handles every fix on main.
     concurrency:
-      group: factory-intake
+      group: intake-link
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10

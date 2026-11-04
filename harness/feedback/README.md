@@ -14,11 +14,11 @@ compare.js, fresh seed  ──►  factory:bug issue  ──►  re-run the requ
 
 - **What runs:** `compare/compare.js` on `main`, 20,000 phrases per language, with a **fresh random seed** (CI's held-out idea, at scale). Every language `compare/phrases.js` generates is covered, so a newly ported language joins the monitor when it joins the harness.
 - **Recorded:** the seed is the run's last log line and is in every issue, with the per-language phrase count, so `node compare/compare.js --seed <seed> --phrases <n>` reproduces the run. Each issue also carries its single request as one JSON line for `--requests`.
-- **Dedupe:** one issue per **signature** = configuration + the steps chrono-node used (a hash, in a hidden `<!-- factory-monitor: … -->` marker). An open issue with the marker (the bug report, or the fix task it became) means the signature is known: the monitor's own report gets its `Last seen` line updated, a task issue is left alone.
+- **Dedupe:** one issue per **signature** = configuration + the steps chrono-node used (a hash, in a hidden `<!-- factory-monitor: … -->` marker). An open issue **created by the controller App** with the marker (the bug report, or the fix task it became) means the signature is known (a marker copied into anyone else's issue doesn't count): the monitor's own report gets its `Last seen` line updated, a task issue is left alone.
 - **Minimal repro:** of the phrases sharing a signature, the shortest.
 - **Cap:** at most 3 new issues per run; the rest are listed in the run summary.
 - **Labels:** `monitor` + `factory:bug`.
-- **Errors** (a request one side couldn't run) aren't filed; the run fails, which is the alert.
+- **Errors** (a request one side couldn't run) aren't filed; the run fails, which is the alert. So does a comparison that fails with nothing to file (e.g. it checked nothing meaningful).
 - **Identity:** the controller App, `issues: write` only, minted after every build step.
 - **Kill switch:** unless `FACTORY_ENABLED` is exactly `true`, it prints the issues it would open.
 

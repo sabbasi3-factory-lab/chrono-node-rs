@@ -1,5 +1,9 @@
 "use strict";
+
 // Pure logic of the scope and contract-SHA gates (DESIGN §9 gates 1-2). See scope-check.js.
+// Fix contracts from the bug intake (harness/feedback/README.md): exact formats only.
+const FIX_ID = /^[a-z]{2}\/fix-[0-9a-f]{8}$/;
+const FIX_AREA = /^fixes\/[a-z]{2}-fix-[0-9a-f]{8}$/;
 
 /** Glob -> RegExp: `**` crosses directories, `*` and `?` don't. Anchored on the whole path. */
 function globToRegExp(glob) {
@@ -81,6 +85,7 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract, readFi
     }
 
     // acceptance: - golden: { step: ENWeekdayParser, areas: [en/weekday, ...] }
+    //             (fix contracts: { step: en/fix-0123abcd, areas: [fixes/en-fix-0123abcd] })
     //             - differential: { phrases: 2000, seed: 42, match: chrono-node@<sha> }
     const goldenAreas = [];
     let goldenStep = null;
@@ -92,8 +97,9 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract, readFi
                 g &&
                 Array.isArray(g.areas) &&
                 g.areas.length > 0 &&
-                g.areas.every((x) => typeof x === "string" && /^[a-z0-9_/]+$/.test(x));
-            if (!areasOk || typeof g.step !== "string" || !/^[A-Za-z0-9]+$/.test(g.step)) {
+                g.areas.every((x) => typeof x === "string" && (/^[a-z0-9_/]+$/.test(x) || FIX_AREA.test(x)));
+            // A fix contract (harness/feedback): its step is the fix id, its area the fix case.
+            if (!areasOk || typeof g.step !== "string" || !(/^[A-Za-z0-9]+$/.test(g.step) || FIX_ID.test(g.step))) {
                 reasons.push("unsupported golden acceptance (want {step, areas})");
             } else {
                 goldenStep = g.step;

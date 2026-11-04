@@ -6,6 +6,9 @@ const sha256 = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
 // Hidden marker: deduplicates mismatches by signature across issues (the bug report and the fix
 // task it becomes).
+// The monitor's reports and the intake's fix tasks are created by the controller App.
+const FACTORY_BOT = "sabbasi3-factory-controller[bot]";
+
 const MONITOR_MARKER = (sig) => `<!-- factory-monitor: ${sig} -->`;
 const MONITOR_MARKER_RE = /<!-- factory-monitor: ([0-9a-f]{12}) -->/;
 
@@ -268,6 +271,7 @@ function checkDecision(d) {
 }
 
 module.exports = {
+    FACTORY_BOT,
     ERRORS,
     checkDecision,
     sha256,

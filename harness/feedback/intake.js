@@ -22,7 +22,7 @@ const { REPO, gh, openIssues, paginate } = require("./github");
 
 const HARNESS = path.resolve(__dirname, "..");
 const FIX_INPUTS = path.join(HARNESS, "golden/fixes");
-const CONTROLLER_BOT = "sabbasi3-factory-controller[bot]";
+const CONTROLLER_BOT = lib.FACTORY_BOT;
 const WRITERS = new Set(["admin", "maintain", "write"]);
 
 const opt = (name) => {
