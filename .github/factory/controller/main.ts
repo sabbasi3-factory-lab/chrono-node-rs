@@ -195,6 +195,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         historyTasks: Object.keys(derived.history),
         needBusyJobs: factoryEnabled,
         reviewerAppId: REVIEWER_APP_ID,
+        codeScanning: policies.limits.ci.wait_for_code_scanning,
       });
   snapshot.history = { ...derived.history, ...snapshot.history };
   // A task issue reopened after its pick starts afresh (its old pick no longer holds it in flight).
