@@ -523,21 +523,16 @@ and is redone next poll, but never fails the run.
 
 `.github/workflows/outcomes.yml` (plain code, no AI) records gh-aw's own verdict on every agent run (implement, repair, review) in `outcomes.json` on the `outcomes` branch, which the dashboard reads. The controller isn't involved.
 
-- **When:**
-  - an agent PR closes (merged, including through the merge queue, or not);
-  - an agent run completes;
-  - daily;
-  - by hand.
-- **What:** `gh aw logs … --outcomes --json` (pinned v1.0.1, checksum-verified; gh-aw v1 moved outcome evaluation into `logs` and removed the `outcomes` command), once per run, 4 at a time, for:
-  - runs that are new;
-  - runs whose evaluation failed (`eval_failed`), or that are still pending or unknown, while under 14 days old;
-  - any run of the PR that just closed;
-  - every run, when started by hand with `full`.
+- **When:** woken by an agent PR closing, an agent run completing, every 15 minutes (cron; late on the Free plan) and by hand. Within 14 minutes of the last evaluation (the file's `generated_at`) it stops after one request, and a later invocation picks the work up.
+- **Budget:** the repo's `GITHUB_TOKEN` allows 1,000 requests/h, shared with `ci`, `gates`, CodeQL and the gh-aw jobs, and one evaluation costs ~8-16 requests. So each invocation evaluates **at most 3 runs** (`.github/factory/outcomes/select.jq`, tested in `test/outcomes-select.test.ts`), in this order:
+  1. a run whose PR closed after the run was last evaluated (its verdict is due);
+  2. a new run;
+  3. a failed evaluation, or a pending/unknown item, under 14 days old and last evaluated over 24 h ago (once a day at most).
+  Oldest first within each; the rest waits. Worst case ≈ 4 × (8 + 3 × 16) ≈ 230 requests/h (it was ~5,000/h at peak on Nov 4, re-checking ~75 runs per invocation, ~9 invocations/h). By hand with `full` evaluates everything.
+- **What:** `gh aw logs … --outcomes --json` (pinned v1.0.1, checksum-verified; gh-aw v1 moved outcome evaluation into `logs` and removed the `outcomes` command), once per run, 4 at a time. One call per run because a malformed manifest aborts the whole call (gh-aw `collectLogsOutcomes`), and one bad run must not block the rest. No new call starts after 15 minutes. A run gh-aw doesn't list (no artifacts, e.g. cancelled early) is skipped.
 
-  One call per run because a malformed manifest aborts the whole call (gh-aw `collectLogsOutcomes`), and one bad run must not block the rest. No new call starts after 15 minutes. A run gh-aw doesn't list (no artifacts, e.g. cancelled early) is skipped.
-
-  A failed evaluation (the call fails, `eval_error`, or an item with status `error`) keeps the previous result. Runs no longer listed by `gh aw logs` are kept as they were.
-- **File contents, per run:** `run_id`, `workflow`, `title`, `created_at`, `aic`, `task` and `drill`, plus `items` (`type`, `object_url`, `outcome_status`, `zero_touch`). Then a `summary`.
+  A failed evaluation (the call fails, `eval_error`, or an item with status `error`) keeps the previous result. Runs no longer listed by `gh aw logs` are kept as they were. The file is committed on every evaluation (its `generated_at` is the debounce clock).
+- **File contents, per run:** `run_id`, `workflow`, `title`, `created_at`, `aic`, `task`, `drill` and `evaluated_at`, plus `items` (`type`, `object_url`, `outcome_status`, `zero_touch`). Then a `summary`.
   - `task` comes from the run title, else from the agent PR's title.
   - `aic` is gh-aw's **agent-only** figure. Full cost (agent + threat detection) stays in `spend_snapshot`.
 - **Least privilege:**
@@ -545,4 +540,4 @@ and is redone next poll, but never fails the run.
   - `publish` holds `contents: write`, runs no third-party code, and commits only when the file changed.
   - PR code is never checked out.
   - The `outcomes` branch is append-only: no delete and no force-push, with no bypass (ruleset 26097950). Anyone with write access could still push to it, but GitHub doesn't allow GitHub Actions as a ruleset bypass actor, and the data is display-only with trusted writers, so no extra secret or App key is added to this `pull_request_target` workflow.
-- **Drill:** close or merge an agent PR. The `outcomes` run should start within seconds, and `outcomes.json` should update a few minutes later.
+- **Drill:** close or merge an agent PR. An `outcomes` run starts within seconds; if the last evaluation was over 14 minutes ago it evaluates that PR's runs first, otherwise it stops after one request and the next invocation does.
