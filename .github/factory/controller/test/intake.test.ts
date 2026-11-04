@@ -8,6 +8,7 @@ import { checkRun, hex40, NOW, pull, snapshot, testPolicies } from './helpers.ts
 
 const base = await testPolicies();
 const ON: { FACTORY_ENABLED: string | undefined } = { FACTORY_ENABLED: 'true' };
+const none: Policies = { ...base, tiers: { ...base.tiers, intake_fixes: null } };
 const withIntake = (auto_merge = true, max_per_day = 3): Policies => ({ ...base, tiers: { ...base.tiers, intake_fixes: { auto_merge, max_per_day } } });
 const kinds = (ds: Decision[]) => ds.map((d) => `${d.type}/${d.reason}`);
 const FIX = 'en/fix-0123abcd';
@@ -57,7 +58,7 @@ describe('bug-intake fix PRs (tiers.yaml intake_fixes)', () => {
   });
 
   it('without the policy (absent, or auto_merge: false) the owner merges: nothing planned', () => {
-    assert.deepEqual(kinds(run(world(intakePr()), base)), []);
+    assert.deepEqual(kinds(run(world(intakePr()), none)), []);
     assert.deepEqual(kinds(run(world(intakePr()), withIntake(false))), []);
   });
 
@@ -107,18 +108,20 @@ describe('bug-intake fix PRs (tiers.yaml intake_fixes)', () => {
 });
 
 describe('tiers.yaml intake_fixes parsing', () => {
-  it('absent → null; valid → parsed; malformed → fails closed', async () => {
-    assert.equal(base.tiers.intake_fixes, null);
+  it('the pinned policy enables it (3 a day); absent → null; malformed → fails closed', async () => {
+    assert.deepEqual(base.tiers.intake_fixes, { auto_merge: true, max_per_day: 3 });
     const { mkdtemp, readdir, readFile, writeFile } = await import('node:fs/promises');
     const { tmpdir } = await import('node:os');
     const src = new URL('./fixtures/policies/', import.meta.url);
     const dir = await mkdtemp(`${tmpdir()}/policies-`);
     for (const f of await readdir(src)) await writeFile(`${dir}/${f}`, await readFile(new URL(f, src), 'utf8'));
-    const tiers = await readFile(new URL('tiers.yaml', src), 'utf8');
+    const tiers = (await readFile(new URL('tiers.yaml', src), 'utf8')).replace(/^intake_fixes:\n(  .*\n)+/m, '');
+    assert.doesNotMatch(tiers, /intake_fixes/);
     const load = async (extra: string) => {
       await writeFile(`${dir}/tiers.yaml`, `${tiers}\n${extra}\n`);
       return loadPoliciesFromDir(new URL(`file://${dir}/`));
     };
+    assert.equal((await load('')).tiers.intake_fixes, null);
     assert.deepEqual((await load('intake_fixes:\n  auto_merge: true\n  max_per_day: 3')).tiers.intake_fixes, { auto_merge: true, max_per_day: 3 });
     await assert.rejects(load('intake_fixes:\n  auto_merge: yes-please\n  max_per_day: 3'), /intake_fixes/);
     await assert.rejects(load('intake_fixes:\n  auto_merge: true\n  max_per_day: 100'), /max_per_day/);
