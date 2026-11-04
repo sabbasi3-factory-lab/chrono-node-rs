@@ -177,7 +177,10 @@ function check() {
     const diffs = [];
     const locales = LOCALES.generatedLocales(REPO);
     const expected = new Set();
-    for (const m of locales) {
+    for (const committed of locales) {
+        // The manifest is re-derived from upstream's exports, not trusted: a dropped configuration fails here.
+        requireBuild();
+        const m = lib.manifestFor(committed.code, Object.keys(require(path.join(BUILD, committed.upstream))));
         for (const [rel, text] of render(m)) {
             expected.add(rel);
             const abs = path.join(REPO, rel);

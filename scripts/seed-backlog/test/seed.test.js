@@ -219,5 +219,5 @@ test("support tasks: one file directly in their locale's directory, with unit ca
     assert.deepStrictEqual(bad({ ...fragment.tasks[0], unit: undefined, requirement: "port it" }), []);
     assert.match(bad({ ...fragment.tasks[0], step: "X" }).join("\n"), /has no step/);
     const needsOther = lib.mergeTaskmaps(taskmap, [["xx.yaml", { ...fragment, tasks: [fragment.tasks[0], { ...fragment.tasks[1], needs: ["en/a-parser"] }, fragment.tasks[2]] }]]);
-    assert.match(lib.validate({ taskmap: needsOther, upstreamFiles: genFiles, configurations: genConfigs }).join("\n"), /not a support task of its locale/);
+    assert.match(lib.validate({ taskmap: needsOther, upstreamFiles: genFiles, configurations: genConfigs }).join("\n"), /not another task of its locale/);
 });

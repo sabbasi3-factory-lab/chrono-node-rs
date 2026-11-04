@@ -129,16 +129,25 @@ function taskmapFragment({ manifest, configs, baseTaskmap, localeFiles, constant
         const declared = (/export\s+default\s+class\s+(\w+)/.exec(file.text) || [])[1];
         const needs = importsOf(file, localeFiles.support);
         needs.forEach((s) => usedSupport.add(s));
+        // A step that imports another step (FICasualDateParser uses FICasualTimeParser's helper)
+        // needs that step's file first: its own scope is one file.
+        const stepNeeds = importsOf(file, localeFiles.steps).map((s) => `${manifest.code}/${kebab(withoutLocalePrefix(s.name))}`);
         stepTasks.push({
             id: `${manifest.code}/${kebab(withoutLocalePrefix(step))}`,
             locale: manifest.module,
             step,
             ...(declared && declared !== step ? { class: declared } : {}),
-            source: file.source.replace(/^locales\//, "locales/"),
+            source: file.source,
             rust: `src/locales/${manifest.module}/${file.kind}/${rustStem(step)}.rs`,
             area: `${manifest.code}-${areaBucket(step, file.kind)}`,
-            ...(needs.length ? { needs: needs.map((s) => supportId(manifest.code, s)).sort() } : {}),
+            ...(needs.length || stepNeeds.length ? { needs: [...needs.map((s) => supportId(manifest.code, s)), ...stepNeeds].sort() } : {}),
         });
+    }
+    // A step may only need steps that are tasks here (an imported step outside the configurations can't be ported first).
+    const ids = new Set(stepTasks.map((t) => t.id));
+    const supportIds = new Set(localeFiles.support.map((s) => supportId(manifest.code, s)));
+    for (const t of stepTasks) {
+        for (const n of t.needs || []) if (!ids.has(n) && !supportIds.has(n)) problems.push(`${t.id} imports ${n}, which is no task here: a hand decision`);
     }
     if (problems.length > 0) throw new Error(`cannot onboard ${manifest.code}:\n  ${problems.join("\n  ")}`);
     // Support files the steps use, and what those use in turn.
@@ -392,7 +401,9 @@ function nextLanguage({ policy, onboarded, candidates, outcomes, issues, openPRs
     if (needsHuman >= (stop.max_open_needs_human ?? 2)) return { action: "stop", reason: `needs_human_cluster:${needsHuman}` };
     if (!outcomes || !Array.isArray(outcomes.runs)) return { action: "wait", reason: "outcomes_unreadable" };
     const runs = outcomes.runs.filter((r) => r && typeof r.task === "string" && generated.has(codeOf(r.task)) && !r.drill);
-    const spent = runs.reduce((n, r) => n + (Number.isFinite(r.aic) ? r.aic : 0), 0);
+    // A run without a known cost means the spend is unknown, never zero.
+    if (runs.some((r) => !Number.isFinite(r.aic))) return { action: "wait", reason: "spend_unknown" };
+    const spent = runs.reduce((n, r) => n + r.aic, 0);
     if (!Number.isFinite(stop.budget_aic)) return { action: "stop", reason: "no_budget" };
     if (spent >= stop.budget_aic) return { action: "stop", reason: `budget_spent:${Math.round(spent)}/${stop.budget_aic}` };
     // First try: the task's only agent run is its first implement, and that PR was accepted zero-touch.

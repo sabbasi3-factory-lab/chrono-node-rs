@@ -56,7 +56,7 @@ const localeFiles = {
     steps: [
         file("locales/xx/parsers/XXWeekdayParser.ts", 'import { WEEKDAY } from "../constants";\nexport default class XXWeekdayParser {}', "parsers"),
         file("locales/xx/parsers/XXAgoParser.ts", 'import X from "./AbstractBase";\nexport default class XXAgoParserImpl {}', "parsers"),
-        file("locales/xx/refiners/XXMergeDateRangeRefiner.ts", "export default class XXMergeDateRangeRefiner {}", "refiners"),
+        file("locales/xx/refiners/XXMergeDateRangeRefiner.ts", 'import W from "../parsers/XXWeekdayParser";\nexport default class XXMergeDateRangeRefiner {}', "refiners"),
     ],
     support: [
         file("locales/xx/constants.ts", "export const WEEKDAY = {a: 1};", "constants"),
@@ -83,7 +83,8 @@ test("task map fragment: one task per new step, support tasks for what they impo
     assert.deepStrictEqual(byId.get("xx/abstract-base").needs, ["xx/constants"]);
     assert.strictEqual(byId.get("xx/abstract-base").rust, "src/locales/xx/abstract_base.rs");
     assert.ok(byId.get("xx/abstract-base").requirement.includes("xx/ago-parser"));
-    assert.strictEqual(byId.get("xx/merge-date-range-refiner").needs, undefined);
+    // A step importing another step needs it first (its scope is one file).
+    assert.deepStrictEqual(byId.get("xx/merge-date-range-refiner").needs, ["xx/weekday-parser"]);
     assert.strictEqual(byId.get("xx/constants").kind, "support");
     // Deterministic: the same inputs render the same bytes.
     const again = lib.taskmapFragment({ manifest, configs, baseTaskmap, localeFiles, constants, goldenTexts: ["see bb 12 now"] });
@@ -147,4 +148,6 @@ test("next language: stop rules (budget, first-try rate, needs-human cluster) an
     const nh = [{ id: "fi/a", labels: ["needs-human"] }, { id: "fi/b", labels: ["needs-human"] }];
     assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: good, issues: nh }), { action: "stop", reason: "needs_human_cluster:2" });
     assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: good, policy: { ...policy, stop: {} } }), { action: "stop", reason: "no_budget" });
+    // A run without a known cost: the spend is unknown, so wait (never count it as zero).
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: { runs: [...good.runs, { ...run("fi/c", "implement", 0, false), aic: null }] } }), { action: "wait", reason: "spend_unknown" });
 });

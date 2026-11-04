@@ -4,7 +4,7 @@
 // Plain code; loads no third-party module (Node built-ins and this repo only), because it runs with
 // the controller App's write token.
 //
-//   node onboard/issues.js pending               generated contract ids on main without a task issue
+//   node onboard/issues.js pending               generated contract ids on main, if any lacks a task issue
 //   node onboard/issues.js create --plan F.json  (live) create those issues and their "blocked by" links,
 //                                                from `seed.js issues --plan --only <ids>` (run without a token)
 //
@@ -40,9 +40,15 @@ async function taskIssues() {
     return out;
 }
 
+/**
+ * Every generated contract id while any of them lacks an issue: `create` is idempotent (skips
+ * existing issues, adds only missing links), so re-planning them all also repairs links a failed
+ * run left out. Empty when every one has an issue.
+ */
 async function pending() {
     const have = await taskIssues();
-    console.log(generatedIds().filter((id) => !have.has(id)).join(","));
+    const ids = generatedIds();
+    console.log(ids.some((id) => !have.has(id)) ? ids.join(",") : "");
 }
 
 async function create() {

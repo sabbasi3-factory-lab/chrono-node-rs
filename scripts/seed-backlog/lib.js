@@ -110,7 +110,7 @@ function validate({ taskmap, upstreamFiles, configurations }) {
     for (const t of taskmap.tasks || []) {
         for (const n of t.needs || []) {
             const dep = (taskmap.tasks || []).find((x) => x.id === n);
-            if (!dep || dep.kind !== "support" || dep.locale !== t.locale) problems.push(`${t.id}: needs ${n}, not a support task of its locale`);
+            if (!dep || !dep.locale || dep.locale !== t.locale || n === t.id) problems.push(`${t.id}: needs ${n}, not another task of its locale`);
         }
     }
     // Every step of every named configuration (English, German, French, Swedish, Portuguese, Spanish, Japanese) must be done or a task.

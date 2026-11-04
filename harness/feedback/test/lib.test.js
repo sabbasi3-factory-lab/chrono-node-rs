@@ -26,6 +26,14 @@ test("fixId: stable per request, ignores the run id, keyed by language", () => {
     assert.notStrictEqual(lib.fixId(req()), lib.fixId(req({ text: "tonight at 10" })));
     assert.match(lib.fixId(req()), /^en\/fix-[0-9a-f]{8}$/);
     assert.match(lib.fixId(req({ config: "de.strict" })), /^de\/fix-/);
+    // A generated sublocale keeps the two-letter language, so every fix-id pattern still holds.
+    assert.match(lib.fixId(req({ config: "zh.hans.casual" })), /^zh\/fix-[0-9a-f]{8}$/);
+});
+
+test("parseReport: generated sublocale configurations are accepted, other shapes aren't", () => {
+    const body = (cfg) => `### Configuration\n\n${cfg}\n\n### Text\n\n\`\`\`text\n明天\n\`\`\`\n\n### Reference date\n\n2024-02-29T12:00:00Z\n\n### Reference timezone\n\n_No response_\n\n### Options\n\n_No response_\n`;
+    assert.strictEqual(lib.parseReport(body("zh.hans.casual")).request.config, "zh.hans.casual");
+    assert.strictEqual(lib.parseReport(body("zh.Hans.casual")).request, undefined);
 });
 
 test("groupMismatches: one group per signature, the shortest text as the repro", () => {
