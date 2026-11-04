@@ -816,7 +816,8 @@ export async function readCheckRuns(
     if (snap.status === 'completed' && snap.conclusion) {
       const key = `${snap.run_id}/attempts/${snap.run_attempt}`;
       const known = recorded.get(key);
-      if (known) {
+      // A pending record keeps its step-derived signature but its seed is read again.
+      if (known && !known.heldout_pending) {
         snap.heldout_seed = known.heldout_seed;
         snap.failure_signature = known.failure_signature;
         snap.full_regression = known.full_regression ?? null;
@@ -848,13 +849,14 @@ export async function leavesGithubDirAlone(client: GitHubClient, repo: string, b
 
 /**
  * `leavesGithubDirAlone`, telling a definite answer from none: `touched` (a `.github/` path, a
- * truncated list or malformed SHAs: never trusted), `unknown` (the compare API answered 404/422,
- * e.g. a commit not yet visible: ask again next poll), `clean`.
+ * truncated list or malformed SHAs: never trusted), `unknown` (the compare API answered 403/404/422/429,
+ * throttled, or a commit not yet visible: ask again next poll), `clean`.
  */
 export async function githubDirCheck(client: GitHubClient, repo: string, base: string, head: string): Promise<'clean' | 'touched' | 'unknown'> {
   if (!HEX40.test(base) || !HEX40.test(head)) return 'touched';
   if (base === head) return 'clean';
-  const res = await client.request('GET', `/repos/${repo}/compare/${base}...${head}?per_page=${COMPARE_FILE_LIMIT}`, { allowStatuses: [404, 422] });
+  // 403/429 (rate limits, incl. secondary) are no answer too, like 404/422: never a verdict.
+  const res = await client.request('GET', `/repos/${repo}/compare/${base}...${head}?per_page=${COMPARE_FILE_LIMIT}`, { allowStatuses: [403, 404, 422, 429] });
   if (res.status !== 200) return 'unknown';
   const files = asRec(res.data).files;
   if (!Array.isArray(files) || files.length >= COMPARE_FILE_LIMIT) return 'touched';
@@ -881,10 +883,11 @@ export async function readChecksJobLog(client: GitHubClient, repo: string, runId
   const jobId = requireInt(job.id, 'job id');
   const res = await client.request('GET', `/repos/${repo}/actions/jobs/${jobId}/logs`, {
     accept: 'raw',
-    allowStatuses: [404, 410],
+    allowStatuses: [403, 404, 410, 429],
   });
-  // No log yet (404/410 shortly after a run completes, or no text): pending, read again next poll.
-  if (typeof res.data !== 'string') return { heldout_seed: null, heldout_pending: true, failure_signature, full_regression };
+  // No log yet (404/410 shortly after a run completes, 403/429 throttled, or an empty body):
+  // pending, read again next poll.
+  if (typeof res.data !== 'string' || res.data.trim() === '') return { heldout_seed: null, heldout_pending: true, failure_signature, full_regression };
   return { heldout_seed: parseHeldoutSeed(res.data), failure_signature, full_regression };
 }
 

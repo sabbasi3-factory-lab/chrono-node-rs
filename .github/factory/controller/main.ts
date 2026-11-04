@@ -70,10 +70,11 @@ export function recordedChecks(events: AuditEvent[]): Map<string, RecordedCheck>
   const out = new Map<string, RecordedCheck>();
   for (const e of events) {
     if (e.type !== 'check_result') continue;
-    const { run_id, run_attempt, heldout_seed, failure_signature, full_regression } = e.payload;
+    const { run_id, run_attempt, heldout_seed, failure_signature, full_regression, heldout_pending } = e.payload;
     if (typeof run_id !== 'number' || typeof run_attempt !== 'number') continue;
     out.set(`${run_id}/attempts/${run_attempt}`, {
       heldout_seed: typeof heldout_seed === 'string' ? heldout_seed : null,
+      ...(heldout_pending === true ? { heldout_pending: true } : {}),
       failure_signature: typeof failure_signature === 'string' ? failure_signature : null,
       full_regression: typeof full_regression === 'string' ? full_regression : null,
     });

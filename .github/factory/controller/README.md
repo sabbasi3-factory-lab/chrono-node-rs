@@ -131,9 +131,11 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
     changes since its merge base). If any file, or either side of a rename, is under `.github/`, or the
     list can't be checked (300+ files), it records **no** seed and **no** signature and doesn't
     read the log. Then `needs_human/missing_heldout_seed` applies.
-  - **Unanswered reads are pending, not missing.** If the compare API answers 404/422, or the job log
-    404/410 (it can lag the run's completion), the seed is *pending*: nothing is recorded, the PR
-    waits (`heldout_seed_pending`) and the next poll reads again. Only a seed still unreadable
+  - **Unanswered reads are pending, not missing.** If the compare API answers 403/404/422/429, or the
+    job log 403/404/410/429 or an empty body (logs can lag the run's completion; 403/429 are
+    throttling), the seed is *pending*: the check_result is recorded with `heldout_pending: true` and
+    its step-derived failure signature but no seed, the PR waits (`heldout_seed_pending`), and the
+    next poll reads the seed again instead of reusing the record. Only a seed still unreadable
     `HELDOUT_PENDING_MINUTES` (30) after the run's last update goes to `needs_human/missing_heldout_seed`.
     (One unanswered read sent #253 to a person although the next poll read its seed.)
   - The job's **first** step (`Held-out seed commitment (trusted, before any PR code)`) runs before

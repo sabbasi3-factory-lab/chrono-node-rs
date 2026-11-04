@@ -65,9 +65,21 @@ describe('observe', () => {
     assert.deepEqual(ev.find((e) => e.type === 'merged')!.fields, { pr: 1, merge_commit_sha: hex40('e'), merged_at: '2026-10-16T11:00:00Z', task: 'en/a' });
   });
 
-  it('does not record a run whose seed is pending (read again next poll; #253)', () => {
-    const s = snapshot({ check_runs: [checkRun(78, { heldout_seed: null, heldout_pending: true, conclusion: 'success' })] });
-    assert.ok(!observe(s, NOW).some((e) => e.type === 'check_result'));
+  it('records a pending run with its failure signature, marked pending and without a seed (#253, #266 review)', () => {
+    const s = snapshot({ check_runs: [checkRun(78, { event: 'push', heldout_seed: null, heldout_pending: true, conclusion: 'failure', failure_signature: 'step:golden' })] });
+    const ev = observe(s, NOW).find((e) => e.type === 'check_result')!;
+    assert.equal(ev.fields.heldout_pending, true);
+    assert.equal(ev.fields.failure_signature, 'step:golden');
+    assert.equal(ev.fields.heldout_seed, undefined);
+  });
+
+  it('recordedChecks keeps the pending mark, so the seed is read again next poll', async () => {
+    const { recordedChecks } = await import('../main.ts');
+    const s = snapshot({ check_runs: [checkRun(79, { heldout_seed: null, heldout_pending: true, conclusion: 'success' })] });
+    const fields = observe(s, NOW).find((e) => e.type === 'check_result')!.fields;
+    const ev = { version: 1 as const, id: 'x', type: 'check_result', timestamp: NOW.toISOString(), parents: [], sha: 's', payload: { ...fields, dry_run: false } };
+    const rec = recordedChecks([ev]);
+    assert.equal(rec.get('79/attempts/1')?.heldout_pending, true);
   });
 
   it('omits heldout_seed when CI did not print one', () => {

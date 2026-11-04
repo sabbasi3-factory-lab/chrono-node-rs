@@ -63,8 +63,7 @@ export function observe(s: Snapshot, now: Date, windowHours = OBSERVE_WINDOW_HOU
   }
 
   for (const run of s.check_runs) {
-    // A pending seed isn't recorded: recorded results are reused, so the next poll must read again.
-    if (run.status !== 'completed' || !run.conclusion || !inWindow(run.updated_at) || run.heldout_pending) continue;
+    if (run.status !== 'completed' || !run.conclusion || !inWindow(run.updated_at)) continue;
     const fields: JsonObject = {
       workflow: run.workflow,
       run_id: run.run_id,
@@ -76,6 +75,9 @@ export function observe(s: Snapshot, now: Date, windowHours = OBSERVE_WINDOW_HOU
       completed_at: run.updated_at,
     };
     if (run.heldout_seed !== null) fields.heldout_seed = run.heldout_seed;
+    // Pending: recorded (its failure signature is still needed, e.g. a push run's attempt 1 for
+    // attempt 2), but marked so the next poll reads the seed again rather than reusing the record.
+    if (run.heldout_pending) fields.heldout_pending = true;
     if (run.failure_signature !== null) fields.failure_signature = run.failure_signature;
     if (typeof run.full_regression === 'string') fields.full_regression = run.full_regression;
     add(run.updated_at, 'check_result', [`${run.run_id}/attempts/${run.run_attempt}`], fields);

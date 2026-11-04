@@ -249,6 +249,14 @@ describe('snapshot reader', () => {
     assert.equal(s.busy_jobs, null);
   });
 
+  it('re-reads a run recorded as pending (its seed wasn\'t readable then) and the round trip keeps it pending (#266 review)', async () => {
+    const gh = fakeWorld();
+    const rec = new Map<string, RecordedCheck>([['4242/attempts/1', { heldout_seed: null, heldout_pending: true, failure_signature: null }]]);
+    const s = await readSnapshot(gh, { repo: REPO, now: NOW, windowHours: 24, recordedChecks: rec, historyTasks: [], needBusyJobs: false });
+    assert.equal(s.check_runs[0]!.heldout_seed, '9007199254740993');
+    assert.ok(gh.calls.some((c) => c.path.includes('/logs')), 'read again');
+  });
+
   it('reports busy jobs as unknown when the count cannot be read', async () => {
     const gh = fakeWorld();
     gh.routes.splice(gh.routes.findIndex((r) => String(r.path).includes('orgs')), 1);
@@ -411,15 +419,22 @@ describe('CI signals only when the change leaves .github/ alone (review #22)', (
   // #253: one poll's compare or log read answered nothing and the PR went to a human; the next
   // poll read the seed. An unanswered read is pending (not recorded), never a missing seed.
   it('a compare that answers 404/422, or a job log that is 404/410, leaves the seed pending (read again next poll)', async () => {
-    for (const status of [404, 422]) {
+    for (const status of [403, 404, 422, 429]) {
       const r = await read(withFiles([], status));
       assert.deepEqual([r.heldout_seed, r.heldout_pending], [null, true], `compare ${status}`);
     }
-    for (const status of [404, 410]) {
+    for (const status of [403, 404, 410, 429]) {
       const gh = fakeWorld();
       gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/actions/jobs/99/logs$`), handler: () => ({ status, data: null }) });
       const r = await read(gh);
       assert.deepEqual([r.heldout_seed, r.heldout_pending], [null, true], `log ${status}`);
+    }
+    // A successful but empty log body is no answer either (#266 review).
+    for (const body of ['', '  \n']) {
+      const gh = fakeWorld();
+      gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/actions/jobs/99/logs$`), handler: () => ({ data: body }) });
+      const r = await read(gh);
+      assert.deepEqual([r.heldout_seed, r.heldout_pending], [null, true], `empty log ${JSON.stringify(body)}`);
     }
     // A readable log without a valid commitment is a definite answer, not pending.
     const forged = fakeWorld();
