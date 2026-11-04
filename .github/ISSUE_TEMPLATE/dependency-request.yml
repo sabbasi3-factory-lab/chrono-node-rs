@@ -1,0 +1,43 @@
+# Dependency request for the dependency steward (.github/workflows/dependency-steward.yml, plain
+# code). It parses these exact headings; agents file the same ones through gh-aw `create_issue`.
+# Only requests from the agent App or from people with write access are checked.
+# Human tier: changes need the owner's review.
+name: Dependency request
+description: Ask the dependency steward to add a crate (checked against factory policies/dependencies.yaml)
+title: "[dependency-request] "
+labels: ["dependency-request"]
+body:
+  - type: input
+    id: crate
+    attributes:
+      label: Crate
+      placeholder: smallvec
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "A caret requirement: 1, 1.2 or 1.2.3"
+      placeholder: "1"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options: [runtime, dev]
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason
+      description: Why the approved crates aren't enough.
+    validations:
+      required: true
+  - type: input
+    id: task
+    attributes:
+      label: Task
+      description: "Optional: the factory task that needs it, e.g. en/weekday-parser"

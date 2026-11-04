@@ -184,6 +184,14 @@ safe-outputs:
       - "src/locales/**"
       - "src/common/parsers/**"
       - "src/common/refiners/**"
+  # A dependency request for the steward (agents can't edit Cargo.toml; DESIGN §9). gh-aw v1.0.1
+  # adds this label but doesn't restrict others the agent adds; they're inert: every consumer checks
+  # who labelled (an agent can't approve, triage or bump), and gh-aw strips HTML comments, so the
+  # body can't carry a factory-task or monitor marker.
+  create-issue:
+    max: 1
+    title-prefix: "[dependency-request] "
+    labels: [dependency-request]
   # Only the task issue (validated as a number before inference), never one the agent picks.
   add-comment:
     max: 1
@@ -215,7 +223,7 @@ You are porting **one step of chrono-node** (a natural-language date parser in T
 ## Do
 
 - Port the upstream step **line by line, keeping its behaviour and quirks**. Create or edit **only** the file in the contract's `scope`. It registers itself through its `UPSTREAM` constant; don't edit any `mod` list, configuration, `Cargo.toml`, tests, golden data, contracts, `harness/`, `upstream/` or `.github/`.
-- If you need a crate that isn't already a dependency, stop and explain why in your comment. Don't add it.
+- If you need a crate that isn't already a dependency, don't add it: you can't edit `Cargo.toml`. File **one** dependency request with `create_issue` instead. Title: `<crate> <version>`. Body: exactly these headings, each followed by a blank line and its value: `### Crate`, `### Version` (`1` or `1.2`), `### Kind` (`runtime` or `dev`), `### Reason` (why the approved crates aren't enough), `### Task` (`${{ github.event.inputs.task }}`). The dependency steward checks it against the factory's policy, and a crate that passes is available from a later run. Then do what you can without it, and say so in your comment.
 - Check your work offline (no network is available; crates are vendored):
   - `cargo fmt` and `cargo clippy --all-targets -- -D warnings`
   - `GOLDEN_AREAS=<the contract's golden areas, comma-separated> GOLDEN_REQUIRE_STEP=<upstream_class> cargo test --test golden -- --nocapture`

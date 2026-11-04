@@ -1,0 +1,282 @@
+# Dependency steward (DESIGN §9; factory policies/dependencies.yaml). Plain code, no AI.
+# Agents can't edit Cargo.toml; they (or a person with write access) file a `dependency-request`
+# issue. harness/steward/ checks it against the pinned policy:
+#   hard checks (any failure → rejected and closed): denylist, typosquat (near misses of the 200
+#     most-downloaded crates, the preapproved list and the denylist), licence allowlist (every new
+#     crate's SPDX expression), cargo deny (RustSec advisories incl. yanked, bans, sources, licences),
+#     no network in any new build script;
+#   soft checks (any failure → borderline → the owner; rejected after 24 h without
+#     `dependency:approved`): crate age, downloads, recent release, new transitive crates, native code,
+#     no change to locked versions. Preapproved crates, trusted cargo-vet audits (mozilla, google,
+#     bytecode-alliance) and owner exceptions waive what the policy says;
+#   pass → a PR from the controller App adding exactly that crate to Cargo.toml and Cargo.lock. It's
+#     auto-strict: CI runs the strict gates on it, and `enqueue` queues it once `ci` (with the full
+#     regression) and `gates` pass on its head.
+# Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written.
+# Human tier: changes need the owner's review.
+name: dependency-steward
+
+on:
+  issues:
+    types: [labeled]
+  schedule:
+    - cron: "37 * * * *"
+  workflow_run:
+    workflows: ["ci", "gates"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  # Requests: the agent App or write access. Approvals (`dependency:approved`): write access only.
+  # The permission API needs a token with push access: this job runs only checkout and one script.
+  authorize:
+    if: >-
+      github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'issues' &&
+      github.event.issue.state == 'open' && contains(github.event.issue.labels.*.name, 'dependency-request') &&
+      (github.event.label.name == 'dependency-request' ||
+       (github.event.label.name == 'dependency:approved' && contains(github.event.issue.labels.*.name, 'dependency:borderline')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: write }
+    outputs:
+      authorized: ${{ steps.who.outputs.authorized }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: harness/steward
+      - name: Who labelled it?
+        id: who
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          APPROVAL: ${{ github.event.label.name == 'dependency:approved' }}
+        run: node harness/steward/steward.js authorize --event "$GITHUB_EVENT_PATH" --approval "$APPROVAL"
+
+  # Resolves the crate (cargo add, cargo metadata) and runs cargo deny in a checkout of main. None of
+  # these run crate code. Read-only token.
+  check:
+    needs: authorize
+    if: needs.authorize.outputs.authorized == 'true'
+    concurrency:
+      group: steward-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      verdict: ${{ steps.check.outputs.verdict }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install Rust toolchain (rust-toolchain.toml)
+        run: rustup toolchain install && rustc --version
+
+      - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
+        with:
+          tool: cargo-deny@0.20.2
+
+      - name: Check the request against the pinned policy
+        id: check
+        working-directory: harness
+        env:
+          APPROVED: ${{ github.event.label.name == 'dependency:approved' }}
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node steward/steward.js check --event "$GITHUB_EVENT_PATH" --out "$RUNNER_TEMP/steward" --approved "$APPROVED"
+          cat "$RUNNER_TEMP/steward/decision.json" >> "$GITHUB_STEP_SUMMARY"
+          echo "verdict=$(jq -r .verdict "$RUNNER_TEMP/steward/decision.json")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: steward
+          path: ${{ runner.temp }}/steward/decision.json
+          retention-days: 7
+
+  # Writes. Runs no package: checkout, the App token action, cargo add/metadata (no crate code), git,
+  # gh and steward.js (Node built-ins only for these commands).
+  apply:
+    needs: check
+    concurrency:
+      group: steward-apply-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      ISSUE: ${{ github.event.issue.number }}
+      OUT: ${{ github.workspace }}/../steward
+    steps:
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"; else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would act on #${ISSUE}"; fi
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: steward
+          path: ${{ github.workspace }}/../steward
+
+      - name: Create controller App token
+        if: steps.mode.outputs.live == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          token: ${{ steps.app-token.outputs.token || github.token }}
+          persist-credentials: ${{ steps.mode.outputs.live == 'true' }}
+
+      # Re-resolves exactly the checked version and accepts the result only if it adds exactly the
+      # crates the check saw: one new Cargo.toml line, and the same new Cargo.lock packages.
+      - name: Open the dependency PR (auto-strict)
+        if: steps.mode.outputs.live == 'true' && needs.check.outputs.verdict == 'pass'
+        id: pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
+        run: |
+          d="$OUT/decision.json"
+          crate=$(jq -r .request.crate "$d"); kind=$(jq -r .request.kind "$d"); name=$(jq -r .resolved.name "$d"); version=$(jq -r .resolved.version "$d")
+          [[ "$crate" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$ && "$name" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$ && "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && "$kind" =~ ^(runtime|dev)$ ]] || { echo "::error::bad decision"; exit 1; }
+          rustup toolchain install
+          before=$(grep -A1 '^\[\[package\]\]' Cargo.lock | grep -oE '^name = "[^"]+"' | sort)
+          cargo add "${name}@${version}" $([ "$kind" = dev ] && echo --dev)
+          cargo metadata --format-version 1 > /dev/null
+          [ "$(git diff --name-only | sort | tr '\n' ' ')" = "Cargo.lock Cargo.toml " ] || { echo "::error::unexpected files changed"; exit 1; }
+          [ "$(git diff --numstat Cargo.toml)" = "$(printf '1\t0\tCargo.toml')" ] && git diff -U0 Cargo.toml | grep -qxF "+${name} = \"${version}\"" || { echo "::error::Cargo.toml must gain exactly '${name} = \"${version}\"'"; exit 1; }
+          got=$(git diff -U0 Cargo.lock | grep -A1 '^+name = ' | paste - - | sed -E 's/^\+name = "([^"]+)"\s+\+version = "([^"]+)".*/\1@\2/' | sort)
+          want=$(jq -r '.new_packages[] | "\(.name)@\(.version)"' "$d" | sort)
+          [ "$got" = "$want" ] || { echo "::error::Cargo.lock adds different crates than were checked"; echo "got: $got"; echo "want: $want"; exit 1; }
+          git diff -U0 Cargo.lock | grep -E '^-[^-]' && { echo "::error::Cargo.lock changed existing lines"; exit 1; } || true
+          branch="factory/deps/${name}-${version}"
+          git config user.name "$BOT"
+          git config user.email "$(gh api "users/${BOT}" --jq .id)+${BOT}@users.noreply.github.com"
+          git switch -c "$branch"
+          git add Cargo.toml Cargo.lock
+          git commit -q -m "deps: add ${name} ${version} (${kind}) (#${ISSUE})"
+          git push origin "$branch"
+          body=$(printf '%s\n' "Adds \`${name} ${version}\` (${kind}) for dependency request #${ISSUE}, which passed the dependency steward's checks (plain code, no AI; \`factory/policies/dependencies.yaml\` at \`$(jq -r .factory_version "$d")\`)." "" \
+            "- New crates in Cargo.lock: $(jq -r '[.new_packages[] | "`\(.name) \(.version)`"] | join(", ")' "$d")" \
+            "- Waived soft checks: $(jq -r 'if (.waived|length)>0 then (.waived|join(", ")) else "none" end' "$d")$(jq -r 'if .approved then " · soft failures accepted by the owner (dependency:approved)" else "" end' "$d")" "" \
+            "**Auto-strict** (Cargo.toml): CI runs the strict gates; the steward queues it when \`ci\` (with the full regression) and \`gates\` pass on this head.")
+          url=$(gh pr create --base main --head "$branch" --title "deps: add ${name} ${version} (${kind})" --body "$body")
+          echo "number=${url##*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Comment, label and close as decided
+        if: steps.mode.outputs.live == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: node harness/steward/steward.js comment --issue "$ISSUE" --out "$OUT" ${PR:+--pr "$PR"}
+
+  # Borderline requests without `dependency:approved` for 24 h: rejected (limits.yaml borderline_dependency).
+  sweep:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Mode
+        id: mode
+        env:
+          FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"; else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] no sweep"; fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.mode.outputs.live == 'true'
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: harness/steward
+      - name: Create controller App token (issues only)
+        if: steps.mode.outputs.live == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-issues: write
+      - name: Reject borderline requests older than 24 h
+        if: steps.mode.outputs.live == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node harness/steward/steward.js sweep --hours 24
+
+  # Queue a steward PR once its checks pass: only `factory/deps/*` PRs by the controller App that
+  # change exactly Cargo.toml and Cargo.lock, with `ci` (including the full regression) and `gates`
+  # green on the current head.
+  enqueue:
+    if: >-
+      github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'factory/deps/')
+    concurrency:
+      group: steward-enqueue-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+      REPO: ${{ github.repository }}
+      BRANCH: ${{ github.event.workflow_run.head_branch }}
+      HEAD: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"; else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would check ${BRANCH} for queueing"; fi
+      - name: Create controller App token
+        if: steps.mode.outputs.live == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-contents: write
+          permission-pull-requests: write
+          permission-actions: read
+          permission-checks: read
+      - name: Queue the PR if everything is green on its head
+        if: steps.mode.outputs.live == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          [[ "$BRANCH" =~ ^factory/deps/[A-Za-z0-9_-]+-[0-9]+\.[0-9]+\.[0-9]+$ && "$HEAD" =~ ^[0-9a-f]{40}$ ]] || { echo "not a steward branch"; exit 0; }
+          pr=$(gh api "repos/${REPO}/pulls?head=${REPO%%/*}:${BRANCH}&state=open" --jq '.[0]')
+          [ -n "$pr" ] && [ "$pr" != null ] || { echo "no open PR"; exit 0; }
+          [ "$(jq -r .user.login <<<"$pr")" = "sabbasi3-factory-controller[bot]" ] || { echo "not the steward's PR"; exit 0; }
+          [ "$(jq -r .head.sha <<<"$pr")" = "$HEAD" ] || { echo "head moved"; exit 0; }
+          n=$(jq -r .number <<<"$pr")
+          [ "$(gh api "repos/${REPO}/pulls/${n}/files" --jq '[.[].filename] | sort | join(" ")')" = "Cargo.lock Cargo.toml" ] || { echo "::error::PR #${n} changes more than Cargo.toml and Cargo.lock"; exit 1; }
+          latest() { gh api "repos/${REPO}/actions/workflows/$1.yml/runs?head_sha=${HEAD}&event=$2" --jq '[.workflow_runs[]] | sort_by(.created_at) | last | .conclusion // ""'; }
+          ci=$(latest ci pull_request); gates=$(latest gates pull_request_target)
+          [ "$ci" = success ] && [ "$gates" = success ] || { echo "not yet: ci=${ci:-none} gates=${gates:-none} on ${HEAD}"; exit 0; }
+          run=$(gh api "repos/${REPO}/actions/workflows/ci.yml/runs?head_sha=${HEAD}&event=pull_request" --jq '[.workflow_runs[]] | sort_by(.created_at) | last | .id')
+          full=$(gh api "repos/${REPO}/actions/runs/${run}/jobs" --jq '[.jobs[].steps[] | select(.name == "Full regression (auto-strict) - held-out comparison, 10000 phrases")] | first | .conclusion')
+          [ "$full" = success ] || { echo "::error::the full regression didn't succeed on ${HEAD} (${full:-missing})"; exit 1; }
+          id=$(jq -r .node_id <<<"$pr")
+          gh api graphql -f query='mutation($id: ID!, $head: GitObjectID!) { enqueuePullRequest(input: {pullRequestId: $id, expectedHeadOid: $head}) { mergeQueueEntry { position } } }' -f id="$id" -f head="$HEAD"
+          echo "queued PR #${n} at ${HEAD}"
