@@ -266,6 +266,11 @@ function drill(codes) {
             if (files.length === 0) throw new Error("no contract has a scope file");
             const missing = lib.missingScopeParents(files, (d) => fs.existsSync(path.join(tmp, d, ".gitkeep")) || d === `src/locales/${code.replace("-", "_")}`);
             if (missing.length) throw new Error(`scope files without a committed directory: ${missing.join(", ")}`);
+            const modDir = `src/locales/${code.replace("-", "_")}`;
+            const generated = fs.readdirSync(path.join(tmp, modDir), { recursive: true }).map((f) => `${modDir}/${f.split(path.sep).join("/")}`);
+            const wf = YAML.parse(read(".github/workflows/onboard.yml"));
+            const wfProblems = lib.workflowProblems(wf, generated);
+            if (wfProblems.length) throw new Error(`onboard.yml: ${wfProblems.join("; ")}`);
             const chk = spawnSync(process.execPath, [onboard, "check"], { cwd: path.join(tmp, "harness"), encoding: "utf8" });
             if (chk.status !== 0) throw new Error(`check failed after add:\n${chk.stdout}${chk.stderr}`);
             console.log(`drill ${code}: ok (${files.length} scope files, every parent directory generated)`);

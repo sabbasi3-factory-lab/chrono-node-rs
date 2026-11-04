@@ -358,6 +358,21 @@ function missingScopeParents(scopes, exists) {
     return scopes.filter((s) => !exists(path.posix.dirname(s))).sort();
 }
 
+/**
+ * Problems in onboard.yml's hand-off of the generated files (its text, parsed): the generate job's
+ * artifact must keep hidden files (actions/upload-artifact drops them by default) whenever the
+ * generator writes one, or apply's file-list check fails on every live onboarding.
+ */
+function workflowProblems(workflow, generatedPaths) {
+    const hidden = generatedPaths.filter((p) => p.split("/").some((part) => part.startsWith(".")));
+    if (hidden.length === 0) return [];
+    const uploads = Object.values(workflow.jobs || {})
+        .flatMap((j) => j.steps || [])
+        .filter((st) => String(st.uses || "").startsWith("actions/upload-artifact@") && st.with && st.with.name === "onboard");
+    if (uploads.length !== 1) return [`expected one upload of the "onboard" artifact, found ${uploads.length}`];
+    return uploads[0].with["include-hidden-files"] === true ? [] : [`the "onboard" artifact drops hidden files (${hidden[0]}, ...): set include-hidden-files: true`];
+}
+
 function slotLine(method, s) {
     const flags = Object.entries(s.flags || {});
     const arg = flags.length ? `Flags::of(&[${flags.map(([k, v]) => `("${k}", ${v})`).join(", ")}])` : "Flags::none()";
@@ -403,6 +418,7 @@ module.exports = {
     renderConfigurationRs,
     moduleSkeleton,
     missingScopeParents,
+    workflowProblems,
 };
 
 /**

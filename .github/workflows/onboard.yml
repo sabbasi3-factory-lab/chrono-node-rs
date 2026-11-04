@@ -151,6 +151,9 @@ jobs:
         with:
           name: onboard
           path: /tmp/factory-onboard/
+          # The module skeleton is .gitkeep files: without this they'd be dropped, and apply's
+          # file-list check would fail (harness/onboard: workflowProblems, run by drill and tests).
+          include-hidden-files: true
           retention-days: 7
 
   # Writes, only when live. Runs no third-party code: the App token action, git and gh.

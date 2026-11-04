@@ -74,7 +74,8 @@ node onboard/onboard.js add fi            # onboard one (writes the files above)
 node onboard/onboard.js check             # CI: every generated locale re-renders byte for byte
 node onboard/onboard.js check --write     # after a generator change: re-render the generated locales in place
 node onboard/onboard.js drill [code...]   # onboard each (default: every candidate) in a throwaway copy;
-                                          # fail if a contract scope file's directory isn't generated
+                                          # fail if a contract scope file's directory isn't generated,
+                                          # or onboard.yml's artifact would drop the skeleton's .gitkeep files
 node onboard/onboard.js next --policy P --outcomes O --issues I --prs R   # the scheduled decision
 node onboard/summary.js fi                # the onboarding PR's body
 node --test onboard/test/*.test.js        # unit tests (also in npm run test:gates)

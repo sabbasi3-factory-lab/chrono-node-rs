@@ -112,6 +112,20 @@ test("module skeleton: every scope file's directory, parsers/ and refiners/ alwa
     assert.deepStrictEqual(lib.missingScopeParents(["src/locales/xx/parsers/a.rs", "src/locales/xx/constants.rs"], (d) => d === "src/locales/xx"), ["src/locales/xx/parsers/a.rs"]);
 });
 
+test("onboard.yml keeps the skeleton's hidden files in the generate job's artifact", () => {
+    const fs = require("fs");
+    const path = require("path");
+    const YAML = require("yaml");
+    const wf = YAML.parse(fs.readFileSync(path.join(__dirname, "../../../.github/workflows/onboard.yml"), "utf8"));
+    const files = ["src/locales/xx/mod.rs", "src/locales/xx/parsers/.gitkeep"];
+    assert.deepStrictEqual(lib.workflowProblems(wf, files), []);
+    // Bites: the default upload drops dotfiles, so apply's file-list check would fail live.
+    const upload = Object.values(wf.jobs).flatMap((j) => j.steps || []).find((st) => st.with && st.with.name === "onboard");
+    delete upload.with["include-hidden-files"];
+    assert.match(lib.workflowProblems(wf, files)[0], /drops hidden files/);
+    assert.deepStrictEqual(lib.workflowProblems(wf, ["src/locales/xx/mod.rs"]), []);
+});
+
 test("task map fragment fails closed on a step that's neither the locale's file nor mapped", () => {
     const other = { "xx.casual": { parsers: [{ name: "ENWeekdayParser" }], refiners: [] } };
     assert.throws(() => lib.taskmapFragment({ manifest, configs: other, baseTaskmap, localeFiles, constants, goldenTexts: [] }), /ENWeekdayParser .* a hand decision/);

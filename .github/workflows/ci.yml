@@ -141,7 +141,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          if git diff --name-only "$BASE_SHA" HEAD | grep -qE '^(harness/(onboard|golden|lib)/|scripts/seed-backlog/|upstream/|build\.rs$)'; then
+          if git diff --name-only "$BASE_SHA" HEAD | grep -qE '^(harness/(onboard|golden|lib)/|scripts/seed-backlog/|upstream/|build\.rs$|\.github/workflows/onboard\.yml$)'; then
             (cd scripts/seed-backlog && npm ci --ignore-scripts --no-audit --no-fund)
             (cd harness && node onboard/onboard.js drill)
           else
