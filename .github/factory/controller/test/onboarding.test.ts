@@ -42,7 +42,7 @@ const world = (pr: PullSnap, ci = 'success', gates = 'success', extra: PullSnap[
     pulls: [pr, ...extra],
     check_runs: [
       checkRun(970, { head_sha: pr.head_sha, pull_requests: [pr.number], conclusion: ci }),
-      checkRun(971, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, conclusion: gates }),
+      checkRun(971, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, pull_requests: [pr.number], conclusion: gates }),
     ],
   });
 const run = (s: ReturnType<typeof world>, p = withOnboarding(), env = ON) => plan(s, p, env, NOW);
@@ -115,5 +115,22 @@ describe('generated language-onboarding PRs (tiers.yaml onboarding)', () => {
     assert.deepEqual(parsePolicies(tiers('onboarding: { auto_merge: true, max_per_day: 1 }')).tiers.onboarding, { auto_merge: true, max_per_day: 1 });
     assert.throws(() => parsePolicies(tiers('onboarding: { auto_merge: yes-please, max_per_day: 1 }')));
     assert.throws(() => parsePolicies(tiers('onboarding: { auto_merge: true, max_per_day: 6 }')));
+  });
+
+  it("only this PR's own runs count: another PR's green ci at the same commit doesn't (review fix)", () => {
+    const s = world(onboardPr(), 'failure');
+    s.check_runs.push(checkRun(980, { head_sha: HEAD, pull_requests: [77], conclusion: 'success' }));
+    assert.deepEqual(kinds(run(s)), ['needs_human/onboarding_checks_failed']);
+    const pending = world(onboardPr());
+    pending.check_runs = pending.check_runs.map((r) => (r.run_id === 970 ? { ...r, pull_requests: [77] } : r));
+    assert.deepEqual(kinds(run(pending)), []);
+  });
+
+  it('with the kill switch off, a second ready PR is not handed to a person for the daily cap (review fix)', () => {
+    const second = onboardPr(51, { head_ref: 'factory/onboard/id', head_sha: hex40('7'), node_id: 'PR_51', files: FILES.map((f) => ({ ...f, path: f.path.replace(/\bfi\b/g, 'id') })) });
+    const s = world(onboardPr(), 'success', 'success', [second]);
+    s.check_runs.push(checkRun(972, { head_sha: second.head_sha, pull_requests: [51], conclusion: 'success' }), checkRun(973, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: second.head_sha, pull_requests: [51], conclusion: 'success' }));
+    assert.ok(!kinds(run(s, withOnboarding(), { FACTORY_ENABLED: undefined })).includes('needs_human/onboarding_daily_cap'));
+    assert.deepEqual(kinds(run(s)).filter((k) => !k.startsWith('wait')).sort(), ['auto_merge/onboarding_ready', 'needs_human/onboarding_daily_cap']);
   });
 });
