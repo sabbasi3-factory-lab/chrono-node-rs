@@ -1,0 +1,770 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/pt/pt_month_name_little_endian.test.ts",
+  "cases": [
+    {
+      "id": "pt/month_name_little_endian#01",
+      "text": "10 Agosto 2012",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Agosto 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#02",
+      "text": "10 Agosto 234 AC",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Agosto 234 AC",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": -234
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000234-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#03",
+      "text": "10 Agosto 88 d. C.",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Agosto 88 d. C.",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#04",
+      "text": "Dom 15Set",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2013-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Dom 15Set",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 9,
+              "weekday": 0
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-09-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#05",
+      "text": "DOM 15SET",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2013-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "DOM 15SET",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 9,
+              "weekday": 0
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-09-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#06",
+      "text": "O prazo é 10 Agosto",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 10,
+          "text": "10 Agosto",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#07",
+      "text": "O prazo é terça-feira, 10 de janeiro",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser",
+          "PTWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 10,
+          "text": "terça-feira, 10 de janeiro",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 1,
+              "weekday": 2
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-01-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#08",
+      "text": "O prazo é Qua, 10 Janeiro",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser",
+          "PTWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 10,
+          "text": "Qua, 10 Janeiro",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 1,
+              "weekday": 3
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-01-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#09",
+      "text": "10 de Agosto de 2012",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2010-02-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 de Agosto de 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#10",
+      "text": "10 - 22 Agosto 2012",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 - 22 Agosto 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 22,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-22T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#11",
+      "text": "10 a 22 Agosto 2012",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 a 22 Agosto 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 22,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-22T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#12",
+      "text": "10 Agosto - 12 Setembro",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "PTMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Agosto - 12 Setembro",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-09-12T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#13",
+      "text": "10 Agosto - 12 Setembro 2013",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "PTMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Agosto - 12 Setembro 2013",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 9,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-09-12T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#14",
+      "text": "12 de Julho às 19:00",
+      "config": "pt.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser",
+          "PTTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "PTMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12 de Julho às 19:00",
+          "start": {
+            "known": {
+              "day": 12,
+              "hour": 19,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 7
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-07-12T19:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined expression"
+    },
+    {
+      "id": "pt/month_name_little_endian#15",
+      "text": "32 Agosto 2014",
+      "config": "pt.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    },
+    {
+      "id": "pt/month_name_little_endian#16",
+      "text": "29 Fevereiro 2014",
+      "config": "pt.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "PTMonthNameLittleEndianParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    },
+    {
+      "id": "pt/month_name_little_endian#17",
+      "text": "32 Agosto",
+      "config": "pt.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    }
+  ]
+}

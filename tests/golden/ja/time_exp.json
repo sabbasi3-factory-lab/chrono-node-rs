@@ -1,0 +1,1361 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/ja/ja_time_exp.test.ts",
+  "cases": [
+    {
+      "id": "ja/time_exp#01",
+      "text": "私は午前6時13分に起きた",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "午前6時13分",
+          "start": {
+            "known": {
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 13
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:13:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/time_exp#02",
+      "text": "私は午前8時に起きる",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "午前8時",
+          "start": {
+            "known": {
+              "hour": 8,
+              "meridiem": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/time_exp#03",
+      "text": "午後8時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "午後8時",
+          "start": {
+            "known": {
+              "hour": 20,
+              "meridiem": 1
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T20:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/time_exp#04",
+      "text": "12/9の16:00",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2025-12-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPSlashDateFormatParser",
+          "JPTimeExpressionParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12/9の16:00",
+          "start": {
+            "known": {
+              "day": 9,
+              "hour": 16,
+              "minute": 0,
+              "month": 12
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-12-09T16:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/time_exp#05",
+      "text": "１２月９日の１６：３０",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2025-12-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser",
+          "JPTimeExpressionParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "１２月９日の１６：３０",
+          "start": {
+            "known": {
+              "day": 9,
+              "hour": 16,
+              "minute": 30,
+              "month": 12
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-12-09T16:30:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/time_exp#06",
+      "text": "私は本日午前八時十分から午後11時32分までゲームをした",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPCasualDateParser",
+          "JPTimeExpressionParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "本日午前八時十分から午後11時32分",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 8,
+              "meridiem": 0,
+              "minute": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T08:10:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 10,
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 32,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T23:32:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "ja/time_exp#07",
+      "text": "6時30分PM-11時PM",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "6時30分PM-11時PM",
+          "start": {
+            "known": {
+              "hour": 18,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T18:30:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T23:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "ja/time_exp#08",
+      "text": "僕は2018年11月26日午後三時半五十九秒にゲームを始めた",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser",
+          "JPTimeExpressionParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "2018年11月26日午後三時半五十九秒",
+          "start": {
+            "known": {
+              "day": 26,
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 30,
+              "month": 11,
+              "second": 59,
+              "year": 2018
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "2018-11-26T15:30:59.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date + Time Expression"
+    },
+    {
+      "id": "ja/time_exp#09",
+      "text": "午後1時30分から3時10分",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "午後1時30分から3時10分",
+          "start": {
+            "known": {
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:30:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 15,
+              "minute": 10
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:10:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Time Expression's Meridiem imply"
+    },
+    {
+      "id": "ja/time_exp#10",
+      "text": "1時20分P.M.から3時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1時20分P.M.から3時",
+          "start": {
+            "known": {
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 20
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:20:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 15
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Time Expression's Meridiem imply"
+    },
+    {
+      "id": "ja/time_exp#11",
+      "text": "午後６時半－１１時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "午後６時半－１１時",
+          "start": {
+            "known": {
+              "hour": 18,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T18:30:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 23
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T23:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Time Expression's Meridiem imply"
+    },
+    {
+      "id": "ja/time_exp#12",
+      "text": "午後１１時半－１時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "午後１１時半－１時",
+          "start": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T23:30:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 1
+            },
+            "implied": {
+              "day": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-08-11T01:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Time Expression's Meridiem imply"
+    },
+    {
+      "id": "ja/time_exp#13",
+      "text": "23時20分から2時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "23時20分から2時",
+          "start": {
+            "known": {
+              "hour": 23,
+              "minute": 20
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T23:20:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 2
+            },
+            "implied": {
+              "day": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-08-11T02:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Time Expression's Meridiem imply"
+    },
+    {
+      "id": "ja/time_exp#14",
+      "text": "23時20分から2時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-31T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "23時20分から2時",
+          "start": {
+            "known": {
+              "hour": 23,
+              "minute": 20
+            },
+            "implied": {
+              "day": 31,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-31T23:20:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 2
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-09-01T02:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Time Expression's Meridiem imply"
+    },
+    {
+      "id": "ja/time_exp#15",
+      "text": "2014年3月5日午前 6 時から 7 時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser",
+          "JPTimeExpressionParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2014年3月5日午前 6 時から 7 時",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 3,
+              "year": 2014
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-03-05T06:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 5,
+              "hour": 7,
+              "minute": 0,
+              "month": 3,
+              "year": 2014
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-03-05T07:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "ja/time_exp#16",
+      "text": "次の土曜日1時30分二十九秒",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser",
+          "JPWeekdayParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "次の土曜日1時30分二十九秒",
+          "start": {
+            "known": {
+              "hour": 1,
+              "minute": 30,
+              "second": 29,
+              "weekday": 6
+            },
+            "implied": {
+              "day": 18,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-18T01:30:29.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "ja/time_exp#17",
+      "text": "昨日午前六時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPCasualDateParser",
+          "JPTimeExpressionParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "昨日午前六時",
+          "start": {
+            "known": {
+              "day": 9,
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T06:00:00.000Z",
+            "tags": [
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "ja/time_exp#18",
+      "text": "６月４日3:00am",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser",
+          "JPTimeExpressionParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "６月４日3:00am",
+          "start": {
+            "known": {
+              "day": 4,
+              "hour": 3,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 6
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-06-04T03:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "ja/time_exp#19",
+      "text": "前の金曜日16時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser",
+          "JPWeekdayParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "前の金曜日16時",
+          "start": {
+            "known": {
+              "hour": 16,
+              "minute": 0,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 3,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-03T16:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "ja/time_exp#20",
+      "text": "3月17日 20時15",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser",
+          "JPTimeExpressionParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "3月17日 20時15",
+          "start": {
+            "known": {
+              "day": 17,
+              "hour": 20,
+              "minute": 15,
+              "month": 3
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-03-17T20:15:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "ja/time_exp#21",
+      "text": "10時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10時",
+          "start": {
+            "known": {
+              "hour": 10
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T10:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "ja/time_exp#22",
+      "text": "12時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12時",
+          "start": {
+            "known": {
+              "hour": 12
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "ja/time_exp#23",
+      "text": "午後１3時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Incorrect time expressions"
+    },
+    {
+      "id": "ja/time_exp#24",
+      "text": "25時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Incorrect time expressions"
+    },
+    {
+      "id": "ja/time_exp#25",
+      "text": "5時70分",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Incorrect time expressions"
+    },
+    {
+      "id": "ja/time_exp#26",
+      "text": "5時30分65秒",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Incorrect time expressions"
+    },
+    {
+      "id": "ja/time_exp#27",
+      "text": "23時-25時",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Incorrect time expressions"
+    },
+    {
+      "id": "ja/time_exp#28",
+      "text": "3時-5時70分",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Incorrect time expressions"
+    },
+    {
+      "id": "ja/time_exp#29",
+      "text": "3時-5時30分65秒",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Incorrect time expressions"
+    },
+    {
+      "id": "ja/time_exp#30",
+      "text": "1",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Non time expressions"
+    },
+    {
+      "id": "ja/time_exp#31",
+      "text": "12",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Non time expressions"
+    },
+    {
+      "id": "ja/time_exp#32",
+      "text": "12a",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Non time expressions"
+    },
+    {
+      "id": "ja/time_exp#33",
+      "text": "1時間",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Non time expressions"
+    },
+    {
+      "id": "ja/time_exp#34",
+      "text": "25時間",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Non time expressions"
+    }
+  ]
+}

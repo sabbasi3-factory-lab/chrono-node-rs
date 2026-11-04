@@ -1,0 +1,773 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/ja/ja_standard.test.ts",
+  "cases": [
+    {
+      "id": "ja/standard#01",
+      "text": "主な株主（2012年3月31日現在）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "2012年3月31日",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 3,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-03-31T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#02",
+      "text": "主な株主（2012年９月3日現在）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "2012年９月3日",
+          "start": {
+            "known": {
+              "day": 3,
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#03",
+      "text": "主な株主（2020年2月29日現在）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2019-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "2020年2月29日",
+          "start": {
+            "known": {
+              "day": 29,
+              "month": 2,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2020-02-29T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#04",
+      "text": "主な株主（９月3日現在）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "９月3日",
+          "start": {
+            "known": {
+              "day": 3,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-09-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#05",
+      "text": "主な株主（平成26年12月29日）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "平成26年12月29日",
+          "start": {
+            "known": {
+              "day": 29,
+              "month": 12,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-12-29T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#06",
+      "text": "主な株主（昭和６４年１月７日）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "昭和６４年１月７日",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 1,
+              "year": 1989
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1989-01-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#07",
+      "text": "主な株主（令和元年5月1日）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "令和元年5月1日",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 5,
+              "year": 2019
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2019-05-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#08",
+      "text": "主な株主（令和2年5月1日）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "令和2年5月1日",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 5,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2020-05-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#09",
+      "text": "主な株主（同年7月27日）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "同年7月27日",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-07-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#10",
+      "text": "主な株主（本年7月27日）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "本年7月27日",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-07-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#11",
+      "text": "主な株主（今年7月27日）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "今年7月27日",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-07-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#12",
+      "text": "主な株主（今年11月27日）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "今年11月27日",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 11,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-11-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/standard#13",
+      "text": "7月27日",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "7月27日",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 7
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-07-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression without year"
+    },
+    {
+      "id": "ja/standard#14",
+      "text": "11月27日",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "11月27日",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 11
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-11-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression without year"
+    },
+    {
+      "id": "ja/standard#15",
+      "text": "2013年12月26日-2014年1月7日",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": [
+          "JPMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2013年12月26日-2014年1月7日",
+          "start": {
+            "known": {
+              "day": 26,
+              "month": 12,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-12-26T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "month": 1,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-01-07T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "ja/standard#16",
+      "text": "２０１３年１２月２６日ー2014年1月7日",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": [
+          "JPMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "２０１３年１２月２６日ー2014年1月7日",
+          "start": {
+            "known": {
+              "day": 26,
+              "month": 12,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-12-26T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "month": 1,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-01-07T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "ja/standard#17",
+      "text": "2013年12月26日 ～ ２０１４年１月７日",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser"
+        ],
+        "refiners": [
+          "JPMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2013年12月26日 ～ ２０１４年１月７日",
+          "start": {
+            "known": {
+              "day": 26,
+              "month": 12,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-12-26T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "month": 1,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-01-07T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    }
+  ]
+}

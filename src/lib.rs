@@ -55,6 +55,14 @@ pub fn configuration(name: &str) -> Option<&'static Chrono> {
         "de.strict" => Some(locales::de::strict()),
         "fr.casual" => Some(locales::fr::casual()),
         "fr.strict" => Some(locales::fr::strict()),
+        "sv.casual" => Some(locales::sv::casual()),
+        "sv.strict" => Some(locales::sv::strict()),
+        "pt.casual" => Some(locales::pt::casual()),
+        "pt.strict" => Some(locales::pt::strict()),
+        "es.casual" => Some(locales::es::casual()),
+        "es.strict" => Some(locales::es::strict()),
+        "ja.casual" => Some(locales::ja::casual()),
+        "ja.strict" => Some(locales::ja::strict()),
         _ => None,
     }
 }

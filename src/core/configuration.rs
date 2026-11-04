@@ -61,6 +61,11 @@ impl Configuration {
     pub fn unshift_refiner(&mut self, name: &'static str, flags: Flags) {
         self.refiners.insert(0, Slot { name, flags });
     }
+    /// `configuration.refiners = configuration.refiners.filter((r) => !(r instanceof Name))`, for a
+    /// step with no ported subclasses (an exact name match).
+    pub fn remove_refiners(&mut self, name: &str) {
+        self.refiners.retain(|slot| slot.name != name);
+    }
 
     /// `new Chrono(configuration)`: instantiates every ported step, skipping the rest.
     pub fn build(&self) -> Chrono {

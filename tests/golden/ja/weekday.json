@@ -1,0 +1,701 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/ja/ja_weekday.test.ts",
+  "cases": [
+    {
+      "id": "ja/weekday#01",
+      "text": "木曜日",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "木曜日",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/weekday#02",
+      "text": "前の水曜日",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "前の水曜日",
+          "start": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 31,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-08-31T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ja/weekday#03",
+      "text": "(木)",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPWeekdayWithParenthesesParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "(木)",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression - weekday with parentheses"
+    },
+    {
+      "id": "ja/weekday#04",
+      "text": "（木）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPWeekdayWithParenthesesParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "（木）",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression - weekday with parentheses"
+    },
+    {
+      "id": "ja/weekday#05",
+      "text": "土曜日～月曜日",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "JPWeekdayParser"
+        ],
+        "refiners": [
+          "JPMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "土曜日～月曜日",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 3,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-09-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 5,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-09-05T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    },
+    {
+      "id": "ja/weekday#06",
+      "text": "8月27日水曜日",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser",
+          "JPWeekdayParser"
+        ],
+        "refiners": [
+          "JPMergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8月27日水曜日",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 8,
+              "weekday": 3
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - merge date and weekday"
+    },
+    {
+      "id": "ja/weekday#07",
+      "text": "8月27日（水）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser",
+          "JPWeekdayWithParenthesesParser"
+        ],
+        "refiners": [
+          "JPMergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8月27日（水）",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 8,
+              "weekday": 3
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - merge date and weekday"
+    },
+    {
+      "id": "ja/weekday#08",
+      "text": "2012/8/27（水）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPSlashDateFormatParser",
+          "JPWeekdayWithParenthesesParser"
+        ],
+        "refiners": [
+          "JPMergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2012/8/27（水）",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 8,
+              "weekday": 3,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - merge date and weekday"
+    },
+    {
+      "id": "ja/weekday#09",
+      "text": "１／３０（木）",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2025-02-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPSlashDateFormatParser",
+          "JPWeekdayWithParenthesesParser"
+        ],
+        "refiners": [
+          "JPMergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "１／３０（木）",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 1,
+              "weekday": 4
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-01-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - merge date and weekday"
+    },
+    {
+      "id": "ja/weekday#10",
+      "text": "1/30の木曜日",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2025-02-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPSlashDateFormatParser",
+          "JPWeekdayParser"
+        ],
+        "refiners": [
+          "JPMergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1/30の木曜日",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 1,
+              "weekday": 4
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-01-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - merge date and weekday"
+    },
+    {
+      "id": "ja/weekday#11",
+      "text": "1/30(木)",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2025-02-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPSlashDateFormatParser",
+          "JPWeekdayWithParenthesesParser"
+        ],
+        "refiners": [
+          "JPMergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1/30(木)",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 1,
+              "weekday": 4
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-01-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - merge date and weekday"
+    },
+    {
+      "id": "ja/weekday#12",
+      "text": "１月３０日（木）１４：００",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2025-02-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser",
+          "JPTimeExpressionParser",
+          "JPWeekdayWithParenthesesParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner",
+          "JPMergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "１月３０日（木）１４：００",
+          "start": {
+            "known": {
+              "day": 30,
+              "hour": 14,
+              "minute": 0,
+              "month": 1,
+              "weekday": 4
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-01-30T14:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - merge date and weekday"
+    },
+    {
+      "id": "ja/weekday#13",
+      "text": "１月３１日（金）１２：００－１６：００",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2025-02-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser",
+          "JPTimeExpressionParser",
+          "JPWeekdayWithParenthesesParser"
+        ],
+        "refiners": [
+          "JPMergeDateTimeRefiner",
+          "JPMergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "１月３１日（金）１２：００－１６：００",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 12,
+              "minute": 0,
+              "month": 1,
+              "weekday": 5
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-01-31T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 31,
+              "hour": 16,
+              "minute": 0,
+              "month": 1,
+              "weekday": 5
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-01-31T16:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - merge date and weekday"
+    },
+    {
+      "id": "ja/weekday#14",
+      "text": "１月３０日（木）１２：００－１月３１日（金）１６：００",
+      "config": "ja.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2025-02-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "JPStandardParser",
+          "JPTimeExpressionParser",
+          "JPWeekdayWithParenthesesParser"
+        ],
+        "refiners": [
+          "JPMergeDateRangeRefiner",
+          "JPMergeDateTimeRefiner",
+          "JPMergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "１月３０日（木）１２：００－１月３１日（金）１６：００",
+          "start": {
+            "known": {
+              "day": 30,
+              "hour": 12,
+              "minute": 0,
+              "month": 1,
+              "weekday": 4
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-01-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 31,
+              "hour": 16,
+              "minute": 0,
+              "month": 1,
+              "weekday": 5
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0,
+              "year": 2025
+            },
+            "date": "2025-01-31T16:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - merge date and weekday"
+    }
+  ]
+}

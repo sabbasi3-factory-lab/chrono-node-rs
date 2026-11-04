@@ -1,0 +1,1336 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/es/es_month.test.ts",
+  "cases": [
+    {
+      "id": "es/month#01",
+      "text": "septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "septiembre",
+          "start": {
+            "known": {
+              "month": 9
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ESMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-only expression"
+    },
+    {
+      "id": "es/month#02",
+      "text": "en septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "septiembre",
+          "start": {
+            "known": {
+              "month": 9
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ESMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-only expression"
+    },
+    {
+      "id": "es/month#03",
+      "text": "septiembre de 2027",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "septiembre de 2027",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2027
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2027-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ESMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-only expression"
+    },
+    {
+      "id": "es/month#04",
+      "text": "setiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "setiembre",
+          "start": {
+            "known": {
+              "month": 9
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ESMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-only expression"
+    },
+    {
+      "id": "es/month#05",
+      "text": "en sep",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "sep",
+          "start": {
+            "known": {
+              "month": 9
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ESMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-only expression"
+    },
+    {
+      "id": "es/month#06",
+      "text": "La fecha es septiembre.",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 12,
+          "text": "septiembre",
+          "start": {
+            "known": {
+              "month": 9
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ESMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-only expression"
+    },
+    {
+      "id": "es/month#07",
+      "text": "septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ESMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "septiembre",
+          "start": {
+            "known": {
+              "month": 9
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ESMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Forward date option"
+    },
+    {
+      "id": "es/month#08",
+      "text": "septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-10-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ESMonthNameParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "septiembre",
+          "start": {
+            "known": {
+              "month": 9
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ESMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Forward date option"
+    },
+    {
+      "id": "es/month#09",
+      "text": "sep",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#10",
+      "text": "ene",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#11",
+      "text": "dic",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#12",
+      "text": "septiembre",
+      "config": "es.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#13",
+      "text": "32Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#14",
+      "text": "32 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#15",
+      "text": "32º de Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#16",
+      "text": "32ª Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#17",
+      "text": "32° Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#18",
+      "text": "32ro Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#19",
+      "text": "32era Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#20",
+      "text": "32avo Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#21",
+      "text": "32-Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#22",
+      "text": "32/Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#23",
+      "text": "32, Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#24",
+      "text": "32 de-Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#25",
+      "text": "32 de/Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#26",
+      "text": "32 de,Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#27",
+      "text": "32 de de Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#28",
+      "text": "32 a32 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#29",
+      "text": "32a32 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#30",
+      "text": "32de32 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#31",
+      "text": "32desde32 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#32",
+      "text": "32ao32 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#33",
+      "text": "32-32 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#34",
+      "text": "32–32 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#35",
+      "text": "32 32 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Month-only negative cases"
+    },
+    {
+      "id": "es/month#36",
+      "text": "1 a3 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 a3 Agosto",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 3,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-03T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Compact day ranges"
+    },
+    {
+      "id": "es/month#37",
+      "text": "1a3 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1a3 Agosto",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 3,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-03T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Compact day ranges"
+    },
+    {
+      "id": "es/month#38",
+      "text": "1de3 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1de3 Agosto",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 3,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-03T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Compact day ranges"
+    },
+    {
+      "id": "es/month#39",
+      "text": "1desde3 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1desde3 Agosto",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 3,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-03T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Compact day ranges"
+    },
+    {
+      "id": "es/month#40",
+      "text": "1ao3 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1ao3 Agosto",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 3,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-03T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Compact day ranges"
+    },
+    {
+      "id": "es/month#41",
+      "text": "1-3 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1-3 Agosto",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 3,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-03T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Compact day ranges"
+    },
+    {
+      "id": "es/month#42",
+      "text": "1–3 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1–3 Agosto",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 3,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-03T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Compact day ranges"
+    },
+    {
+      "id": "es/month#43",
+      "text": "1 3 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 3 Agosto",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 3,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-03T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Compact day ranges"
+    }
+  ]
+}

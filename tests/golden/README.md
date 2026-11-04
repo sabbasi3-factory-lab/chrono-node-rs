@@ -11,10 +11,10 @@ cd harness && npm run golden:check            # fail if tests/golden is stale
 
 ## How the cases are made
 
-- `harness/golden/generate.js` runs chrono-node's **own test files** (`upstream/test/*.test.ts` and `upstream/test/{en,de,fr}/*.test.ts`, except the performance test) under jest, unmodified.
+- `harness/golden/generate.js` runs chrono-node's **own test files** (`upstream/test/*.test.ts` and `upstream/test/{en,de,fr,sv,pt,es,ja}/*.test.ts`, except the performance test) under jest, unmodified.
 - `harness/golden/setup.js` records every `Chrono.prototype.parse` call those tests make: the input, the reference, the options and chrono-node's actual output. All 259 upstream tests must pass, or generation fails.
 - The process time zone is forced to `UTC`. "Now" is frozen at `2012-08-10T12:00:00.000Z`. That date is used only where a test passes no reference date. Otherwise each test's own reference date is kept.
-- Calls on configurations other than the named ones (four English, `de.casual`, `de.strict`, `fr.casual`, `fr.strict`) (for example a test that adds a custom parser) are skipped and counted in `index.json`. So are calls whose options can't be written as JSON (custom timezone maps with functions).
+- Calls on configurations other than the named ones (four English, and `<lang>.casual` / `<lang>.strict` for `de`, `fr`, `sv`, `pt`, `es`, `ja`) (for example a test that adds a custom parser) are skipped and counted in `index.json`. So are calls whose options can't be written as JSON (custom timezone maps with functions).
 
 ## Layout
 
@@ -23,7 +23,7 @@ cd harness && npm run golden:check            # fail if tests/golden is stale
 | `index.json` | Upstream pin, defaults, and per-area case and skip counts |
 | `configurations.json` | The exact parser and refiner order (with boolean flags) of every named configuration. The Rust configurations must match it. Step names are upstream class names, except the German and French `…TimeUnitRelativeFormatParser`, named after their file because their class names aren't unique. |
 | `core/<name>.json` | Cases from `upstream/test/<name>.test.ts` |
-| `<lang>/<name>.json` | Cases from `upstream/test/<lang>/<lang>_<name>.test.ts` (`en.test.ts` → `general`); `lang` is `en`, `de` or `fr` |
+| `<lang>/<name>.json` | Cases from `upstream/test/<lang>/<lang>_<name>.test.ts` (`en.test.ts` → `general`); `lang` is `en`, `de`, `fr`, `sv`, `pt`, `es` or `ja` |
 
 ## Case schema (`schema: 1`)
 
@@ -31,7 +31,7 @@ cd harness && npm run golden:check            # fail if tests/golden is stale
 {
   "id": "en/weekday#01",            // stable within a generation: area + call order
   "text": "Monday",                 // the input string
-  "config": "en.casual",            // en.casual | en.strict | en.GB.casual | en.GB.strict | de.casual | de.strict | fr.casual | fr.strict
+  "config": "en.casual",            // en.casual | en.strict | en.GB.casual | en.GB.strict | <lang>.casual | <lang>.strict (de, fr, sv, pt, es, ja)
   "reference": {
     "kind": "date",                 // none (chrono used "now") | date (a Date) | object (a ParsingReference)
     "instant": "2012-08-09T00:00:00.000Z",  // always set: the resolved reference instant
