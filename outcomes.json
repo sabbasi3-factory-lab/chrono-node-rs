@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-04T17:59:12Z",
+  "generated_at": "2026-11-04T18:02:38Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
     {
@@ -802,7 +802,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": true,
+      "eval_failed": false,
       "drill": false
     },
     {
@@ -1212,7 +1212,7 @@
       "workflow": "implement",
       "title": "Implement drill/repair-unaided #100 attempt 1",
       "created_at": "2026-10-27T03:32:21Z",
-      "aic": 16.29857,
+      "aic": 0,
       "task": "drill/repair-unaided",
       "items": [
         {
@@ -1324,7 +1324,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1348,7 +1348,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1372,7 +1372,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1396,7 +1396,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1420,7 +1420,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1444,7 +1444,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1468,7 +1468,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1492,7 +1492,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1516,7 +1516,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1540,7 +1540,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1564,7 +1564,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1588,7 +1588,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1612,7 +1612,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1636,7 +1636,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1660,7 +1660,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1684,7 +1684,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1708,7 +1708,7 @@
           "zero_touch": true
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1732,7 +1732,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1756,8 +1756,30 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
+    },
+    {
+      "run_id": 40546169425,
+      "workflow": "repair",
+      "title": "Repair drill/gate-code-health #117 attempt 2",
+      "created_at": "2026-10-27T16:58:47Z",
+      "aic": null,
+      "task": "drill/gate-code-health",
+      "items": [],
+      "eval_failed": true,
+      "drill": true
+    },
+    {
+      "run_id": 40540690149,
+      "workflow": "repair",
+      "title": "Repair drill/gate-perf #116 attempt 2",
+      "created_at": "2026-10-27T16:25:01Z",
+      "aic": null,
+      "task": "drill/gate-perf",
+      "items": [],
+      "eval_failed": true,
+      "drill": true
     },
     {
       "run_id": 40533397812,
@@ -1840,7 +1862,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": true
     },
     {
@@ -1882,7 +1904,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": true
     },
     {
@@ -1911,7 +1933,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1929,7 +1951,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1947,7 +1969,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1965,7 +1987,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -1983,7 +2005,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -2001,7 +2023,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -2019,7 +2041,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -2037,7 +2059,7 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -2055,7 +2077,18 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
+      "eval_failed": true,
+      "drill": false
+    },
+    {
+      "run_id": 40534964393,
+      "workflow": "review",
+      "title": "Review one factory PR",
+      "created_at": "2026-10-27T15:50:28Z",
+      "aic": null,
+      "task": null,
+      "items": [],
+      "eval_failed": true,
       "drill": false
     },
     {
@@ -2073,41 +2106,8 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": false,
-      "drill": false
-    },
-    {
-      "run_id": 40534964393,
-      "workflow": "review",
-      "title": "Review one factory PR",
-      "created_at": "2026-10-27T15:50:28Z",
-      "aic": null,
-      "task": null,
-      "items": [],
       "eval_failed": true,
       "drill": false
-    },
-    {
-      "run_id": 40546169425,
-      "workflow": "repair",
-      "title": "Repair drill/gate-code-health #117 attempt 2",
-      "created_at": "2026-10-27T16:58:47Z",
-      "aic": null,
-      "task": "drill/gate-code-health",
-      "items": [],
-      "eval_failed": true,
-      "drill": true
-    },
-    {
-      "run_id": 40540690149,
-      "workflow": "repair",
-      "title": "Repair drill/gate-perf #116 attempt 2",
-      "created_at": "2026-10-27T16:25:01Z",
-      "aic": null,
-      "task": "drill/gate-perf",
-      "items": [],
-      "eval_failed": true,
-      "drill": true
     }
   ],
   "summary": {
