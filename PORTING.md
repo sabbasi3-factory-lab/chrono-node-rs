@@ -12,14 +12,14 @@ Port **behaviour, line by line**, not intent. The judge is chrono-node's real ou
 
 | Upstream | Rust |
 |---|---|
-| `src/locales/<lang>/parsers/XXFooParser.ts` | `src/locales/<lang>/parsers/foo.rs` (`en`, `de`, `fr`) |
+| `src/locales/<lang>/parsers/XXFooParser.ts` | `src/locales/<lang>/parsers/foo.rs` (`en`, `de`, `fr`, `sv`, `pt`, `es`, `ja`; Japanese classes are `JP…` in `ja/`) |
 | `src/locales/<lang>/refiners/XXFooRefiner.ts` | `src/locales/<lang>/refiners/foo.rs` |
 | `src/common/parsers/FooParser.ts` | `src/common/parsers/foo.rs` |
 | `src/common/refiners/FooRefiner.ts` | `src/common/refiners/foo.rs` |
 | `src/calculation/*.ts` | `src/calculation/*.rs` |
 | `src/utils/*.ts` | `src/core/utils/*.rs` |
 
-**Don't edit any `mod` list or registry.** `build.rs` registers every `.rs` file in a `parsers/` or `refiners/` directory. A file whose name starts with `_` is skipped, so you can use one for helpers. Each locale's configuration (`src/locales/<lang>/configuration.rs`) already has a slot for every upstream step. Your file fills the slot whose name equals your `UPSTREAM` constant. Each locale's `constants.rs` is already ported in full; German's shared `DECasualTimeParser.extractTimeComponents` is in `src/locales/de/casual_time_components.rs`.
+**Don't edit any `mod` list or registry.** `build.rs` registers every `.rs` file in a `parsers/` or `refiners/` directory. A file whose name starts with `_` is skipped, so you can use one for helpers. Each locale's configuration (`src/locales/<lang>/configuration.rs`) already has a slot for every upstream step. Your file fills the slot whose name equals your `UPSTREAM` constant. Each locale's `constants.rs` is already ported in full; German's shared `DECasualTimeParser.extractTimeComponents` is in `src/locales/de/casual_time_components.rs`. Japanese `toHankaku` (full-width digits) and `jaStringToNumber` (kanji numerals) are `to_hankaku` and `ja_string_to_number` in `src/locales/ja/constants.rs`.
 
 ## 3. The shape of a parser file
 
@@ -53,6 +53,7 @@ Constructor arguments come from `flags.get("strictMode")` and so on, using upstr
 - The `i` flag folds like JS without `u`: each character compares by its single-unit uppercase, a non-ASCII letter never matches an ASCII one (`ſ` U+017F isn't `s`, `K` U+212A KELVIN isn't `k`), `ß` isn't `SS`, and astral characters don't fold. `JsRegex` does this itself (not with Rust's `(?i)`), so pass `"i"` and don't add case variants by hand. Backreferences with `i` are rejected.
 - A JS string `"\\s*"` becomes the raw Rust string `r"\s*"`. With `format!`, double the braces of quantifiers: `\d{{1,2}}`.
 - Patterns built from dictionaries: `match_any_pattern(dict_keys(DICT))`. Dictionaries are `(key, value)` slices **in upstream key order**, because the stable longest-first sort depends on it. `src/locales/en/constants.rs` already has every English dictionary and helper (`parse_number_pattern`, `parse_ordinal_number_pattern`, `parse_year`, `parse_duration`, `TIME_UNITS_PATTERN`, ...).
+- A JS `u` (unicode) flag is supported: pass it (`"iu"`). Then `\p{L}`-style classes work and `i` folds by Unicode simple case folding, as in JS. Don't drop the `u`: `i` alone folds differently.
 - Upstream `str.match(/x/)` as a condition becomes `js_regex!(r"x").is_match(s)`. `re.exec(s)` becomes `.exec(s)`, which returns a `RegexMatch` whose `get(i)` is `Option<&str>` (`None` = `undefined`).
 
 ## 5. Strings and indexes (trap: string length)

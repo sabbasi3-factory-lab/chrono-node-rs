@@ -1,0 +1,1819 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/es/es_month_name_little_endian.test.ts",
+  "cases": [
+    {
+      "id": "es/month_name_little_endian#01",
+      "text": "10 Agosto 2012",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Agosto 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "es/month_name_little_endian#02",
+      "text": "10 Agosto 234 AC",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Agosto 234 AC",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": -234
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000234-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "es/month_name_little_endian#03",
+      "text": "10 Agosto 88 d. C.",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Agosto 88 d. C.",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 88
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "0088-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "es/month_name_little_endian#04",
+      "text": "Dom 15Sep",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2013-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Dom 15Sep",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 9,
+              "weekday": 0
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-09-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "es/month_name_little_endian#05",
+      "text": "DOM 15SEP",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2013-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "DOM 15SEP",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 9,
+              "weekday": 0
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-09-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "es/month_name_little_endian#06",
+      "text": "La fecha límite es 10 Agosto",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 19,
+          "text": "10 Agosto",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "es/month_name_little_endian#07",
+      "text": "La fecha límite es el martes, 10 de enero",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser",
+          "ESWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 22,
+          "text": "martes, 10 de enero",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 1,
+              "weekday": 2
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-01-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "es/month_name_little_endian#08",
+      "text": "La fecha límite es el miércoles, 10 de enero ",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser",
+          "ESWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 22,
+          "text": "miércoles, 10 de enero",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 1,
+              "weekday": 3
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-01-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "es/month_name_little_endian#09",
+      "text": "10 de Agosto de 2012",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2010-02-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 de Agosto de 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "es/month_name_little_endian#10",
+      "text": "10 - 22 Agosto 2012",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 - 22 Agosto 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 22,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-22T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "es/month_name_little_endian#11",
+      "text": "10 a 22 Agosto 2012",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 a 22 Agosto 2012",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 22,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-22T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "es/month_name_little_endian#12",
+      "text": "10 Agosto - 12 Septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "ESMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Agosto - 12 Septiembre",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-09-12T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "es/month_name_little_endian#13",
+      "text": "10 Agosto - 12 Septiembre 2013",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "ESMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 Agosto - 12 Septiembre 2013",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2013
+            },
+            "date": "2013-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 9,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-09-12T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range expression"
+    },
+    {
+      "id": "es/month_name_little_endian#14",
+      "text": "12 de julio a las 19:00",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "ESMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12 de julio a las 19:00",
+          "start": {
+            "known": {
+              "day": 12,
+              "hour": 19,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 7
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-07-12T19:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined expression"
+    },
+    {
+      "id": "es/month_name_little_endian#15",
+      "text": "duodécimo de julio a las 19:00",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser",
+          "ESTimeExpressionParser"
+        ],
+        "refiners": [
+          "ESMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "duodécimo de julio a las 19:00",
+          "start": {
+            "known": {
+              "day": 12,
+              "hour": 19,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 7
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-07-12T19:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined expression"
+    },
+    {
+      "id": "es/month_name_little_endian#16",
+      "text": "primero de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "primero de diciembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#17",
+      "text": "primera de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "primera de diciembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#18",
+      "text": "séptimo de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "séptimo de diciembre",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#19",
+      "text": "septima de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "septima de diciembre",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#20",
+      "text": "undécimo de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "undécimo de diciembre",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-11T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#21",
+      "text": "duodecimo de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "duodecimo de diciembre",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#22",
+      "text": "decimoséptimo de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "decimoséptimo de diciembre",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-17T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#23",
+      "text": "vigésimo de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vigésimo de diciembre",
+          "start": {
+            "known": {
+              "day": 20,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-20T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#24",
+      "text": "vigesimo primero de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vigesimo primero de diciembre",
+          "start": {
+            "known": {
+              "day": 21,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-21T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#25",
+      "text": "vigésimo séptimo de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vigésimo séptimo de diciembre",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#26",
+      "text": "trigésimo de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "trigésimo de diciembre",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#27",
+      "text": "trigésimo primero de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "trigésimo primero de diciembre",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-31T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#28",
+      "text": "trigesimo primero de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "trigesimo primero de diciembre",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-31T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#29",
+      "text": "vigésimo primero a vigésimo tercero de diciembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vigésimo primero a vigésimo tercero de diciembre",
+          "start": {
+            "known": {
+              "day": 21,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-21T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 23,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-12-23T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#30",
+      "text": "La fecha es primero de septiembre.",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 12,
+          "text": "primero de septiembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ordinal words"
+    },
+    {
+      "id": "es/month_name_little_endian#31",
+      "text": "1 de septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 de septiembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Numeric ordinal suffixes"
+    },
+    {
+      "id": "es/month_name_little_endian#32",
+      "text": "1º de septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1º de septiembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Numeric ordinal suffixes"
+    },
+    {
+      "id": "es/month_name_little_endian#33",
+      "text": "1ª de septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1ª de septiembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Numeric ordinal suffixes"
+    },
+    {
+      "id": "es/month_name_little_endian#34",
+      "text": "1° de septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1° de septiembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Numeric ordinal suffixes"
+    },
+    {
+      "id": "es/month_name_little_endian#35",
+      "text": "1ro de septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1ro de septiembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Numeric ordinal suffixes"
+    },
+    {
+      "id": "es/month_name_little_endian#36",
+      "text": "1er de septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1er de septiembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Numeric ordinal suffixes"
+    },
+    {
+      "id": "es/month_name_little_endian#37",
+      "text": "1era de septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1era de septiembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Numeric ordinal suffixes"
+    },
+    {
+      "id": "es/month_name_little_endian#38",
+      "text": "1avo de septiembre",
+      "config": "es.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1avo de septiembre",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2011
+            },
+            "date": "2011-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Numeric ordinal suffixes"
+    },
+    {
+      "id": "es/month_name_little_endian#39",
+      "text": "32 Agosto 2014",
+      "config": "es.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    },
+    {
+      "id": "es/month_name_little_endian#40",
+      "text": "29 Febrero 2014",
+      "config": "es.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    },
+    {
+      "id": "es/month_name_little_endian#41",
+      "text": "32 Agosto",
+      "config": "es.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    },
+    {
+      "id": "es/month_name_little_endian#42",
+      "text": "trigésimo primero de febrero",
+      "config": "es.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ESMonthNameLittleEndianParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Impossible Dates (Strict Mode)"
+    }
+  ]
+}

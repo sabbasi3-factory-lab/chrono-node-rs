@@ -42,6 +42,10 @@ const { Chrono, ParsingContext } = require(path.join(UPSTREAM, "src/chrono"));
 const en = require(path.join(UPSTREAM, "src/locales/en"));
 const de = require(path.join(UPSTREAM, "src/locales/de"));
 const fr = require(path.join(UPSTREAM, "src/locales/fr"));
+const sv = require(path.join(UPSTREAM, "src/locales/sv"));
+const pt = require(path.join(UPSTREAM, "src/locales/pt"));
+const es = require(path.join(UPSTREAM, "src/locales/es"));
+const ja = require(path.join(UPSTREAM, "src/locales/ja"));
 S.registerUpstreamAliases((p) => require(path.join(UPSTREAM, "src", p)));
 
 // Named configurations the Rust crate reproduces. Anything else is "custom" and skipped.
@@ -57,6 +61,14 @@ addKnown("de.casual", new Chrono(de.createCasualConfiguration()));
 addKnown("de.strict", new Chrono(de.createConfiguration(true)));
 addKnown("fr.casual", new Chrono(fr.createCasualConfiguration()));
 addKnown("fr.strict", new Chrono(fr.createConfiguration(true)));
+addKnown("sv.casual", new Chrono(sv.createCasualConfiguration()));
+addKnown("sv.strict", new Chrono(sv.createConfiguration(true)));
+addKnown("pt.casual", new Chrono(pt.createCasualConfiguration()));
+addKnown("pt.strict", new Chrono(pt.createConfiguration(true)));
+addKnown("es.casual", new Chrono(es.createCasualConfiguration()));
+addKnown("es.strict", new Chrono(es.createConfiguration(true)));
+addKnown("ja.casual", new Chrono(ja.createCasualConfiguration()));
+addKnown("ja.strict", new Chrono(ja.createConfiguration(true)));
 
 function configName(chrono) {
     return KNOWN_CONFIGS.get(JSON.stringify(S.describeConfiguration(chrono))) ?? null;

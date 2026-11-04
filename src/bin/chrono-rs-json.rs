@@ -14,7 +14,7 @@ use std::io::{self, BufRead, Write};
 use chrono_node::core::json::{parse_request, results_to_json};
 use serde_json::{json, Value};
 
-const CONFIGS: [&str; 8] = [
+const CONFIGS: [&str; 16] = [
     "en.casual",
     "en.strict",
     "en.GB.casual",
@@ -23,6 +23,14 @@ const CONFIGS: [&str; 8] = [
     "de.strict",
     "fr.casual",
     "fr.strict",
+    "sv.casual",
+    "sv.strict",
+    "pt.casual",
+    "pt.strict",
+    "es.casual",
+    "es.strict",
+    "ja.casual",
+    "ja.strict",
 ];
 
 fn main() {

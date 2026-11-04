@@ -16,6 +16,12 @@
 //! | `i` compares `Canonicalize(ch)`: the single-unit uppercase, never non-ASCII → ASCII, BMP only | Unicode simple case folding (U+017F LONG S ~ `s`, U+212A KELVIN SIGN ~ `k`, ...) | no `(?i)`: each literal becomes its JS-equivalence set, each class is closed under it |
 //!
 //! With `i`, backreferences are rejected (JS compares them canonicalized; no ported pattern uses one).
+//!
+//! **Unicode mode (`u`)**, as far as ported patterns need it (`[^\p{L}\p{N}\p{M}_]` in Spanish):
+//! `\p{..}`/`\P{..}` are Unicode property classes and `\u{..}` a code point (both passed to Rust),
+//! and `iu` compares by Unicode **simple case folding** (ECMA-262 `Canonicalize` with `rer.[[Unicode]]`),
+//! which is exactly Rust's `(?i)`. That includes `\w`/`\b` matching U+017F and U+212A, as JS `iu`
+//! does. `v` (unicode sets) is not supported.
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -311,14 +317,17 @@ fn push_ci_literal(out: &mut String, c: char, ci: bool) {
 pub fn translate(source: &str, flags: &str) -> Result<String, String> {
     let mut out = String::new();
     let mut inline = String::new();
-    let ci = flags.contains('i');
+    let unicode = flags.contains('u');
+    // Without `u`, `i` is applied by expansion (JS canonicalize), not by Rust's Unicode case
+    // folding. With `u`, JS folds by simple case folding: Rust's `(?i)`.
+    let ci = flags.contains('i') && !unicode;
     for f in flags.chars() {
         match f {
-            // `i` is applied by expansion (JS canonicalize), not by Rust's Unicode case folding.
-            'i' => {}
+            'i' if unicode => inline.push('i'),
+            'i' | 'u' => {}
             'm' | 's' => inline.push(f),
             'g' | 'y' | 'd' => return Err(format!("flag '{f}' changes exec() state; not supported")),
-            'u' | 'v' => return Err(format!("flag '{f}' (unicode mode) is not supported")),
+            'v' => return Err(format!("flag '{f}' (unicode sets) is not supported")),
             _ => return Err(format!("unknown flag '{f}'")),
         }
     }
@@ -386,6 +395,30 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
                 't' => out.push_str(r"\t"),
                 'f' => out.push_str(r"\x{C}"),
                 'v' => out.push_str(r"\x{B}"),
+                'u' if unicode && chars.get(i + 1) == Some(&'{') => {
+                    let close = chars[i + 1..]
+                        .iter()
+                        .position(|&c| c == '}')
+                        .ok_or("unterminated \\u{")?;
+                    let h: String = chars[i + 2..i + 1 + close].iter().collect();
+                    if h.is_empty() || !h.chars().all(|c| c.is_ascii_hexdigit()) {
+                        return Err(format!(r"invalid \u{{{h}}}"));
+                    }
+                    out.push_str(&format!(r"\x{{{h}}}"));
+                    i += close + 1;
+                }
+                'p' | 'P' if unicode && chars.get(i + 1) == Some(&'{') => {
+                    let close = chars[i + 1..]
+                        .iter()
+                        .position(|&c| c == '}')
+                        .ok_or("unterminated \\p{")?;
+                    let name: String = chars[i + 2..i + 1 + close].iter().collect();
+                    if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '=') {
+                        return Err(format!(r"invalid \{e}{{{name}}}"));
+                    }
+                    out.push_str(&format!(r"\{e}{{{name}}}"));
+                    i += close + 1;
+                }
                 'u' => match hex_digits(&chars, i + 1, 4) {
                     Some(h) => {
                         let ch = char::from_u32(u32::from_str_radix(&h, 16).unwrap());
@@ -575,7 +608,7 @@ mod tests {
     #[test]
     fn rejects_unsupported() {
         assert!(JsRegex::try_new("a", "g").is_err());
-        assert!(JsRegex::try_new("a", "u").is_err());
+        assert!(JsRegex::try_new("a", "v").is_err());
         assert!(JsRegex::try_new("[]", "").is_err());
     }
 
@@ -658,5 +691,45 @@ mod tests {
         );
         assert_eq!(js_canonicalize('ß'), 'ß', "uppercase is two units (SS)");
         assert_eq!(js_canonicalize('ς'), 'Σ');
+    }
+
+    #[test]
+    fn unicode_mode_like_js() {
+        // Expected values from Node (indexes here are bytes; JS reports UTF-16 units).
+        // ESCasualDateParser's look-behind check, `/(?:^|[^\p{L}\p{N}\p{M}_])(?:a|en)\s+la\s*$/iu`.
+        let src = r"(?:^|[^\p{L}\p{N}\p{M}_])(?:a|en)\s+la\s*$";
+        let at = |t: &str| JsRegex::new(src, "iu").exec(t).map(|m| (m.index, m.text().to_string()));
+        assert_eq!(at("Nos vemos a la "), Some((9, " a la ".into())));
+        assert_eq!(at("EN  LA"), Some((0, "EN  LA".into())));
+        assert_eq!(at("é en la"), Some((2, " en la".into())));
+        assert_eq!(at("a la"), Some((0, "a la".into())));
+        for t in ["casa la ", "ña la ", "1a la ", "_en la"] {
+            assert_eq!(at(t), None, "{t:?}");
+        }
+        // `iu` folds by simple case folding: U+017F and U+212A are word characters (not with `i` alone).
+        for (src, flags, text, hit) in [
+            (r"^\w$", "iu", "ſ", true),
+            (r"^\w$", "iu", "\u{212A}", true),
+            (r"^\w$", "iu", "é", false),
+            (r"^\w$", "i", "ſ", false),
+            (r"^\w$", "i", "\u{212A}", false),
+            (r"^k$", "iu", "\u{212A}", true),
+            (r"^ß$", "iu", "ẞ", true),
+            (r"^ß$", "iu", "SS", false),
+            (r"^[^\p{L}]$", "u", "é", false),
+            (r"^[^\p{L}]$", "u", "1", true),
+            (r"^\p{M}$", "u", "\u{301}", true),
+            (r"^\P{L}+$", "u", "12 !", true),
+            (r"^\P{L}+$", "u", "a1", false),
+        ] {
+            assert_eq!(
+                JsRegex::new(src, flags).is_match(text),
+                hit,
+                "/{src}/{flags} on {text:?}"
+            );
+        }
+        assert_eq!(JsRegex::new(r"\u{1F600}", "u").exec("x😀").map(|m| m.index), Some(1));
+        // Without `u`, `\p` stays unsupported (JS would read it as a literal `p`).
+        assert!(JsRegex::try_new(r"\p{L}", "").is_err());
     }
 }

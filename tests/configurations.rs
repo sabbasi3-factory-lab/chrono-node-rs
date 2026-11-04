@@ -5,7 +5,7 @@ use std::fs;
 use std::path::Path;
 
 use chrono_node::core::configuration::{Configuration, Slot};
-use chrono_node::locales::{de, en, fr};
+use chrono_node::locales::{de, en, es, fr, ja, pt, sv};
 use serde_json::Value;
 
 fn check_slots(config: &str, kind: &str, rust: &[Slot], upstream: &Value) {
@@ -59,5 +59,37 @@ fn french_configurations_match_upstream() {
     check(vec![
         ("fr.casual", fr::configuration::create_casual_configuration(true)),
         ("fr.strict", fr::configuration::create_configuration(true, true)),
+    ]);
+}
+
+#[test]
+fn swedish_configurations_match_upstream() {
+    check(vec![
+        ("sv.casual", sv::configuration::create_casual_configuration(true)),
+        ("sv.strict", sv::configuration::create_configuration(true, true)),
+    ]);
+}
+
+#[test]
+fn portuguese_configurations_match_upstream() {
+    check(vec![
+        ("pt.casual", pt::configuration::create_casual_configuration(true)),
+        ("pt.strict", pt::configuration::create_configuration(true, true)),
+    ]);
+}
+
+#[test]
+fn spanish_configurations_match_upstream() {
+    check(vec![
+        ("es.casual", es::configuration::create_casual_configuration(true)),
+        ("es.strict", es::configuration::create_configuration(true, true)),
+    ]);
+}
+
+#[test]
+fn japanese_configurations_match_upstream() {
+    check(vec![
+        ("ja.casual", ja::configuration::create_casual_configuration()),
+        ("ja.strict", ja::configuration::create_configuration(true)),
     ]);
 }
