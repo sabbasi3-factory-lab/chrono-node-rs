@@ -24,7 +24,7 @@ Not copied: `.github/`, `AGENTS.md`, `benchmark/`, `examples/`, `.travis.yml`, `
 
 ## Bumping the pin
 
-Done by a reviewed PR only:
+Done by a reviewed PR only. The `upstream-sync` workflow notices new releases (one `upstream` issue each) and drafts this PR when the issue is labelled `upstream:bump` (`scripts/seed-backlog/README.md`):
 
 1. Re-copy the same file list from the new tag and update the table above.
 2. Regenerate `tests/golden/` with the harness.
