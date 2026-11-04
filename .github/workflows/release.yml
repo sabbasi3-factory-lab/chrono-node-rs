@@ -57,6 +57,11 @@ jobs:
         with:
           tool: cargo-semver-checks@0.51.0
 
+      # Every locked dependency in the local registry before anything runs --offline (the first
+      # release runs no semver check, so nothing else would fetch them on a cold cache).
+      - name: Fetch locked dependencies
+        run: cargo fetch --locked
+
       - name: Next version (0.x) and semver check against the last release
         id: version
         env:
