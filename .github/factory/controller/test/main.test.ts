@@ -206,7 +206,9 @@ describe('CLI', () => {
   it('parses arguments strictly', () => {
     assert.deepEqual(parseArgs(['--fixture', 'x.json', '--print']), { fixture: 'x.json', print: true, now: null, policies: null });
     assert.deepEqual(parseArgs(['--fixture', 'x.json', '--policies', 'p']), { fixture: 'x.json', print: false, now: null, policies: 'p' });
-    assert.throws(() => parseArgs(['--policies', 'p']), /--policies needs a path and --fixture/);
+    assert.throws(() => parseArgs(['--policies', 'p']), /--policies needs --fixture/);
+    assert.throws(() => parseArgs(['--fixture', 'x.json', '--policies']), /--policies needs a path/);
+    assert.throws(() => parseArgs(['--fixture', 'x.json', '--policies', '--print']), /--policies needs a path/);
     assert.throws(() => parseArgs(['--execute']), /unknown argument/);
   });
 

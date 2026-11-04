@@ -34,7 +34,8 @@ jobs:
 
       - name: Roll, and dispatch the drills if this is the slot
         run: |
-          last=$(gh api "repos/$R/actions/workflows/drills.yml/runs?status=success&per_page=1" --jq '.workflow_runs[0].created_at // ""' || echo "")
+          # Only full-suite passes count: a partial run (`only`) doesn't reset the weekly deadline.
+          last=$(gh api "repos/$R/actions/workflows/drills.yml/runs?status=success&per_page=100" --jq '[.workflow_runs[] | select(.display_title == "drills all")][0].created_at // ""' || echo "")
           active=$(gh api "repos/$R/actions/workflows/drills.yml/runs?per_page=5" --jq '[.workflow_runs[] | select(.status != "completed")] | length' || echo 1)
           decision=$(LAST="$last" node -e '
             const lib = require("./harness/drills/lib");

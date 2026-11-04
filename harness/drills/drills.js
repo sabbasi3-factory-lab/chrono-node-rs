@@ -106,11 +106,13 @@ const DRILLS = {
     /** With the kill switch off, the controller dispatches nothing (control: with it on, it would). */
     "kill-switch": () => {
         const on = lib.controllerReasons(runController({ FACTORY_ENABLED: "true" }));
-        const off = lib.controllerReasons(runController({ FACTORY_ENABLED: "" }));
         if (!on.would_dispatch) return lib.fail("control: the fixture dispatches nothing even with FACTORY_ENABLED=true", JSON.stringify(on));
-        return !off.would_dispatch && off.kill_switch > 0
-            ? lib.pass(`kill switch off: 0 dispatches, ${off.kill_switch} held by kill_switch (on: ${on.would_dispatch} would dispatch)`)
-            : lib.fail("the kill switch didn't stop dispatch", JSON.stringify(off));
+        // Unset, empty, and near-misses: only the exact string "true" enables dispatch.
+        const offs = [undefined, "", "TRUE", "1"].map((v) => [v === undefined ? "unset" : JSON.stringify(v), lib.controllerReasons(runController({ FACTORY_ENABLED: v }))]);
+        const leaked = offs.filter(([, r]) => r.would_dispatch || !r.kill_switch).map(([name]) => name);
+        return leaked.length === 0
+            ? lib.pass(`kill switch off (unset, "", "TRUE", "1"): 0 dispatches, held by kill_switch (on: ${on.would_dispatch} would dispatch)`)
+            : lib.fail(`the kill switch didn't stop dispatch with FACTORY_ENABLED ${leaked.join(", ")}`, JSON.stringify(offs));
     },
 
     /** Spend at the daily cap pauses dispatch; past the alert threshold alerts the owner (live budgets). */
@@ -153,10 +155,10 @@ function runController(environment, edit = (s) => s) {
     const snapshot = JSON.parse(fs.readFileSync(path.join(CONTROLLER, "test/fixtures/snapshot.json"), "utf8"));
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "drill-")), "snapshot.json");
     fs.writeFileSync(file, JSON.stringify(edit(snapshot)));
-    const r = sh(process.execPath, ["main.ts", "--fixture", file, "--print", "--policies", env("POLICIES_DIR")], {
-        cwd: CONTROLLER,
-        env: { ...process.env, ...environment, GH_TOKEN: "", GITHUB_TOKEN: "" },
-    });
+    // An undefined value removes the variable (not an empty string): the unset case is its own drill.
+    const childEnv = { ...process.env, ...environment, GH_TOKEN: "", GITHUB_TOKEN: "" };
+    for (const [k, v] of Object.entries(childEnv)) if (v === undefined) delete childEnv[k];
+    const r = sh(process.execPath, ["main.ts", "--fixture", file, "--print", "--policies", env("POLICIES_DIR")], { cwd: CONTROLLER, env: childEnv });
     if (r.status !== 0) throw new Error(`controller fixture run failed: ${r.out.slice(-500)}`);
     return r.out;
 }

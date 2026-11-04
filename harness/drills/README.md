@@ -13,7 +13,7 @@ slot, and always when the last passing drill run is more than 7 days old. `drill
 | `golden-mismatch` | one checked `en/weekday` expectation's index + 1 | the golden suite fails, exactly 1 case | the unchanged area passes |
 | `comparison-mismatch` | `compare.js --plant` (today's seed) | exactly 1 mismatch reported, exit 1 | same seed without the plant: 0 |
 | `scope-reject` | an agent PR for a real contract on main touching `src/core/chrono.rs`; one touching `.github/workflows/ci.yml`; one with a stale `Contract-SHA` | `gates/scope.js` rejects each, with its reason (live `protected_from_agents`) | the in-scope change passes |
-| `kill-switch` | `FACTORY_ENABLED` unset | the controller (fixture mode, live policies) dispatches nothing; `kill_switch` holds | with `true` it would dispatch |
+| `kill-switch` | `FACTORY_ENABLED` unset, `""`, `"TRUE"`, `"1"` | the controller (fixture mode, live policies) dispatches nothing; `kill_switch` holds | with `true` it would dispatch |
 | `over-cap` | spend today at the live `factory_per_day.max_aic`, and at `alert_at_pct` | paused (no dispatch) at the cap; owner alert at the threshold | 0 AIC dispatches |
 | `audit-tamper` | the real audit log with one payload byte changed; truncated to half | the factory's audit verifier (pinned) fails both | the real log verifies against the anchors |
 

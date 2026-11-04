@@ -24,6 +24,9 @@ on:
         type: string
         default: ""
 
+# A full-suite run is named "drills all"; drill-schedule.yml counts only those as a weekly pass.
+run-name: "drills ${{ inputs.only || 'all' }}"
+
 permissions:
   contents: read
 
@@ -52,8 +55,6 @@ jobs:
 
       - name: Inputs (audit branch, pinned policies, factory verifier and anchors)
         run: |
-          git fetch -q --no-tags origin "+refs/heads/audit:refs/remotes/origin/audit"
-          echo "AUDIT_HEAD=$(git rev-parse origin/audit)" >> "$GITHUB_ENV"
           version=$(cat .github/factory/factory-version)
           [[ "$version" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad factory-version"; exit 1; }
           mkdir -p "$RUNNER_TEMP/policies"
@@ -63,6 +64,9 @@ jobs:
           git clone -q https://github.com/sabbasi3-factory-lab/factory "$RUNNER_TEMP/factory"
           git -C "$RUNNER_TEMP/factory" checkout -q "$version"
           git -C "$RUNNER_TEMP/factory" fetch -q origin "+refs/heads/anchors:refs/remotes/origin/anchors"
+          # The audit head after the anchors: the log then holds every event the anchors cover.
+          git fetch -q --no-tags origin "+refs/heads/audit:refs/remotes/origin/audit"
+          echo "AUDIT_HEAD=$(git rev-parse origin/audit)" >> "$GITHUB_ENV"
           echo "POLICIES_DIR=$RUNNER_TEMP/policies" >> "$GITHUB_ENV"
           echo "FACTORY_GIT_DIR=$RUNNER_TEMP/factory" >> "$GITHUB_ENV"
           echo "AUDIT_GIT_DIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
@@ -112,15 +116,24 @@ jobs:
   # A drill failed: a guardrail may not bite. One factory:alert issue (live only), so a person looks.
   alert:
     needs: drills
-    if: failure() && vars.FACTORY_ENABLED == 'true'
+    if: failure()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
       R: ${{ github.repository }}
       FAILED: ${{ needs.drills.outputs.failed }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
+      # Exactly "true", case-sensitive, as the controller reads it (an Actions `==` ignores case).
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"
+          else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would raise a drill alert: ${FAILED:-drills}"; fi
+
       - name: Create controller App token
+        if: steps.mode.outputs.live == 'true'
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
@@ -131,6 +144,7 @@ jobs:
           permission-issues: write
 
       - name: Raise the alert
+        if: steps.mode.outputs.live == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |

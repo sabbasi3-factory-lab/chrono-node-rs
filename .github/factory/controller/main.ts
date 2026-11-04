@@ -395,11 +395,15 @@ export function parseArgs(argv: string[]): CliArgs {
     if (a === '--fixture') out.fixture = argv[++i] ?? null;
     else if (a === '--print') out.print = true;
     else if (a === '--now') out.now = argv[++i] ?? null;
-    else if (a === '--policies') out.policies = argv[++i] ?? null;
+    else if (a === '--policies') {
+      const v = argv[++i];
+      if (v === undefined || v === '' || v.startsWith('--')) throw new Error('--policies needs a path');
+      out.policies = v;
+    }
     else throw new Error(`unknown argument: ${a}`);
   }
   if (out.fixture === '') throw new Error('--fixture needs a path');
-  if (out.policies !== null && (out.policies === '' || out.fixture === null)) throw new Error('--policies needs a path and --fixture');
+  if (out.policies !== null && out.fixture === null) throw new Error('--policies needs --fixture');
   return out;
 }
 
