@@ -958,14 +958,14 @@ export async function readCodeScanning(client: GitHubClient, repo: string, heads
     // A job URL doesn't name the attempt: read it from the run, only for failed jobs (the re-run rule).
     // If the run isn't completed, a re-run started after the check runs were read: the failure we saw
     // belongs to an earlier attempt, so the job counts as still running (wait for the retry).
-    const runs = new Map<number, { attempt: number | null; done: boolean }>();
+    const runInfo = new Map<number, { attempt: number | null; done: boolean }>();
     for (const a of analyze) {
       if (a.run_id === null || a.run_attempt !== null || a.conclusion === null || a.conclusion === 'success') continue;
-      if (!runs.has(a.run_id)) {
+      if (!runInfo.has(a.run_id)) {
         const run = asRec((await client.request('GET', `/repos/${repo}/actions/runs/${a.run_id}`)).data);
-        runs.set(a.run_id, { attempt: typeof run.run_attempt === 'number' ? run.run_attempt : null, done: run.status === 'completed' });
+        runInfo.set(a.run_id, { attempt: typeof run.run_attempt === 'number' ? run.run_attempt : null, done: run.status === 'completed' });
       }
-      const r = runs.get(a.run_id)!;
+      const r = runInfo.get(a.run_id)!;
       if (!r.done) {
         a.status = 'in_progress';
         a.conclusion = null;
