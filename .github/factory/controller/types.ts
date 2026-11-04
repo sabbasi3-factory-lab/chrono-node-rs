@@ -61,6 +61,12 @@ export interface TiersPolicy {
     human: { paths: string[] };
   };
   protected_from_agents: string[];
+  /**
+   * tiers.yaml `intake_fixes`: bug-intake fix PRs (a new fix case + its contract, nothing else)
+   * may merge without the owner, at most `max_per_day` (UTC) of them. Null (absent, or an older
+   * pinned policy) → they stay with the owner.
+   */
+  intake_fixes: { auto_merge: boolean; max_per_day: number } | null;
 }
 
 export interface CadencePolicy {
@@ -136,6 +142,11 @@ export interface PullSnap {
   in_merge_queue?: boolean;
   /** The PR's head branch name (`headRefName`); revert PRs use `factory/revert-<pr>`. */
   head_ref?: string | null;
+  /**
+   * Bug-intake fix PRs only (`factory/intake/<lang>-fix-<hash>` by the controller App): the PR's
+   * changed files and their status (GitHub's pulls files API, up to 10); null when not read.
+   */
+  files?: { path: string; status: string }[] | null;
   /** Timeline `LabeledEvent`s: who added which label (to tell a person from a bot). */
   labeled_events?: { label: string; actor: string | null; actor_is_bot: boolean; at: string }[];
 }
@@ -327,6 +338,10 @@ export type ReasonCode =
   | 'revert_limit'
   | 'revert_not_safe'
   | 'revert_ready'
+  | 'intake_fix_ready'
+  | 'intake_fix_not_additive'
+  | 'intake_fix_checks_failed'
+  | 'intake_fix_daily_cap'
   | 'revert_checks_failed'
   | 'revert_head_changed'
   | 'confirm_regression'

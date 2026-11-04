@@ -18,8 +18,8 @@
 //   fail.
 // - merge_group (enforce): an agent PR with an auto-strict change also needs the reviewer App's
 //   passing `factory-review` on its head, unless a person enqueued it (scope.js reviewGate).
-// Writes kind, golden_areas, golden_step, differential_seed, differential_phrases and strict (the
-// change needs the auto-strict full regression) to $GITHUB_OUTPUT.
+// Writes kind, golden_areas, golden_step, differential_seed, differential_phrases, strict (the
+// change needs the auto-strict full regression) and intake (a bug-intake fix PR) to $GITHUB_OUTPUT.
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
@@ -204,6 +204,8 @@ async function main() {
                 `differential_seed=${d.seed}`,
                 `differential_phrases=${d.phrases}`,
                 `strict=${strict ? "true" : "false"}`,
+                // A bug-intake fix PR (also in the merge group, where the PR is looked up by number).
+                `intake=${/^factory\/intake\//.test((pr.head && pr.head.ref) || "") ? "true" : "false"}`,
             ].join("\n") + "\n"
         );
     }

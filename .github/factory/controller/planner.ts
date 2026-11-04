@@ -2,7 +2,7 @@
 // policies to a list of decisions with stable reason codes. No I/O, no clock
 // reads (`now` is an argument), no randomness.
 
-import { CONTROLLER_LOGIN, REVERT_REVIEWED_LABEL, revertedPrOf } from './github.ts';
+import { CONTROLLER_LOGIN, REVERT_REVIEWED_LABEL, intakeFixOf, revertedPrOf } from './github.ts';
 import { contractPath, contractShaMatches, isCoreTask, sameArea, taskTier } from './tasks.ts';
 import { DISPATCH_MATCH_MINUTES } from './spend.ts';
 import type {
@@ -532,6 +532,48 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     }
     if (ci?.conclusion !== 'success' || gates?.conclusion !== 'success' || pr.mergeable !== 'MERGEABLE') continue;
     merges.push({ ...decide({ ...base, type: 'auto_merge', reason: 'revert_ready', effect: 'enqueue_merge', run_id: ci.run_id, source_ids: [pr.node_id, pr.head_sha] }), head_sha: pr.head_sha });
+  }
+
+  // ---- bug-intake fix PRs (harness/feedback, tiers.yaml intake_fixes): a new fix case and its
+  // contract, from the controller App's intake. Queued without the owner only if the policy allows
+  // it, the PR only ADDS exactly those three files for its own fix id, ci (which regenerates the case
+  // through the pinned chrono-node and checks the contract against the seed script) and gates are
+  // green, and fewer than max_per_day intake fixes merged or were queued today (UTC). Otherwise the
+  // owner decides (needs-human), as for every other human-tier PR.
+  const intake = p.tiers.intake_fixes;
+  const today = now.toISOString().slice(0, 10);
+  let intakeToday = s.pulls.filter((x) => intakeFixOf(x) !== null && ((x.merged_at ?? '').startsWith(today) || (x.state === 'open' && x.in_merge_queue))).length;
+  for (const pr of openPulls) {
+    const fix = intakeFixOf(pr);
+    if (fix === null || !intake?.auto_merge || pr.draft) continue;
+    if (pr.labels.includes(LABEL_NEEDS_HUMAN) || pr.in_merge_queue || unchecked.has(pr.head_sha) || pr.files == null) continue;
+    const base = { task: null, pr: pr.number, issue: null };
+    const removed = pr.merge_queue_events.find((e) => e.kind === 'dequeued' && (e.reason ?? '').toLowerCase() !== 'merged');
+    if (removed) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'merge_queue_rejected', effect: 'label:needs-human', source_ids: [pr.node_id, removed.node_id] }));
+      continue;
+    }
+    const [lang, hash] = fix.split('/fix-') as [string, string];
+    const want = [`contracts/${fix}.yaml`, `harness/golden/fixes/${lang}-fix-${hash}.json`, `tests/golden/fixes/${lang}-fix-${hash}.json`];
+    const got = pr.files.map((f) => `${f.status}:${f.path}`).sort();
+    if (got.join('|') !== want.map((w) => `added:${w}`).sort().join('|')) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'intake_fix_not_additive', effect: 'label:needs-human', source_ids: [pr.node_id, pr.head_sha] }));
+      continue;
+    }
+    const ci = latestCheck(s, pr, CI_WORKFLOW);
+    const gates = latestCheck(s, pr, GATES_WORKFLOW);
+    const failed = [ci, gates].find((r) => r?.conclusion && FAILED_CONCLUSIONS.has(r.conclusion));
+    if (failed) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'intake_fix_checks_failed', effect: 'label:needs-human', run_id: failed.run_id, source_ids: [`${failed.run_id}/attempts/${failed.run_attempt}`, pr.node_id] }));
+      continue;
+    }
+    if (ci?.conclusion !== 'success' || gates?.conclusion !== 'success' || pr.mergeable !== 'MERGEABLE') continue;
+    if (intakeToday >= intake.max_per_day) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'intake_fix_daily_cap', effect: 'label:needs-human', source_ids: [pr.node_id, `day:${today}`] }));
+      continue;
+    }
+    intakeToday++;
+    merges.push({ ...decide({ ...base, type: 'auto_merge', reason: 'intake_fix_ready', effect: 'enqueue_merge', run_id: ci.run_id, source_ids: [pr.node_id, pr.head_sha] }), head_sha: pr.head_sha });
   }
 
   // ---- open factory PRs: contract freshness and CI failures

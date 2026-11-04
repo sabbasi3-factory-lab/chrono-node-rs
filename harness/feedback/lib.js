@@ -218,7 +218,7 @@ const HEAD = "**Factory intake** (plain code, no AI)";
 /** Fixed comment texts. Nothing from the issue is echoed back except validated step names. */
 function reportComment(reason, detail) {
     if (reason === "same_as_chrono_node") {
-        return `${HEAD} · not a port bug\n\nThe pinned chrono-node gives exactly the same result as the Rust port for this request, so the port is faithful. If chrono-node itself is wrong, please report it upstream (https://github.com/wanasit/chrono/issues). Closing.`;
+        return `${HEAD} · not a port bug\n\nThe pinned chrono-node gives exactly the same result as the Rust port for this request, so the port is faithful. If chrono-node itself is wrong, that is the owner's call (and an upstream report: https://github.com/wanasit/chrono/issues). Labelled \`needs-human\`; nothing is changed automatically.`;
     }
     if (reason === "not_yet_ported") {
         const steps = ((detail && detail.missing) || []).filter((s) => /^[A-Za-z0-9]+$/.test(s));

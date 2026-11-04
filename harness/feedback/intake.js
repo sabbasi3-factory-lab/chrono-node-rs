@@ -110,8 +110,11 @@ async function comment() {
     await gh("POST", `/repos/${REPO}/issues/${issue}/comments`, { body: lib.reportComment(reason, detail) });
     if (d.action === "propose") {
         await gh("POST", `/repos/${REPO}/issues/${issue}/labels`, { labels: ["intake:proposed"] });
-    } else if (reason === "same_as_chrono_node" || reason === "not_yet_ported") {
-        await gh("POST", `/repos/${REPO}/issues/${issue}/labels`, { labels: [reason === "same_as_chrono_node" ? "intake:not-a-port-bug" : "intake:not-ported-yet"] });
+    } else if (reason === "same_as_chrono_node") {
+        // The report says chrono-node's own output is wrong: never automatic, the owner decides.
+        await gh("POST", `/repos/${REPO}/issues/${issue}/labels`, { labels: ["intake:not-a-port-bug", "needs-human"] });
+    } else if (reason === "not_yet_ported") {
+        await gh("POST", `/repos/${REPO}/issues/${issue}/labels`, { labels: ["intake:not-ported-yet"] });
         await gh("PATCH", `/repos/${REPO}/issues/${issue}`, { state: "closed", state_reason: "not_planned" });
     } else if (reason === "error" || reason === "no_upstream_result") {
         await gh("POST", `/repos/${REPO}/issues/${issue}/labels`, { labels: ["needs-human"] });
