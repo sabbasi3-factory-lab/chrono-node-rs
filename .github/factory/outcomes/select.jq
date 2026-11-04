@@ -4,7 +4,8 @@
 #
 # Budget (1,000 GITHUB_TOKEN requests/h per repo, shared with CI, CodeQL and gh-aw jobs): each
 # evaluation costs ~8-16 requests, so at most $max per invocation, by priority:
-#   0  a run whose PR closed after the run was last evaluated (merged/closed: its verdict is due now)
+#   0  a run whose PR closed after the run was last evaluated, whatever its previous verdict (a PR
+#      rejected, reopened and merged closes again later)
 #   1  a new run (never evaluated)
 #   2  a failed evaluation, or a pending/unknown item, under 14 days old, last evaluated over 24 h ago
 # then oldest first. The rest waits for the next invocation. A record without `evaluated_at` (before
@@ -18,7 +19,7 @@
     | ($o != null and (($o.eval_failed // false) or any($o.items[]?; .outcome_status == "pending" or .outcome_status == "unknown"))) as $open
     | (if $full == "true" then 3
        elif $o == null then 1
-       elif $prclosed and $open then 0
+       elif $prclosed then 0
        elif .created_at > $cut and $open and $at < $day then 2
        else null end) as $prio
     | select($prio != null)

@@ -28,13 +28,16 @@ on:
 
 permissions: {}
 
+# The whole read → evaluate → publish lifecycle is serialized, so the next invocation reads the file
+# (and its debounce clock) the previous one published. GitHub keeps one pending run and replaces
+# older pending ones; nothing is lost: closed PRs are found by state, and cron wakes it again.
+concurrency: { group: factory-outcomes, cancel-in-progress: false }
+
 jobs:
   evaluate:
     if: >-
       github.repository == 'sabbasi3-factory-lab/chrono-node-rs' &&
       (github.event_name != 'pull_request_target' || github.event.pull_request.user.login == 'sabbasi3-factory-agent[bot]')
-    # Job-level (after the `if:`), so a skipped event never displaces a queued evaluation.
-    concurrency: { group: factory-outcomes, cancel-in-progress: false }
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions: { actions: read, contents: read, pull-requests: read, issues: read }
@@ -116,10 +119,14 @@ jobs:
             | ($s[0] | map({key: ., value: true}) | from_entries) as $tried
             | [$l[0][] | (.run_id|tostring) as $id | $f[0][$id] as $new | $prev[$id] as $o
                 # Skip runs gh-aw does not list, and new runs never tried (deadline), so they stay new.
-                | select(($new == null or ($new.runs | length) == 1) and ($o != null or $tried[$id]))
+                # A tried run gh-aw lists no artifacts for (`runs: []`) is recorded too (no items, not
+                # failed), so it isn't "new" again on every invocation.
+                | select(($new == null or ($new.runs | length) <= 1) and ($o != null or $tried[$id]))
+                | ($new != null and ($new.runs | length) == 0) as $empty
                 | ($new.runs[0] // null) as $run | ($new.outcomes[0] // null) as $e
-                | ($e != null and ($e.eval_error // null) == null and all($e.items[]; .outcome_status != "error")) as $ok
-                | (if $ok then [$e.items[] | {type, object_url: ((.object_url // "") | if . == "" then null else . end), outcome_status, zero_touch: (.zero_touch // null)}]
+                | ($empty or ($e != null and ($e.eval_error // null) == null and all($e.items[]; .outcome_status != "error"))) as $ok
+                | (if $empty then ($o.items // [])
+                   elif $ok then [$e.items[] | {type, object_url: ((.object_url // "") | if . == "" then null else . end), outcome_status, zero_touch: (.zero_touch // null)}]
                    else ($o.items // []) end) as $items
                 | {run_id, workflow, title, created_at, aic: ($run.aic // $o.aic // null),
                    task: ((.title | capture("^(Implement|Repair|Review) (?<t>[a-z0-9-]+/[a-z0-9_-]+) ").t? )
@@ -139,7 +146,6 @@ jobs:
   publish:
     needs: evaluate
     if: needs.evaluate.outputs.skip != 'true'
-    concurrency: { group: factory-outcomes-publish, cancel-in-progress: false }
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: { contents: write }

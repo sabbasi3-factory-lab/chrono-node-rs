@@ -59,4 +59,16 @@ describe('outcomes selection (select.jq)', () => {
     const listed = Array.from({ length: 40 }, (_, i) => run(100 + i, `2026-11-04T1${i % 10}:00:00Z`));
     assert.equal(select(listed, { generated_at: NOW, runs: [] }).length, 3);
   });
+
+  it('a PR rejected, then reopened and merged later, is re-selected whatever its previous verdict (review fix)', () => {
+    const prev = { generated_at: NOW, runs: [rec(1, 'rejected', '2026-11-04T12:00:00Z', 50)] };
+    assert.deepEqual(select([run(1)], prev, [{ number: 50, closedAt: '2026-11-04T17:00:00Z' }]), [1]);
+    assert.deepEqual(select([run(1)], prev, [{ number: 50, closedAt: '2026-11-04T11:00:00Z' }]), []);
+  });
+
+  it('a tried run with no artifacts (recorded with no items) is never "new" again (review fix)', () => {
+    const prev = { generated_at: NOW, runs: [{ run_id: 1, items: [], eval_failed: false, evaluated_at: '2026-11-04T17:00:00Z' }] };
+    assert.deepEqual(select([run(1), run(2)], prev), [2]);
+  });
 });
+
