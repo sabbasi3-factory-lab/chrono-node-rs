@@ -129,8 +129,15 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
     of the workflow, so a change to the workflow, or anything it could use, could forge the record. The
     controller asks the compare API for the change under test (`main...<run head>`: the PR's own
     changes since its merge base). If any file, or either side of a rename, is under `.github/`, or the
-    list can't be checked (error, 300+ files), it records **no** seed and **no** signature and doesn't
+    list can't be checked (300+ files), it records **no** seed and **no** signature and doesn't
     read the log. Then `needs_human/missing_heldout_seed` applies.
+  - **Unanswered reads are pending, not missing.** If the compare API answers 403/404/422/429, or the
+    job log 403/404/410/429 or an empty body (logs can lag the run's completion; 403/429 are
+    throttling), the seed is *pending*: the check_result is recorded with `heldout_pending: true` and
+    its step-derived failure signature but no seed, the PR waits (`heldout_seed_pending`), and the
+    next poll reads the seed again instead of reusing the record. Only a seed still unreadable
+    `HELDOUT_PENDING_MINUTES` (30) after the run's last update goes to `needs_human/missing_heldout_seed`.
+    (One unanswered read sent #253 to a person although the next poll read its seed.)
   - The job's **first** step (`Held-out seed commitment (trusted, before any PR code)`) runs before
     checkout. It prints only `factory-heldout-commit: <sha256("<salt>:<seed>")>` and writes the seed
     and salt to private files. Later steps read them into non-exported shell variables, so they're never
@@ -191,7 +198,8 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `needs_human` | `gates_failed` | the newest `gates` run for the PR head failed (policy: scope, Contract-SHA, identifiers). It is never repaired. | `label:needs-human` |
 | `needs_human` | `repeated_signature` | same failure signature seen before. Signatures are **per step** (coarse): two different failures in one step count as a repeat | `label:needs-human` |
 | `needs_human` | `max_repairs` | repairs ≥ `limits.task.max_repairs` | `label:needs-human` |
-| `needs_human` | `missing_heldout_seed` | the newest `ci` run on the PR head finished (`success`/`failure`) without a trusted held-out seed (see "Held-out seed" below); checked before any repair | `label:needs-human` |
+| `wait` | `heldout_seed_pending` | the newest `ci` run finished, but its seed couldn't be read this poll (compare or job-log API gave no answer); read again next poll, for up to 30 minutes | nothing |
+| `needs_human` | `missing_heldout_seed` | the newest `ci` run on the PR head finished (`success`/`failure`) without a trusted held-out seed (see "Held-out seed" below), or its seed stayed unreadable for 30 minutes; checked before any repair | `label:needs-human` |
 | `needs_human` | `missing_failure_signature` | failed run whose signature can't be derived from the `checks` job's step results (fail closed) | `label:needs-human` |
 | `needs_human` | `task_budget_exhausted` | the task's spend (spend collector, today and yesterday: measured runs plus reservations, attributed by run name; runs naming no task count against every task) plus this repair's cap (`per_run.repair + per_run.threat_detection`) would exceed `budgets.per_task.max_aic` | `label:needs-human` |
 | `needs_human` | `task_budget_unknown` | a repair is due but the task's spend can't be read: no repair is paid for | `label:needs-human` |
