@@ -115,12 +115,40 @@ function stepName(step) {
     return STEP_ALIASES.get(step.constructor) ?? step.constructor.name;
 }
 
-/** Registers the aliases above, given a function that loads an upstream module by its src path. */
+/**
+ * Registers the aliases above, given a function that loads an upstream module by its src path.
+ * Generated locales (lib/locales.js): every step file whose class name differs from the file name
+ * (e.g. uk's `UKMonthNameParser.ts` declares `UkMonthNameParser`) is named by its file, as above.
+ */
 function registerUpstreamAliases(load) {
     for (const lang of ["de", "fr"]) {
         const name = `${lang.toUpperCase()}TimeUnitRelativeFormatParser`;
         aliasStep(load(`locales/${lang}/parsers/${name}`).default, name);
     }
+    for (const { file, name } of generatedStepFiles()) {
+        const ctor = load(file).default;
+        if (typeof ctor === "function" && ctor.name !== name) aliasStep(ctor, name);
+    }
+}
+
+/** The parser and refiner files of the generated locales: `{file: <src-relative, no .ts>, name}`. */
+function generatedStepFiles() {
+    const fs = require("fs");
+    const path = require("path");
+    const src = path.resolve(__dirname, "../../upstream/src");
+    const out = [];
+    for (const locale of require("./locales").generatedLocales()) {
+        for (const kind of ["parsers", "refiners"]) {
+            const dir = path.join(src, locale.upstream, kind);
+            if (!fs.existsSync(dir)) continue;
+            for (const f of fs.readdirSync(dir).sort()) {
+                if (!f.endsWith(".ts") || f.startsWith("Abstract")) continue;
+                const name = f.slice(0, -3);
+                out.push({ file: `${locale.upstream}/${kind}/${name}`, name });
+            }
+        }
+    }
+    return out;
 }
 
 function describeStep(step) {
@@ -151,4 +179,5 @@ module.exports = {
     describeConfiguration,
     stepName,
     registerUpstreamAliases,
+    generatedStepFiles,
 };

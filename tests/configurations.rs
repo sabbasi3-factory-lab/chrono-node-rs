@@ -93,3 +93,13 @@ fn japanese_configurations_match_upstream() {
         ("ja.strict", ja::configuration::create_configuration(true)),
     ]);
 }
+
+/// Generated locales (`harness/onboard/onboard.js`): every named configuration they declare.
+#[test]
+fn generated_configurations_match_upstream() {
+    check(
+        chrono_node::locales::generated()
+            .map(|n| (n.name, (n.configuration)()))
+            .collect(),
+    );
+}

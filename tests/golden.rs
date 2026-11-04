@@ -27,10 +27,30 @@ fn golden_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden")
 }
 
+/// The hand-scaffolded groups, then one per generated locale (`src/locales/<module>/locale.json`).
+fn groups() -> Vec<String> {
+    let mut out: Vec<String> = ["core", "en", "de", "fr", "sv", "pt", "es", "ja"]
+        .iter()
+        .map(|g| g.to_string())
+        .collect();
+    let locales = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/locales");
+    let mut generated: Vec<String> = fs::read_dir(locales)
+        .map(|rd| {
+            rd.flatten()
+                .filter(|e| e.path().join("locale.json").is_file())
+                .map(|e| e.file_name().to_string_lossy().to_string())
+                .collect()
+        })
+        .unwrap_or_default();
+    generated.sort();
+    out.extend(generated);
+    out
+}
+
 fn area_files() -> Vec<(String, PathBuf)> {
     let mut out = Vec::new();
-    for group in ["core", "en", "de", "fr", "sv", "pt", "es", "ja"] {
-        let Ok(entries) = fs::read_dir(golden_dir().join(group)) else {
+    for group in groups() {
+        let Ok(entries) = fs::read_dir(golden_dir().join(&group)) else {
             continue;
         };
         for e in entries.flatten() {

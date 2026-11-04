@@ -38,7 +38,13 @@ function walk(dir, filter) {
 }
 
 async function loadInputs() {
-    const taskmap = YAML.parse(read("scripts/seed-backlog/taskmap.yaml"));
+    // The hand-written task map plus the generated locales' fragments (harness/onboard/onboard.js).
+    const fragmentsDir = path.join(REPO, "scripts/seed-backlog/taskmap.d");
+    const fragments = fs.existsSync(fragmentsDir)
+        ? fs.readdirSync(fragmentsDir).filter((f) => f.endsWith(".yaml")).sort().map((f) => [f, YAML.parse(fs.readFileSync(path.join(fragmentsDir, f), "utf8"))])
+        : [];
+    const taskmap = lib.mergeTaskmaps(YAML.parse(read("scripts/seed-backlog/taskmap.yaml")), fragments);
+    const groups = require("../../harness/lib/locales").goldenGroups(REPO);
     const commit = /\| Commit \| `([0-9a-f]{40})` \|/.exec(read("upstream/PINNED.md"))?.[1];
     if (!commit) throw new Error("upstream/PINNED.md has no commit");
     const pin = { commit };
@@ -53,10 +59,13 @@ async function loadInputs() {
     const configurations = JSON.parse(read("tests/golden/configurations.json")).configurations;
     const cases = [];
     const posix = (p) => p.split(path.sep).join("/");
-    for (const file of walk(path.join(REPO, "tests/golden"), (p) => /\/(core|en|de|fr|sv|pt|es|ja)\/[^/]+\.json$/.test(posix(p)))) {
-        const area = path.relative(path.join(REPO, "tests/golden"), file).replace(/\\/g, "/").replace(/\.json$/, "");
-        for (const c of JSON.parse(fs.readFileSync(file, "utf8")).cases) {
-            cases.push({ area, requires: [...c.requires.parsers, ...c.requires.refiners] });
+    for (const group of groups) {
+        for (const file of walk(path.join(REPO, "tests/golden", group), (p) => /\.json$/.test(posix(p)))) {
+            const area = path.relative(path.join(REPO, "tests/golden"), file).replace(/\\/g, "/").replace(/\.json$/, "");
+            if (area.split("/").length !== 2) continue;
+            for (const c of JSON.parse(fs.readFileSync(file, "utf8")).cases) {
+                cases.push({ group, area, requires: [...c.requires.parsers, ...c.requires.refiners] });
+            }
         }
     }
 

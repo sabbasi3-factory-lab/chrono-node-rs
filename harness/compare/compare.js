@@ -87,6 +87,14 @@ function loadUpstream() {
         "ja.casual": new Chrono(ja.createCasualConfiguration()),
         "ja.strict": new Chrono(ja.createConfiguration(true)),
     };
+    // Generated locales (lib/locales.js): the locale module's exported Chrono instances.
+    for (const locale of require("../lib/locales").generatedLocales()) {
+        const L = require(path.join(HARNESS, ".build/chrono", locale.upstream));
+        for (const [name, exported] of Object.entries(locale.configs)) {
+            if (!(L[exported] instanceof Chrono)) throw new Error(`${locale.upstream} exports no Chrono ${exported}`);
+            configs[name] = L[exported];
+        }
+    }
     return { chronoCore, configs };
 }
 

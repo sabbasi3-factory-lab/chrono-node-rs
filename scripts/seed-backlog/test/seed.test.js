@@ -164,3 +164,60 @@ test("fix contracts: scope from the case's steps, area from their tasks, golden 
     assert.throws(() => lib.buildFixContracts({ taskmap, pin, tiers: TIERS, fixes: [{ ...fixes[0], steps: ["Nope"] }] }), /neither done nor a task/);
     assert.throws(() => lib.buildFixContracts({ taskmap, pin, tiers: TIERS, fixes: [{ ...fixes[0], id: "en/weekday" }] }), /bad fix id/);
 });
+
+// --- Generated locales (harness/onboard/onboard.js): taskmap.d fragments ---
+const fragment = {
+    version: 1,
+    locale: "xx",
+    generated_by: "harness/onboard/onboard.js",
+    tasks: [
+        { id: "xx/constants", locale: "xx", kind: "support", source: "locales/xx/constants.ts", rust: "src/locales/xx/constants.rs", area: "xx-support", unit: { requirement: "r", cases: [{ test: "a_matches_upstream", kind: "map", expect: { a: 1 } }] } },
+        { id: "xx/d-parser", locale: "xx", step: "XXD", source: "locales/xx/parsers/XXD.ts", rust: "src/locales/xx/parsers/d.rs", area: "xx-dates", needs: ["xx/constants"] },
+        { id: "xx/e-refiner", locale: "xx", step: "XXE", source: "locales/xx/refiners/XXE.ts", rust: "src/locales/xx/refiners/e.rs", area: "xx-refiners" },
+    ],
+};
+const genFiles = new Map([
+    ...upstreamFiles,
+    ["upstream/src/locales/xx/constants.ts", "export const A = {};"],
+    ["upstream/src/locales/xx/parsers/XXD.ts", "export default class XXD {}"],
+    ["upstream/src/locales/xx/refiners/XXE.ts", "export default class XXE {}"],
+]);
+const genConfigs = { ...configurations, "xx.casual": { parsers: [{ name: "XXD" }, { name: "Done" }], refiners: [{ name: "XXE" }, { name: "C" }] } };
+// The new locale's cases also need the common step C: they must not change C's contract.
+const genCases = [...cases.map((c) => ({ group: "en", ...c })), { group: "xx", area: "xx/d", requires: ["XXD", "C"] }, { group: "xx", area: "xx/d", requires: ["XXD"] }, { group: "xx", area: "xx/e", requires: ["XXE", "XXD"] }];
+
+test("taskmap.d: fragments merge; they may only add tasks for their own locale", () => {
+    const merged = lib.mergeTaskmaps(taskmap, [["xx.yaml", fragment]]);
+    assert.strictEqual(merged.tasks.length, taskmap.tasks.length + 3);
+    assert.throws(() => lib.mergeTaskmaps(taskmap, [["yy.yaml", fragment]]), /named <module>.yaml/);
+    assert.throws(() => lib.mergeTaskmaps(taskmap, [["xx.yaml", { ...fragment, done: [] }]]), /unexpected keys done/);
+    assert.throws(() => lib.mergeTaskmaps(taskmap, [["xx.yaml", { ...fragment, tasks: [{ ...fragment.tasks[1], locale: "en" }] }]]), /not for locale xx/);
+});
+
+test("onboarding a locale adds contracts and changes none (scoped golden facts, priorities after the hand-mapped ones)", () => {
+    const before = lib.buildContracts({ taskmap, pin, tiers: TIERS, cases });
+    const merged = lib.mergeTaskmaps(taskmap, [["xx.yaml", fragment]]);
+    assert.deepStrictEqual(lib.validate({ taskmap: merged, upstreamFiles: genFiles, configurations: genConfigs }), []);
+    const after = lib.buildContracts({ taskmap: merged, pin, tiers: TIERS, cases: genCases });
+    for (const c of before) assert.deepStrictEqual(after.find((x) => x.id === c.id), c, c.id);
+    const byId = new Map(after.map((c) => [c.id, c]));
+    const support = byId.get("xx/constants");
+    assert.strictEqual(support.tier, "human"); // src/locales/*/constants.rs is in no tier: fail closed
+    assert.strictEqual(support.golden_cases, 0);
+    assert.deepStrictEqual(support.acceptance.map((a) => Object.keys(a)[0]), ["clippy", "public_api", "unit"]);
+    assert.deepStrictEqual(byId.get("xx/d-parser").depends_on, ["xx/constants"]);
+    assert.deepStrictEqual(byId.get("xx/e-refiner").depends_on, ["xx/d-parser"]);
+    assert.deepStrictEqual(byId.get("xx/d-parser").acceptance[0].golden.areas, ["xx/d", "xx/e"]);
+    assert.deepStrictEqual([support.priority, byId.get("xx/d-parser").priority, byId.get("xx/e-refiner").priority], [1000, 1001, 1002]);
+});
+
+test("support tasks: one file directly in their locale's directory, with unit cases or a requirement", () => {
+    const bad = (t) => lib.validate({ taskmap: lib.mergeTaskmaps(taskmap, [["xx.yaml", { ...fragment, tasks: [t, ...fragment.tasks.slice(1)] }]]), upstreamFiles: genFiles, configurations: genConfigs });
+    assert.match(bad({ ...fragment.tasks[0], rust: "src/locales/en/constants.rs" }).join("\n"), /directly in src\/locales\/<its locale>/);
+    assert.match(bad({ ...fragment.tasks[0], rust: "src/locales/xx/mod.rs" }).join("\n"), /directly in src\/locales/);
+    assert.match(bad({ ...fragment.tasks[0], unit: undefined }).join("\n"), /exactly one of unit/);
+    assert.deepStrictEqual(bad({ ...fragment.tasks[0], unit: undefined, requirement: "port it" }), []);
+    assert.match(bad({ ...fragment.tasks[0], step: "X" }).join("\n"), /has no step/);
+    const needsOther = lib.mergeTaskmaps(taskmap, [["xx.yaml", { ...fragment, tasks: [fragment.tasks[0], { ...fragment.tasks[1], needs: ["en/a-parser"] }, fragment.tasks[2]] }]]);
+    assert.match(lib.validate({ taskmap: needsOther, upstreamFiles: genFiles, configurations: genConfigs }).join("\n"), /not another task of its locale/);
+});

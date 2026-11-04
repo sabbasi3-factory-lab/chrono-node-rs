@@ -1,0 +1,358 @@
+# Language onboarding (no hand-written setup session). Plain code, no AI.
+#
+# `harness/onboard/onboard.js add <code>` generates everything deterministic for one upstream locale:
+# its manifest and scaffold (src/locales/<module>/), golden cases recorded from the pinned
+# chrono-node (tests/golden/<module>/, plus coverage requests for steps no upstream test reaches),
+# its task map fragment (scripts/seed-backlog/taskmap.d/<module>.yaml) and contracts. Porting the
+# constants and every step stays agent work, gated like any task. See harness/onboard/README.md.
+#
+# - decide:   which language, if any. workflow_dispatch with a code (someone with write access) =
+#             that language; the daily schedule asks `onboard.js next`: the next language of the
+#             owner's list in factory policies/onboarding.yaml (pinned version), one at a time, and
+#             stops on the policy's stop rules (spend, first-try merge rate, needs-human cluster).
+# - generate: runs the generator on main (read-only token) and checks the exact file set.
+# - apply:    (live) the controller App opens the PR on factory/onboard/<code>. Human tier: CI
+#             regenerates every file byte for byte (golden:check, onboard.js check, seed.js
+#             contracts --check). Auto-merge of these generated-only PRs is a separate, owner-set
+#             policy (not in this workflow).
+# - issues-plan / issues-create: after an onboarding PR merges, the task issues and their
+#             "blocked by" links (live only; the write token is on a fresh runner with no npm install).
+# - alert:    (live) a stop opens one factory:alert issue per reason.
+# Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written (the rest still runs).
+# Human tier: changes need the owner's review.
+name: onboard
+
+on:
+  schedule:
+    - cron: "41 6 * * *"
+  workflow_dispatch:
+    inputs:
+      code:
+        description: "Upstream locale to onboard now (fi, id, nl, ru, uk, ar, zh-hans, zh-hant, ...); empty = the scheduled decision"
+        type: string
+        default: ""
+  push:
+    branches: [main]
+    paths: ["scripts/seed-backlog/taskmap.d/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: onboard-${{ github.event_name == 'push' && 'issues' || 'propose' }}
+  cancel-in-progress: false
+
+jobs:
+  decide:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read, issues: read, pull-requests: read }
+    env:
+      GH_TOKEN: ${{ github.token }}
+      R: ${{ github.repository }}
+      CODE: ${{ inputs.code }}
+    outputs:
+      action: ${{ steps.decision.outputs.action }}
+      code: ${{ steps.decision.outputs.code }}
+      reason: ${{ steps.decision.outputs.reason }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Inputs (read-only)
+        run: |
+          d="$RUNNER_TEMP/onboard"; mkdir -p "$d"
+          version=$(cat .github/factory/factory-version)
+          [[ "$version" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad factory-version"; exit 1; }
+          # The owner's language list and stop rules. Missing = no scheduled onboarding.
+          curl -fsSL "https://raw.githubusercontent.com/sabbasi3-factory-lab/factory/${version}/policies/onboarding.yaml" -o "$d/policy.yaml" || : > "$d/policy.yaml"
+          # gh-aw Outcomes (outcomes.yml): spend and first-try merges per task. Missing = wait.
+          gh api "repos/$R/contents/outcomes.json?ref=outcomes" --jq .content 2>/dev/null | base64 -d > "$d/outcomes.json" || : > "$d/outcomes.json"
+          gh api --paginate "repos/$R/issues?labels=factory:task&state=open&per_page=100" --jq '[.[] | select(.pull_request == null) | {body, labels: [.labels[].name]}]' | jq -s add > "$d/issues.json"
+          gh api --paginate "repos/$R/pulls?state=open&per_page=100" --jq '[.[] | {head: {ref: .head.ref}}]' | jq -s add > "$d/prs.json"
+
+      - name: Decision
+        id: decision
+        working-directory: harness
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          d="$RUNNER_TEMP/onboard"
+          if [ -n "$CODE" ]; then
+            [[ "$CODE" =~ ^[a-z]{2}(-[a-z]{4})?$ ]] || { echo "::error::bad code"; exit 1; }
+            node onboard/onboard.js candidates | grep -qx "$CODE" || { echo "::error::$CODE is not an upstream locale waiting to be onboarded"; exit 1; }
+            if jq -e --arg b "factory/onboard/$CODE" 'any(.[]; .head.ref == $b)' "$d/prs.json" >/dev/null; then
+              echo "::error::an onboarding PR for $CODE is already open"; exit 1
+            fi
+            decision=$(jq -nc --arg c "$CODE" '{action: "onboard", code: $c, reason: "dispatched"}')
+          else
+            decision=$(node onboard/onboard.js next --policy "$d/policy.yaml" --outcomes "$d/outcomes.json" --issues "$d/issues.json" --prs "$d/prs.json")
+          fi
+          echo "$decision"
+          echo "decision: \`$decision\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "action=$(jq -r .action <<<"$decision")" >> "$GITHUB_OUTPUT"
+          echo "code=$(jq -r '.code // ""' <<<"$decision")" >> "$GITHUB_OUTPUT"
+          echo "reason=$(jq -r '.reason // ""' <<<"$decision")" >> "$GITHUB_OUTPUT"
+
+  generate:
+    needs: decide
+    if: needs.decide.outputs.action == 'onboard'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { contents: read }
+    env:
+      CODE: ${{ needs.decide.outputs.code }}
+      OUT: /tmp/factory-onboard
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Generate
+        run: |
+          [[ "$CODE" =~ ^[a-z]{2}(-[a-z]{4})?$ ]] || { echo "::error::bad code"; exit 1; }
+          (cd harness && npm ci --ignore-scripts --no-audit --no-fund && npm run build:upstream)
+          (cd scripts/seed-backlog && npm ci --ignore-scripts --no-audit --no-fund)
+          (cd harness && node onboard/onboard.js add "$CODE")
+          (cd harness && node onboard/onboard.js check && npm run golden:check)
+          (cd scripts/seed-backlog && node seed.js contracts --check)
+
+      - name: Exactly the generator's files
+        run: |
+          module=${CODE/-/_}
+          # New files: only under these paths; modified: only the two golden indexes.
+          added=$(git status --porcelain --untracked-files=all | awk '$1 == "??" {print $2}' | sort)
+          modified=$(git status --porcelain --untracked-files=all | awk '$1 != "??" {print $1" "$2}' | sort)
+          [ "$modified" = "$(printf '%s\n' 'M tests/golden/configurations.json' 'M tests/golden/index.json')" ] || { echo "::error::unexpected modifications: $modified"; exit 1; }
+          bad=$(grep -vE "^(src/locales/${module}/(locale\.json|mod\.rs|configuration\.rs)|tests/golden/${module}/[a-z0-9_]+\.json|harness/golden/coverage/${module}\.json|scripts/seed-backlog/taskmap\.d/${module}\.yaml|contracts/${CODE}/[a-z0-9-]+\.yaml)$" <<<"$added" || true)
+          [ -z "$bad" ] || { echo "::error::unexpected new files: $bad"; exit 1; }
+          for f in "src/locales/${module}/locale.json" "src/locales/${module}/mod.rs" "src/locales/${module}/configuration.rs" "scripts/seed-backlog/taskmap.d/${module}.yaml"; do
+            grep -qx "$f" <<<"$added" || { echo "::error::missing $f"; exit 1; }
+          done
+          mkdir -p "$OUT/files"
+          printf '%s\n' $added tests/golden/configurations.json tests/golden/index.json > "$OUT/files.txt"
+          while read -r f; do install -D -m 644 "$f" "$OUT/files/$f"; done < "$OUT/files.txt"
+          node harness/onboard/summary.js "$CODE" > "$OUT/body.md"
+          cat "$OUT/body.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: onboard
+          path: /tmp/factory-onboard/
+          retention-days: 7
+
+  # Writes, only when live. Runs no third-party code: the App token action, git and gh.
+  apply:
+    needs: [decide, generate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+      CODE: ${{ needs.decide.outputs.code }}
+      OUT: /tmp/factory-onboard
+    steps:
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"
+          else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would open the onboarding PR for $CODE"; fi
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.mode.outputs.live == 'true'
+        with:
+          name: onboard
+          path: /tmp/factory-onboard
+
+      - name: Create controller App token
+        if: steps.mode.outputs.live == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.mode.outputs.live == 'true'
+        with:
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Open the onboarding PR
+        if: steps.mode.outputs.live == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
+        run: |
+          [[ "$CODE" =~ ^[a-z]{2}(-[a-z]{4})?$ ]] || { echo "::error::bad code"; exit 1; }
+          module=${CODE/-/_}
+          branch="factory/onboard/${CODE}"
+          # The artifact comes from a job that ran third-party code: take only the listed files,
+          # each matching the generator's paths again, regular files only.
+          re="^(src/locales/${module}/(locale\.json|mod\.rs|configuration\.rs)|tests/golden/${module}/[a-z0-9_]+\.json|tests/golden/(configurations|index)\.json|harness/golden/coverage/${module}\.json|scripts/seed-backlog/taskmap\.d/${module}\.yaml|contracts/${CODE}/[a-z0-9-]+\.yaml)$"
+          listed=$(sort -u "$OUT/files.txt")
+          shipped=$(cd "$OUT/files" && find . -type f | sed 's#^\./##' | sort)
+          [ "$listed" = "$shipped" ] || { echo "::error::the artifact doesn't match its file list"; exit 1; }
+          # The two shared golden indexes: main's entries unchanged, new entries only for this
+          # locale (its configurations and golden areas). jq only, no third-party code.
+          for pair in "tests/golden/configurations.json:configurations:${CODE/-/.}." "tests/golden/index.json:files:${module}/"; do
+            IFS=: read -r f key prefix <<<"$pair"
+            jq -e --slurpfile old "$f" --arg k "$key" --arg p "$prefix" '
+              . as $new
+              | ($new | del(.[$k])) == ($old[0] | del(.[$k]))
+              and ($old[0][$k] | to_entries | all(.value == $new[$k][.key]))
+              and ($new[$k] | keys | map(select(. as $x | $old[0][$k] | has($x) | not)) | all(startswith($p)))' "$OUT/files/$f" >/dev/null \
+              || { echo "::error::$f changes main's entries or adds another locale's"; exit 1; }
+          done
+          while read -r f; do
+            [[ "$f" =~ $re ]] && [ ! -L "$OUT/files/$f" ] || { echo "::error::unexpected file $f"; exit 1; }
+            install -D -m 644 "$OUT/files/$f" "$f"
+          done <<<"$listed"
+          git config user.name "$BOT"
+          git config user.email "$(gh api "users/${BOT}" --jq .id)+${BOT}@users.noreply.github.com"
+          git switch -c "$branch"
+          git add -- $listed
+          git commit -q -m "onboard: ${CODE} (generated)"
+          git push origin "$branch"
+          head -c 60000 "$OUT/body.md" > "$RUNNER_TEMP/body.md"
+          gh pr create --base main --head "$branch" --title "onboard: ${CODE} (generated scaffold, golden cases and contracts)" --body-file "$RUNNER_TEMP/body.md"
+
+  # An onboarding PR merged: plan its task issues (read-only token; loads the seed script's yaml
+  # dependency), then create them in a separate job on a fresh runner that runs no third-party code
+  # (issues.js re-validates every plan entry). The controller's auto-ready takes it from there.
+  issues-plan:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read, issues: read }
+    env:
+      GITHUB_REPOSITORY: ${{ github.repository }}
+    outputs:
+      ids: ${{ steps.plan.outputs.ids }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Plan the task issues for new generated contracts
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ids=$(node harness/onboard/issues.js pending)
+          echo "generated contracts without a task issue: ${ids:-none}"
+          echo "ids=$ids" >> "$GITHUB_OUTPUT"
+          mkdir -p /tmp/factory-onboard-plan && echo '[]' > /tmp/factory-onboard-plan/plan.json
+          if [ -n "$ids" ]; then
+            (cd scripts/seed-backlog && npm ci --ignore-scripts --no-audit --no-fund && node seed.js issues --plan --only "$ids" > /tmp/factory-onboard-plan/plan.json)
+          fi
+          jq -r '.[].title' /tmp/factory-onboard-plan/plan.json
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: onboard-plan
+          path: /tmp/factory-onboard-plan/
+          retention-days: 7
+
+  issues-create:
+    needs: issues-plan
+    if: needs.issues-plan.outputs.ids != '' && vars.FACTORY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read }
+    env:
+      GITHUB_REPOSITORY: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: |
+            harness/onboard
+            harness/lib
+            harness/feedback
+            src/locales
+            contracts
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: onboard-plan
+          path: /tmp/factory-onboard-plan
+
+      - name: Create controller App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-issues: write
+
+      - name: Create the task issues
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: node harness/onboard/issues.js create --plan /tmp/factory-onboard-plan/plan.json
+
+  # A stop rule fired: one factory:alert issue per kind of reason (the owner decides; loosening a
+  # stop rule is a policy change).
+  alert:
+    needs: decide
+    if: needs.decide.outputs.action == 'stop' && !contains(fromJSON('["all_onboarded", "no_onboarding_policy"]'), needs.decide.outputs.reason)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+      REASON: ${{ needs.decide.outputs.reason }}
+      R: ${{ github.repository }}
+    steps:
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"
+          else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would raise an onboarding alert: $REASON"; fi
+
+      - name: Create controller App token
+        if: steps.mode.outputs.live == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-issues: write
+
+      - name: Raise (or keep) the alert
+        if: steps.mode.outputs.live == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          kind=${REASON%%:*}
+          [[ "$kind" =~ ^[a-z_]+$ ]] || { echo "::error::bad reason"; exit 1; }
+          marker="<!-- factory-onboarding-stop: ${kind} -->"
+          open=$(gh api "repos/$R/issues?labels=factory:alert&state=open&per_page=100" --jq "[.[] | select(.body | contains(\"$marker\"))] | length")
+          [ "$open" = "0" ] || { echo "already raised"; exit 0; }
+          body=$(printf '%s\n' "$marker" "**Language onboarding stopped** (plain code, no AI): \`${REASON}\`." "" \
+            "The scheduled onboarding opens no new language until this clears. The stop rules and the language list are in factory \`policies/onboarding.yaml\`; loosening them is the owner's decision." \
+            "Close this issue once handled; it reopens as a new one if the rule fires again.")
+          gh issue create --repo "$R" --title "Onboarding stopped: ${kind}" --label factory:alert --body "$body"

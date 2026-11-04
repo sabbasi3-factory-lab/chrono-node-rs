@@ -7,9 +7,10 @@
 // biased towards month ends, year ends and Feb 28/29.
 //
 // `generate(seed, n)` returns n English requests, then n each of German, French, Swedish,
-// Portuguese, Spanish and Japanese. Each language has its own random stream (seeded by its fixed
-// position), so the requests of the earlier languages for a seed are the same as before later
-// languages were added.
+// Portuguese, Spanish and Japanese, then n of each generated locale (phrases recombined from its
+// golden texts; see below). Each language has its own random stream (seeded by its fixed position,
+// or a generated locale's module name), so the requests of the earlier languages for a seed are the
+// same as before later languages were added.
 
 /** mulberry32: small, fast, deterministic 32-bit PRNG. */
 function prng(seed) {
@@ -442,7 +443,7 @@ function localRequest(r, L, id) {
 /** count English requests (ids 0..count-1), then count of each other language, in this order. */
 const LANG_ORDER = ["de", "fr", "sv", "pt", "es", "ja"];
 
-function generate(seed, count) {
+function generate(seed, count, generated = generatedLanguages()) {
     const r = prng(seed);
     const out = [];
     for (let i = 0; i < count; i++) out.push(request(r, i));
@@ -454,7 +455,62 @@ function generate(seed, count) {
             out.push(lang === "ja" ? jaRequest(lr, id) : localRequest(lr, LANGS[lang], id));
         }
     }
+    // Generated locales (lib/locales.js), after all of the above. Each stream is seeded by the
+    // module name, so onboarding another language changes no earlier phrase.
+    for (const [j, g] of generated.entries()) {
+        const gr = prng((seed ^ fnv1a(g.module)) >>> 0);
+        for (let i = 0; i < count; i++) out.push(goldenTextRequest(gr, g, (LANG_ORDER.length + 1 + j) * count + i));
+    }
     return out;
 }
 
-module.exports = { prng, generate };
+// --- Generated locales: phrases from the language's own golden texts ---
+// No hand-written grammar: chrono-node's own test inputs for the language (tests/golden/<module>/),
+// recombined with range connectors, neutral filler, case changes and random references. Plain code,
+// so a generated language gets a comparison stream the day it is onboarded.
+
+/** 32-bit FNV-1a of a string. */
+function fnv1a(s) {
+    let h = 0x811c9dc5;
+    for (const c of Buffer.from(s, "utf8")) h = Math.imul(h ^ c, 0x01000193) >>> 0;
+    return h;
+}
+
+/** `{module, configs, texts}` per generated locale, texts sorted and unique. */
+function generatedLanguages() {
+    const fs = require("fs");
+    const path = require("path");
+    const golden = path.resolve(__dirname, "../../tests/golden");
+    return require("../lib/locales")
+        .generatedLocales()
+        .map((l) => {
+            const dir = path.join(golden, l.module);
+            const texts = new Set();
+            if (fs.existsSync(dir)) {
+                for (const f of fs.readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
+                    for (const c of JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")).cases) texts.add(c.text);
+                }
+            }
+            return { module: l.module, configs: Object.keys(l.configs).sort(), texts: [...texts].sort() };
+        })
+        .filter((g) => g.texts.length > 0);
+}
+
+const NEUTRAL_FILLERS = [["", ""], ["", ""], ["(", ")"], ["- ", " -"], ["café ", " 😀"], ["\u00a0", ""], ["", "\n"], ["» ", " «"]];
+
+function goldenTextRequest(r, g, id) {
+    const [pre, post] = r.pick(NEUTRAL_FILLERS);
+    let body = r.chance(0.2) ? casePerturb(r, r.pick(g.texts)) : r.pick(g.texts);
+    if (r.chance(0.25)) body += r.pick([" - ", "-", " ~ ", "~", " – ", ", ", " "]) + r.pick(g.texts);
+    if (r.chance(0.05)) body += ` ${r.pick(TIMEZONE_ABBRS)}`;
+    const casual = g.configs.filter((c) => c.endsWith(".casual"));
+    const config = casual.length > 0 && r.chance(0.75) ? r.pick(casual) : r.pick(g.configs);
+    const instant = referenceInstant(r);
+    const reference = r.chance(0.7)
+        ? { kind: "date", instant, timezone_input: null }
+        : { kind: "object", instant, timezone_input: r.chance(0.6) ? r.pick(TIMEZONE_ABBRS) : r.pick([-480, -300, 0, 60, 330, 540, 600]) };
+    const options = r.chance(0.2) ? { forwardDate: true } : {};
+    return { id, text: pre + body + post, config, reference, system_timezone: "UTC", options };
+}
+
+module.exports = { prng, generate, generatedLanguages, goldenTextRequest, fnv1a };

@@ -126,7 +126,9 @@ function updateLastSeen(body, info) {
     return LAST_SEEN_RE.test(body || "") ? body.replace(LAST_SEEN_RE, lastSeen(info)) : null;
 }
 
-const CONFIG_RE = /^[a-z]{2}(\.[A-Z]{2})?\.(casual|strict)$/;
+// `en.GB.casual`, and generated locales' sublocales (`zh.hans.casual`, harness/onboard). Their fix ids
+// keep the two-letter language (`zh/fix-…`), so every fix-id pattern stays as it is.
+const CONFIG_RE = /^[a-z]{2}(\.[A-Z]{2}|\.[a-z]{4})?\.(casual|strict)$/;
 const INSTANT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
 
 /** The value under a `### Heading` (up to the next heading), or null when absent or empty. */
