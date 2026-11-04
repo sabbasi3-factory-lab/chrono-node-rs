@@ -63,7 +63,8 @@ export function observe(s: Snapshot, now: Date, windowHours = OBSERVE_WINDOW_HOU
   }
 
   for (const run of s.check_runs) {
-    if (run.status !== 'completed' || !run.conclusion || !inWindow(run.updated_at)) continue;
+    // A pending seed isn't recorded: recorded results are reused, so the next poll must read again.
+    if (run.status !== 'completed' || !run.conclusion || !inWindow(run.updated_at) || run.heldout_pending) continue;
     const fields: JsonObject = {
       workflow: run.workflow,
       run_id: run.run_id,

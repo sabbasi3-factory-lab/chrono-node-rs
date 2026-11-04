@@ -204,6 +204,12 @@ export interface CheckRunSnap {
    * anchored in its trusted first step (see `parseHeldoutSeed`).
    */
   heldout_seed: string | null;
+  /**
+   * The seed couldn't be read this poll (the compare or job-log API gave no answer, e.g. right
+   * after the run completed or under API pressure). Not recorded, so the next poll reads again;
+   * the planner waits (`heldout_seed_pending`) and escalates only after HELDOUT_PENDING_MINUTES.
+   */
+  heldout_pending?: boolean;
   /** `step:<first failed step>` or `job:<conclusion>`, from runner-reported step results (never log text). */
   failure_signature: string | null;
   /**
@@ -406,7 +412,8 @@ export type ReasonCode =
   | 'merge_not_ready'
   | 'review_pending'
   | 'gates_pending'
-  | 'check_runs_incomplete';
+  | 'check_runs_incomplete'
+  | 'heldout_seed_pending';
 
 export type Effect =
   | 'dispatch_workflow:implement'

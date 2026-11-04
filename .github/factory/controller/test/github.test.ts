@@ -399,7 +399,6 @@ describe('CI signals only when the change leaves .github/ alone (review #22)', (
       withFiles([{ filename: '.github' }]),
       withFiles(Array.from({ length: 300 }, (_, i) => ({ filename: `src/f${i}.rs` }))),
       withFiles(null),
-      withFiles([], 404),
     ];
     for (const gh of cases) {
       const r = await read(gh);
@@ -407,6 +406,26 @@ describe('CI signals only when the change leaves .github/ alone (review #22)', (
       assert.equal(r.failure_signature, null);
       assert.ok(!gh.calls.some((c) => c.path.includes('/jobs/99/logs')), 'no log read');
     }
+  });
+
+  // #253: one poll's compare or log read answered nothing and the PR went to a human; the next
+  // poll read the seed. An unanswered read is pending (not recorded), never a missing seed.
+  it('a compare that answers 404/422, or a job log that is 404/410, leaves the seed pending (read again next poll)', async () => {
+    for (const status of [404, 422]) {
+      const r = await read(withFiles([], status));
+      assert.deepEqual([r.heldout_seed, r.heldout_pending], [null, true], `compare ${status}`);
+    }
+    for (const status of [404, 410]) {
+      const gh = fakeWorld();
+      gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/actions/jobs/99/logs$`), handler: () => ({ status, data: null }) });
+      const r = await read(gh);
+      assert.deepEqual([r.heldout_seed, r.heldout_pending], [null, true], `log ${status}`);
+    }
+    // A readable log without a valid commitment is a definite answer, not pending.
+    const forged = fakeWorld();
+    forged.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/actions/jobs/99/logs$`), handler: () => ({ data: 'factory-heldout-seed: 5\n' }) });
+    const r = await read(forged);
+    assert.deepEqual([r.heldout_seed, r.heldout_pending ?? false], [null, false]);
   });
 
   it('leavesGithubDirAlone: same commit is fine; malformed SHAs are not', async () => {

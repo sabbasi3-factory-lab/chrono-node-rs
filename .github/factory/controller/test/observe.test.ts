@@ -65,6 +65,11 @@ describe('observe', () => {
     assert.deepEqual(ev.find((e) => e.type === 'merged')!.fields, { pr: 1, merge_commit_sha: hex40('e'), merged_at: '2026-10-16T11:00:00Z', task: 'en/a' });
   });
 
+  it('does not record a run whose seed is pending (read again next poll; #253)', () => {
+    const s = snapshot({ check_runs: [checkRun(78, { heldout_seed: null, heldout_pending: true, conclusion: 'success' })] });
+    assert.ok(!observe(s, NOW).some((e) => e.type === 'check_result'));
+  });
+
   it('omits heldout_seed when CI did not print one', () => {
     const ev = observe(snapshot({ check_runs: [checkRun(5, { heldout_seed: null })] }), NOW);
     assert.equal('heldout_seed' in ev[0]!.fields, false);

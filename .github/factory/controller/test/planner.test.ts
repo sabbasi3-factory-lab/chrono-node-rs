@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { applyReopens, IMPLEMENTED_STRICT_GATES, mergeTier, missingStrictGates, plan } from '../planner.ts';
+import { applyReopens, HELDOUT_PENDING_MINUTES, IMPLEMENTED_STRICT_GATES, mergeTier, missingStrictGates, plan } from '../planner.ts';
 import type { Decision, MergeQueueEventSnap, PlannerEnv, ReasonCode, ReviewCheckSnap, Snapshot } from '../types.ts';
 import { type SnapshotOverrides, checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, snapshot, testPolicies } from './helpers.ts';
 
@@ -611,6 +611,19 @@ describe('review #22: a finished ci run without a trusted held-out seed goes to 
       assert.equal(ds[0]!.effect, 'label:needs-human');
       assert.equal(ds[0]!.run_id, 500);
       assert.deepEqual(ds[0]!.source_ids, ['500/attempts/1', 'PR_21']);
+    }
+  });
+
+  it('an unreadable seed (pending) waits, then goes to a human after HELDOUT_PENDING_MINUTES (#253)', () => {
+    for (const conclusion of ['success', 'failure']) {
+      const s = failingPrWorld('sig', undefined, conclusion);
+      const r = ciRun(s);
+      r.heldout_seed = null;
+      r.heldout_pending = true;
+      r.updated_at = new Date(NOW.getTime() - 5 * 60_000).toISOString();
+      assert.deepEqual(run(s).map((d) => `${d.type}/${d.reason}`), ['wait/heldout_seed_pending'], conclusion);
+      r.updated_at = new Date(NOW.getTime() - (HELDOUT_PENDING_MINUTES + 1) * 60_000).toISOString();
+      assert.deepEqual(run(s).map((d) => `${d.type}/${d.reason}`), ['needs_human/missing_heldout_seed'], conclusion);
     }
   });
 

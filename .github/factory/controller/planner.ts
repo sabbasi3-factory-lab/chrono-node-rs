@@ -101,6 +101,8 @@ export const REVIEW_TIMEOUT_MINUTES = 60;
 
 /** ci conclusions after which the reveal step has run, so a held-out seed must exist. */
 export const SEED_EXPECTED_CONCLUSIONS = new Set(['success', 'failure']);
+/** How long a completed ci run's unreadable seed is waited for before a person looks (missing_heldout_seed). */
+export const HELDOUT_PENDING_MINUTES = 30;
 
 /** CI conclusions treated as a failure that needs a repair. */
 export const FAILED_CONCLUSIONS = new Set(['failure', 'timed_out', 'startup_failure']);
@@ -759,6 +761,12 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     // Every finished ci run (pass or fail) must carry a held-out seed from the trusted
     // commit–reveal. None means the commitment was missing, forged, ambiguous or unrevealed, or
     // the change touched `.github/`: a human looks, whatever the result (fail closed).
+    // Unreadable this poll (an API that didn't answer, not a bad commitment): wait, read again next
+    // poll, and escalate only if it stays unreadable (one transient read escalated #253).
+    if (run?.heldout_pending && SEED_EXPECTED_CONCLUSIONS.has(run.conclusion ?? '') && nowMs - Date.parse(run.updated_at) < HELDOUT_PENDING_MINUTES * 60_000) {
+      out.push(decide({ ...base, type: 'wait', reason: 'heldout_seed_pending', source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id] }));
+      continue;
+    }
     if (run && run.heldout_seed === null && SEED_EXPECTED_CONCLUSIONS.has(run.conclusion ?? '')) {
       escalate(decide({ ...base, type: 'needs_human', reason: 'missing_heldout_seed', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids: [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id] }));
       continue;

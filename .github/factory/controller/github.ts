@@ -718,6 +718,8 @@ export async function readContracts(
 
 export interface RecordedCheck {
   heldout_seed: string | null;
+  /** The seed couldn't be read (never recorded; see CheckRunSnap.heldout_pending). */
+  heldout_pending?: boolean;
   failure_signature: string | null;
   full_regression?: string | null;
 }
@@ -822,9 +824,9 @@ export async function readCheckRuns(
         // The ci `checks` job: seed from its trusted commit–reveal, signature from its step
         // results, but only if the change under test leaves `.github/` alone. `pull_request`
         // runs execute the PR's (merged) copy of the workflow, so a change there could forge both.
-        if (mainSha && (await leavesGithubDirAlone(client, repo, mainSha, headSha))) {
-          Object.assign(snap, await readChecksJobLog(client, repo, snap.run_id, snap.run_attempt));
-        }
+        const dir = mainSha ? await githubDirCheck(client, repo, mainSha, headSha) : 'touched';
+        if (dir === 'clean') Object.assign(snap, await readChecksJobLog(client, repo, snap.run_id, snap.run_attempt));
+        else if (dir === 'unknown') snap.heldout_pending = true;
       }
     }
     out.push(snap);
@@ -841,19 +843,28 @@ const COMPARE_FILE_LIMIT = 300;
  * error, a truncated file list or a missing commit returns false (fail closed).
  */
 export async function leavesGithubDirAlone(client: GitHubClient, repo: string, base: string, head: string): Promise<boolean> {
-  if (!HEX40.test(base) || !HEX40.test(head)) return false;
-  if (base === head) return true;
+  return (await githubDirCheck(client, repo, base, head)) === 'clean';
+}
+
+/**
+ * `leavesGithubDirAlone`, telling a definite answer from none: `touched` (a `.github/` path, a
+ * truncated list or malformed SHAs: never trusted), `unknown` (the compare API answered 404/422,
+ * e.g. a commit not yet visible: ask again next poll), `clean`.
+ */
+export async function githubDirCheck(client: GitHubClient, repo: string, base: string, head: string): Promise<'clean' | 'touched' | 'unknown'> {
+  if (!HEX40.test(base) || !HEX40.test(head)) return 'touched';
+  if (base === head) return 'clean';
   const res = await client.request('GET', `/repos/${repo}/compare/${base}...${head}?per_page=${COMPARE_FILE_LIMIT}`, { allowStatuses: [404, 422] });
-  if (res.status !== 200) return false;
+  if (res.status !== 200) return 'unknown';
   const files = asRec(res.data).files;
-  if (!Array.isArray(files) || files.length >= COMPARE_FILE_LIMIT) return false;
+  if (!Array.isArray(files) || files.length >= COMPARE_FILE_LIMIT) return 'touched';
   for (const f of files.map(asRec)) {
     for (const path of [f.filename, f.previous_filename]) {
       if (path === undefined) continue;
-      if (typeof path !== 'string' || path === '.github' || path.startsWith('.github/')) return false;
+      if (typeof path !== 'string' || path === '.github' || path.startsWith('.github/')) return 'touched';
     }
   }
-  return true;
+  return 'clean';
 }
 
 export async function readChecksJobLog(client: GitHubClient, repo: string, runId: number, attempt: number): Promise<RecordedCheck> {
@@ -872,7 +883,9 @@ export async function readChecksJobLog(client: GitHubClient, repo: string, runId
     accept: 'raw',
     allowStatuses: [404, 410],
   });
-  return { heldout_seed: typeof res.data === 'string' ? parseHeldoutSeed(res.data) : null, failure_signature, full_regression };
+  // No log yet (404/410 shortly after a run completes, or no text): pending, read again next poll.
+  if (typeof res.data !== 'string') return { heldout_seed: null, heldout_pending: true, failure_signature, full_regression };
+  return { heldout_seed: parseHeldoutSeed(res.data), failure_signature, full_regression };
 }
 
 const BUSY_JOB_STATUSES = new Set(['queued', 'in_progress', 'waiting', 'pending', 'requested']);
