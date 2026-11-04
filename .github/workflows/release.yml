@@ -1,0 +1,147 @@
+# Release (DESIGN §10). Plain code, no AI. Started by hand; nothing ships without the owner.
+#
+#   prepare (no secrets, read-only): next 0.x version, `cargo package`, `cargo publish --dry-run`,
+#                                    semver check against the last release, release notes preview
+#   draft   (environment `release`: the owner approves): a DRAFT GitHub Release at the prepared
+#                                    commit, with notes generated from merged PRs and the .crate
+#   publish (crates.io): DISABLED. Publishing is the owner's decision (DESIGN §10), and the repo has
+#                                    no crates.io token. See .github/factory/release.md.
+#
+# Versioning: the tag is the source of truth. Cargo.toml stays `0.0.0` with `publish = false` on main
+# (so nothing can publish by accident); the package is stamped with the release version on the
+# runner only. Major stays 0 while languages are incomplete (1.0 is an owner decision).
+# Human tier: changes need the owner's review.
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      level:
+        description: "auto = minor if the public API broke or a language was added since the last release, else patch"
+        type: choice
+        options: [auto, patch, minor]
+        default: auto
+      dry_run:
+        description: "Dry run: prepare only (no approval request, no draft)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.version.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Rust toolchain (rust-toolchain.toml)
+        run: rustup toolchain install && rustc --version
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2.87.32
+        with:
+          tool: cargo-semver-checks@0.51.0
+
+      # Every locked dependency in the local registry before anything runs --offline (the first
+      # release runs no semver check, so nothing else would fetch them on a cold cache).
+      - name: Fetch locked dependencies
+        run: cargo fetch --locked
+
+      - name: Next version (0.x) and semver check against the last release
+        id: version
+        env:
+          LEVEL: ${{ inputs.level }}
+        run: bash .github/factory/release/next-version.sh
+
+      # Stamp the version on the runner only (Cargo.toml + our own Cargo.lock entry), and drop
+      # `publish = false` so cargo will verify the package as crates.io would. Nothing is committed.
+      - name: Stamp ${{ steps.version.outputs.version }} (runner only)
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          sed -i -e "0,/^version = \"0.0.0\"$/s//version = \"${VERSION}\"/" -e '/^publish = false$/d' Cargo.toml
+          grep -qx "version = \"${VERSION}\"" Cargo.toml || { echo "::error::Cargo.toml version isn't 0.0.0 on main"; exit 1; }
+          cargo update -p chrono-node-rs --offline
+          [ "$(git diff --numstat Cargo.lock)" = "$(printf '1\t1\tCargo.lock')" ] || { echo "::error::stamping changed more than our Cargo.lock entry"; exit 1; }
+
+      - name: cargo package
+        run: cargo package --locked --allow-dirty && ls -l target/package/*.crate
+
+      - name: cargo publish --dry-run (no token; nothing is uploaded)
+        run: cargo publish --dry-run --locked --allow-dirty
+
+      - name: Summary
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          PREV: ${{ steps.version.outputs.previous }}
+          WHY: ${{ steps.version.outputs.why }}
+          SHA: ${{ steps.version.outputs.sha }}
+        run: |
+          {
+            echo "## Release ${VERSION} (prepared)"
+            echo "- commit: \`${SHA}\`; previous release: ${PREV:-none}"
+            echo "- level: ${WHY}"
+            echo "- \`cargo package\` and \`cargo publish --dry-run\` passed; crates.io publishing is disabled"
+            echo
+            echo "### Merged PRs since ${PREV:-the start}"
+            git log --first-parent --format='- %s' ${PREV:+"${PREV}..${SHA}"} ${PREV:-"$SHA"} | head -300
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: crate
+          path: target/package/*.crate
+          retention-days: 30
+
+  # The owner's approval is the `release` environment's required reviewer. It creates a draft only:
+  # publishing the draft (which creates the tag) is a second, manual owner step in the GitHub UI.
+  draft:
+    needs: prepare
+    if: ${{ !inputs.dry_run }}
+    environment: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: crate
+          path: crate
+
+      - name: Draft GitHub Release (notes from merged PRs, .github/release.yml)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          [[ "$VERSION" =~ ^0\.[0-9]+\.[0-9]+$ && "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad version or sha"; exit 1; }
+          ! gh release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || { echo "::error::release v${VERSION} already exists (maybe as a draft)"; exit 1; }
+          prev=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --limit 1 --json tagName -q '.[0].tagName // empty')
+          gh release create "v${VERSION}" crate/*.crate --repo "$GITHUB_REPOSITORY" --draft --target "$SHA" \
+            --title "v${VERSION}" --generate-notes ${prev:+--notes-start-tag "$prev"}
+
+  # Disabled on purpose: publishing to crates.io is the owner's decision and needs a crates.io token
+  # the repo doesn't have. To enable: see .github/factory/release.md.
+  publish:
+    needs: [prepare, draft]
+    if: false
+    environment: crates-io
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "crates.io publishing is disabled (DESIGN §10)"; exit 1

@@ -1,0 +1,8 @@
+# GitHub's generated release notes (release.yml `draft`: gh release create --generate-notes): every
+# merged PR since the last release, by title. Human tier: changes need the owner's review.
+changelog:
+  exclude:
+    labels: [drill]
+  categories:
+    - title: Changes
+      labels: ["*"]
