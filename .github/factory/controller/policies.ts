@@ -189,6 +189,7 @@ export function parsePolicies(texts: PolicyTexts): Policies {
       human: { paths: strList(t, 'tiers', 'tiers.human.paths') },
     },
     protected_from_agents: strList(t, 'tiers', 'protected_from_agents'),
+    intake_fixes: intakeFixesOf(get(t, 'intake_fixes')),
   };
 
   const c = doc('cadence');
@@ -196,4 +197,21 @@ export function parsePolicies(texts: PolicyTexts): Policies {
   const cadence = c as CadencePolicy;
 
   return { limits, budgets, tiers, cadence };
+}
+
+/**
+ * tiers.yaml `intake_fixes: {auto_merge, max_per_day}`. Absent → null (the owner merges intake fix
+ * PRs). Present but malformed → an error (fail closed, like any other policy field).
+ */
+function intakeFixesOf(v: unknown): TiersPolicy['intake_fixes'] {
+  if (v === undefined) return null;
+  const r = v as Record<string, unknown> | null;
+  if (r === null || typeof r !== 'object' || Array.isArray(r) || typeof r.auto_merge !== 'boolean') {
+    throw new Error('policy tiers: intake_fixes must be {auto_merge: boolean, max_per_day: integer 0-20}');
+  }
+  const max = r.max_per_day;
+  if (typeof max !== 'number' || !Number.isInteger(max) || max < 0 || max > 20) {
+    throw new Error('policy tiers: intake_fixes.max_per_day must be an integer 0-20');
+  }
+  return { auto_merge: r.auto_merge, max_per_day: max };
 }

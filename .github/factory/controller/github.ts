@@ -86,6 +86,29 @@ export const revertedPrOf = (branch: string | null | undefined): number | null =
   return m ? Number(m[1]) : null;
 };
 
+/** A bug-intake fix PR's branch (harness/feedback): `factory/intake/<lang>-fix-<8 hex>`. */
+const INTAKE_BRANCH_RE = /^factory\/intake\/([a-z]{2})-fix-([0-9a-f]{8})$/;
+/**
+ * The fix id of a bug-intake fix PR (`<lang>/fix-<hash>`): its branch, opened by the controller App.
+ * Null for anything else.
+ */
+export function intakeFixOf(pr: { head_ref?: string | null; author: string | null; author_is_bot: boolean }): string | null {
+  const m = INTAKE_BRANCH_RE.exec(pr.head_ref ?? '');
+  if (!m || !pr.author_is_bot || (pr.author ?? '').replace(/\[bot\]$/, '') !== CONTROLLER_LOGIN) return null;
+  return `${m[1]}/fix-${m[2]}`;
+}
+
+/** Up to 10 changed files of a PR with their status; null if unreadable (the planner then waits). */
+export async function readPullFiles(client: GitHubClient, repo: string, n: number): Promise<{ path: string; status: string }[] | null> {
+  try {
+    const res = await client.request('GET', `/repos/${repo}/pulls/${n}/files?per_page=10`);
+    if (!Array.isArray(res.data)) return null;
+    return res.data.map((f) => ({ path: asStr(asRec(f).filename) ?? '', status: asStr(asRec(f).status) ?? '' }));
+  } catch {
+    return null;
+  }
+}
+
 /** The org Project (v2) whose "Factory status" field the controller keeps in sync. */
 export const FACTORY_PROJECT_NUMBER = 1;
 export const FACTORY_STATUS_FIELD = 'Factory status';
@@ -934,6 +957,8 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
   const withHistory = new Set(o.historyTasks);
   for (const i of issues) if (i.task_id && withHistory.has(i.task_id)) i.reopened_at = await readReopenedAt(client, o.repo, i.number);
   const pulls = await readPulls(client, o.repo);
+  // Changed files, only for open bug-intake fix PRs (the planner's additive-only check).
+  for (const p of pulls) if (p.state === 'open' && intakeFixOf(p) !== null) p.files = await readPullFiles(client, o.repo, p.number);
   const tasks = new Set<string>(o.historyTasks);
   for (const i of issues) if (i.task_id) tasks.add(i.task_id);
   for (const p of pulls) if (p.task_id && p.state === 'open') tasks.add(p.task_id);

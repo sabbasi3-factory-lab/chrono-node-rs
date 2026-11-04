@@ -34,7 +34,7 @@ A bug report is a request that can be re-run, so triage is deterministic.
    | Result | Action |
    |---|---|
    | They disagree | Port bug: a human-tier PR (controller App, branch `factory/intake/<lang>-fix-<hash>`) adds `harness/golden/fixes/<id>.json` (the request), the generated `tests/golden/fixes/<id>.json` (chrono-node's output) and the generated `contracts/<lang>/fix-<hash>.yaml`. The issue gets `intake:proposed` and a link. |
-   | They agree | `intake:not-a-port-bug`, closed: the port is faithful; chrono-node bugs go upstream. |
+   | They agree | `intake:not-a-port-bug` + `needs-human`, left open: the port is faithful, and a claim that chrono-node itself is wrong is always the owner's call. |
    | Steps not ported | `intake:not-ported-yet`, closed. |
    | Already proposed or on `main` | A comment pointing at it. |
    | Rust finds a date, chrono-node finds none | `needs-human`: no upstream step to blame, so the fix can't be scoped automatically. |

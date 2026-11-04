@@ -14,7 +14,9 @@
 //                                 add `factory:ready` to the task issue (re-applied whenever it's
 //                                 planned again, so an interrupted label is finished next poll)
 //   enqueue_merge               → add the PR to the merge queue (GraphQL enqueuePullRequest); only
-//                                 for green auto-tier agent PRs (planner autoMergeBlocker). If
+//                                 for green auto-tier agent PRs (planner autoMergeBlocker), the
+//                                 controller's own revert PRs, and bug-intake fix PRs that only add
+//                                 their fix case and contract (tiers.yaml intake_fixes). If
 //                                 GitHub refuses, the PR is handed to a person instead
 //                                 (needs_human/enqueue_failed). GitHub then merges it once the
 //                                 merge-group checks pass; `queued` and `merged` are observed facts.
@@ -149,6 +151,9 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   main_regressed: '`ci` failed on main at this merge commit (the post-merge check). If this was an auto-strict change merged by the controller, a revert PR is opened and queued automatically; otherwise a person decides.',
   revert_head_changed: "This auto-revert PR's head is no longer the revert commit the controller created (someone pushed to it, or the record is gone). It is not queued automatically. A person decides.",
   revert_checks_failed: 'The checks failed on this auto-revert PR, so it is not queued. A person decides.',
+  intake_fix_not_additive: 'This bug-intake fix PR changes more than adding its fix case and contract (or changes existing files), so it is not queued automatically. A person decides.',
+  intake_fix_checks_failed: 'The checks failed on this bug-intake fix PR, so it is not queued. A person decides.',
+  intake_fix_daily_cap: "Today's limit of bug-intake fixes merged without the owner (tiers.yaml intake_fixes.max_per_day) is reached. A person decides.",
   review_objected: 'The reviewer agent (a second model) objected to this change: see the `factory-review` check. A person decides.',
   review_timeout: 'No verdict from the reviewer agent in time (the review run failed, was flagged or posted nothing). A person decides.',
   merge_queue_rejected: 'This PR left the merge queue without merging (the merge-group checks failed, or it was removed). It is not re-queued automatically.',
