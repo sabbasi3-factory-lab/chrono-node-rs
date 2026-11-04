@@ -134,8 +134,9 @@ steps:
 # Yes/no checks on every run, judged from the agent's output (its PR body), not from the diff;
 # the trusted gates job checks the diff itself. The Output section requires the sections they read.
 evals:
-  # One small pinned judge model for all questions (the default would be the agent's model).
-  model: claude-haiku-4.5
+  # One pinned judge model for all questions, from a different family than the agent (claude-sonnet-5.5)
+  # so it does not share its blind spots. Advisory only: evals never gate merges.
+  model: gpt-6.1-sol
   questions:
     - id: scope_only
       question: >-
