@@ -150,14 +150,14 @@ function decide(d: DecisionInit): Decision {
 
 /**
  * Whether a PR's changed files are exactly what `harness/onboard/onboard.js add <code>` writes (the
- * same set onboard.yml checks before opening it): new files under the locale's own paths, and the
- * two golden indexes modified; nothing else, nothing renamed or removed.
+ * same set onboard.yml checks before opening it): new files under the locale's own paths (the module
+ * skeleton's .gitkeep files included, parsers/ and refiners/ required), and the two golden indexes modified; nothing else, nothing renamed or removed.
  */
 export function onboardingFilesOk(code: string, files: readonly { path: string; status: string }[]): boolean {
   if (!/^[a-z]{2}(?:-[a-z]{4})?$/.test(code)) return false;
   const module = code.replace('-', '_');
   const added = new RegExp(
-    `^(src/locales/${module}/(locale\\.json|mod\\.rs|configuration\\.rs)|tests/golden/${module}/[a-z0-9_]+\\.json|harness/golden/coverage/${module}\\.json|scripts/seed-backlog/taskmap\\.d/${module}\\.yaml|contracts/${code}/[a-z0-9-]+\\.yaml)$`,
+    `^(src/locales/${module}/(locale\\.json|mod\\.rs|configuration\\.rs|[a-z0-9_]+(/[a-z0-9_]+)*/\\.gitkeep)|tests/golden/${module}/[a-z0-9_]+\\.json|harness/golden/coverage/${module}\\.json|scripts/seed-backlog/taskmap\\.d/${module}\\.yaml|contracts/${code}/[a-z0-9-]+\\.yaml)$`,
   );
   const indexes = ['tests/golden/configurations.json', 'tests/golden/index.json'];
   for (const f of files) {
@@ -167,7 +167,7 @@ export function onboardingFilesOk(code: string, files: readonly { path: string; 
   }
   const has = (status: string, path: string) => files.some((f) => f.status === status && f.path === path);
   return (
-    ['locale.json', 'mod.rs', 'configuration.rs'].every((f) => has('added', `src/locales/${module}/${f}`)) &&
+    ['locale.json', 'mod.rs', 'configuration.rs', 'parsers/.gitkeep', 'refiners/.gitkeep'].every((f) => has('added', `src/locales/${module}/${f}`)) &&
     has('added', `scripts/seed-backlog/taskmap.d/${module}.yaml`) &&
     indexes.every((p) => has('modified', p)) &&
     files.some((f) => f.status === 'added' && f.path.startsWith(`contracts/${code}/`))

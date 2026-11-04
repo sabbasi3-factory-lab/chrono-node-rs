@@ -120,7 +120,7 @@ jobs:
             | [$l[0][] | (.run_id|tostring) as $id | $f[0][$id] as $new | $prev[$id] as $o
                 # Skip runs gh-aw does not list, and new runs never tried (deadline), so they stay new.
                 # A tried run gh-aw lists no artifacts for (`runs: []`) is recorded too (no items, not
-                # failed), so it isn't "new" again on every invocation.
+                # failed), so it is not "new" again on every invocation.
                 | select(($new == null or ($new.runs | length) <= 1) and ($o != null or $tried[$id]))
                 | ($new != null and ($new.runs | length) == 0) as $empty
                 | ($new.runs[0] // null) as $run | ($new.outcomes[0] // null) as $e

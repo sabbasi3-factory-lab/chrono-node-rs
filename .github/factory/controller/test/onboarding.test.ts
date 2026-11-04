@@ -12,7 +12,7 @@ const ON: { FACTORY_ENABLED: string | undefined } = { FACTORY_ENABLED: 'true' };
 const withOnboarding = (auto_merge = true, max_per_day = 1): Policies => ({ ...base, tiers: { ...base.tiers, onboarding: { auto_merge, max_per_day } } });
 const kinds = (ds: Decision[]) => ds.map((d) => `${d.type}/${d.reason}`);
 const FILES = [
-  ...['locale.json', 'mod.rs', 'configuration.rs'].map((f) => ({ path: `src/locales/fi/${f}`, status: 'added' })),
+  ...['locale.json', 'mod.rs', 'configuration.rs', 'parsers/.gitkeep', 'refiners/.gitkeep'].map((f) => ({ path: `src/locales/fi/${f}`, status: 'added' })),
   { path: 'scripts/seed-backlog/taskmap.d/fi.yaml', status: 'added' },
   { path: 'harness/golden/coverage/fi.json', status: 'added' },
   { path: 'tests/golden/fi/casual.json', status: 'added' },
@@ -79,6 +79,10 @@ describe('generated language-onboarding PRs (tiers.yaml onboarding)', () => {
       [...FILES, { path: '', status: 'too_many' }],
       [...FILES, { path: 'src/locales/fi/parsers/weekday.rs', status: 'added' }],
       [...FILES, { path: 'src/locales/fi/constants.rs', status: 'added' }],
+      FILES.filter((f) => f.path !== 'src/locales/fi/refiners/.gitkeep'),
+      [...FILES, { path: 'src/locales/fi/.gitkeep', status: 'added' }],
+      [...FILES, { path: 'src/locales/fi/../de/.gitkeep', status: 'added' }],
+      [...FILES, { path: 'src/locales/de/parsers/.gitkeep', status: 'added' }],
     ];
     for (const files of shapes) {
       assert.equal(onboardingFilesOk('fi', files), false, JSON.stringify(files.at(-1)));
