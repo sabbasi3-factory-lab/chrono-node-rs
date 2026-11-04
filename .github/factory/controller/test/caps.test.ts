@@ -64,7 +64,7 @@ describe('the spend bound is real: compiled caps equal the policy', () => {
     const per = (await testPolicies()).budgets.per_run;
     const legacy = (agent: number, evals?: number) =>
       `  agent:\n    run: '{"maxAiCredits":${agent}}'\n  detection:\n    run: '{"maxAiCredits":400}'\n${evals === undefined ? '' : `  evals:\n    run: '{"maxAiCredits":${evals}}'\n`}`;
-    const l = { implement: legacy(500, 500), repair: legacy(300), review: legacy(200) };
+    const l = { implement: legacy(500, 500), repair: legacy(300), review: legacy(200), improve: legacy(500) };
     assert.equal(lockCapsMismatch(l, per), null);
     assert.match(String(lockCapsMismatch({ ...l, implement: legacy(600, 500) }, per)), /implement\.lock\.yml agent cap 600/);
     assert.match(String(lockCapsMismatch({ ...l, implement: legacy(500, 600) }, per)), /implement\.lock\.yml evals cap 600/);

@@ -509,7 +509,7 @@ and is redone next poll, but never fails the run.
 | `planner.ts` | pure planner |
 | `observe.ts` | snapshot → observed fact events |
 | `history.ts` | task history and spend from non-dry-run audit events |
-| `spend.ts` | today's implement and reviewer spend from gh-aw usage artifacts (reserved / measured / unknown) |
+| `spend.ts` | today's spend of every AI workflow (implement, repair, review, and the factory review `improve`, which counts toward no task) from gh-aw usage artifacts (reserved / measured / unknown) |
 | `heartbeat.ts` | heartbeat due check and hour-bucket dedupe |
 | `executor.ts` | the mode switch (`isLive`), dry-run logger, live effects, decision → event |
 | `project.ts` | Project #1 "Factory status" sync (desired status, read, exact update) |

@@ -150,6 +150,7 @@ export function parsePolicies(texts: PolicyTexts): Policies {
     per_run: {
       implement: num(b, 'budgets', 'per_run.implement', 1),
       reviewer_agent: num(b, 'budgets', 'per_run.reviewer_agent', 1),
+      factory_review: num(b, 'budgets', 'per_run.factory_review', 1),
       repair: num(b, 'budgets', 'per_run.repair', 1),
       threat_detection: num(b, 'budgets', 'per_run.threat_detection', 1),
       overshoot: overshootOf(b),

@@ -94,7 +94,7 @@ async function readLocks(): Promise<Record<CappedWorkflow, string | null>> {
   return out;
 }
 
-const EMPTY_LOCKS: Record<CappedWorkflow, string | null> = { implement: null, repair: null, review: null };
+const EMPTY_LOCKS: Record<CappedWorkflow, string | null> = { implement: null, repair: null, review: null, improve: null };
 
 /** Titles of the open factory:alert issues (any open one keeps the spend bound off). */
 async function openAlertTitles(client: GitHubClient, repo: string): Promise<string[]> {

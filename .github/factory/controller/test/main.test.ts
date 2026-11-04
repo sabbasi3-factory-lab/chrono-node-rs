@@ -372,9 +372,9 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
   it('a failing alert issue POST is logged, does not fail the run, and is retried next poll', async () => {
     const drift = async () => {
       const out: Record<string, string> = {};
-      for (const wf of ['implement', 'repair', 'review']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
+      for (const wf of ['implement', 'repair', 'review', 'improve']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
       out.implement = out.implement!.replace('GH_AW_MAX_AI_CREDITS="500"', 'GH_AW_MAX_AI_CREDITS="600"');
-      return out as Record<'implement' | 'repair' | 'review', string>;
+      return out as Record<'implement' | 'repair' | 'review' | 'improve', string>;
     };
     const gh = liveWorld(204, 0, unreadableSpendWorld(true));
     let fail = true;
@@ -390,9 +390,9 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
   it('compiled caps that differ from the policy turn the bound off, record an alert, and (live) open one factory:alert issue a day', async () => {
     const drift = async () => {
       const out: Record<string, string> = {};
-      for (const wf of ['implement', 'repair', 'review']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
+      for (const wf of ['implement', 'repair', 'review', 'improve']) out[wf] = await readFile(new URL(`../../../workflows/${wf}.lock.yml`, import.meta.url), 'utf8');
       out.implement = out.implement!.replace('GH_AW_MAX_AI_CREDITS="500"', 'GH_AW_MAX_AI_CREDITS="600"');
-      return out as Record<'implement' | 'repair' | 'review', string>;
+      return out as Record<'implement' | 'repair' | 'review' | 'improve', string>;
     };
     const gh = liveWorld(204, 0, unreadableSpendWorld(true));
     const created: { title: string; labels: { name: string }[] }[] = [];

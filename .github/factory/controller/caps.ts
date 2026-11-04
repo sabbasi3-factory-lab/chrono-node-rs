@@ -5,7 +5,8 @@
 
 import type { BudgetsPolicy } from './types.ts';
 
-export const CAPPED_WORKFLOWS = { implement: 'implement', repair: 'repair', review: 'reviewer_agent' } as const;
+// `improve` is the factory review (Loop 4, DESIGN §15): budgets.yaml per_run.factory_review.
+export const CAPPED_WORKFLOWS = { implement: 'implement', repair: 'repair', review: 'reviewer_agent', improve: 'factory_review' } as const;
 export type CappedWorkflow = keyof typeof CAPPED_WORKFLOWS;
 
 // Workflows with gh-aw's `evals` job (a third job that calls the model). gh-aw v1.0.1 has no separate
