@@ -113,10 +113,11 @@ async function openAlertTitles(client: GitHubClient, repo: string): Promise<stri
 function dispatchRecords(events: AuditEvent[]): DispatchRecord[] {
   const out: DispatchRecord[] = [];
   for (const e of events) {
-    if ((e.type !== 'dispatched' && e.type !== 'repair_dispatched') || e.payload.dry_run !== false) continue;
-    const { task, issue, attempt } = e.payload;
+    if ((e.type !== 'dispatched' && e.type !== 'repair_dispatched' && e.type !== 'triage_dispatched') || e.payload.dry_run !== false) continue;
+    const { task, issue } = e.payload;
+    const attempt = e.type === 'triage_dispatched' ? 0 : e.payload.attempt;
     if (typeof task !== 'string' || typeof issue !== 'number' || typeof attempt !== 'number') continue;
-    out.push({ kind: e.type === 'dispatched' ? 'implement' : 'repair', task, issue, attempt, at: e.timestamp });
+    out.push({ kind: e.type === 'dispatched' ? 'implement' : e.type === 'repair_dispatched' ? 'repair' : 'triage', task, issue, attempt, at: e.timestamp });
   }
   return out;
 }

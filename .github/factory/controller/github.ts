@@ -186,6 +186,20 @@ function liveWriteAllowed(repo: string, method: HttpMethod, p: string, b: unknow
     const n = revertedPrOf(b.head);
     return n !== null && b.title === REVERT_TITLE(n) && typeof b.body === 'string' && b.body.startsWith(COMMENT_MARKER) && b.body.length <= MAX_COMMENT_LENGTH;
   }
+  // Needs-human pre-triage (triage.md): exactly its six inputs, each in its validated shape.
+  if (p === `/repos/${repo}/actions/workflows/${TRIAGE_WORKFLOW}/dispatches`) {
+    if (!exactKeys(b, ['ref', 'inputs']) || b.ref !== 'main') return false;
+    const i = b.inputs;
+    return (
+      exactKeys(i, ['task', 'issue', 'pr', 'reason', 'run_id', 'failure_signature']) &&
+      isTaskId(i.task) &&
+      typeof i.issue === 'string' && /^[1-9][0-9]{0,8}$/.test(i.issue) &&
+      typeof i.pr === 'string' && /^(0|[1-9][0-9]{0,8})$/.test(i.pr) &&
+      typeof i.reason === 'string' && /^[a-z_]{1,60}$/.test(i.reason) &&
+      typeof i.run_id === 'string' && /^(0|[1-9][0-9]{0,19})$/.test(i.run_id) &&
+      typeof i.failure_signature === 'string' && /^((step|job):[a-z0-9_-]{1,100})?$/.test(i.failure_signature)
+    );
+  }
   if (p === `/repos/${repo}/actions/workflows/${REVIEW_WORKFLOW}/dispatches`) {
     if (!exactKeys(b, ['ref', 'inputs']) || b.ref !== 'main') return false;
     const i = b.inputs;

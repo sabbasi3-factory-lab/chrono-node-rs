@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { decisionEvent } from '../executor.ts';
+import { assertAllowedRequest } from '../github.ts';
+import { parsePolicies } from '../policies.ts';
+import { readFile } from 'node:fs/promises';
 import { deriveState } from '../history.ts';
 import { MAX_TRIAGES_PER_POLL, plan, triageCandidates } from '../planner.ts';
 import type { AuditEvent, Decision, Policies } from '../types.ts';
-import { contract, history, issue, NOW, snapshot, testPolicies } from './helpers.ts';
+import { contract, history, issue, NOW, REPO, snapshot, testPolicies } from './helpers.ts';
 
 const base = await testPolicies();
 const withTriage = (cap: number | null = 150): Policies => ({ ...base, budgets: { ...base.budgets, per_run: { ...base.budgets.per_run, needs_human_triage: cap } } });
@@ -75,5 +78,27 @@ describe('needs-human pre-triage (triage.md)', () => {
     ).history[TASK]!;
     assert.deepEqual(h.needs_human, { at: '2026-10-16T09:00:00Z', reason: 'max_repairs', issue: 10, pr: 20, run_id: 5, failure_signature: 'step:x' });
     assert.deepEqual(h.triages, [{ at: '2026-10-16T09:01:00Z' }]);
+  });
+
+  it('live: the triage dispatch is on the controller\'s write allowlist, with exactly its six validated inputs', () => {
+    const path = `/repos/${REPO}/actions/workflows/triage.lock.yml/dispatches`;
+    const inputs = { task: TASK, issue: '10', pr: '20', reason: 'repeated_signature', run_id: '99', failure_signature: 'step:golden' };
+    const ok = (i: Record<string, string>, ref = 'main') => () => assertAllowedRequest(REPO, 'POST', path, { ref, inputs: i }, 'live');
+    assert.doesNotThrow(ok(inputs));
+    assert.doesNotThrow(ok({ ...inputs, pr: '0', run_id: '0', failure_signature: '' }));
+    for (const bad of [{ ...inputs, extra: 'x' }, { ...inputs, reason: 'Bad Reason' }, { ...inputs, failure_signature: 'free text' }, { ...inputs, issue: '0' }, { ...inputs, task: '../x' }]) {
+      assert.throws(ok(bad as Record<string, string>), JSON.stringify(bad));
+    }
+    assert.throws(ok(inputs, 'other-branch'));
+  });
+
+  it('policies: `needs_human_triage: null` (or absent) loads as off; a value must be a positive cap', async () => {
+    const dir = new URL('./fixtures/policies/', import.meta.url);
+    const t = Object.fromEntries(await Promise.all(['limits', 'budgets', 'tiers', 'cadence'].map(async (n) => [n, await readFile(new URL(`${n}.yaml`, dir), 'utf8')])));
+    const withKey = (v: string) => ({ ...t, budgets: t.budgets!.replace(/^per_run:.*\n/m, (l: string) => `${l}  needs_human_triage: ${v}\n`) }) as Parameters<typeof parsePolicies>[0];
+    assert.equal(parsePolicies(withKey('null')).budgets.per_run.needs_human_triage, null);
+    assert.equal(parsePolicies(t as Parameters<typeof parsePolicies>[0]).budgets.per_run.needs_human_triage, null);
+    assert.equal(parsePolicies(withKey('150')).budgets.per_run.needs_human_triage, 150);
+    assert.throws(() => parsePolicies(withKey('0')));
   });
 });

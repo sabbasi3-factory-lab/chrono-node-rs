@@ -90,8 +90,13 @@ interface FakeRun {
   sha?: string;
 }
 
-function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; status?: string; attempt?: number }[] = [], repairListStatus = 200, reviewRuns: { id: number; status?: string }[] = [], reviewListStatus = 200, improveRuns: { id: number; status?: string }[] = []): FakeGitHub {
+function world(runs: FakeRun[], listStatus = 200, repairRuns: { id: number; status?: string; attempt?: number }[] = [], repairListStatus = 200, reviewRuns: { id: number; status?: string }[] = [], reviewListStatus = 200, triageRuns: { id: number; status?: string; title?: string }[] = [], triageListStatus = 200, improveRuns: { id: number; status?: string }[] = []): FakeGitHub {
   const gh = new FakeGitHub(REPO);
+  gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/triage\\.lock\\.yml/runs$`), () =>
+    triageListStatus === 200
+      ? { data: { workflow_runs: triageRuns.map((x) => ({ id: x.id, status: x.status ?? 'in_progress', run_attempt: 1, created_at: '2026-10-16T08:00:00Z', display_title: x.title ?? 'Triage en/a #3' })) } }
+      : { status: triageListStatus, data: null },
+  );
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/improve\\.lock\\.yml/runs$`), () => ({
     data: { workflow_runs: improveRuns.map((x) => ({ id: x.id, status: x.status ?? 'in_progress', run_attempt: 1, created_at: '2026-10-16T08:00:00Z', display_title: 'Factory review' })) },
   }));
@@ -167,7 +172,7 @@ describe('spend collector: today\'s implement spend', () => {
   });
 
   it('factory review (improve) runs count toward today\'s total (factory_review + detection = 900), never toward a task', async () => {
-    const res = await readSpendToday(world([], 200, [], 200, [], 200, [{ id: 70 }]), REPO, NOW, CAPS);
+    const res = await readSpendToday(world([], 200, [], 200, [], 200, [], 200, [{ id: 70 }]), REPO, NOW, CAPS);
     assert.deepEqual(today(res), { aic: 900, runs: [{ run_id: 70, status: 'reserved', aic: 900 }] });
     assert.deepEqual(res.tasks, { by_task: {}, unattributed: 0, unknown_tasks: [] });
   });
@@ -177,6 +182,24 @@ describe('spend collector: today\'s implement spend', () => {
     gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/actions/workflows/improve\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 71, status: 'completed', run_attempt: 2, created_at: '2026-10-15T08:00:00Z', run_started_at: '2026-10-15T09:00:00Z', display_title: 'Factory review' }] } }) });
     const res = await readSpendToday(gh, REPO, NOW, CAPS);
     assert.deepEqual([res.aic, res.tasks], [0, { by_task: {}, unattributed: 0, unknown_tasks: [] }]);
+  });
+
+  it('triage runs always count (even with its cap gone from the policy) and against their own task only', async () => {
+    // Off (no per_run.needs_human_triage): a run started before still counts, reserved at the reviewer's cap.
+    const off = await readSpendToday(world([], 200, [], 200, [], 200, [{ id: 70 }]), REPO, NOW, CAPS);
+    assert.deepEqual(today(off), { aic: 600, runs: [{ run_id: 70, status: 'reserved', aic: 600 }] });
+    assert.deepEqual(off.tasks, { by_task: { 'en/a': 600 }, unattributed: 0, unknown_tasks: [] });
+    const on = await readSpendToday(world([], 200, [], 200, [], 200, [{ id: 71, title: 'Triage en/b #4' }]), REPO, NOW, { ...CAPS, needs_human_triage: 150 });
+    assert.deepEqual(today(on), { aic: 550, runs: [{ run_id: 71, status: 'reserved', aic: 550 }] });
+    assert.deepEqual(on.tasks?.by_task, { 'en/b': 550 });
+    for (const status of [404, 500]) assert.equal((await readSpendToday(world([], 200, [], 200, [], 200, [], status), REPO, NOW, CAPS)).aic, null, String(status));
+  });
+
+  it('attributedTask: a triage run matches its recorded triage dispatch (task and issue, within the window)', () => {
+    const run = { display_title: 'Triage en/a #3', created_at: '2026-10-16T08:05:00Z' };
+    assert.equal(attributedTask(run, [{ kind: 'triage', task: 'en/a', issue: 3, attempt: 0, at: '2026-10-16T08:00:00Z' }]), 'en/a');
+    assert.equal(attributedTask(run, [{ kind: 'implement', task: 'en/a', issue: 3, attempt: 0, at: '2026-10-16T08:00:00Z' }]), null);
+    assert.equal(attributedTask(run, [{ kind: 'triage', task: 'en/a', issue: 4, attempt: 0, at: '2026-10-16T08:00:00Z' }]), null);
   });
 
   it('repair runs count too: in flight → reserved at repair + threat detection (700); unlistable → unknown', async () => {
