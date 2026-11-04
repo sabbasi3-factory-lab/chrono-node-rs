@@ -210,6 +210,31 @@ export function triageCandidates(s: Snapshot, p: Policies, decided: readonly Dec
   return [...found.values()].sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0)).slice(0, MAX_TRIAGES_PER_POLL).map((x) => x.d);
 }
 
+/**
+ * Code scanning on a head, for the merge stage: `pass` (CodeQL's check succeeded); `wait` (no
+ * result yet, or still running); `rerun` (every Analyze job finished, one failed and none was re-run
+ * yet: GitHub's API rate limit has failed them before, so re-run that Actions run once); `human`
+ * (CodeQL found alerts above the ruleset's threshold, or the re-run failed too).
+ */
+export function codeScanningGate(s: Snapshot, head: string):
+  | { kind: 'pass' }
+  | { kind: 'wait'; why: string }
+  | { kind: 'rerun'; run_id: number }
+  | { kind: 'human'; reason: 'code_scanning_alerts' | 'code_scanning_failed'; run_id: number | null } {
+  const cs = (s.code_scanning ?? []).find((x) => x.head_sha === head);
+  if (!cs) return { kind: 'wait', why: 'code_scanning_unknown' };
+  if (cs.codeql?.status === 'completed') {
+    if (cs.codeql.conclusion === 'success') return { kind: 'pass' };
+    if (cs.codeql.conclusion === 'failure' || cs.codeql.conclusion === 'action_required') return { kind: 'human', reason: 'code_scanning_alerts', run_id: null };
+  }
+  const done = cs.analyze.length > 0 && cs.analyze.every((a) => a.status === 'completed');
+  const failed = cs.analyze.find((a) => a.conclusion !== null && a.conclusion !== 'success' && a.conclusion !== 'skipped' && a.conclusion !== 'neutral');
+  if (!done || !failed || cs.codeql?.conclusion === 'success') return { kind: 'wait', why: 'code_scanning_pending' };
+  if (failed.run_id === null || failed.run_attempt === null) return { kind: 'human', reason: 'code_scanning_failed', run_id: failed.run_id };
+  if (failed.run_attempt <= 1) return { kind: 'rerun', run_id: failed.run_id };
+  return { kind: 'human', reason: 'code_scanning_failed', run_id: failed.run_id };
+}
+
 function wait(reason: ReasonCode, base: Decision): Decision {
   return { ...base, type: 'wait', reason, effect: 'none' };
 }
@@ -774,6 +799,24 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       if (blocker !== null) {
         out.push({ ...wait('merge_not_ready', merge), source_ids: [pr.node_id, pr.head_sha, `blocker:${blocker}`] });
         continue;
+      }
+      // ---- code scanning (limits.ci.wait_for_code_scanning): the main ruleset's code-scanning rule
+      // refuses an enqueue until CodeQL has passed on the head, so wait for it here instead of
+      // turning a slow analysis into merge_queue_rejected.
+      if (p.limits.ci.wait_for_code_scanning) {
+        const cs = codeScanningGate(s, pr.head_sha);
+        if (cs.kind === 'wait') {
+          out.push({ ...wait('merge_not_ready', merge), source_ids: [pr.node_id, pr.head_sha, `blocker:${cs.why}`] });
+          continue;
+        }
+        if (cs.kind === 'rerun') {
+          reverts.push(decide({ ...base, type: 'code_scanning_rerun', reason: 'code_scanning_failed', effect: 'rerun_ci', run_id: cs.run_id, source_ids: [`${cs.run_id}/attempts/1`, pr.head_sha, 'code-scanning-rerun'] }));
+          continue;
+        }
+        if (cs.kind === 'human') {
+          escalate(decide({ ...base, type: 'needs_human', reason: cs.reason, effect: 'label:needs-human', run_id: cs.run_id, contract_sha: c.last_commit_sha, source_ids: [pr.node_id, pr.head_sha, `code-scanning:${cs.reason}`] }));
+          continue;
+        }
       }
       // ---- reviewer agent (auto-strict only): a pass from the reviewer App on this exact head,
       // posted after the controller asked for it, is required. Anything else fails closed.

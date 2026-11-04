@@ -158,6 +158,8 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   revert_checks_failed: 'The checks failed on this auto-revert PR, so it is not queued. A person decides.',
   intake_fix_not_additive: 'This bug-intake fix PR changes more than adding its fix case and contract (or changes existing files), so it is not queued automatically. A person decides.',
   intake_fix_checks_failed: 'The checks failed on this bug-intake fix PR, so it is not queued. A person decides.',
+  code_scanning_alerts: 'Code scanning (CodeQL) reports alerts on this change above the ruleset threshold, so it is not queued. A person decides.',
+  code_scanning_failed: 'Code scanning (CodeQL) could not analyse this change, also after one re-run, so it is not queued. A person decides.',
   intake_fix_daily_cap: "Today's limit of bug-intake fixes merged without the owner (tiers.yaml intake_fixes.max_per_day) is reached. A person decides.",
   onboarding_not_generated: 'This onboarding PR changes something other than the generator output for its language (new files under its own paths, plus the two golden indexes), so it is not queued automatically. A person decides.',
   onboarding_checks_failed: 'The checks failed on this onboarding PR (CI regenerates every generated file), so it is not queued. A person decides.',

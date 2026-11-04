@@ -8,6 +8,7 @@ import { isTaskId, parseContract, parsePrTrailers, parseTaskMarker, contractPath
 import type {
   ApiResponse,
   CheckEvent,
+  CodeScanningSnap,
   CheckRunSnap,
   ContractSnap,
   GitHubClient,
@@ -907,6 +908,8 @@ export interface ReadSnapshotOptions {
   needBusyJobs: boolean;
   /** The reviewer App's id (REVIEWER_APP_ID); null = no reviewer verdict is accepted. */
   reviewerAppId?: number | null;
+  /** Read code scanning on open factory PR heads (limits.ci.wait_for_code_scanning). */
+  codeScanning?: boolean;
 }
 
 const REVIEWED_HEAD = /^Reviewed-Head: ([0-9a-f]{40})[ \t]*$/;
@@ -929,6 +932,46 @@ export async function readReviewChecks(client: GitHubClient, repo: string, heads
       const first = (asStr(asRec(c.output).summary) ?? '').split('\n')[0]!.replace(/\r$/, '');
       out.push({ id, head_sha: head, status: asStr(c.status) ?? 'unknown', conclusion: asStr(c.conclusion), started_at: started, reviewed_head: REVIEWED_HEAD.exec(first)?.[1] ?? null });
     }
+  }
+  return out;
+}
+
+/** GitHub Advanced Security, the app that posts the `CodeQL` code-scanning check. */
+export const CODE_SCANNING_APP_ID = 57789;
+/** GitHub Actions (default setup's Analyze jobs). */
+const ACTIONS_APP_ID = 15368;
+
+/** Code scanning on each head: the CodeQL check and the Analyze jobs (at most MAX_HEAD_LOOKUPS heads). */
+export async function readCodeScanning(client: GitHubClient, repo: string, heads: Iterable<string>): Promise<CodeScanningSnap[]> {
+  const out: CodeScanningSnap[] = [];
+  for (const head of [...new Set(heads)].filter((h) => HEX40.test(h)).sort().slice(0, MAX_HEAD_LOOKUPS)) {
+    const runs = (await paginate(client, `/repos/${repo}/commits/${head}/check-runs?filter=latest&per_page=100`, (d) => asArr(asRec(d).check_runs))).map(asRec);
+    const codeql = runs
+      .filter((c) => c.name === 'CodeQL' && asRec(c.app).id === CODE_SCANNING_APP_ID && c.head_sha === head)
+      .sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0))[0];
+    const analyze = runs
+      .filter((c) => typeof c.name === 'string' && c.name.startsWith('Analyze (') && asRec(c.app).id === ACTIONS_APP_ID && c.head_sha === head)
+      .map((c) => {
+        const m = /\/actions\/runs\/([0-9]{1,20})(?:\/attempts\/([0-9]{1,3}))?\/job\//.exec(asStr(c.details_url) ?? '');
+        return { name: c.name as string, status: asStr(c.status) ?? 'unknown', conclusion: asStr(c.conclusion), run_id: m ? Number(m[1]) : null, run_attempt: m?.[2] ? Number(m[2]) : null };
+      });
+    // A job URL doesn't name the attempt: read it from the run, only for failed jobs (the re-run rule).
+    // If the run isn't completed, a re-run started after the check runs were read: the failure we saw
+    // belongs to an earlier attempt, so the job counts as still running (wait for the retry).
+    const runs = new Map<number, { attempt: number | null; done: boolean }>();
+    for (const a of analyze) {
+      if (a.run_id === null || a.run_attempt !== null || a.conclusion === null || a.conclusion === 'success') continue;
+      if (!runs.has(a.run_id)) {
+        const run = asRec((await client.request('GET', `/repos/${repo}/actions/runs/${a.run_id}`)).data);
+        runs.set(a.run_id, { attempt: typeof run.run_attempt === 'number' ? run.run_attempt : null, done: run.status === 'completed' });
+      }
+      const r = runs.get(a.run_id)!;
+      if (!r.done) {
+        a.status = 'in_progress';
+        a.conclusion = null;
+      } else a.run_attempt = r.attempt;
+    }
+    out.push({ head_sha: head, codeql: codeql ? { status: asStr(codeql.status) ?? 'unknown', conclusion: asStr(codeql.conclusion) } : null, analyze });
   }
   return out;
 }
@@ -1023,5 +1066,6 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
         : [],
     repair_runs,
     implement_runs,
+    ...(o.codeScanning ? { code_scanning: await readCodeScanning(client, o.repo, pulls.filter((p) => p.state === 'open' && p.task_id).map((p) => p.head_sha)) } : {}),
   };
 }

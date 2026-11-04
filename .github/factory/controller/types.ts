@@ -14,7 +14,12 @@ export interface LimitsPolicy {
     adaptive: { org_concurrent_job_limit: number; pause_dispatch_when_busy_jobs_over: number };
     core_area: number;
   };
-  ci: { max_jobs_per_pr: number };
+  /**
+   * `wait_for_code_scanning` (optional, default false): enqueue an agent PR only after CodeQL's
+   * code-scanning check passed on its head, because the main ruleset's code-scanning rule refuses
+   * the enqueue before that (GitHub merge protection is checked at enqueue, not in the merge group).
+   */
+  ci: { max_jobs_per_pr: number; wait_for_code_scanning: boolean };
   task: {
     max_attempts: number;
     max_repairs: number;
@@ -244,6 +249,15 @@ export interface TaskHistory {
  * (REVIEWER_APP_ID, 5444751) created it. `reviewed_head` is the SHA on the summary's first line
  * (`Reviewed-Head: <sha>`), or null.
  */
+/** Code scanning on one PR head: GitHub Advanced Security's `CodeQL` check, and the default-setup Analyze jobs. */
+export interface CodeScanningSnap {
+  head_sha: string;
+  /** The newest `CodeQL` check run (app github-advanced-security), or null if none yet. */
+  codeql: { status: string; conclusion: string | null } | null;
+  /** The Analyze jobs' check runs (one per language) with their Actions run. */
+  analyze: { name: string; status: string; conclusion: string | null; run_id: number | null; run_attempt: number | null }[];
+}
+
 export interface ReviewCheckSnap {
   id: number;
   head_sha: string;
@@ -279,6 +293,8 @@ export interface Snapshot {
   history: Record<string, TaskHistory>;
   /** Reviewer-App `factory-review` check runs on open factory PR heads (absent = none). */
   review_checks?: ReviewCheckSnap[];
+  /** Code scanning on open factory PR heads (only read when limits.ci.wait_for_code_scanning). */
+  code_scanning?: CodeScanningSnap[];
   /**
    * Per-task AIC over today and yesterday from the spend collector (measured runs plus
    * reservations for runs in flight; runs naming no task count against every task). Null or
@@ -310,6 +326,7 @@ export type DecisionType =
   | 'auto_ready'
   | 'auto_revert'
   | 'main_ci_rerun'
+  | 'code_scanning_rerun'
   | 'task_done'
   | 'repair_dispatched'
   | 'needs_human'
@@ -321,6 +338,8 @@ export type DecisionType =
   | 'wait';
 
 export type ReasonCode =
+  | 'code_scanning_failed'
+  | 'code_scanning_alerts'
   // recorded decisions
   | 'would_dispatch'
   | 'ci_failed'

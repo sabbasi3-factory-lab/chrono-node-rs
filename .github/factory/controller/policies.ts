@@ -127,7 +127,11 @@ export function parsePolicies(texts: PolicyTexts): Policies {
       },
       core_area: num(l, 'limits', 'wip.core_area'),
     },
-    ci: { max_jobs_per_pr: num(l, 'limits', 'ci.max_jobs_per_pr', 1) },
+    ci: {
+      max_jobs_per_pr: num(l, 'limits', 'ci.max_jobs_per_pr', 1),
+      // Optional switch (default off): only an explicit `true` makes the merge stage wait for code scanning.
+      wait_for_code_scanning: get(l, 'ci.wait_for_code_scanning') === true,
+    },
     task: {
       max_attempts: num(l, 'limits', 'task.max_attempts', 1),
       max_repairs: num(l, 'limits', 'task.max_repairs'),
