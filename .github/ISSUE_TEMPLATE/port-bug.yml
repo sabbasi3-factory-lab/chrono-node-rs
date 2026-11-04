@@ -1,0 +1,49 @@
+# Port bug report. The intake (.github/workflows/intake.yml, plain code) parses these exact
+# headings, re-runs the request through the Rust port and the pinned chrono-node, and proposes a
+# fix task when they disagree. It acts only on reports from people with write access (or when one
+# of them adds `factory:bug`). Human tier: changes need the owner's review.
+name: Port bug
+description: The Rust port gives a different result from chrono-node for a phrase
+title: "Port bug: "
+labels: ["factory:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Give one request exactly. The intake runs it through both implementations; it doesn't read prose.
+        If chrono-node itself is wrong, report it upstream instead: https://github.com/wanasit/chrono/issues
+  - type: input
+    id: config
+    attributes:
+      label: Configuration
+      description: "A named configuration: en.casual, en.strict, en.GB.casual, en.GB.strict, de.casual, de.strict, fr.casual, fr.strict, ..."
+      placeholder: en.casual
+    validations:
+      required: true
+  - type: textarea
+    id: text
+    attributes:
+      label: Text
+      description: The phrase, exactly (1-1000 characters).
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: reference
+    attributes:
+      label: Reference date
+      description: The reference instant, in UTC ISO form.
+      placeholder: "2024-02-29T12:00:00.000Z"
+    validations:
+      required: true
+  - type: input
+    id: timezone
+    attributes:
+      label: Reference timezone
+      description: "Optional: an abbreviation (EST) or minutes from UTC (-300). Empty = a plain Date reference."
+  - type: textarea
+    id: options
+    attributes:
+      label: Options
+      description: 'Optional: `{"forwardDate": true}`.'
+      render: json

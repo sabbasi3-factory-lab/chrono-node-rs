@@ -7,7 +7,8 @@ Node tools that run the **real chrono-node** from `upstream/` as the judge for t
 | Tool | Command | What it does |
 |---|---|---|
 | Golden-test generator | `npm run golden` / `npm run golden:check` | Records chrono-node's outputs for its own core, English, German, French, Swedish, Portuguese, Spanish and Japanese test cases into `tests/golden/`. See `tests/golden/README.md`. |
-| Comparison harness | `npm run build:upstream`, then `npm run compare -- [--seed N] [--phrases N] [--rust PATH] [--report FILE]` | Generates seeded random phrases and random reference dates, runs them through chrono-node and the Rust `chrono-rs-json` CLI, and compares the outputs. See below. |
+| Comparison harness | `npm run build:upstream`, then `npm run compare -- [--seed N] [--phrases N] [--rust PATH] [--report FILE] [--requests FILE] [--plant]` | Generates seeded random phrases and random reference dates (or reads given requests with `--requests`), runs them through chrono-node and the Rust `chrono-rs-json` CLI, and compares the outputs. See below. |
+| Monitor and bug intake | `feedback/monitor.js`, `feedback/intake.js` (run by `monitor.yml` and `intake.yml`) | Nightly fresh-seed comparison → deduplicated `factory:bug` issues; bug reports → fix task PRs (contract + golden case). See [`feedback/README.md`](feedback/README.md). |
 
 Setup: Node 24 or later, then `npm ci` in this directory. Dependency versions are pinned exactly and match `upstream/package-lock.json`.
 
@@ -26,3 +27,5 @@ Setup: Node 24 or later, then `npm ci` in this directory. Dependency versions ar
   With `--seed` (the contract's visible seed, or a reproduction) the line is `factory-comparison-seed: <n>` instead.
 - **Held-out seed in CI (commit–reveal):** CI uses a fresh seed on every run, but it doesn't come from this script. The `checks` job's first step, which runs before any PR code, draws a seed and a salt, writes them to private files and prints only `factory-heldout-commit: <sha256("<salt>:<seed>")>`. The held-out comparison reads the seed into a shell variable (never a step header or exported variable) and runs with `--seed <that seed>`. After the run, a final step reveals `factory-heldout-seed: <n>` and `factory-heldout-salt: <hex>`. The controller records the seed in the audit log only if the reveal matches the single commitment from the first step and the change leaves `.github/` alone, so PR code can't forge the recorded seed. That proves which seed was generated, not that the comparison used it honestly; a factory PR without a trusted seed goes to a human. Seeds aren't stored anywhere else.
 - **Reproduce** a failure with `node compare/compare.js --seed <seed> --phrases <n>`.
+- **Given requests** (`--requests FILE`: a JSON array or one request per line, golden-case shape): compares just those; the report's `requests` lists each one's outcome (`matched`, `mismatched`, `not_comparable` with the missing steps, or `error`). The intake triages bug reports this way.
+- **Drill** (`--plant`): drops the Rust results of one comparable phrase, so the run reports exactly one planted mismatch. Only the monitor's drill uses it.

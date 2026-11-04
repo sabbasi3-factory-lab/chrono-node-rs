@@ -16,6 +16,10 @@ const HARNESS = path.resolve(__dirname, "..");
 const REPO = path.resolve(HARNESS, "..");
 const GOLDEN = path.join(REPO, "tests/golden");
 const AREAS = ["core", "en", "de", "fr", "sv", "pt", "es", "ja"];
+// Fix cases (fixes.test.js): one file per fix id, outside index.json so parallel intake PRs
+// never touch the same generated file.
+const FIX_GROUP = "fixes";
+const FIX_SOURCE = "../harness/golden/fixes.test.js";
 
 // Used only where an upstream test passes no reference date.
 const DEFAULT_REFERENCE = "2012-08-10T12:00:00.000Z";
@@ -64,6 +68,35 @@ function caseKey(c) {
     return JSON.stringify([c.config, c.text, c.reference, c.options]);
 }
 
+/**
+ * tests/golden/fixes/<lang>-fix-<hash>.json from the recorded fix cases: exactly one case per fix
+ * (its test name is the fix id), with `requires.fix` so the Rust golden runner checks it only once
+ * the fix is declared (`// factory-fix: <id>` in src/). Anything else is a recording problem.
+ */
+function fixFiles(raw, pin, problems) {
+    const out = new Map();
+    const dir = path.join(__dirname, "fixes");
+    const ids = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")).id) : [];
+    for (const s of raw.skipped) problems.push({ source: raw.source, reason: `fix case skipped (${s.reason})`, upstream_test: s.upstream_test });
+    for (const id of ids) {
+        const cases = raw.cases.filter((c) => c.upstream_test === id);
+        if (cases.length !== 1) {
+            problems.push({ source: raw.source, reason: `fix ${id}: ${cases.length} recorded cases (want 1)` });
+            continue;
+        }
+        const area = `${FIX_GROUP}/${id.replace("/", "-")}`;
+        const c = cases[0];
+        out.set(area, {
+            schema: SCHEMA,
+            generator: "harness/golden/generate.js",
+            upstream: pin,
+            source: `harness/golden/fixes/${id.replace("/", "-")}.json`,
+            cases: [{ id: `${area}#1`, ...c, requires: { ...c.requires, fix: id } }],
+        });
+    }
+    return out;
+}
+
 function build(outDir) {
     const rawDir = fs.mkdtempSync(path.join(os.tmpdir(), "golden-raw-"));
     try {
@@ -77,6 +110,10 @@ function build(outDir) {
             if (!name.endsWith(".json")) continue;
             const raw = JSON.parse(fs.readFileSync(path.join(rawDir, name), "utf8"));
             problems.push(...raw.errors.map((e) => ({ source: raw.source, ...e })));
+            if (raw.source === FIX_SOURCE) {
+                for (const [area, data] of fixFiles(raw, pin, problems)) files.set(area, data);
+                continue;
+            }
             const area = areaOf(raw.source);
             const seen = new Set();
             const cases = [];
@@ -113,7 +150,7 @@ function build(outDir) {
             throw new Error(`${problems.length} recording problem(s); see above`);
         }
 
-        for (const area of AREAS) fs.rmSync(path.join(outDir, area), { recursive: true, force: true });
+        for (const area of [...AREAS, FIX_GROUP]) fs.rmSync(path.join(outDir, area), { recursive: true, force: true });
         for (const [area, data] of files) {
             const file = path.join(outDir, `${area}.json`);
             fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -162,7 +199,7 @@ function main() {
     try {
         build(tmp);
         const committed = listFiles(GOLDEN).filter(
-            (f) => f === "index.json" || f === "configurations.json" || AREAS.some((a) => f.startsWith(a + path.sep))
+            (f) => f === "index.json" || f === "configurations.json" || [...AREAS, FIX_GROUP].some((a) => f.startsWith(a + path.sep))
         );
         const fresh = listFiles(tmp);
         const diffs = [];

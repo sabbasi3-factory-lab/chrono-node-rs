@@ -1,0 +1,241 @@
+# Bug intake (DESIGN §6 "new work while running"). Plain code, no AI: a bug report is a request
+# that can be re-run through both implementations, so triage is deterministic.
+#
+# A `factory:bug` issue from the monitor (controller App) or from a person with write access is
+# re-run through main's Rust port and the pinned chrono-node (compare.js --requests):
+# - they disagree  → a human-tier PR (controller App) adding the fix case
+#                    (harness/golden/fixes/ → tests/golden/fixes/) and its fix contract
+#                    (contracts/<lang>/fix-<hash>.yaml), linked from the issue;
+# - they agree     → "not a port bug" (chrono-node does the same), closed;
+# - not comparable → "not ported yet", closed;
+# - unparseable    → a comment asking for the form's fields.
+# When a fix contract merges (`link`), its task issue is created (seed.js issues --apply --only)
+# and the bug report points at it. The controller takes the task from there like any other.
+# Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written (the triage still runs).
+# Human tier: changes need the owner's review.
+name: intake
+
+on:
+  issues:
+    types: [opened, labeled]
+  push:
+    branches: [main]
+    paths: ["harness/golden/fixes/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  triage:
+    if: >-
+      github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'issues' &&
+      contains(github.event.issue.labels.*.name, 'factory:bug') &&
+      (github.event.action == 'opened' || github.event.label.name == 'factory:bug')
+    concurrency:
+      group: intake-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Read-only token: the reporter's permission and an open fix PR's branch.
+    permissions: { contents: read, issues: read }
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      OUT: /tmp/factory-intake
+      ISSUE: ${{ github.event.issue.number }}
+    outputs:
+      action: ${{ steps.decision.outputs.action }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Who reported it, and the request (issue text is data, validated field by field)
+        id: input
+        working-directory: harness
+        run: |
+          node feedback/intake.js input --event "$GITHUB_EVENT_PATH" --out "$OUT"
+          if [ -f "$OUT/request.jsonl" ]; then echo "request=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Build the Rust CLI and chrono-node
+        if: steps.input.outputs.request == 'true'
+        run: |
+          rustup toolchain install
+          cargo build --locked --bin chrono-rs-json
+          cd harness && npm ci --ignore-scripts --no-audit --no-fund && npm run build:upstream
+
+      - name: Re-run the request through both implementations
+        if: steps.input.outputs.request == 'true'
+        working-directory: harness
+        run: |
+          node compare/compare.js --requests "$OUT/request.jsonl" --report "$OUT/report.json" || true
+          node feedback/intake.js decide --issue "$ISSUE" --out "$OUT"
+
+      - name: Decision
+        id: decision
+        run: |
+          cat "$OUT/decision.json"
+          echo "action=$(jq -r .action "$OUT/decision.json")" >> "$GITHUB_OUTPUT"
+
+      # A port bug: the fix case and its contract, generated exactly as a person would (golden
+      # generator + seed script). Anything else changing fails closed.
+      - name: Generate the fix case and contract
+        if: steps.decision.outputs.action == 'propose'
+        run: |
+          fix=$(jq -r .fix "$OUT/decision.json")
+          slug=${fix/\//-}
+          (cd harness && npm run golden)
+          (cd scripts/seed-backlog && npm ci --ignore-scripts --no-audit --no-fund && node seed.js contracts)
+          expected=$(printf '%s\n' "contracts/${fix}.yaml" "harness/golden/fixes/${slug}.json" "tests/golden/fixes/${slug}.json" | sort)
+          changed=$(git status --porcelain --untracked-files=all | awk '{print $2}' | sort)
+          if [ "$changed" != "$expected" ]; then
+            echo "::error::unexpected changes: $(echo $changed)"; exit 1
+          fi
+          mkdir -p "$OUT/files" && cp --parents $expected "$OUT/files/"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: intake
+          path: /tmp/factory-intake/
+          retention-days: 7
+
+  # Writes, only when live. Runs no third-party code: checkout, the App token action, git, gh and
+  # a node script with no dependencies.
+  apply:
+    needs: triage
+    if: needs.triage.outputs.action == 'propose' || needs.triage.outputs.action == 'report'
+    concurrency:
+      group: factory-intake
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      ISSUE: ${{ github.event.issue.number }}
+      OUT: /tmp/factory-intake
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: intake
+          path: /tmp/factory-intake
+
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"
+          else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would act on #$ISSUE:"; cat "$OUT/decision.json"; fi
+
+      - name: Create controller App token
+        if: steps.mode.outputs.live == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.mode.outputs.live == 'true'
+        with:
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Open the fix PR (human tier)
+        if: steps.mode.outputs.live == 'true' && needs.triage.outputs.action == 'propose'
+        id: pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
+        run: |
+          fix=$(jq -r .fix "$OUT/decision.json")
+          branch=$(jq -r .branch "$OUT/decision.json")
+          [[ "$fix" =~ ^[a-z]{2}/fix-[0-9a-f]{8}$ && "$branch" == "factory/intake/${fix/\//-}" ]] || { echo "::error::bad decision"; exit 1; }
+          cp -r "$OUT/files/." .
+          git config user.name "$BOT"
+          git config user.email "$(gh api "users/${BOT}" --jq .id)+${BOT}@users.noreply.github.com"
+          git switch -c "$branch"
+          git add contracts harness/golden/fixes tests/golden/fixes
+          git commit -q -m "intake: fix task ${fix} (#${ISSUE})"
+          git push origin "$branch"
+          body=$(printf '%s\n' \
+            "Fix task \`${fix}\` for the port bug in #${ISSUE}, proposed by the intake (plain code, no AI)." \
+            "" \
+            "The Rust port and the pinned chrono-node disagree on the reported request. This adds:" \
+            "- \`harness/golden/fixes/${fix/\//-}.json\`: the request (input to the golden generator)" \
+            "- \`tests/golden/fixes/${fix/\//-}.json\`: chrono-node's output for it (generated; pending until the fix declares \`// factory-fix: ${fix}\`)" \
+            "- \`contracts/${fix}.yaml\`: the fix contract (generated by the seed script)" \
+            "" \
+            "**Human tier:** contracts and golden data need the owner's review. After merge the task issue is created and the controller takes it like any task.")
+          url=$(gh pr create --base main --head "$branch" --title "intake: fix task ${fix} (#${ISSUE})" --body "$body")
+          echo "number=${url##*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Comment, label and close as decided
+        if: steps.mode.outputs.live == 'true'
+        working-directory: harness
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: node feedback/intake.js comment --issue "$ISSUE" --out "$OUT" ${PR:+--pr "$PR"}
+
+  # A fix contract merged: create its task issue and point the bug report at it.
+  link:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'push'
+    concurrency:
+      group: factory-intake
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install the seed script (before any token exists)
+        working-directory: scripts/seed-backlog
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"; else echo "live=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Create controller App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-issues: ${{ steps.mode.outputs.live == 'true' && 'write' || 'read' }}
+
+      - name: Task issues for new fix contracts, then link the bug reports
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          LIVE: ${{ steps.mode.outputs.live }}
+        run: |
+          ids=$(node harness/feedback/intake.js pending)
+          echo "fix contracts without a task issue: ${ids:-none}"
+          if [ "$LIVE" != "true" ]; then echo "[dry-run] would create task issues and link bug reports"; exit 0; fi
+          if [ -n "$ids" ]; then
+            (cd scripts/seed-backlog && node seed.js labels && FACTORY_SEED_APPLY=yes node seed.js issues --apply --only "$ids")
+          fi
+          node harness/feedback/intake.js link

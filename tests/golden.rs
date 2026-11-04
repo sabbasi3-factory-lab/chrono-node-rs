@@ -10,6 +10,11 @@
 //!
 //! Contract acceptance uses `GOLDEN_AREAS` + `GOLDEN_REQUIRE_STEP`: in the task's areas, every case
 //! whose requirements are ported must pass, and at least one of them must exercise the new step.
+//!
+//! Fix cases (`tests/golden/fixes/`, from the monitor and bug intake) also need `requires.fix`: the
+//! fix id counts as a required step that is "ported" once a `// factory-fix: <id>` comment exists
+//! under `src/`. Before the fix they're pending (a known bug doesn't break every PR); after it they
+//! are checked like any other case. A fix contract's `GOLDEN_REQUIRE_STEP` is its fix id.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -36,7 +41,42 @@ fn area_files() -> Vec<(String, PathBuf)> {
             }
         }
     }
+    // Fix cases (one file per fix id), kept apart from the per-language groups above.
+    if let Ok(entries) = fs::read_dir(golden_dir().join("fixes")) {
+        for e in entries.flatten() {
+            let path = e.path();
+            if path.extension().and_then(|x| x.to_str()) == Some("json") {
+                let stem = path.file_stem().unwrap().to_string_lossy().to_string();
+                out.push((format!("fixes/{stem}"), path));
+            }
+        }
+    }
     out.sort();
+    out
+}
+
+/// Fix ids declared in the crate's sources (`// factory-fix: <id>`).
+fn declared_fixes() -> Vec<String> {
+    fn walk(dir: &Path, out: &mut Vec<String>) {
+        let Ok(entries) = fs::read_dir(dir) else {
+            return;
+        };
+        for e in entries.flatten() {
+            let path = e.path();
+            if path.is_dir() {
+                walk(&path, out);
+            } else if path.extension().and_then(|x| x.to_str()) == Some("rs") {
+                let text = fs::read_to_string(&path).unwrap_or_default();
+                for line in text.lines() {
+                    if let Some((_, id)) = line.split_once("// factory-fix: ") {
+                        out.push(id.trim().to_string());
+                    }
+                }
+            }
+        }
+    }
+    let mut out = Vec::new();
+    walk(&Path::new(env!("CARGO_MANIFEST_DIR")).join("src"), &mut out);
     out
 }
 
@@ -69,6 +109,7 @@ fn golden_suite() {
         assert!(unknown.is_empty(), "unknown GOLDEN_AREAS: {unknown:?}");
     }
 
+    let fixes = declared_fixes();
     let mut tallies: BTreeMap<String, Tally> = BTreeMap::new();
     let mut failures: Vec<String> = Vec::new();
 
@@ -86,6 +127,7 @@ fn golden_suite() {
             let chrono = chrono_node::configuration(&req.config)
                 .unwrap_or_else(|| panic!("{id}: unknown config {}", req.config));
             let registered = chrono.registered();
+            let fix = case["requires"]["fix"].as_str();
             let requires: Vec<&str> = ["parsers", "refiners"]
                 .iter()
                 .flat_map(|k| {
@@ -95,8 +137,10 @@ fn golden_suite() {
                         .iter()
                         .map(|v| v.as_str().unwrap())
                 })
+                .chain(fix)
                 .collect();
-            if !requires.iter().all(|r| registered.contains(r)) {
+            let ported = |r: &&str| registered.contains(r) || (Some(*r) == fix && fixes.iter().any(|f| f == r));
+            if !requires.iter().all(ported) {
                 tally.pending += 1;
                 if require_all {
                     failures.push(format!("{id}: pending (needs {requires:?})"));
