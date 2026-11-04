@@ -5,11 +5,12 @@ reviewed like code and applied with the commands below (owner or coordinator, ad
 
 ## `code-owner-review.json`: code-owner review for the human tier only
 
-**Status: deferred (coordinator, 2026-11-04): blocked on a build App identity.** Every build
-session's PR is authored by `sabbasi3`, the only code owner, who can't approve their own PR. So the
-rule would mean an admin bypass on every human-tier merge, which reviews nothing. Apply it once build
-sessions open PRs under their own App identity, and drop the admin bypass at the same time.
-CODEOWNERS itself is in force for review requests and documents the human tier.
+**Status: not applied, by owner decision (2026-11-04).** There is no general code-owner review:
+the coordinator keeps approving human-tier PRs, and the tiers, gates, merge queue and policy-gated
+auto-merges stay the controls. A small "break glass" set may get a required code-owner review
+later: the kill switch, the audit verifier, the rulesets and the spend caps. This JSON stays as the
+template for that. The planned build App is for attribution and least privilege, not approvals.
+CODEOWNERS itself stays: it requests the owner's review and documents the human tier.
 
 - `.github/CODEOWNERS` owns exactly the human tier of factory `policies/tiers.yaml`
   (`.github/`, `contracts/`, `harness/`, `tests/golden/`, `upstream/`, `NOTICE`), minus the three
@@ -20,8 +21,9 @@ CODEOWNERS itself is in force for review requests and documents the human tier.
   scope gate rejects protected paths), and the steward changes only `Cargo.toml`/`Cargo.lock`.
   Controller revert PRs revert agent merges, so they touch only the agent's paths.
 - **Bypass: repository admins, for pull requests only.** With one person owning the repo, the
-  owner's own PRs can't get a second code owner's approval; the bypass keeps today's flow for them.
-  In a team, drop the bypass so every human-tier change gets another owner's review.
+  owner's own PRs can't get a second code owner's approval. GitHub reads only one CODEOWNERS file
+  (`.github/CODEOWNERS` first), so the break-glass option means narrowing `.github/CODEOWNERS` itself
+  to those paths before enabling this ruleset; the human-tier ownership then lives in tiers.yaml only.
 - **Generated onboarding PRs** (`harness/onboard/`): the approved languages' generated paths
   (`contracts/<code>/`, `tests/golden/<module>/`, `harness/golden/coverage/<module>.json`) and the two
   golden indexes have no owner, so tiers.yaml `onboarding` decides, as for intake fixes. A new
