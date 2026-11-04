@@ -172,6 +172,13 @@ describe('spend collector: today\'s implement spend', () => {
     assert.deepEqual(res.tasks, { by_task: {}, unattributed: 0, unknown_tasks: [] });
   });
 
+  it('an unreadable factory review run from yesterday leaves every task\'s spend known', async () => {
+    const gh = world([], 200, [], 200, [], 200, []);
+    gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/actions/workflows/improve\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 71, status: 'completed', run_attempt: 2, created_at: '2026-10-15T08:00:00Z', run_started_at: '2026-10-15T09:00:00Z', display_title: 'Factory review' }] } }) });
+    const res = await readSpendToday(gh, REPO, NOW, CAPS);
+    assert.deepEqual([res.aic, res.tasks], [0, { by_task: {}, unattributed: 0, unknown_tasks: [] }]);
+  });
+
   it('repair runs count too: in flight → reserved at repair + threat detection (700); unlistable → unknown', async () => {
     const res = await readSpendToday(world([{ id: 1, status: 'in_progress' }], 200, [{ id: 40 }]), REPO, NOW, CAPS);
     assert.deepEqual(today(res), { aic: 2100, runs: [{ run_id: 1, status: 'reserved', aic: 1400 }, { run_id: 40, status: 'reserved', aic: 700 }] });

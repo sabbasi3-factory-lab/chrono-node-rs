@@ -20,7 +20,7 @@ test("auditCounts: merged tasks, first-try merges, repairs, needs-human reasons"
 test("areas: eligible only with 15+ tasks merged since the area's last change (within the window)", () => {
     const merged = Array.from({ length: 16 }, (_, i) => ev("merged", `2026-11-0${4 + (i % 5)}T0${i % 10}:00:00Z`, { task: `en/t${i}` }));
     const a = areas({ "prompt:implement": "2026-11-01T00:00:00Z", "policy:budgets": "2026-11-08T00:00:00Z", "policy:x": null }, merged, NOW);
-    assert.deepStrictEqual(a.map((x) => [x.area, x.tasks_since, x.eligible]), [["prompt:implement", 16, true], ["policy:budgets", 3, false], ["policy:x", 16, true]]);
+    assert.deepStrictEqual(a.map((x) => [x.area, x.tasks_since, x.eligible]), [["prompt:implement", 16, true], ["policy:budgets", 3, false], ["policy:x", 0, false]]);
 });
 
 test("compactRuns and summaryMd", () => {
@@ -29,4 +29,17 @@ test("compactRuns and summaryMd", () => {
     const md = summaryMd(auditCounts([]), runs, [{ area: "prompt:implement", last_change: null, tasks_since: 0, eligible: false }], { runs: [], summary: {} });
     assert.match(md, /\| prompt:implement \| unknown \| 0 \| no \|/);
     assert.match(md, /\| implement \| 1 \| 1 \| 20\.0 \| 20\.0 \|/);
+});
+
+test("budget gate: today's live total plus the worst case must stay under the pause; unknown → no run", () => {
+    const { gate } = require("../budget-gate");
+    const budgets = { per_run: { factory_review: 500, threat_detection: 400, overshoot_margin: 400 }, factory_per_day: { max_aic: 10000, pause_at_pct: 100 } };
+    const snap = (aic, day = "2026-11-10", dry = false) => ({ type: "spend_snapshot", payload: { day, aic_today: aic, dry_run: dry } });
+    const now = new Date("2026-11-10T06:00:00Z");
+    assert.ok(gate({ snapshots: [snap(9000), snap(8200)], budgets, now }).ok, "8200 + 1700 = 9900");
+    assert.ok(!gate({ snapshots: [snap(8400)], budgets, now }).ok, "8400 + 1700 > 10000");
+    assert.ok(!gate({ snapshots: [], budgets, now }).ok, "no snapshot");
+    assert.ok(!gate({ snapshots: [snap(10, "2026-11-09")], budgets, now }).ok, "yesterday's");
+    assert.ok(!gate({ snapshots: [snap(10, "2026-11-10", true)], budgets, now }).ok, "dry run");
+    assert.ok(!gate({ snapshots: [snap(null)], budgets, now }).ok, "unknown total");
 });

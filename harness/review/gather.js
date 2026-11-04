@@ -99,7 +99,8 @@ function areas(lastChange, events, now) {
     return Object.entries(lastChange).map(([area, changed]) => {
         const from = changed && changed > windowStart ? changed : windowStart;
         const tasks = new Set(events.filter((e) => e.type === "merged" && e.payload.task && e.timestamp >= from).map((e) => e.payload.task));
-        return { area, last_change: changed, tasks_since: tasks.size, eligible: tasks.size >= MIN_TASKS };
+        // An unknown last change is never eligible (fail closed: a lookup error mustn't open an area).
+        return { area, last_change: changed, tasks_since: changed ? tasks.size : 0, eligible: Boolean(changed) && tasks.size >= MIN_TASKS };
     });
 }
 
@@ -131,7 +132,11 @@ async function main() {
     const runs = [];
     for (const wf of Object.keys(PROMPTS)) {
         const file = path.join(logsDir, `${wf}.json`);
-        if (fs.existsSync(file)) runs.push(...compactRuns(JSON.parse(fs.readFileSync(file, "utf8")), wf));
+        try {
+            if (fs.existsSync(file)) runs.push(...compactRuns(JSON.parse(fs.readFileSync(file, "utf8")), wf));
+        } catch (e) {
+            console.log(`::warning::${wf} logs unreadable (${e.message}): its runs are missing from the data`);
+        }
     }
 
     const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString();

@@ -492,7 +492,9 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
         continue;
       }
       // Yesterday's run: only per-task spend is unknown, and only its own task's when the audit log
-      // shows the controller dispatched it; otherwise every task's.
+      // shows the controller dispatched it; otherwise every task's. A taskless run (the factory
+      // review) affects no task's spend, readable or not.
+      if (TASKLESS_FILES.has(fileOf.get(run)!)) continue;
       const task = attributedTask(run, dispatches);
       if (task) unknownTasks.add(task);
       else taskUnknown = true;

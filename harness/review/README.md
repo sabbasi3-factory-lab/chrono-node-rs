@@ -11,7 +11,7 @@
 | `runs.jsonl` | `gh aw logs <workflow> --start-date -1w --json` (gh-aw's built-in, pinned v1.0.1) for implement, repair and review, one compact line per run |
 | `outcomes.json` | the `outcomes` branch (gh-aw Outcomes, written by `outcomes.yml`) for runs in the window |
 | `audit-counts.json` | the `audit` branch, non-dry-run events of the window: counts by type and reason, merged tasks, first-try merges, repairs, `needs-human` reasons |
-| `areas.json`, `summary.md` | each area's last change and eligibility: the prompts' last commit here, and the policies' last commit in the factory repo at the pinned version. An area is eligible with **15+ tasks merged since its last change** (`cadence.yaml` `min_tasks_since_last_change_in_area`), counted inside the window. |
+| `areas.json`, `summary.md` | each area's last change and eligibility: the prompts' last commit here, and the policies' last commit in the factory repo at the pinned version. An area is eligible with **15+ tasks merged since its last change** (`cadence.yaml` `min_tasks_since_last_change_in_area`), counted inside the window. An unknown last change is never eligible. |
 
 The agent gets these files and read-only GitHub tools, and has no network.
 
@@ -24,7 +24,7 @@ The agent gets these files and read-only GitHub tools, and has no network.
 
 ## Spend
 
-`improve` is in the controller's `CAPPED_WORKFLOWS` (budgets.yaml `per_run.factory_review` 500, `per_workflow_per_day.factory_review` 1000, threat detection 400). The controller verifies its compiled caps, reserves an in-flight run at 900, and measures or bounds it like any AI run. Its runs count toward the factory's daily total but toward no task's budget (`spend.ts` `TASKLESS_FILES`).
+`improve` is in the controller's `CAPPED_WORKFLOWS` (budgets.yaml `per_run.factory_review` 500, `per_workflow_per_day.factory_review` 1000, threat detection 400). The controller verifies its compiled caps, reserves an in-flight run at 900, and measures or bounds it like any AI run. Its runs count toward the factory's daily total but toward no task's budget (`spend.ts` `TASKLESS_FILES`), even when one can't be read. Cron starts it, not the controller, so it gates itself before any inference (`budget-gate.js`): today's newest live `spend_snapshot`, plus its worst case (500 + 400 + 2 × the overshoot margin), must stay under `factory_per_day.max_aic × pause_at_pct`. Unknown spend means no run.
 
 ## Drill
 

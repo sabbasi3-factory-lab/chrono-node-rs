@@ -69,6 +69,12 @@ steps:
       FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
     run: |
       [ "$FACTORY_ENABLED" = "true" ] || { echo "::error::kill switch: FACTORY_ENABLED is not \"true\""; exit 1; }
+  # The controller's budget pause doesn't dispatch this workflow (cron does), so it checks itself:
+  # today's live spend plus this run's worst case must stay under the daily pause (fail closed).
+  - name: Daily budget gate
+    run: |
+      git fetch --no-tags origin audit:refs/remotes/origin/audit
+      (cd harness && npm ci --ignore-scripts --no-audit --no-fund && node review/budget-gate.js)
   - name: Install gh-aw v1.0.1 (checksum pinned)
     run: |
       curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
@@ -80,15 +86,18 @@ steps:
     run: |
       mkdir -p "$RUNNER_TEMP/review-logs"
       for wf in implement repair review; do
-        "$RUNNER_TEMP/gh-aw" logs "$wf" --start-date -1w -c 200 --json -o "$RUNNER_TEMP/aw-logs" > "$RUNNER_TEMP/review-logs/${wf}.json" \
-          || echo "::warning::gh aw logs ${wf} failed: its runs are missing from the data"
+        # Kept only if the call succeeds; otherwise that workflow's runs are missing from the data.
+        if "$RUNNER_TEMP/gh-aw" logs "$wf" --start-date -1w -c 200 --json -o "$RUNNER_TEMP/aw-logs" > "$RUNNER_TEMP/${wf}.tmp"; then
+          mv "$RUNNER_TEMP/${wf}.tmp" "$RUNNER_TEMP/review-logs/${wf}.json"
+        else
+          echo "::warning::gh aw logs ${wf} failed: its runs are missing from the data"
+        fi
       done
   - name: Aggregate the window (plain code)
     env:
       GH_TOKEN: ${{ github.token }}
       GITHUB_REPOSITORY: ${{ github.repository }}
     run: |
-      git fetch --no-tags origin audit:refs/remotes/origin/audit
       node harness/review/gather.js --out "$GITHUB_WORKSPACE/target/factory-review" --logs "$RUNNER_TEMP/review-logs"
       ls -l "$GITHUB_WORKSPACE/target/factory-review"
 
