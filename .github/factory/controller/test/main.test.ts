@@ -317,12 +317,12 @@ describe('independent review (follow-up): spend fails closed end to end', () => 
   it('a completed run whose usage is missing counts at its bound: a warning in the summary, the audit event names it, and dispatch is not blocked', async () => {
     const lines: string[] = [];
     const result = await run(deps(unreadableSpendWorld(true), { policies: bounded, log: (l) => lines.push(l) }));
-    // implement 500 + threat detection 400 + 2 × 400 margin.
-    assert.ok(lines.some((l) => l.startsWith('spend today: 1700 AIC') && l.includes('WARNING: run 900 counted at its bound 1700 AIC (usage missing: no_usage_artifact)')), lines.join('\n'));
-    assert.match(result.summary, /WARNING: run 900 counted at its bound 1700 AIC/);
+    // implement 500 + threat detection 400 + evals 500 + 3 × 400 margin.
+    assert.ok(lines.some((l) => l.startsWith('spend today: 2600 AIC') && l.includes('WARNING: run 900 counted at its bound 2600 AIC (usage missing: no_usage_artifact)')), lines.join('\n'));
+    assert.match(result.summary, /WARNING: run 900 counted at its bound 2600 AIC/);
     const snap = result.appended.find((e) => e.type === 'spend_snapshot');
     assert.ok(snap);
-    assert.deepEqual(snap.payload.runs, [{ run_id: 900, status: 'bounded', aic: 1700, reason: 'no_usage_artifact' }]);
+    assert.deepEqual(snap.payload.runs, [{ run_id: 900, status: 'bounded', aic: 2600, reason: 'no_usage_artifact' }]);
     assert.ok(!result.decisions.some((d) => d.type === 'wait' && d.reason === 'budget_unknown'));
     assert.ok(!result.appended.some((e) => e.type === 'alert'));
   });
@@ -743,13 +743,13 @@ describe('spend collector in the run', () => {
     const lines: string[] = [];
     const first = await run(deps(gh, { policies: noMargin, log: (l) => lines.push(l) }));
     assert.equal(first.live, false);
-    assert.ok(lines.includes('spend today: 900 AIC from 1 implement run(s)'));
+    assert.ok(lines.includes('spend today: 1400 AIC from 1 implement run(s)'));
     const snap = first.appended.find((e) => e.type === 'spend_snapshot')!;
     assert.equal(snap.payload.dry_run, false);
-    assert.deepEqual([snap.payload.day, snap.payload.aic_today, snap.payload.runs], ['2026-10-16', 900, [{ run_id: 901, status: 'reserved', aic: 900 }]]);
+    assert.deepEqual([snap.payload.day, snap.payload.aic_today, snap.payload.runs], ['2026-10-16', 1400, [{ run_id: 901, status: 'reserved', aic: 1400 }]]);
     assert.ok(first.appended.indexOf(snap) < first.appended.findIndex((e) => e.type === 'dispatched'), 'measured before the decisions are recorded');
-    assert.equal(first.snapshot.factory_aic_today, 900);
-    assert.match(first.summary, /Spend today: 900 AIC from 1 implement run\(s\)/);
+    assert.equal(first.snapshot.factory_aic_today, 1400);
+    assert.match(first.summary, /Spend today: 1400 AIC from 1 implement run\(s\)/);
     const second = await run(deps(gh, { policies: noMargin, now: new Date(NOW.getTime() + 5 * 60_000) }));
     assert.ok(!second.appended.some((e) => e.type === 'spend_snapshot'), 'unchanged spend is not recorded again');
   });
@@ -760,7 +760,7 @@ describe('spend collector in the run', () => {
     const runs = Array.from({ length: 12 }, (_, i) => ({ id: 910 + i, run_attempt: 1, status: 'queued', created_at: '2026-10-16T09:00:00Z' }));
     gh.routes.unshift({ method: 'GET', path: new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: runs } }) });
     const result = await run(deps(gh, { policies: noMargin }));
-    assert.equal(result.snapshot.factory_aic_today, 10800);
+    assert.equal(result.snapshot.factory_aic_today, 16800);
     assert.ok(result.decisions.some((d) => d.type === 'budget_pause'));
     assert.ok(!result.decisions.some((d) => d.type === 'dispatched'));
   });

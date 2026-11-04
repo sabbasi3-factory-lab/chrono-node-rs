@@ -1,12 +1,19 @@
 // The spend bound is real only if each compiled workflow enforces exactly the caps budgets.yaml
-// names (agent job: per_run.<workflow>; detection job: per_run.threat_detection) and no repository
-// variable can change them. Checked at run time against the pinned policy; any mismatch turns the
+// names (agent job: per_run.<workflow>; detection job: per_run.threat_detection; evals job, where
+// there is one: per_run.<workflow>, see EVALS_WORKFLOWS) and no repository variable can change them. Checked at run time against the pinned policy; any mismatch turns the
 // bound off (spend.ts: unreadable usage is unknown again) and raises factory:alert.
 
 import type { BudgetsPolicy } from './types.ts';
 
 export const CAPPED_WORKFLOWS = { implement: 'implement', repair: 'repair', review: 'reviewer_agent' } as const;
 export type CappedWorkflow = keyof typeof CAPPED_WORKFLOWS;
+
+// Workflows with gh-aw's `evals` job (a third job that calls the model). gh-aw v1.0.1 has no separate
+// evals cap: the job inherits the workflow's max-ai-credits, so it must enforce per_run.<workflow>,
+// and spend.ts reserves and bounds it on top of the agent and detection jobs. A lock of any other
+// workflow with an evals job (or an evals job without that cap, as in later gh-aw versions that run
+// evals outside the firewall) is a mismatch: the spend bound goes off until the controller counts it.
+export const EVALS_WORKFLOWS: readonly CappedWorkflow[] = ['implement'];
 
 // gh-aw v1 sets the cap in bash (`GH_AW_MAX_AI_CREDITS="N"`, env `GH_AW_MAX_AI_CREDITS: "N"`) and the
 // firewall config reads it (`\"maxAiCredits\":${GH_AW_MAX_AI_CREDITS}`); its opt-in admission can
@@ -66,6 +73,11 @@ function configLineOk(line: string): boolean {
   }
 }
 
+/** Whether the compiled lock has this top-level job. */
+function hasJob(lock: string, job: string): boolean {
+  return new RegExp(`^  ${job}:\\s*$`, 'm').test(lock);
+}
+
 /** The AI-credits caps inside one top-level job of a compiled lock file (either format). */
 function jobCaps(lock: string, job: string): number[] {
   const start = lock.search(new RegExp(`^  ${job}:\\s*$`, 'm'));
@@ -101,6 +113,13 @@ export function lockCapsMismatch(locks: Record<CappedWorkflow, string | null>, p
     if (agent.length === 0 || agent.some((c) => c !== want)) return `${wf}.lock.yml agent cap ${agent.join(',') || 'missing'} ≠ per_run.${String(key)} ${want}`;
     if (detection.length === 0 || detection.some((c) => c !== perRun.threat_detection)) {
       return `${wf}.lock.yml detection cap ${detection.join(',') || 'missing'} ≠ per_run.threat_detection ${perRun.threat_detection}`;
+    }
+    // A lock without the evals job (implement before #164) spends less than reserved: it still verifies.
+    if (EVALS_WORKFLOWS.includes(wf) && hasJob(lock, 'evals')) {
+      const evals = jobCaps(lock, 'evals');
+      if (evals.length === 0 || evals.some((c) => c !== want)) return `${wf}.lock.yml evals cap ${evals.join(',') || 'missing'} ≠ per_run.${String(key)} ${want}`;
+    } else if (!EVALS_WORKFLOWS.includes(wf) && hasJob(lock, 'evals')) {
+      return `${wf}.lock.yml has an evals job the controller doesn't reserve (caps.ts EVALS_WORKFLOWS)`;
     }
   }
   return null;

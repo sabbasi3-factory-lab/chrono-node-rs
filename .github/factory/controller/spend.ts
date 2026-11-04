@@ -3,13 +3,14 @@
 // records it as a `spend_snapshot`. Plain code, no AI, read-only API calls.
 //
 // Per run of the AI workflows (implement, repair, and the reviewer agent's review) created today (UTC):
-//   - queued / in progress  → reserved at the per-run caps (implement + threat detection),
-//                             unless every job has finished (see below)
+//   - queued / in progress  → reserved at the per-run caps of every job that calls the model
+//                             (agent + threat detection, + evals for implement: caps.ts
+//                             EVALS_WORKFLOWS), unless every job has finished (see below)
 //   - completed             → measured from gh-aw's `usage` artifact, for every job whose
 //                             `Execute …` step ran (made model calls):
 //       agent:       `agent_usage.json` → `ai_credits`
 //       any other:   sum of `ai_credits_this_response` in `<job>/token_usage.jsonl`
-//                    (detection today; evals or others if gh-aw adds them)
+//                    (detection, and evals in implement)
 //     A job whose `Execute …` step was skipped (for example, the dispatch validation failed)
 //     made no model calls: 0, provably. A run where none ran needs no artifact.
 // A run GitHub still reports as queued/in progress, but whose jobs have all completed including
@@ -18,7 +19,8 @@
 // jobs can't be listed, it stays reserved.
 // The spend BOUND (only with `bounding`: budgets.yaml per_run.overshoot_margin and its assumptions,
 // and compiled workflow caps that match the policy; null → the strict rules below):
-//   bound = max-ai-credits + threat_detection + 2 × overshoot_margin   (agent job + detection job)
+//   bound = the run's reservation + one overshoot_margin per AI job
+//   implement: 500 (agent) + 400 (detection) + 500 (evals) + 3 × margin; repair, review: cap + detection + 2 × margin
 // max-ai-credits is "stop after the response that crosses the cap", not a strict hard stop: the
 // firewall checks the total recorded BEFORE each request (github/gh-aw-firewall v0.28.57,
 // containers/api-proxy/guards/ai-credits-guard.js L497-516, `roundedTotalAiCredits >= config.max`),
@@ -45,12 +47,14 @@
 // started today (a re-run keeps its original created_at).
 
 import { crc32, inflateRawSync } from 'node:zlib';
+import { CAPPED_WORKFLOWS, EVALS_WORKFLOWS, type CappedWorkflow } from './caps.ts';
 import { paginate } from './github.ts';
 import type { GitHubClient, JsonObject } from './types.ts';
 
 export const IMPLEMENT_WORKFLOW_FILE = 'implement.lock.yml';
 export const REPAIR_WORKFLOW_FILE = 'repair.lock.yml';
 export const REVIEW_WORKFLOW_FILE = 'review.lock.yml';
+const WORKFLOW_FILES: Record<CappedWorkflow, string> = { implement: IMPLEMENT_WORKFLOW_FILE, repair: REPAIR_WORKFLOW_FILE, review: REVIEW_WORKFLOW_FILE };
 export const USAGE_ARTIFACT = 'usage';
 /** The implement workflow's last job: it needs every other job. */
 export const FINAL_JOB = 'conclusion';
@@ -371,15 +375,17 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   const horizon = new Date(Date.parse(`${day}T00:00:00Z`) - RERUN_HORIZON_DAYS * 86_400_000).toISOString().slice(0, 10);
   const runs: RunSpend[] = [];
   const unknown = (reason: string, alert: BoundAlert | null = null): SpendResult => ({ aic: null, runs, reason, tasks: null, alert });
-  // Every AI workflow with its in-flight reservation (its two caps). A workflow whose runs can't be
-  // listed (including a missing workflow file) makes spend unknown.
-  const workflows = [
-    { file: IMPLEMENT_WORKFLOW_FILE, reserve: caps.implement + caps.threat_detection },
-    { file: REPAIR_WORKFLOW_FILE, reserve: caps.repair + caps.threat_detection },
-    { file: REVIEW_WORKFLOW_FILE, reserve: caps.reviewer_agent + caps.threat_detection },
-  ];
+  // Every AI workflow with its in-flight reservation (the caps of its AI jobs) and how many AI jobs
+  // can each overshoot. A workflow whose runs can't be listed (including a missing workflow file)
+  // makes spend unknown.
+  const workflows = (Object.keys(WORKFLOW_FILES) as CappedWorkflow[]).map((wf) => {
+    const cap = caps[CAPPED_WORKFLOWS[wf]];
+    const evals = EVALS_WORKFLOWS.includes(wf);
+    return { file: WORKFLOW_FILES[wf], reserve: cap + caps.threat_detection + (evals ? cap : 0), jobs: evals ? 3 : 2 };
+  });
   const list: Rec[] = [];
   const reserveOf = new Map<Rec, number>();
+  const jobsOf = new Map<Rec, number>();
   const fileOf = new Map<Rec, string>();
   for (const w of workflows) {
     try {
@@ -391,6 +397,7 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
       ).map(rec);
       for (const r of found) {
         reserveOf.set(r, w.reserve);
+        jobsOf.set(r, w.jobs);
         fileOf.set(r, w.file);
       }
       list.push(...found);
@@ -412,7 +419,7 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
     const isYesterday = created.startsWith(yesterday) || (rerun && started.startsWith(yesterday));
     if (!isToday && !isYesterday) continue;
     const reserve = reserveOf.get(run)!;
-    const bound = bounding ? reserve + 2 * bounding.margin : reserve;
+    const bound = bounding ? reserve + jobsOf.get(run)! * bounding.margin : reserve;
     // The bound holds only for a run whose own commit's workflow enforces the policy's caps.
     const headSha = typeof run.head_sha === 'string' ? run.head_sha : '';
     const verified = async (): Promise<boolean> => {
@@ -546,7 +553,7 @@ const listArtifacts = async (client: GitHubClient, repo: string, id: number): Pr
 
 /**
  * One run's spend (reserved, measured, no inference, bounded), or the reason it can't be read.
- * `reserve`: the run's bound when `bounding` is in force, else its two caps. Anything that relies
+ * `reserve`: the run's bound when `bounding` is in force, else its AI jobs' caps. Anything that relies
  * on the bound (a re-run, missing usage, an in-flight reservation under a bound) needs
  * `verified()`: the run's own commit's workflow enforces the policy's caps.
  */

@@ -148,8 +148,8 @@ describe('spend collector: today\'s implement spend', () => {
       NOW,
       CAPS,
     );
-    assert.equal(res.aic, 937, 'today: 30 + 900 + 7');
-    assert.deepEqual(res.tasks, { by_task: { 'en/a': 35, 'en/b': 900 }, unattributed: 7, unknown_tasks: [] });
+    assert.equal(res.aic, 1437, 'today: 30 + 1400 + 7');
+    assert.deepEqual(res.tasks, { by_task: { 'en/a': 35, 'en/b': 1400 }, unattributed: 7, unknown_tasks: [] });
   });
 
   it('an unreadable run from yesterday makes only the per-task spend unknown (today\'s total stands)', async () => {
@@ -165,13 +165,13 @@ describe('spend collector: today\'s implement spend', () => {
 
   it('repair runs count too: in flight → reserved at repair + threat detection (700); unlistable → unknown', async () => {
     const res = await readSpendToday(world([{ id: 1, status: 'in_progress' }], 200, [{ id: 40 }]), REPO, NOW, CAPS);
-    assert.deepEqual(today(res), { aic: 1600, runs: [{ run_id: 1, status: 'reserved', aic: 900 }, { run_id: 40, status: 'reserved', aic: 700 }] });
+    assert.deepEqual(today(res), { aic: 2100, runs: [{ run_id: 1, status: 'reserved', aic: 1400 }, { run_id: 40, status: 'reserved', aic: 700 }] });
     for (const status of [404, 500]) assert.equal((await readSpendToday(world([], 200, [], status), REPO, NOW, CAPS)).aic, null, String(status));
   });
 
-  it('a queued or in-progress run is reserved at the per-run caps (implement + threat detection)', async () => {
+  it('a queued or in-progress run is reserved at the per-run caps (implement + threat detection + evals at implement\'s cap)', async () => {
     const res = await readSpendToday(world([{ id: 1, status: 'in_progress' }, { id: 2, status: 'queued' }]), REPO, NOW, CAPS);
-    assert.deepEqual(today(res), { aic: 1800, runs: [{ run_id: 1, status: 'reserved', aic: 900 }, { run_id: 2, status: 'reserved', aic: 900 }] });
+    assert.deepEqual(today(res), { aic: 2800, runs: [{ run_id: 1, status: 'reserved', aic: 1400 }, { run_id: 2, status: 'reserved', aic: 1400 }] });
   });
 
   it('a run still reported in progress whose jobs all completed, including conclusion, is measured (stale run status)', async () => {
@@ -188,7 +188,7 @@ describe('spend collector: today\'s implement spend', () => {
       { id: 14, status: 'in_progress', jobStatus: 'completed', conclusion: 'completed', agent: null, detection: null, jobsStatus: 404 },
     ];
     for (const c of cases) {
-      assert.deepEqual(today(await readSpendToday(world([c]), REPO, NOW, CAPS)), { aic: 900, runs: [{ run_id: c.id, status: 'reserved', aic: 900 }] }, String(c.id));
+      assert.deepEqual(today(await readSpendToday(world([c]), REPO, NOW, CAPS)), { aic: 1400, runs: [{ run_id: c.id, status: 'reserved', aic: 1400 }] }, String(c.id));
     }
   });
 
@@ -220,15 +220,16 @@ describe('spend collector: today\'s implement spend', () => {
       NOW,
       CAPS,
     );
-    assert.equal(res.aic, 940);
+    assert.equal(res.aic, 1440);
     assert.deepEqual(res.runs.map((x) => x.run_id), [6, 7]);
   });
 
   describe('the spend bound (budgets.yaml overshoot margin; revises #78 for completed runs only)', () => {
     // budgets.yaml (approved): margin 400 per AI job = max response 100 × max concurrency 4.
     const B = { margin: 400, max_response_aic: 100, max_concurrency: 4 };
-    // implement: 500 + 400 (detection) + 2 × 400 (agent and detection overshoot) = 1700.
-    const IMPL_BOUND = 1700;
+    // implement: 500 + 400 (detection) + 500 (evals, inherits max-ai-credits) + 3 × 400 (agent, detection
+    // and evals overshoot) = 2600.
+    const IMPL_BOUND = 2600;
     const verified: LockVerifier = async () => true;
     const read = (runs: FakeRun[], bounding: typeof B | null = B, repair: { id: number; status?: string; attempt?: number }[] = [], verifyLock: LockVerifier | null = verified, dispatches: DispatchRecord[] = []) =>
       readSpendToday(world(runs, 200, repair), REPO, NOW, CAPS, { bounding, verifyLock, dispatches });
@@ -247,7 +248,7 @@ describe('spend collector: today\'s implement spend', () => {
       ['a usage artifact without agent_usage.json (drill D1: the token step failed)', { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(null, [3]) } }, 'usage_file_missing'],
     ];
     for (const [what, run, reason] of missing) {
-      it(`completed, ${what} → counts at its bound (cap + detection + 2 × margin), named in the audit event`, async () => {
+      it(`completed, ${what} → counts at its bound (agent + detection + evals caps + 3 × margin), named in the audit event`, async () => {
         const res = await read([{ ...run, title: 'Implement en/a #3 attempt 1' }]);
         assert.deepEqual(today(res), { aic: IMPL_BOUND, runs: [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason }] });
         assert.equal(res.tasks?.by_task['en/a'], IMPL_BOUND);
@@ -304,7 +305,7 @@ describe('spend collector: today\'s implement spend', () => {
       const breaches: [string, FakeRun, Partial<Record<string, number>>][] = [
         ['5 requests in flight at once', withRecords(5, [[0, 10, 1], [1, 10, 1], [2, 10, 1], [3, 10, 1], [4, 10, 1]], 5), { max_concurrency: 5 }],
         ['a single response above 100 AIC', withRecords(5, [[0, 10, 100.5]], 100.5), { max_response_aic: 100.5 }],
-        ['a total above its bound', withRecords(5, [[0, 10, 1]], 1700.5), { aic: 1700.5 }],
+        ['a total above its bound', withRecords(5, [[0, 10, 1]], 2600.5), { aic: 2600.5 }],
       ];
       for (const [what, run, seen] of breaches) {
         it(`${what} → bound off (the bounded run makes spend unknown) and an alert`, async () => {
@@ -395,7 +396,7 @@ describe('spend collector: today\'s implement spend', () => {
       });
       it('in flight under a bound: reserved at the bound only for a verified commit, else unknown', async () => {
         assert.equal((await read([{ id: 1, status: 'in_progress' }], B, [], async () => false)).aic, null);
-        assert.equal((await read([{ id: 1, status: 'in_progress' }], null, [], async () => false)).aic, 900, 'no bound: the caps, as before');
+        assert.equal((await read([{ id: 1, status: 'in_progress' }], null, [], async () => false)).aic, 1400, 'no bound: the caps, as before');
       });
       it('an EMPTY agent record file next to valid detection records → unverifiable (alert), not detection-only stats', async () => {
         const run: FakeRun = { id: 5, detection: 'success', artifacts: [{ id: 50, name: 'usage' }], zips: { 50: zip({ 'agent_usage.json': '{"ai_credits":3}', 'agent/token_usage.jsonl': '\n', 'detection/token_usage.jsonl': timed([[0, 1, 1]]) }) } };

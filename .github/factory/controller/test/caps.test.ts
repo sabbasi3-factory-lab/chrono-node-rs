@@ -15,7 +15,7 @@ const read = async (): Promise<Record<CappedWorkflow, string>> => {
 };
 
 describe('the spend bound is real: compiled caps equal the policy', () => {
-  it('the committed locks enforce exactly budgets.yaml per_run (agent job and detection job, no variables)', async () => {
+  it('the committed locks enforce exactly budgets.yaml per_run (agent, detection and evals jobs, no variables)', async () => {
     assert.equal(lockCapsMismatch(await read(), (await testPolicies()).budgets.per_run), null);
   });
 
@@ -62,10 +62,31 @@ describe('the spend bound is real: compiled caps equal the policy', () => {
 
   it('reads the pre-v1 format too (runs compiled by gh-aw v0.92 inline "maxAiCredits":N)', async () => {
     const per = (await testPolicies()).budgets.per_run;
-    const legacy = (agent: number) => `  agent:\n    run: '{"maxAiCredits":${agent}}'\n  detection:\n    run: '{"maxAiCredits":400}'\n`;
-    const l = { implement: legacy(500), repair: legacy(300), review: legacy(200) };
+    const legacy = (agent: number, evals?: number) =>
+      `  agent:\n    run: '{"maxAiCredits":${agent}}'\n  detection:\n    run: '{"maxAiCredits":400}'\n${evals === undefined ? '' : `  evals:\n    run: '{"maxAiCredits":${evals}}'\n`}`;
+    const l = { implement: legacy(500, 500), repair: legacy(300), review: legacy(200) };
     assert.equal(lockCapsMismatch(l, per), null);
-    assert.match(String(lockCapsMismatch({ ...l, implement: legacy(600) }, per)), /implement\.lock\.yml agent cap 600/);
+    assert.match(String(lockCapsMismatch({ ...l, implement: legacy(600, 500) }, per)), /implement\.lock\.yml agent cap 600/);
+    assert.match(String(lockCapsMismatch({ ...l, implement: legacy(500, 600) }, per)), /implement\.lock\.yml evals cap 600/);
+  });
+
+  // gh-aw v1.0.1's evals job inherits max-ai-credits; spend.ts reserves and bounds it (EVALS_WORKFLOWS).
+  it('the evals job: implement (if present) must cap it at per_run.implement; any other workflow must not have one', async () => {
+    const per = (await testPolicies()).budgets.per_run;
+    const locks = await read();
+    const evalsStart = locks.implement.search(/^ {2}evals:\s*$/m);
+    assert.ok(evalsStart > 0, 'implement.lock.yml has an evals job');
+    const next = evalsStart + 1 + locks.implement.slice(evalsStart + 1).search(/^ {2}[a-z_][a-z0-9_-]*:\s*$/m);
+    const evalsJob = locks.implement.slice(evalsStart, next);
+    const withEvals = (cap: string) => locks.implement.slice(0, evalsStart) + evalsJob.replaceAll('GH_AW_MAX_AI_CREDITS="500"', `GH_AW_MAX_AI_CREDITS="${cap}"`) + locks.implement.slice(next);
+    const cases: [string, Record<CappedWorkflow, string | null>, RegExp][] = [
+      ['evals cap 900 in implement', { ...locks, implement: withEvals('900') }, /implement\.lock\.yml evals cap 900(,900)* ≠ per_run\.implement 500/],
+      ['evals job without the firewall cap (later gh-aw)', { ...locks, implement: locks.implement.slice(0, evalsStart) + '  evals:\n    runs-on: ubuntu-latest\n' + locks.implement.slice(next) }, /implement\.lock\.yml evals cap missing/],
+      ['an evals job in repair', { ...locks, repair: `${locks.repair}\n  evals:\n    runs-on: ubuntu-latest\n` }, /repair\.lock\.yml has an evals job the controller doesn't reserve/],
+    ];
+    for (const [what, l, re] of cases) assert.match(String(lockCapsMismatch(l, per)), re, what);
+    // Implement locks from before the evals job (runs re-run or bounded later) still verify: they spend less.
+    assert.equal(lockCapsMismatch({ ...locks, implement: locks.implement.slice(0, evalsStart) + locks.implement.slice(next) }, per), null);
   });
 });
 
