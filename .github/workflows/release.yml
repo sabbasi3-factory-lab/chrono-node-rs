@@ -1,9 +1,11 @@
 # Release (DESIGN §10). Plain code, no AI. Started by hand; nothing ships without the owner.
 #
 #   prepare (no secrets, read-only): next 0.x version, `cargo package`, `cargo publish --dry-run`,
-#                                    semver check against the last release, release notes preview
+#                                    semver check against the last release, release notes preview,
+#                                    SBOM from GitHub's dependency graph
 #   draft   (environment `release`: the owner approves): a DRAFT GitHub Release at the prepared
-#                                    commit, with notes generated from merged PRs and the .crate
+#                                    commit, with notes generated from merged PRs, the .crate and
+#                                    its SBOM; build provenance and the SBOM are attested to the .crate
 #   publish (crates.io): DISABLED. Publishing is the owner's decision (DESIGN §10), and the repo has
 #                                    no crates.io token. See .github/factory/release.md.
 #
@@ -42,9 +44,11 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       sha: ${{ steps.version.outputs.sha }}
     steps:
+      # The dispatch's own commit (github.sha), not a moving `main`: build provenance names exactly
+      # the commit the crate was built from.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -102,10 +106,32 @@ jobs:
             git log --first-parent --format='- %s' ${PREV:+"${PREV}..${SHA}"} ${PREV:-"$SHA"} | head -300
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # SBOM from GitHub's own dependency graph (SPDX 2.3; built in, no third-party generator). It
+      # covers the repository's manifests on main: the crate's Cargo.lock, and the harness's and the
+      # vendored upstream's npm dev tooling (CI only, never shipped).
+      # The graph is main's latest: it must match this commit's Cargo.lock exactly (every locked crate,
+      # name@version, and no other cargo package), or no SBOM is attested.
+      - name: SBOM (GitHub dependency graph, SPDX)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.version.outputs.sha }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/dependency-graph/sbom" --jq .sbom > target/package/sbom.spdx.json
+          jq -e '.spdxVersion and (.packages | length > 0)' target/package/sbom.spdx.json > /dev/null
+          jq -r '[.packages[].externalRefs[]?.referenceLocator | select(startswith("pkg:cargo/")) | sub("^pkg:cargo/"; "")] | unique | .[]' target/package/sbom.spdx.json > "$RUNNER_TEMP/sbom-cargo.txt"
+          git show "${SHA}:Cargo.lock" | awk '/^\[\[package\]\]/{n="";v=""} /^name = /{gsub(/"/,"",$3);n=$3} /^version = /{gsub(/"/,"",$3);v=$3; if (n != "" && n != "chrono-node-rs") print n"@"v}' | sort -u > "$RUNNER_TEMP/lock-cargo.txt"
+          if ! diff -u "$RUNNER_TEMP/lock-cargo.txt" "$RUNNER_TEMP/sbom-cargo.txt"; then
+            echo "::error::the dependency graph's cargo packages differ from Cargo.lock at ${SHA} (graph not indexed yet, or main moved): re-run later"; exit 1
+          fi
+          echo "SBOM: $(jq '.packages | length' target/package/sbom.spdx.json) packages; cargo packages match Cargo.lock at ${SHA}" >> "$GITHUB_STEP_SUMMARY"
+
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: crate
-          path: target/package/*.crate
+          path: |
+            target/package/*.crate
+            target/package/sbom.spdx.json
           retention-days: 30
 
   # The owner's approval is the `release` environment's required reviewer. It creates a draft only:
@@ -118,11 +144,31 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write       # artifact attestations (Sigstore), after the owner's approval only
+      attestations: write
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: crate
           path: crate
+
+      # Build provenance (SLSA, GitHub artifact attestations) for the .crate, and the SBOM attested
+      # to it. Verify with: gh attestation verify <file>.crate --repo sabbasi3-factory-lab/chrono-node-rs
+      - name: The prepared commit is the run's commit
+        env:
+          SHA: ${{ needs.prepare.outputs.sha }}
+        run: '[ "$SHA" = "$GITHUB_SHA" ] || { echo "::error::prepared ${SHA}, run is for ${GITHUB_SHA}: provenance would name another commit"; exit 1; }'
+
+      - name: Attest build provenance (.crate)
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: crate/*.crate
+
+      - name: Attest the SBOM (.crate)
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: crate/*.crate
+          sbom-path: crate/sbom.spdx.json
 
       - name: Draft GitHub Release (notes from merged PRs, .github/release.yml)
         env:
@@ -133,7 +179,7 @@ jobs:
           [[ "$VERSION" =~ ^0\.[0-9]+\.[0-9]+$ && "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad version or sha"; exit 1; }
           ! gh release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || { echo "::error::release v${VERSION} already exists (maybe as a draft)"; exit 1; }
           prev=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --limit 1 --json tagName -q '.[0].tagName // empty')
-          gh release create "v${VERSION}" crate/*.crate --repo "$GITHUB_REPOSITORY" --draft --target "$SHA" \
+          gh release create "v${VERSION}" crate/*.crate crate/sbom.spdx.json --repo "$GITHUB_REPOSITORY" --draft --target "$SHA" \
             --title "v${VERSION}" --generate-notes ${prev:+--notes-start-tag "$prev"}
 
   # Disabled on purpose: publishing to crates.io is the owner's decision and needs a crates.io token

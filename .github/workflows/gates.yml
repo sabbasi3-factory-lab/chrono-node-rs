@@ -115,6 +115,19 @@ jobs:
           fi
           exit $fail
 
+      # GitHub's dependency graph diff for this PR (data only: no candidate code runs). New
+      # dependencies with a known advisory of moderate severity or worse fail the gate; licences stay
+      # with cargo deny below (trusted deny.toml). Dependabot opens no PRs here: Cargo.toml and
+      # Cargo.lock change only through the dependency steward.
+      - name: Dependency review (GitHub dependency graph)
+        if: github.event_name == 'pull_request_target'
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+          fail-on-scopes: runtime, development
+          license-check: false
+          comment-summary-in-pr: never
+
       - name: Stage the candidate's manifests for cargo deny (data only)
         # Only Cargo.toml and Cargo.lock are copied, with empty stub sources, so no candidate
         # build script, toolchain file or .cargo/config can take effect.
