@@ -136,7 +136,7 @@ describe('planner: admit', () => {
 
   it('orders by dependency depth, then priority, then issue number', () => {
     const s = snapshot({
-      issues: [issue(5, 'en/c'), issue(4, 'en/b'), issue(3, 'en/a'), issue(6, 'en/d')],
+      issues: [issue(5, 'en/c'), issue(4, 'en/b'), issue(3, 'en/a'), issue(6, 'en/d'), issue(7, 'en/e'), issue(8, 'en/f')],
       pulls: [mergedPull(100, 'core/results'), mergedPull(101, 'en/base')],
       contractList: [
         contract('core/results', { scope: ['src/core/results.rs'] }),
@@ -145,10 +145,13 @@ describe('planner: admit', () => {
         contract('en/b', { priority: 9 }), // depth 0
         contract('en/c', { priority: 2 }), // depth 0
         contract('en/d', { priority: 2 }), // depth 0, higher issue number than c
+        contract('en/e', { priority: 3 }), // depth 0
+        contract('en/f', { priority: 4 }), // depth 0
       ],
     });
     const order = run(s).map((d) => `${d.type}:${d.task}`);
-    assert.deepEqual(order, ['dispatched:en/c', 'dispatched:en/d', 'dispatched:en/b', 'wait:en/a']);
+    // WIP 5: the five depth-0 tasks fill it; the depth-2 task waits.
+    assert.deepEqual(order, ['dispatched:en/c', 'dispatched:en/d', 'dispatched:en/e', 'dispatched:en/f', 'dispatched:en/b', 'wait:en/a']);
     assert.equal(find(run(s), 'wip_full').task, 'en/a');
   });
 });
@@ -176,13 +179,13 @@ describe('planner: kill switch (fail closed)', () => {
 
 describe('planner: budgets', () => {
   it('alerts at 80% and still dispatches (budget_alert)', () => {
-    const ds = run(readyWorld({ factory_aic_today: 8000 }));
+    const ds = run(readyWorld({ factory_aic_today: 16000 }));
     assert.equal(find(ds, 'budget_alert').type, 'budget_alert');
     assert.ok(ds.some((d) => d.type === 'dispatched'));
   });
 
   it('pauses dispatch at 100% (budget_pause)', () => {
-    const ds = run(readyWorld({ factory_aic_today: 10000 }));
+    const ds = run(readyWorld({ factory_aic_today: 20000 }));
     const pause = ds.find((d) => d.type === 'budget_pause');
     assert.ok(pause);
     assert.equal(pause.effect, 'pause_dispatch');
@@ -197,7 +200,7 @@ describe('planner: budgets', () => {
   });
 
   it('keys budget events by UTC day', () => {
-    const d = find(run(readyWorld({ factory_aic_today: 9000 })), 'budget_alert');
+    const d = find(run(readyWorld({ factory_aic_today: 18000 })), 'budget_alert');
     assert.deepEqual(d.source_ids, ['day:2026-10-16']);
   });
 });
@@ -221,7 +224,7 @@ describe('planner: schedule', () => {
   });
 
   it('respects the WIP limit (wip_full)', () => {
-    const inflight = ['en/x', 'en/y', 'en/z'];
+    const inflight = ['en/v', 'en/w', 'en/x', 'en/y', 'en/z']; // WIP 5
     const s = readyWorld({
       issues: [issue(1, 'en/weekday-parser'), ...inflight.map((t, i) => issue(10 + i, t, ['factory:picked']))],
       contractList: [
@@ -975,12 +978,16 @@ describe('auto-ready: unblocked autonomous tasks become ready, within the dispat
       contract('en/c', { priority: 3, area: 'c' }),
       contract('en/d', { area: 'd' }),
       contract('en/run', { area: 'r' }),
+      contract('en/run2', { area: 'r2' }),
+      contract('en/run3', { area: 'r3' }),
     ];
-    // One task in flight: 2 free slots (WIP 3). b (priority 1) then a (priority 2).
-    let s = snapshot({ issues: [t(1, 'en/a'), t(2, 'en/b'), t(3, 'en/c'), t(4, 'en/run', ['factory:task', 'factory:picked'])], contractList: contracts, history: pickedRecently(['en/run']) });
+    const running = [t(4, 'en/run', ['factory:task', 'factory:picked']), t(6, 'en/run2', ['factory:task', 'factory:picked']), t(7, 'en/run3', ['factory:task', 'factory:picked'])];
+    const inFlight = pickedRecently(['en/run', 'en/run2', 'en/run3']);
+    // Three tasks in flight: 2 free slots (WIP 5). b (priority 1) then a (priority 2).
+    let s = snapshot({ issues: [t(1, 'en/a'), t(2, 'en/b'), t(3, 'en/c'), ...running], contractList: contracts, history: inFlight });
     assert.deepEqual(kinds(plan3(s)), ['auto_ready/deps_merged#2', 'auto_ready/deps_merged#1']);
     // A ready issue still waiting (here: no budget known) holds a slot too: only one more.
-    s = snapshot({ issues: [t(1, 'en/a'), t(2, 'en/b'), t(4, 'en/run', ['factory:task', 'factory:picked']), t(5, 'en/d', ['factory:task', 'factory:ready'])], contractList: contracts, history: pickedRecently(['en/run']), factory_aic_today: null });
+    s = snapshot({ issues: [t(1, 'en/a'), t(2, 'en/b'), ...running, t(5, 'en/d', ['factory:task', 'factory:ready'])], contractList: contracts, history: inFlight, factory_aic_today: null });
     assert.deepEqual(kinds(plan3(s)).filter((k) => k.startsWith('auto_ready')), ['auto_ready/deps_merged#2']);
   });
 

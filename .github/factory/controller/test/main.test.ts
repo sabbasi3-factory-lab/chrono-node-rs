@@ -757,10 +757,10 @@ describe('spend collector in the run', () => {
   it('reserved spend counts against the daily budget (pause when reservations reach it)', async () => {
     const gh = fakeWorld();
     const r = `/repos/${REPO}`;
-    const runs = Array.from({ length: 12 }, (_, i) => ({ id: 910 + i, run_attempt: 1, status: 'queued', created_at: '2026-10-16T09:00:00Z' }));
+    const runs = Array.from({ length: 15 }, (_, i) => ({ id: 910 + i, run_attempt: 1, status: 'queued', created_at: '2026-10-16T09:00:00Z' }));
     gh.routes.unshift({ method: 'GET', path: new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: runs } }) });
     const result = await run(deps(gh, { policies: noMargin }));
-    assert.equal(result.snapshot.factory_aic_today, 16800);
+    assert.equal(result.snapshot.factory_aic_today, 21000);
     assert.ok(result.decisions.some((d) => d.type === 'budget_pause'));
     assert.ok(!result.decisions.some((d) => d.type === 'dispatched'));
   });
