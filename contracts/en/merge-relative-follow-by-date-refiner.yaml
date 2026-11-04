@@ -4,7 +4,7 @@ id: en/merge-relative-follow-by-date-refiner
 title: Port ENMergeRelativeFollowByDateRefiner
 tier: auto
 area: en-refiners
-priority: 35
+priority: 51
 source: upstream/src/locales/en/refiners/ENMergeRelativeFollowByDateRefiner.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ENMergeRelativeFollowByDateRefiner

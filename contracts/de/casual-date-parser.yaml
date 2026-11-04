@@ -4,7 +4,7 @@ id: de/casual-date-parser
 title: Port DECasualDateParser
 tier: auto
 area: de-casual
-priority: 27
+priority: 35
 source: upstream/src/locales/de/parsers/DECasualDateParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: DECasualDateParser

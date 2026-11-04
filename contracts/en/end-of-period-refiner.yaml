@@ -4,7 +4,7 @@ id: en/end-of-period-refiner
 title: Port ENEndOfPeriodRefiner
 tier: auto
 area: en-refiners
-priority: 29
+priority: 38
 source: upstream/src/locales/en/refiners/ENEndOfPeriodRefiner.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ENEndOfPeriodRefiner

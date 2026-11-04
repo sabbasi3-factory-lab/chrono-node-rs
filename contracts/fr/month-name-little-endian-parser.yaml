@@ -4,7 +4,7 @@ id: fr/month-name-little-endian-parser
 title: Port FRMonthNameLittleEndianParser
 tier: auto
 area: fr-dates
-priority: 18
+priority: 20
 source: upstream/src/locales/fr/parsers/FRMonthNameLittleEndianParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: FRMonthNameLittleEndianParser

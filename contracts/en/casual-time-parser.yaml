@@ -4,7 +4,7 @@ id: en/casual-time-parser
 title: Port ENCasualTimeParser
 tier: auto
 area: en-casual
-priority: 23
+priority: 28
 source: upstream/src/locales/en/parsers/ENCasualTimeParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: ENCasualTimeParser

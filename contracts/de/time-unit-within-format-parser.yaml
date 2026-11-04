@@ -4,7 +4,7 @@ id: de/time-unit-within-format-parser
 title: Port DETimeUnitWithinFormatParser
 tier: auto
 area: de-relative
-priority: 32
+priority: 44
 source: upstream/src/locales/de/parsers/DETimeUnitWithinFormatParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: DETimeUnitWithinFormatParser

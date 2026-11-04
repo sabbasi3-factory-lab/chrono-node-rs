@@ -4,7 +4,7 @@ id: fr/weekday-parser
 title: Port FRWeekdayParser
 tier: auto
 area: fr-dates
-priority: 19
+priority: 22
 source: upstream/src/locales/fr/parsers/FRWeekdayParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: FRWeekdayParser

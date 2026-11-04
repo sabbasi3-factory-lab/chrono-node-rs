@@ -4,7 +4,7 @@ id: fr/time-unit-relative-format-parser
 title: Port FRTimeUnitRelativeFormatParser
 tier: auto
 area: fr-relative
-priority: 38
+priority: 55
 source: upstream/src/locales/fr/parsers/FRTimeUnitRelativeFormatParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: FRTimeUnitRelativeFormatParser

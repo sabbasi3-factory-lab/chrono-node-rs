@@ -24,7 +24,7 @@ npm test                         # unit tests
 | `priority`, `golden_cases` | golden impact: more golden cases need the step → higher priority |
 
 `taskmap.yaml` is validated before anything is written:
-- every step of every named configuration (English, German, French) is either `done` or a task
+- every step of every named configuration (English, German, French, Swedish, Portuguese, Spanish, Japanese) is either `done` or a task
 - no duplicate ids, steps or files
 - each upstream file exists and declares the class (the step, or the task's `class` where upstream reuses a class name: both `…TimeUnitRelativeFormatParser.ts` files declare `…TimeUnitAgoFormatParser`)
 - each Rust file is a single file in a `parsers/` or `refiners/` directory, so it auto-registers and no shared line is edited

@@ -4,7 +4,7 @@ id: fr/casual-date-parser
 title: Port FRCasualDateParser
 tier: auto
 area: fr-casual
-priority: 39
+priority: 56
 source: upstream/src/locales/fr/parsers/FRCasualDateParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: FRCasualDateParser

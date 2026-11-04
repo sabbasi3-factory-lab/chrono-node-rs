@@ -4,7 +4,7 @@ id: fr/casual-time-parser
 title: Port FRCasualTimeParser
 tier: auto
 area: fr-casual
-priority: 40
+priority: 57
 source: upstream/src/locales/fr/parsers/FRCasualTimeParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: FRCasualTimeParser

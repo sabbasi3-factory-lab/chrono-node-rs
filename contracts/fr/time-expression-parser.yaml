@@ -4,7 +4,7 @@ id: fr/time-expression-parser
 title: Port FRTimeExpressionParser
 tier: auto
 area: fr-time
-priority: 6
+priority: 7
 source: upstream/src/locales/fr/parsers/FRTimeExpressionParser.ts
 source_sha: d4fe7e39015c818b271d74789fb96f74777421d0
 upstream_class: FRTimeExpressionParser

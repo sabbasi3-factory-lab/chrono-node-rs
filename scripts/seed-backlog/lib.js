@@ -95,7 +95,7 @@ function validate({ taskmap, upstreamFiles, configurations }) {
             problems.push(`${t.id}: source and rust path disagree on parser/refiner`);
         }
     }
-    // Every step of every named configuration (English, German, French) must be done or a task.
+    // Every step of every named configuration (English, German, French, Swedish, Portuguese, Spanish, Japanese) must be done or a task.
     for (const [name, cfg] of Object.entries(configurations)) {
         for (const s of [...cfg.parsers, ...cfg.refiners]) {
             if (!seen.step.has(s.name)) problems.push(`${name} step ${s.name} is neither done nor a task`);
