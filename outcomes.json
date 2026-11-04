@@ -1,7 +1,55 @@
 {
-  "generated_at": "2026-11-04T17:08:45Z",
+  "generated_at": "2026-11-04T17:12:27Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 41872962037,
+      "workflow": "implement",
+      "title": "Implement ja/standard-parser #229 attempt 1",
+      "created_at": "2026-11-04T16:58:59Z",
+      "aic": 21.83155,
+      "task": "ja/standard-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/229#issuecomment-6636850443",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/246",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41872947325,
+      "workflow": "implement",
+      "title": "Implement es/time-unit-within-format-parser #222 attempt 1",
+      "created_at": "2026-11-04T16:58:54Z",
+      "aic": 21.10577,
+      "task": "es/time-unit-within-format-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/222#issuecomment-6636850750",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/247",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
     {
       "run_id": 41872936041,
       "workflow": "implement",
@@ -19,6 +67,30 @@
         {
           "type": "create_pull_request",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/244",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "drill": false
+    },
+    {
+      "run_id": 41872923126,
+      "workflow": "implement",
+      "title": "Implement es/time-expression-parser #221 attempt 1",
+      "created_at": "2026-11-04T16:58:44Z",
+      "aic": 19.55094,
+      "task": "es/time-expression-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/221#issuecomment-6636924168",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/248",
           "outcome_status": "pending",
           "zero_touch": null
         }
@@ -1920,7 +1992,7 @@
   ],
   "summary": {
     "accepted": 69,
-    "pending": 54,
+    "pending": 60,
     "rejected": 11,
     "unknown": 14
   }
