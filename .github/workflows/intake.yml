@@ -1,0 +1,282 @@
+# Bug intake (DESIGN §6 "new work while running"). Plain code, no AI: a bug report is a request
+# that can be re-run through both implementations, so triage is deterministic.
+#
+# A `factory:bug` issue from the monitor (controller App) or from a person with write access is
+# re-run through main's Rust port and the pinned chrono-node (compare.js --requests):
+# - they disagree  → a human-tier PR (controller App) adding the fix case
+#                    (harness/golden/fixes/ → tests/golden/fixes/) and its fix contract
+#                    (contracts/<lang>/fix-<hash>.yaml), linked from the issue;
+# - they agree     → "not a port bug" (chrono-node does the same), closed;
+# - not comparable → "not ported yet", closed;
+# - unparseable    → a comment asking for the form's fields.
+# When a fix contract merges (`link`), its task issue is created (seed.js issues --plan --only, then
+# intake.js tasks)
+# and the bug report points at it. The controller takes the task from there like any other.
+# Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written (the triage still runs).
+# Human tier: changes need the owner's review.
+name: intake
+
+# `labeled` only: an issue created with the label (the form, the monitor) also fires `labeled`, with
+# the creator as sender, so `opened` would triage every report twice.
+on:
+  issues:
+    types: [labeled]
+  push:
+    branches: [main]
+    paths: ["harness/golden/fixes/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  # Only reports labelled by the monitor or by someone with write access are triaged. GitHub's
+  # permission API needs a token with push access, so this job has `contents: write` and runs
+  # nothing but checkout and one dependency-free script.
+  authorize:
+    if: >-
+      github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'issues' &&
+      github.event.label.name == 'factory:bug'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: write }
+    outputs:
+      authorized: ${{ steps.who.outputs.authorized }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: harness/feedback
+      - name: Does the labeller have write access?
+        id: who
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node harness/feedback/intake.js authorize --event "$GITHUB_EVENT_PATH"
+
+  triage:
+    needs: authorize
+    concurrency:
+      group: intake-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Read-only token: an open fix PR's branch.
+    permissions: { contents: read, issues: read }
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      OUT: /tmp/factory-intake
+      ISSUE: ${{ github.event.issue.number }}
+    outputs:
+      action: ${{ steps.decision.outputs.action }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: The request (issue text is data, validated field by field)
+        id: input
+        working-directory: harness
+        env:
+          AUTHORIZED: ${{ needs.authorize.outputs.authorized }}
+        run: |
+          node feedback/intake.js input --event "$GITHUB_EVENT_PATH" --out "$OUT" --authorized "$AUTHORIZED"
+          if [ -f "$OUT/request.jsonl" ]; then echo "request=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Build the Rust CLI and chrono-node
+        if: steps.input.outputs.request == 'true'
+        run: |
+          rustup toolchain install
+          cargo build --locked --bin chrono-rs-json
+          cd harness && npm ci --ignore-scripts --no-audit --no-fund && npm run build:upstream
+
+      - name: Re-run the request through both implementations
+        if: steps.input.outputs.request == 'true'
+        working-directory: harness
+        run: |
+          node compare/compare.js --requests "$OUT/request.jsonl" --report "$OUT/report.json" || true
+          node feedback/intake.js decide --issue "$ISSUE" --out "$OUT"
+
+      - name: Decision
+        id: decision
+        run: |
+          cat "$OUT/decision.json"
+          echo "action=$(jq -r .action "$OUT/decision.json")" >> "$GITHUB_OUTPUT"
+
+      # A port bug: the fix case and its contract, generated exactly as a person would (golden
+      # generator + seed script). Anything else changing fails closed.
+      - name: Generate the fix case and contract
+        if: steps.decision.outputs.action == 'propose'
+        run: |
+          fix=$(jq -r .fix "$OUT/decision.json")
+          slug=${fix/\//-}
+          (cd harness && npm run golden)
+          (cd scripts/seed-backlog && npm ci --ignore-scripts --no-audit --no-fund && node seed.js contracts)
+          expected=$(printf '%s\n' "contracts/${fix}.yaml" "harness/golden/fixes/${slug}.json" "tests/golden/fixes/${slug}.json" | sort)
+          changed=$(git status --porcelain --untracked-files=all | awk '{print $2}' | sort)
+          if [ "$changed" != "$expected" ]; then
+            echo "::error::unexpected changes: $(echo $changed)"; exit 1
+          fi
+          mkdir -p "$OUT/files" && cp --parents $expected "$OUT/files/"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: intake
+          path: /tmp/factory-intake/
+          retention-days: 7
+
+  # Writes, only when live. Runs no third-party code: checkout, the App token action, git, gh and
+  # a node script with no dependencies.
+  apply:
+    needs: triage
+    if: needs.triage.outputs.action == 'propose' || needs.triage.outputs.action == 'report'
+    # Per report: a shared group keeps only one pending job, so a later report would replace an
+    # earlier one's pending apply. Different reports write different branches and issues.
+    concurrency:
+      group: intake-apply-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      ISSUE: ${{ github.event.issue.number }}
+      OUT: /tmp/factory-intake
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: intake
+          path: /tmp/factory-intake
+
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"
+          else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would act on #$ISSUE:"; cat "$OUT/decision.json"; fi
+
+      - name: Create controller App token
+        if: steps.mode.outputs.live == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.mode.outputs.live == 'true'
+        with:
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Open the fix PR (human tier)
+        if: steps.mode.outputs.live == 'true' && needs.triage.outputs.action == 'propose'
+        id: pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
+        run: |
+          fix=$(jq -r .fix "$OUT/decision.json")
+          branch=$(jq -r .branch "$OUT/decision.json")
+          [[ "$fix" =~ ^[a-z]{2}/fix-[0-9a-f]{8}$ && "$branch" == "factory/intake/${fix/\//-}" ]] || { echo "::error::bad decision"; exit 1; }
+          # The artifact comes from a job that ran third-party and agent-written code: take exactly
+          # the three expected files, nothing else.
+          slug=${fix/\//-}
+          paths=("contracts/${fix}.yaml" "harness/golden/fixes/${slug}.json" "tests/golden/fixes/${slug}.json")
+          [ "$(find "$OUT/files" -type f | wc -l)" -eq 3 ] || { echo "::error::the artifact has unexpected files"; exit 1; }
+          for p in "${paths[@]}"; do [ -f "$OUT/files/$p" ] && [ ! -L "$OUT/files/$p" ] || { echo "::error::missing $p"; exit 1; }; install -D -m 644 "$OUT/files/$p" "$p"; done
+          git config user.name "$BOT"
+          git config user.email "$(gh api "users/${BOT}" --jq .id)+${BOT}@users.noreply.github.com"
+          git switch -c "$branch"
+          git add -- "${paths[@]}"
+          git commit -q -m "intake: fix task ${fix} (#${ISSUE})"
+          git push origin "$branch"
+          body=$(printf '%s\n' \
+            "Fix task \`${fix}\` for the port bug in #${ISSUE}, proposed by the intake (plain code, no AI)." \
+            "" \
+            "The Rust port and the pinned chrono-node disagree on the reported request. This adds:" \
+            "- \`harness/golden/fixes/${fix/\//-}.json\`: the request (input to the golden generator)" \
+            "- \`tests/golden/fixes/${fix/\//-}.json\`: chrono-node's output for it (generated; pending until the fix declares \`// factory-fix: ${fix}\`)" \
+            "- \`contracts/${fix}.yaml\`: the fix contract (generated by the seed script)" \
+            "" \
+            "**Human tier:** contracts and golden data need the owner's review. After merge the task issue is created and the controller takes it like any task.")
+          url=$(gh pr create --base main --head "$branch" --title "intake: fix task ${fix} (#${ISSUE})" --body "$body")
+          echo "number=${url##*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Comment, label and close as decided
+        if: steps.mode.outputs.live == 'true'
+        working-directory: harness
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: node feedback/intake.js comment --issue "$ISSUE" --out "$OUT" ${PR:+--pr "$PR"}
+
+  # A fix contract merged: create its task issue and point the bug report at it.
+  link:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name == 'push'
+    # A replaced pending run is harmless here: the newest one handles every fix on main.
+    concurrency:
+      group: intake-link
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read, issues: read }
+    env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      # Everything that loads a third-party module runs before the App token exists; the write
+      # step below is intake.js, which loads none and accepts only fix-task plan entries.
+      - name: Plan the task issues for new fix contracts (no write token)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ids=$(node harness/feedback/intake.js pending)
+          echo "fix contracts without a task issue: ${ids:-none}"
+          echo '[]' > "$RUNNER_TEMP/plan.json"
+          if [ -n "$ids" ]; then
+            (cd scripts/seed-backlog && npm ci --ignore-scripts --no-audit --no-fund && node seed.js issues --plan --only "$ids" > "$RUNNER_TEMP/plan.json")
+          fi
+
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"; else echo "live=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Create controller App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-issues: ${{ steps.mode.outputs.live == 'true' && 'write' || 'read' }}
+
+      - name: Create the task issues, then link the bug reports
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          LIVE: ${{ steps.mode.outputs.live }}
+        run: |
+          if [ "$LIVE" != "true" ]; then echo "[dry-run] would create:"; jq -r '.[].title' "$RUNNER_TEMP/plan.json"; exit 0; fi
+          node harness/feedback/intake.js tasks --plan "$RUNNER_TEMP/plan.json"
+          node harness/feedback/intake.js link

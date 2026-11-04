@@ -68,7 +68,7 @@ jobs:
         working-directory: harness
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Gate tests (scope logic)
+      - name: Gate and feedback tests (scope logic, monitor and intake)
         working-directory: harness
         run: npm run test:gates
 

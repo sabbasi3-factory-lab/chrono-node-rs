@@ -1,0 +1,117 @@
+# Nightly monitor (DESIGN §6, §8; factory policies/cadence.yaml `monitor: nightly`). Plain code, no
+# AI. Compares seeded random phrases in every language the harness generates (compare/phrases.js)
+# between main's Rust port and the pinned chrono-node, with a fresh seed recorded in the run and in
+# every issue, so each mismatch reproduces. A new mismatch signature becomes one deduplicated
+# `factory:bug` issue with a minimal repro (harness/feedback/monitor.js); the intake triages it.
+# Kill switch: unless FACTORY_ENABLED is exactly "true" it only reports what it would file.
+# Human tier: changes need the owner's review.
+name: monitor
+
+on:
+  schedule:
+    - cron: "41 3 * * *"
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Reproduce a run: its seed (empty = fresh random seed)"
+        required: false
+        default: ""
+      phrases:
+        description: "Phrases per language"
+        required: false
+        default: "20000"
+      drill:
+        description: "Drill: plant one mismatch (compare.js --plant); its issue is labelled drill and closed at once"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: harness/package-lock.json
+
+      - name: Install Rust toolchain (rust-toolchain.toml)
+        run: rustup toolchain install && rustc --version
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Build the Rust CLI and chrono-node
+        run: |
+          cargo build --locked --release --bin chrono-rs-json
+          cd harness && npm ci --ignore-scripts --no-audit --no-fund && npm run build:upstream
+
+      # Mismatches go to issues and errors fail the filing step below, so a non-zero exit is only
+      # kept when the report has neither: then the run checked nothing meaningful (compare.js's
+      # vacuity guard) or crashed. The seed is printed as the last line and stored in the report.
+      - name: Compare random phrases with chrono-node
+        working-directory: harness
+        env:
+          SEED: ${{ inputs.seed }}
+          PHRASES: ${{ inputs.phrases || '20000' }}
+          DRILL: ${{ inputs.drill && 'true' || 'false' }}
+        run: |
+          [[ "$PHRASES" =~ ^[1-9][0-9]{0,5}$ ]] || { echo "::error::phrases must be 1-999999"; exit 1; }
+          args=(--phrases "$PHRASES" --rust ../target/release/chrono-rs-json --report "$RUNNER_TEMP/monitor-report.json" --show 5)
+          if [ -n "$SEED" ]; then
+            [[ "$SEED" =~ ^[0-9]{1,10}$ ]] || { echo "::error::seed must be a number"; exit 1; }
+            args+=(--seed "$SEED")
+          fi
+          [ "$DRILL" = "true" ] && args+=(--plant)
+          code=0
+          node compare/compare.js "${args[@]}" || code=$?
+          test -s "$RUNNER_TEMP/monitor-report.json" || { echo "::error::the comparison wrote no report (exit ${code})"; exit 1; }
+          if [ "$code" -ne 0 ] && [ "$(jq '(.mismatches | length) + (.errors | length)' "$RUNNER_TEMP/monitor-report.json")" -eq 0 ]; then
+            echo "::error::the comparison failed with nothing to file (exit ${code}): see its log"; exit 1
+          fi
+
+      - name: Mode
+        id: mode
+        env:
+          FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"; else echo "live=false" >> "$GITHUB_OUTPUT"; fi
+
+      # Minted after every build and install step: no third-party code runs while it exists.
+      - name: Create controller App token (issues only)
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-issues: ${{ steps.mode.outputs.live == 'true' && 'write' || 'read' }}
+
+      - name: File new mismatches (one issue per signature, at most 3 per run)
+        working-directory: harness
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PHRASES: ${{ inputs.phrases || '20000' }}
+          LIVE: ${{ steps.mode.outputs.live }}
+          DRILL: ${{ inputs.drill && 'true' || 'false' }}
+        run: |
+          args=(--report "$RUNNER_TEMP/monitor-report.json" --phrases "$PHRASES" --max-new 3)
+          [ "$LIVE" = "true" ] && args+=(--live)
+          [ "$DRILL" = "true" ] && args+=(--drill)
+          node feedback/monitor.js "${args[@]}"

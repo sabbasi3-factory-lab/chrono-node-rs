@@ -5,6 +5,8 @@
 //   node compare/compare.js                      # fresh random seed (local held-out run)
 //   node compare/compare.js --seed 12345         # reproduce a run (CI passes its held-out seed this way)
 //   node compare/compare.js --phrases 5000 --rust ../target/release/chrono-rs-json --report out.json
+//   node compare/compare.js --requests repro.jsonl --report out.json   # given requests (triage)
+//   node compare/compare.js --plant ...          # drill: plant one mismatch (Rust output dropped)
 //
 // Only phrases whose required parsers/refiners are all ported in Rust are compared; the rest are
 // counted as "not yet comparable". The seed is printed AFTER the run, as the last line. A fresh
@@ -33,7 +35,7 @@ const HARNESS = path.resolve(__dirname, "..");
 const REPO = path.resolve(HARNESS, "..");
 
 function parseArgs(argv) {
-    const args = { seed: null, phrases: 2000, rust: path.join(REPO, "target/debug/chrono-rs-json"), report: null, show: 20 };
+    const args = { seed: null, phrases: 2000, rust: path.join(REPO, "target/debug/chrono-rs-json"), report: null, show: 20, requests: null, plant: false };
     const value = (k, v) => {
         if (v === undefined || v.startsWith("--")) throw new Error(`${k} needs a value`);
         return v;
@@ -50,6 +52,8 @@ function parseArgs(argv) {
         else if (k === "--rust") (args.rust = path.resolve(value(k, v))), i++;
         else if (k === "--report") (args.report = path.resolve(value(k, v))), i++;
         else if (k === "--show") (args.show = integer(k, v, 0, 100000)), i++;
+        else if (k === "--requests") (args.requests = path.resolve(value(k, v))), i++;
+        else if (k === "--plant") args.plant = true;
         else throw new Error(`unknown argument ${k}`);
     }
     return args;
@@ -86,6 +90,18 @@ function loadUpstream() {
     return { chronoCore, configs };
 }
 
+/** Requests from a file: a JSON array, or one JSON object per line. Each needs a unique id. */
+function loadRequests(file) {
+    const text = fs.readFileSync(file, "utf8").trim();
+    const list = text.startsWith("[") ? JSON.parse(text) : text.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
+    const ids = new Set();
+    for (const r of list) {
+        if (!r || typeof r.text !== "string" || typeof r.config !== "string" || !r.reference || ids.has(r.id)) throw new Error(`bad request in ${file}`);
+        ids.add(r.id);
+    }
+    return list;
+}
+
 function runRust(rust, args, input) {
     const res = spawnSync(rust, args, { input, maxBuffer: 1 << 30, encoding: "utf8" });
     if (res.error) throw new Error(`cannot run ${rust}: ${res.error.message} (build it with cargo build --bin chrono-rs-json)`);
@@ -105,10 +121,12 @@ function main(args, seed) {
     const { chronoCore, configs } = loadUpstream();
     const registered = JSON.parse(runRust(args.rust, ["--registered"], ""));
 
-    const requests = generate(seed, args.phrases);
+    const requests = args.requests ? loadRequests(args.requests) : generate(seed, args.phrases);
     const expected = new Map();
     const comparable = [];
     let notComparable = 0;
+    // Per-request outcome, for --requests (triage of a reported case).
+    const outcomes = new Map();
     const errors = [];
     for (const req of requests) {
         const chrono = configs[req.config];
@@ -122,8 +140,10 @@ function main(args, seed) {
             continue;
         }
         const have = new Set(registered[req.config].registered);
-        if (![...traced.parsers, ...traced.refiners].every((n) => have.has(n))) {
+        const missing = [...traced.parsers, ...traced.refiners].filter((n) => !have.has(n));
+        if (missing.length > 0) {
             notComparable++;
+            outcomes.set(req.id, { id: req.id, status: "not_comparable", missing, expected: tracedOut });
             continue;
         }
         expected.set(req.id, { req, results: tracedOut, requires: { parsers: traced.parsers, refiners: traced.refiners } });
@@ -137,6 +157,15 @@ function main(args, seed) {
         const r = JSON.parse(line);
         actual.set(r.id, r);
     }
+    // Drill only: drop the Rust results of the first comparable request that has any, so the
+    // run reports exactly one planted mismatch (proves a mismatch reaches an issue).
+    if (args.plant) {
+        const target = [...expected.values()].find((e) => e.results.length > 0 && actual.has(e.req.id) && !actual.get(e.req.id).error);
+        if (target) {
+            actual.set(target.req.id, { ...actual.get(target.req.id), results: [] });
+            console.log(`DRILL: planted a mismatch in request ${target.req.id}`);
+        }
+    }
 
     const mismatches = [];
     let matched = 0;
@@ -145,6 +174,7 @@ function main(args, seed) {
         const got = actual.get(id);
         if (!got || got.error) {
             errors.push({ id, error: got ? got.error : "no output from Rust" });
+            outcomes.set(id, { id, status: "error", error: got ? got.error : "no output from Rust" });
             continue;
         }
         const a = JSON.stringify(S.sortKeys(exp.results));
@@ -152,8 +182,10 @@ function main(args, seed) {
         if (a === b) {
             matched++;
             if (exp.results.length > 0) nonEmptyMatched++;
+            outcomes.set(id, { id, status: "matched", requires: exp.requires, expected: exp.results });
         } else {
             mismatches.push({ request: exp.req, requires: exp.requires, expected: exp.results, actual: got.results });
+            outcomes.set(id, { id, status: "mismatched", requires: exp.requires, expected: exp.results, actual: got.results });
         }
     }
 
@@ -176,11 +208,14 @@ function main(args, seed) {
     }
     for (const e of errors.slice(0, args.show)) console.log(`ERROR id=${e.id}: ${e.error}`);
     if (args.report) {
-        fs.writeFileSync(args.report, JSON.stringify({ seed, summary, mismatches, errors }, null, 2) + "\n");
+        const report = { seed, summary, mismatches, errors };
+        if (args.requests) report.requests = requests.map((r) => outcomes.get(r.id) ?? { id: r.id, status: "error", error: errors.find((e) => e.id === r.id)?.error ?? "not run" });
+        fs.writeFileSync(args.report, JSON.stringify(report, null, 2) + "\n");
     }
     // If no comparable phrase has a non-empty expected result, nothing real was checked (e.g. the
     // Rust CLI registers nothing): fail instead of passing vacuously.
-    const vacuous = ![...expected.values()].some((e) => e.results.length > 0);
+    // Given requests (triage) may legitimately have empty results or nothing comparable.
+    const vacuous = !args.requests && ![...expected.values()].some((e) => e.results.length > 0);
     if (vacuous) console.log("ERROR: no comparable phrase with a non-empty result (is the Rust CLI registering steps?)");
     if (mismatches.length > 0 || errors.length > 0 || vacuous) {
         console.log(`\nreproduce: cd ${shq(HARNESS)} && node compare/compare.js --seed ${seed} --phrases ${args.phrases} --rust ${shq(args.rust)}`);

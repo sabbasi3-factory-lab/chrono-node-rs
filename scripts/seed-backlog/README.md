@@ -7,6 +7,7 @@ cd scripts/seed-backlog && npm ci
 node seed.js contracts           # write contracts/<id>.yaml
 node seed.js contracts --check   # fail if contracts/ is stale
 node seed.js issues --plan       # print the issues the contracts would become (no writes)
+node seed.js issues --plan --only <id>[,<id>]    # only these contracts (the intake's fix tasks)
 node seed.js labels [--check]    # create the factory's labels (.github/factory/labels.json) and the contracts' tier:/area: labels if missing
 npm test                         # unit tests
 ```
@@ -29,7 +30,11 @@ npm test                         # unit tests
 - each upstream file exists and declares the class (the step, or the task's `class` where upstream reuses a class name: both `…TimeUnitRelativeFormatParser.ts` files declare `…TimeUnitAgoFormatParser`)
 - each Rust file is a single file in a `parsers/` or `refiners/` directory, so it auto-registers and no shared line is edited
 
-## Issues (not run yet)
+## Fix contracts
+
+Besides the task map, every fix case in `tests/golden/fixes/` (from the intake: `harness/feedback/README.md`) becomes `contracts/<lang>/fix-<hash>.yaml`: scope = the Rust files of the steps chrono-node used for the case, area = the first of those steps' task areas (else `<lang>-fixes`), priority 0, golden step = the fix id, and a `fix: {issue, signature, steps, requirement}` entry the agent follows (add `// factory-fix: <id>` next to the change). Fix cases never change a port task's areas, priority or dependencies. After a fix contract merges, the intake's `link` job runs `issues --plan --only <id>` (no token), and `harness/feedback/intake.js tasks` creates the issue from that plan.
+
+## Issues
 
 `issues --apply` creates or updates one issue per contract, after the contracts PR has merged. Each issue has:
 - labels `factory:task`, `tier:*` and `area:*` (**not** `factory:ready`; the owner adds that)

@@ -11,6 +11,12 @@
     { "name": "factory:revert-reviewed", "color": "0E8A16", "description": "A person reviewed the controller's auto-revert PR" },
     { "name": "tier:auto", "color": "C2E0C6", "description": "Contract tier: auto" },
     { "name": "tier:auto-strict", "color": "BFD4F2", "description": "Contract tier: auto-strict" },
-    { "name": "tier:human", "color": "F9D0C4", "description": "Contract tier: human" }
+    { "name": "tier:human", "color": "F9D0C4", "description": "Contract tier: human" },
+    { "name": "factory:bug", "color": "D73A4A", "description": "Port bug report for the intake (monitor, or a person with write access)" },
+    { "name": "monitor", "color": "C5DEF5", "description": "Filed by the nightly monitor" },
+    { "name": "drill", "color": "FEF2C0", "description": "A fire drill; nothing is really wrong" },
+    { "name": "intake:proposed", "color": "0E8A16", "description": "The intake confirmed a port bug and proposed a fix task PR" },
+    { "name": "intake:not-a-port-bug", "color": "EDEDED", "description": "chrono-node gives the same result: the port is faithful" },
+    { "name": "intake:not-ported-yet", "color": "EDEDED", "description": "Needs steps the port doesn't have yet" }
   ]
 }

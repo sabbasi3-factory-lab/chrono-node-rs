@@ -257,3 +257,29 @@ test("unit acceptance: every case's #[test] must exist in a changed scope file",
     // Contracts without `unit` don't need a reader.
     assert.ok(evaluate({ isAgent: true, body: body(), changed: [FILE], protectedGlobs: PROTECTED, loadContract }).ok);
 });
+
+test("a fix contract (seed-backlog buildFixContracts) passes: its golden step is the fix id, its area the fix case", () => {
+    const fix = {
+        scope: ["src/locales/en/parsers/casual_date.rs"],
+        acceptance: [
+            { golden: { step: "en/fix-653b75aa", areas: ["fixes/en-fix-653b75aa"] } },
+            { differential: { phrases: 2000, seed: 42, match: "chrono-node@d4fe7e3" } },
+            { clippy: "deny-warnings" },
+            { public_api: "unchanged-except-added" },
+            { fix: { issue: 999, signature: "c421d2d3a730", steps: ["ENCasualDateParser"], requirement: "..." } },
+        ],
+        lastCommit: "a1b2c3d4e5f6",
+    };
+    const load = (task) => (task === "en/fix-653b75aa" ? fix : null);
+    const b = "Fix.\n\nFactory-Task: en/fix-653b75aa\nContract-SHA: a1b2c3d\n";
+    const r = evaluate({ isAgent: true, body: b, changed: ["src/locales/en/parsers/casual_date.rs"], protectedGlobs: PROTECTED, loadContract: load });
+    assert.deepStrictEqual(r.reasons, []);
+    assert.strictEqual(r.goldenStep, "en/fix-653b75aa");
+    assert.deepStrictEqual(r.goldenAreas, ["fixes/en-fix-653b75aa"]);
+    // Only the exact fix formats: nothing that could carry other characters into GOLDEN_* env.
+    for (const [step, area] of [["en/fix-653b75aa;x", "fixes/en-fix-653b75aa"], ["en/fix-653b75aa", "fixes/en-fix-653b75aa,x"], ["en/fix-653B75AA", "fixes/en-fix-653b75aa"]]) {
+        const bad = { ...fix, acceptance: [{ golden: { step, areas: [area] } }] };
+        const rr = evaluate({ isAgent: true, body: b, changed: ["src/locales/en/parsers/casual_date.rs"], protectedGlobs: PROTECTED, loadContract: () => bad });
+        assert.match(rr.reasons.join(), /unsupported golden acceptance/);
+    }
+});

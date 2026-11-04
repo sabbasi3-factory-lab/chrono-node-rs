@@ -6,6 +6,7 @@
 //   node seed.js contracts --check   fail if contracts/ differs from a fresh generation
 //   node seed.js issues --plan       print the issues the contracts would become (no writes)
 //   node seed.js issues --apply      create/update one issue per contract (see guards below)
+//   node seed.js issues --plan|--apply --only <id>[,<id>...]   only these contracts (the intake's fix tasks)
 //   node seed.js labels [--check]    create the factory's labels (.github/factory/labels.json) and the
 //                                    contracts' tier:/area: labels if missing (--check: only report)
 //
@@ -59,6 +60,16 @@ async function loadInputs() {
         }
     }
 
+    // Fix cases (tests/golden/fixes/, generated from the intake's harness/golden/fixes/ inputs):
+    // kept apart from `cases`, so a fix never changes a port task's areas, priority or dependencies.
+    const fixes = [];
+    for (const file of walk(path.join(REPO, "tests/golden/fixes"), (p) => p.endsWith(".json"))) {
+        const area = `fixes/${path.basename(file, ".json")}`;
+        const c = JSON.parse(fs.readFileSync(file, "utf8")).cases[0];
+        const input = JSON.parse(read(`harness/golden/fixes/${path.basename(file)}`));
+        fixes.push({ id: c.requires.fix, area, config: c.config, steps: [...c.requires.parsers, ...c.requires.refiners], issue: input.issue, signature: input.signature });
+    }
+
     const factoryVersion = read(".github/factory/factory-version").trim();
     if (!/^[0-9a-f]{40}$/.test(factoryVersion)) throw new Error("bad .github/factory/factory-version");
     const url = `https://raw.githubusercontent.com/sabbasi3-factory-lab/factory/${factoryVersion}/policies/tiers.yaml`;
@@ -66,14 +77,14 @@ async function loadInputs() {
     if (!res.ok) throw new Error(`cannot load ${url}: ${res.status}`);
     const tiers = YAML.parse(await res.text());
 
-    return { taskmap, pin, upstreamFiles, configurations, cases, tiers };
+    return { taskmap, pin, upstreamFiles, configurations, cases, tiers, fixes };
 }
 
 async function generate() {
     const inputs = await loadInputs();
     const problems = lib.validate(inputs);
     if (problems.length > 0) throw new Error(`task map problems:\n  ${problems.join("\n  ")}`);
-    const contracts = lib.buildContracts(inputs);
+    const contracts = [...lib.buildContracts(inputs), ...lib.buildFixContracts(inputs)].sort((a, b) => (a.id < b.id ? -1 : 1));
     const files = new Map(contracts.map((c) => [`${c.id}.yaml`, lib.renderContract(c)]));
     return { contracts, files };
 }
@@ -120,9 +131,14 @@ async function gh(method, apiPath, body) {
     return res.status === 204 ? null : res.json();
 }
 
-async function issuesCommand(apply) {
+async function issuesCommand(apply, only) {
     const { contracts, files } = await generate();
-    const plan = lib.planIssues(contracts, REPO_SLUG);
+    let plan = lib.planIssues(contracts, REPO_SLUG);
+    if (only) {
+        const unknown = only.filter((id) => !contracts.some((c) => c.id === id));
+        if (unknown.length > 0) throw new Error(`--only: no contract ${unknown.join(", ")}`);
+        plan = plan.filter((p) => only.includes(/factory-task: ([a-z0-9/-]+)/.exec(p.marker)[1]));
+    }
     if (!apply) {
         console.log(JSON.stringify(plan, null, 2));
         return;
@@ -178,6 +194,7 @@ async function issuesCommand(apply) {
         const have = new Set(current.map((i) => i.id));
         for (const dep of p.blocked_by) {
             const blocker = numbers.get(dep);
+            if (!blocker) throw new Error(`${id} depends on ${dep}, which this run didn't create or update (--only)`);
             if (!have.has(blocker.id)) {
                 await gh("POST", `/repos/${REPO_SLUG}/issues/${issue.number}/dependencies/blocked_by`, { issue_id: blocker.id });
             }
@@ -216,10 +233,14 @@ async function labelsCommand(check) {
 async function main() {
     const [command, ...flags] = process.argv.slice(2);
     if (command === "contracts") return contractsCommand(flags.includes("--check"));
-    if (command === "issues" && flags.includes("--plan")) return issuesCommand(false);
-    if (command === "issues" && flags.includes("--apply")) return issuesCommand(true);
+    if (command === "issues" && (flags.includes("--plan") || flags.includes("--apply"))) {
+        const i = flags.indexOf("--only");
+        const only = i >= 0 ? (flags[i + 1] || "").split(",").filter(Boolean) : null;
+        if (only !== null && only.length === 0) throw new Error("--only needs contract ids");
+        return issuesCommand(flags.includes("--apply"), only);
+    }
     if (command === "labels") return labelsCommand(flags.includes("--check"));
-    console.error("usage: seed.js contracts [--check] | issues --plan | issues --apply | labels [--check]");
+    console.error("usage: seed.js contracts [--check] | issues --plan|--apply [--only <ids>] | labels [--check]");
     process.exit(2);
 }
 

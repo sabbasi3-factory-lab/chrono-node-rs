@@ -7,7 +7,7 @@ const upstream = path.resolve(__dirname, "../../upstream");
 
 module.exports = {
     rootDir: upstream,
-    roots: ["<rootDir>/test"],
+    roots: ["<rootDir>/test", __dirname],
     testMatch: [
         "<rootDir>/test/*.test.ts",
         "<rootDir>/test/en/*.test.ts",
@@ -17,6 +17,8 @@ module.exports = {
         "<rootDir>/test/pt/*.test.ts",
         "<rootDir>/test/es/*.test.ts",
         "<rootDir>/test/ja/*.test.ts",
+        // Fix cases from the intake (harness/golden/fixes/), replayed through chrono-node.
+        path.join(__dirname, "fixes.test.js"),
     ],
     // Performance tests only time big inputs; they add nothing to golden data.
     testPathIgnorePatterns: ["/node_modules/", "en_performance\\.test\\.ts$"],
