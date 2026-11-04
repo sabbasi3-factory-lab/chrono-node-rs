@@ -91,6 +91,27 @@ test("task map fragment: one task per new step, support tasks for what they impo
     assert.strictEqual(lib.renderFragment(f), lib.renderFragment(again));
 });
 
+test("module skeleton: every scope file's directory, parsers/ and refiners/ always, nothing outside the locale", () => {
+    const f = lib.taskmapFragment({ manifest, configs, baseTaskmap, localeFiles, constants, goldenTexts: ["see bb 12 now"] });
+    const sk = lib.moduleSkeleton(manifest, f);
+    assert.deepStrictEqual([...sk.keys()], ["src/locales/xx/parsers/.gitkeep", "src/locales/xx/refiners/.gitkeep"]);
+    assert.ok([...sk.values()].every((v) => v === ""));
+    const dirs = new Set(["src/locales/xx", ...[...sk.keys()].map((k) => k.replace(/\/\.gitkeep$/, ""))]);
+    assert.deepStrictEqual(lib.missingScopeParents(f.tasks.map((t) => t.rust), (d) => dirs.has(d)), []);
+    // A refiners-only (or parsers-only) locale still gets both; a nested scope gets each level.
+    const nested = { tasks: [{ id: "xx/a", rust: "src/locales/xx/parsers/sub/a.rs" }] };
+    assert.deepStrictEqual([...lib.moduleSkeleton(manifest, nested).keys()], [
+        "src/locales/xx/parsers/.gitkeep",
+        "src/locales/xx/parsers/sub/.gitkeep",
+        "src/locales/xx/refiners/.gitkeep",
+    ]);
+    for (const rust of ["src/locales/yy/parsers/a.rs", "src/locales/xx/../yy/a.rs", "src/core/a.rs"]) {
+        assert.throws(() => lib.moduleSkeleton(manifest, { tasks: [{ id: "xx/a", rust }] }), /outside src\/locales\/xx\//);
+    }
+    // Without the skeleton, every step's scope file would need a mkdir.
+    assert.deepStrictEqual(lib.missingScopeParents(["src/locales/xx/parsers/a.rs", "src/locales/xx/constants.rs"], (d) => d === "src/locales/xx"), ["src/locales/xx/parsers/a.rs"]);
+});
+
 test("task map fragment fails closed on a step that's neither the locale's file nor mapped", () => {
     const other = { "xx.casual": { parsers: [{ name: "ENWeekdayParser" }], refiners: [] } };
     assert.throws(() => lib.taskmapFragment({ manifest, configs: other, baseTaskmap, localeFiles, constants, goldenTexts: [] }), /ENWeekdayParser .* a hand decision/);

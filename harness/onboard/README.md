@@ -15,6 +15,7 @@ scaffold, golden and contracts PRs: #162/#163 for German and French, #208/#209 f
 | `tests/golden/<module>/*.json`, `index.json`, `configurations.json` | the golden generator, now also running `upstream/test/<code>/` and recording the locale's exported `casual` / `strict` |
 | `harness/golden/coverage/<module>.json` → `tests/golden/<module>/coverage.json` | only for steps no upstream test reaches: the first 3 requests of a fixed phrase stream (the comparison's golden-text phrases, seeded by the module name) whose chrono-node trace needs the step. Their expected results are chrono-node's, like every golden case. |
 | `src/locales/<module>/mod.rs`, `configuration.rs` | `configurations.json`: every slot, in upstream order, with its flags. `build.rs` declares the module, so no shared line changes. |
+| `src/locales/<module>/parsers/.gitkeep`, `refiners/.gitkeep` (and any other directory a task's scope file goes in) | the task map fragment: the **module skeleton**. Every contract scope file's parent directory exists on main, so no agent needs `mkdir` (its bash allowlist has none, and the edit tool needs an existing parent). `build.rs` auto-registers `parsers/` and `refiners/`, and compiles them empty. A scope file outside `src/locales/<module>/` is refused. |
 | `scripts/seed-backlog/taskmap.d/<module>.yaml` | upstream's file structure: one task per step of the locale's configurations; one **support task** per shared file the steps import (`constants.ts`, a locale's `Abstract…` base). Areas from what the step does (casual, time, relative, dates, refiners, support). |
 | `contracts/<code>/*.yaml` | the seed script, from the fragment |
 
@@ -35,12 +36,14 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
 `add` refuses a locale, with the reason, when:
 - a configuration uses a step that's neither one of the locale's files nor already in the task map;
 - a step has no golden case and no generated phrase reaches it (today `it`: `ITMergeRelativeAfterDateRefiner`, `ITUnlikelyFormatFilter`; `vi`: `VIMergeWeekdayComponentRefiner`): a hand decision;
-- two tasks would write the same Rust file.
+- two tasks would write the same Rust file;
+- a contract scope file's directory isn't generated (checked after the contracts are written).
 
 ## Guarantees
 
 - **Byte-reproducible.** CI runs `onboard.js check` (every generated locale's manifest, scaffold,
-  fragment and coverage input re-rendered from `upstream/` and `tests/golden/`), `golden:check` and,
+  module skeleton, fragment and coverage input re-rendered from `upstream/` and `tests/golden/`, and
+  every contract scope file's directory present), `golden:check` and,
   on `factory/onboard/*` PRs, `seed.js contracts --check`.
 - **Additive.** Onboarding adds files and the two golden indexes' entries. Existing goldens,
   phrase streams and contracts don't change (golden facts are scoped per locale and generated
@@ -69,6 +72,9 @@ Kill switch: unless `FACTORY_ENABLED` is exactly `"true"`, nothing is written.
 node onboard/onboard.js candidates        # upstream locales not onboarded yet
 node onboard/onboard.js add fi            # onboard one (writes the files above)
 node onboard/onboard.js check             # CI: every generated locale re-renders byte for byte
+node onboard/onboard.js check --write     # after a generator change: re-render the generated locales in place
+node onboard/onboard.js drill [code...]   # onboard each (default: every candidate) in a throwaway copy;
+                                          # fail if a contract scope file's directory isn't generated
 node onboard/onboard.js next --policy P --outcomes O --issues I --prs R   # the scheduled decision
 node onboard/summary.js fi                # the onboarding PR's body
 node --test onboard/test/*.test.js        # unit tests (also in npm run test:gates)

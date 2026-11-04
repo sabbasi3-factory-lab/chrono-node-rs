@@ -335,6 +335,29 @@ function renderModRs(m) {
     return lines.join("\n");
 }
 
+const KEEP = ".gitkeep";
+
+/**
+ * The module skeleton: one empty `.gitkeep` per directory under src/locales/<module>/ that a task's
+ * scope file goes in (always `parsers/` and `refiners/`, which build.rs auto-registers), so no
+ * agent ever needs mkdir. Fails closed on a scope file outside the locale's module.
+ * Returns Map<repo-relative path, "">, sorted.
+ */
+function moduleSkeleton(manifest, fragment) {
+    const root = `src/locales/${manifest.module}`;
+    const dirs = new Set([`${root}/parsers`, `${root}/refiners`]);
+    for (const t of fragment.tasks) {
+        if (!t.rust.startsWith(`${root}/`) || t.rust.split("/").includes("..")) throw new Error(`cannot onboard ${manifest.code}: ${t.id} would write ${t.rust}, outside ${root}/`);
+        for (let d = path.posix.dirname(t.rust); d !== root; d = path.posix.dirname(d)) dirs.add(d);
+    }
+    return new Map([...dirs].sort().map((d) => [`${d}/${KEEP}`, ""]));
+}
+
+/** Scope files (repo-relative) whose parent directory isn't in `exists`: what an agent would have to mkdir. */
+function missingScopeParents(scopes, exists) {
+    return scopes.filter((s) => !exists(path.posix.dirname(s))).sort();
+}
+
 function slotLine(method, s) {
     const flags = Object.entries(s.flags || {});
     const arg = flags.length ? `Flags::of(&[${flags.map(([k, v]) => `("${k}", ${v})`).join(", ")}])` : "Flags::none()";
@@ -378,6 +401,8 @@ module.exports = {
     renderFragment,
     renderModRs,
     renderConfigurationRs,
+    moduleSkeleton,
+    missingScopeParents,
 };
 
 /**
