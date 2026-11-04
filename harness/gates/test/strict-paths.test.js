@@ -33,7 +33,7 @@ test("code-health counting makes clippy's absolute (canonical) paths repo-relati
 test("rel_paths (paths.sh) strips the checkout's canonical root and leaves everything else", () => {
     const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "relpaths-")));
     const input = `${dir}/${STEP}\nsrc/core/a.rs\n/other/${STEP}\n${dir}x/${STEP}\n`;
-    const r = spawnSync("bash", ["-c", `source "${STRICT}/paths.sh"; rel_paths "${dir}"`], { input, encoding: "utf8" });
+    const r = spawnSync("bash", ["-c", 'source "$1/paths.sh"; rel_paths "$2"', "bash", STRICT, dir], { input, encoding: "utf8" });
     assert.strictEqual(r.status, 0, r.stderr);
     assert.deepStrictEqual(r.stdout.trim().split("\n"), [STEP, "src/core/a.rs", `/other/${STEP}`, `${dir}x/${STEP}`]);
 });
@@ -96,7 +96,7 @@ test("the gate compares the change with its base: an existing warning doesn't bl
 
 test("annotate_missed (mutants.sh): one escaped ::error per surviving mutant, capped", () => {
     const run = (input, cap = 50) =>
-        spawnSync("bash", ["-c", `source "${STRICT}/mutants.sh"; annotate_missed ${cap}`], { input, encoding: "utf8" });
+        spawnSync("bash", ["-c", 'source "$1/mutants.sh"; annotate_missed "$2"', "bash", STRICT, String(cap)], { input, encoding: "utf8" });
     const missed = [
         "src/common/refiners/forward_date.rs:74:57: replace && with || in <impl Refiner for ForwardDateRefiner>::refine",
         "src/a,b.rs:3:1: replace 100% with ::warning::x",
