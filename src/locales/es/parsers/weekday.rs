@@ -1,0 +1,70 @@
+//! upstream `locales/es/parsers/ESWeekdayParser.ts`.
+
+use std::sync::LazyLock;
+
+use crate::calculation::weekdays::{create_parsing_components_at_weekday, WeekdayModifier};
+use crate::common::word_boundary::{WithWordBoundary, WordBoundaryParser};
+use crate::core::chrono::{Extracted, Parser};
+use crate::core::configuration::Flags;
+use crate::core::context::ParsingContext;
+use crate::core::regex::{JsRegex, RegexMatch};
+use crate::core::utils::pattern::{dict_get, dict_keys, match_any_pattern};
+use crate::locales::es::constants::WEEKDAY_DICTIONARY;
+
+pub const UPSTREAM: &str = "ESWeekdayParser";
+
+pub fn create(_flags: &Flags) -> Box<dyn Parser> {
+    Box::new(WithWordBoundary::new(EsWeekdayParser))
+}
+
+static PATTERN: LazyLock<JsRegex> = LazyLock::new(|| {
+    JsRegex::new(
+        &format!(
+            concat!(
+                r"(?:(?:\,|\(|\（)\s*)?",
+                r"(?:(este|esta|pasado|pr[oó]ximo)\s*)?",
+                r"({})",
+                r"(?:\s*(?:\,|\)|\）))?",
+                r"(?:\s*(este|esta|pasado|pr[óo]ximo)\s*semana)?",
+                r"(?=\W|\d|$)",
+            ),
+            match_any_pattern(dict_keys(WEEKDAY_DICTIONARY))
+        ),
+        "i",
+    )
+});
+
+const PREFIX_GROUP: usize = 1;
+const WEEKDAY_GROUP: usize = 2;
+const POSTFIX_GROUP: usize = 3;
+
+struct EsWeekdayParser;
+
+impl WordBoundaryParser for EsWeekdayParser {
+    fn inner_pattern(&self, _context: &ParsingContext) -> JsRegex {
+        PATTERN.clone()
+    }
+
+    fn inner_extract(&self, context: &ParsingContext, m: &mut RegexMatch) -> Extracted {
+        let day_of_week = m.get(WEEKDAY_GROUP).unwrap_or("").to_lowercase();
+        let Some(weekday) = dict_get(WEEKDAY_DICTIONARY, &day_of_week) else {
+            return Extracted::None;
+        };
+
+        // `prefix || postfix || ""`: an empty string is falsy in JS.
+        let norm = [m.get(PREFIX_GROUP), m.get(POSTFIX_GROUP)]
+            .into_iter()
+            .flatten()
+            .find(|s| !s.is_empty())
+            .unwrap_or("")
+            .to_lowercase();
+
+        let modifier = match norm.as_str() {
+            "pasado" | "este" => Some(WeekdayModifier::This),
+            "próximo" | "proximo" => Some(WeekdayModifier::Next),
+            _ => None,
+        };
+
+        Extracted::Components(create_parsing_components_at_weekday(context.reference, weekday, modifier))
+    }
+}
