@@ -2,7 +2,7 @@
 // policies to a list of decisions with stable reason codes. No I/O, no clock
 // reads (`now` is an argument), no randomness.
 
-import { CONTROLLER_LOGIN, REVERT_REVIEWED_LABEL, intakeFixOf, revertedPrOf } from './github.ts';
+import { CONTROLLER_LOGIN, REVERT_REVIEWED_LABEL, intakeFixOf, onboardingOf, revertedPrOf } from './github.ts';
 import { contractPath, contractShaMatches, isCoreTask, sameArea, taskTier } from './tasks.ts';
 import { DISPATCH_MATCH_MINUTES } from './spend.ts';
 import type {
@@ -146,6 +146,32 @@ function decide(d: DecisionInit): Decision {
   };
 }
 
+/**
+ * Whether a PR's changed files are exactly what `harness/onboard/onboard.js add <code>` writes (the
+ * same set onboard.yml checks before opening it): new files under the locale's own paths, and the
+ * two golden indexes modified; nothing else, nothing renamed or removed.
+ */
+export function onboardingFilesOk(code: string, files: readonly { path: string; status: string }[]): boolean {
+  if (!/^[a-z]{2}(?:-[a-z]{4})?$/.test(code)) return false;
+  const module = code.replace('-', '_');
+  const added = new RegExp(
+    `^(src/locales/${module}/(locale\\.json|mod\\.rs|configuration\\.rs)|tests/golden/${module}/[a-z0-9_]+\\.json|harness/golden/coverage/${module}\\.json|scripts/seed-backlog/taskmap\\.d/${module}\\.yaml|contracts/${code}/[a-z0-9-]+\\.yaml)$`,
+  );
+  const indexes = ['tests/golden/configurations.json', 'tests/golden/index.json'];
+  for (const f of files) {
+    if (f.status === 'added' && added.test(f.path)) continue;
+    if (f.status === 'modified' && indexes.includes(f.path)) continue;
+    return false;
+  }
+  const has = (status: string, path: string) => files.some((f) => f.status === status && f.path === path);
+  return (
+    ['locale.json', 'mod.rs', 'configuration.rs'].every((f) => has('added', `src/locales/${module}/${f}`)) &&
+    has('added', `scripts/seed-backlog/taskmap.d/${module}.yaml`) &&
+    indexes.every((p) => has('modified', p)) &&
+    files.some((f) => f.status === 'added' && f.path.startsWith(`contracts/${code}/`))
+  );
+}
+
 function wait(reason: ReasonCode, base: Decision): Decision {
   return { ...base, type: 'wait', reason, effect: 'none' };
 }
@@ -187,6 +213,11 @@ export function latestCheck(s: Snapshot, pr: PullSnap, workflow: string): CheckR
   }
   if (!best || best.status !== 'completed' || !best.conclusion) return null;
   return best;
+}
+
+/** `latestCheck`, restricted to runs GitHub links to this PR (not another PR at the same commit). */
+export function latestCheckOfPr(s: Snapshot, pr: PullSnap, workflow: string): CheckRunSnap | null {
+  return latestCheck({ ...s, check_runs: s.check_runs.filter((r) => r.pull_requests.includes(pr.number)) }, pr, workflow);
 }
 
 function dependencyDepth(s: Snapshot, task: string, seen: Set<string> = new Set()): number {
@@ -574,6 +605,50 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     }
     intakeToday++;
     merges.push({ ...decide({ ...base, type: 'auto_merge', reason: 'intake_fix_ready', effect: 'enqueue_merge', run_id: ci.run_id, source_ids: [pr.node_id, pr.head_sha] }), head_sha: pr.head_sha });
+  }
+
+  // ---- generated language-onboarding PRs (harness/onboard, tiers.yaml onboarding): the generator's
+  // output for one locale, from the controller App's onboard.yml. Queued without the owner only if
+  // the policy allows it, the PR is exactly generator output for its own code (onboardingFilesOk),
+  // ci (which regenerates every file byte for byte: golden:check, onboard.js check, seed.js
+  // contracts --check) and gates are green, and fewer than max_per_day onboarding PRs merged or were
+  // queued today (UTC). Otherwise the owner decides (needs-human).
+  const onboarding = p.tiers.onboarding;
+  let onboardedToday = s.pulls.filter((x) => onboardingOf(x) !== null && ((x.merged_at ?? '').startsWith(today) || (x.state === 'open' && x.in_merge_queue))).length;
+  for (const pr of openPulls) {
+    const code = onboardingOf(pr);
+    if (code === null || !onboarding?.auto_merge || pr.draft) continue;
+    if (pr.labels.includes(LABEL_NEEDS_HUMAN) || pr.in_merge_queue || unchecked.has(pr.head_sha) || pr.files == null) continue;
+    const base = { task: null, pr: pr.number, issue: null };
+    const removed = pr.merge_queue_events.find((e) => e.kind === 'dequeued' && (e.reason ?? '').toLowerCase() !== 'merged');
+    if (removed) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'merge_queue_rejected', effect: 'label:needs-human', source_ids: [pr.node_id, removed.node_id] }));
+      continue;
+    }
+    if (!onboardingFilesOk(code, pr.files)) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'onboarding_not_generated', effect: 'label:needs-human', source_ids: [pr.node_id, pr.head_sha] }));
+      continue;
+    }
+    // This PR's own runs only: ci's `seed.js contracts --check` step runs only on factory/onboard/*
+    // branches, so a green run of another PR at the same commit doesn't count.
+    const ci = latestCheckOfPr(s, pr, CI_WORKFLOW);
+    const gates = latestCheckOfPr(s, pr, GATES_WORKFLOW);
+    const failed = [ci, gates].find((r) => r?.conclusion && FAILED_CONCLUSIONS.has(r.conclusion));
+    if (failed) {
+      out.push(decide({ ...base, type: 'needs_human', reason: 'onboarding_checks_failed', effect: 'label:needs-human', run_id: failed.run_id, source_ids: [`${failed.run_id}/attempts/${failed.run_attempt}`, pr.node_id] }));
+      continue;
+    }
+    if (ci?.conclusion !== 'success' || gates?.conclusion !== 'success' || pr.mergeable !== 'MERGEABLE') continue;
+    // With the kill switch off nothing is enqueued, so no slot is taken and no cap hand-off is made:
+    // the enqueue below just waits on the kill switch.
+    if (killSwitchEnabled(env)) {
+      if (onboardedToday >= onboarding.max_per_day) {
+        out.push(decide({ ...base, type: 'needs_human', reason: 'onboarding_daily_cap', effect: 'label:needs-human', source_ids: [pr.node_id, `day:${today}`] }));
+        continue;
+      }
+      onboardedToday++;
+    }
+    merges.push({ ...decide({ ...base, type: 'auto_merge', reason: 'onboarding_ready', effect: 'enqueue_merge', run_id: ci.run_id, source_ids: [pr.node_id, pr.head_sha] }), head_sha: pr.head_sha });
   }
 
   // ---- open factory PRs: contract freshness and CI failures

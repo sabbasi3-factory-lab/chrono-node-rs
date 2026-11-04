@@ -98,12 +98,25 @@ export function intakeFixOf(pr: { head_ref?: string | null; author: string | nul
   return `${m[1]}/fix-${m[2]}`;
 }
 
-/** Up to 10 changed files of a PR with their status; null if unreadable (the planner then waits). */
-export async function readPullFiles(client: GitHubClient, repo: string, n: number): Promise<{ path: string; status: string }[] | null> {
+/** A language-onboarding PR's branch (harness/onboard, onboard.yml): `factory/onboard/<code>`. */
+const ONBOARD_BRANCH_RE = /^factory\/onboard\/([a-z]{2}(?:-[a-z]{4})?)$/;
+/** The locale code of a generated onboarding PR, opened by the controller App; null for anything else. */
+export function onboardingOf(pr: { head_ref?: string | null; author: string | null; author_is_bot: boolean }): string | null {
+  const m = ONBOARD_BRANCH_RE.exec(pr.head_ref ?? '');
+  if (!m || !pr.author_is_bot || (pr.author ?? '').replace(/\[bot\]$/, '') !== CONTROLLER_LOGIN) return null;
+  return m[1]!;
+}
+
+/**
+ * Up to `perPage` changed files of a PR with their status; null if unreadable (the planner then waits).
+ * A full page may hide more files, so it ends with a `too_many` entry no file check accepts.
+ */
+export async function readPullFiles(client: GitHubClient, repo: string, n: number, perPage = 10): Promise<{ path: string; status: string }[] | null> {
   try {
-    const res = await client.request('GET', `/repos/${repo}/pulls/${n}/files?per_page=10`);
+    const res = await client.request('GET', `/repos/${repo}/pulls/${n}/files?per_page=${perPage}`);
     if (!Array.isArray(res.data)) return null;
-    return res.data.map((f) => ({ path: asStr(asRec(f).filename) ?? '', status: asStr(asRec(f).status) ?? '' }));
+    const files = res.data.map((f) => ({ path: asStr(asRec(f).filename) ?? '', status: asStr(asRec(f).status) ?? '' }));
+    return perPage > 10 && files.length >= perPage ? [...files, { path: '', status: 'too_many' }] : files;
   } catch {
     return null;
   }
@@ -959,6 +972,8 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
   const pulls = await readPulls(client, o.repo);
   // Changed files, only for open bug-intake fix PRs (the planner's additive-only check).
   for (const p of pulls) if (p.state === 'open' && intakeFixOf(p) !== null) p.files = await readPullFiles(client, o.repo, p.number);
+  // ... and for open generated onboarding PRs (larger: one contract and golden file per step).
+  for (const p of pulls) if (p.state === 'open' && onboardingOf(p) !== null) p.files = await readPullFiles(client, o.repo, p.number, 100);
   const tasks = new Set<string>(o.historyTasks);
   for (const i of issues) if (i.task_id) tasks.add(i.task_id);
   for (const p of pulls) if (p.task_id && p.state === 'open') tasks.add(p.task_id);

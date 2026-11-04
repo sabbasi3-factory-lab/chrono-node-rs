@@ -191,6 +191,7 @@ export function parsePolicies(texts: PolicyTexts): Policies {
     },
     protected_from_agents: strList(t, 'tiers', 'protected_from_agents'),
     intake_fixes: intakeFixesOf(get(t, 'intake_fixes')),
+    onboarding: autoMergePolicyOf(get(t, 'onboarding'), 'onboarding', 5),
   };
 
   const c = doc('cadence');
@@ -198,6 +199,18 @@ export function parsePolicies(texts: PolicyTexts): Policies {
   const cadence = c as CadencePolicy;
 
   return { limits, budgets, tiers, cadence };
+}
+
+/** tiers.yaml `<name>: {auto_merge, max_per_day 0-max}`. Absent → null; malformed → an error (fail closed). */
+function autoMergePolicyOf(v: unknown, name: string, max: number): { auto_merge: boolean; max_per_day: number } | null {
+  if (v === undefined) return null;
+  const r = v as Record<string, unknown> | null;
+  if (r === null || typeof r !== 'object' || Array.isArray(r) || typeof r.auto_merge !== 'boolean') {
+    throw new Error(`policy tiers: ${name} must be {auto_merge: boolean, max_per_day: integer 0-${max}}`);
+  }
+  const n = r.max_per_day;
+  if (typeof n !== 'number' || !Number.isInteger(n) || n < 0 || n > max) throw new Error(`policy tiers: ${name}.max_per_day must be an integer 0-${max}`);
+  return { auto_merge: r.auto_merge, max_per_day: n };
 }
 
 /**
