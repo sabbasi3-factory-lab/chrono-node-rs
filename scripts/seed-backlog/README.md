@@ -30,6 +30,13 @@ npm test                         # unit tests
 - each upstream file exists and declares the class (the step, or the task's `class` where upstream reuses a class name: both `…TimeUnitRelativeFormatParser.ts` files declare `…TimeUnitAgoFormatParser`)
 - each Rust file is a single file in a `parsers/` or `refiners/` directory, so it auto-registers and no shared line is edited
 
+## Generated locales (`taskmap.d/`)
+
+Languages onboarded by `harness/onboard/onboard.js` add a fragment, `taskmap.d/<module>.yaml` (generator output, re-rendered in CI; never edited by hand). The script merges it with `taskmap.yaml`:
+- a fragment adds tasks only for its own locale (`locale: <module>` on each);
+- a **support task** (`kind: support`: `constants.ts`, a locale's shared base) ports one file directly in `src/locales/<module>/`. It has no step and no golden case; its acceptance is either unit cases recorded from chrono-node (`unit`) or, for a base with nothing to record, a `requirement` its dependents' golden cases check. Steps that import it list it in `needs`, which becomes `depends_on`;
+- golden facts are **scoped**: hand-mapped tasks see only the hand-scaffolded groups' cases, a generated locale's tasks only its own group's. Generated priorities start at 1000, ranked within the locale. So onboarding a language adds contracts and never changes one (a changed contract would mark in-flight PRs `stale-contract`).
+
 ## Fix contracts
 
 Besides the task map, every fix case in `tests/golden/fixes/` (from the intake: `harness/feedback/README.md`) becomes `contracts/<lang>/fix-<hash>.yaml`: scope = the Rust files of the steps chrono-node used for the case, area = the first of those steps' task areas (else `<lang>-fixes`), priority 0, golden step = the fix id, and a `fix: {issue, signature, steps, requirement}` entry the agent follows (add `// factory-fix: <id>` next to the change). Fix cases never change a port task's areas, priority or dependencies. After a fix contract merges, the intake's `link` job runs `issues --plan --only <id>` (no token), and `harness/feedback/intake.js tasks` creates the issue from that plan.

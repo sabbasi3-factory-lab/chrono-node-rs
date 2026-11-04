@@ -51,7 +51,9 @@ S.registerUpstreamAliases((p) => require(path.join(UPSTREAM, "src", p)));
 // Named configurations the Rust crate reproduces. Anything else is "custom" and skipped.
 const KNOWN_CONFIGS = new Map();
 function addKnown(name, chrono) {
-    KNOWN_CONFIGS.set(JSON.stringify(S.describeConfiguration(chrono)), name);
+    const fingerprint = JSON.stringify(S.describeConfiguration(chrono));
+    if (KNOWN_CONFIGS.has(fingerprint)) throw new Error(`${name} has the same steps as ${KNOWN_CONFIGS.get(fingerprint)}`);
+    KNOWN_CONFIGS.set(fingerprint, name);
 }
 addKnown("en.casual", new Chrono(en.configuration.createCasualConfiguration(false)));
 addKnown("en.strict", new Chrono(en.configuration.createConfiguration(true, false)));
@@ -69,6 +71,14 @@ addKnown("es.casual", new Chrono(es.createCasualConfiguration()));
 addKnown("es.strict", new Chrono(es.createConfiguration(true)));
 addKnown("ja.casual", new Chrono(ja.createCasualConfiguration()));
 addKnown("ja.strict", new Chrono(ja.createConfiguration(true)));
+// Generated locales (lib/locales.js): the locale module's exported Chrono instances, as its tests use them.
+for (const locale of require("../lib/locales").generatedLocales()) {
+    const L = require(path.join(UPSTREAM, "src", locale.upstream));
+    for (const [name, exported] of Object.entries(locale.configs)) {
+        if (!(L[exported] instanceof Chrono)) throw new Error(`${locale.upstream} exports no Chrono ${exported}`);
+        addKnown(name, L[exported]);
+    }
+}
 
 function configName(chrono) {
     return KNOWN_CONFIGS.get(JSON.stringify(S.describeConfiguration(chrono))) ?? null;

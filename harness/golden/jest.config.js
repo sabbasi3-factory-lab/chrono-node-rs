@@ -4,6 +4,8 @@
 const path = require("path");
 
 const upstream = path.resolve(__dirname, "../../upstream");
+// Generated locales (lib/locales.js): their upstream test directory; performance tests skipped.
+const generated = require("../lib/locales").generatedLocales();
 
 module.exports = {
     rootDir: upstream,
@@ -17,11 +19,14 @@ module.exports = {
         "<rootDir>/test/pt/*.test.ts",
         "<rootDir>/test/es/*.test.ts",
         "<rootDir>/test/ja/*.test.ts",
+        ...generated.map((l) => `<rootDir>/${l.tests}/*.test.ts`),
         // Fix cases from the intake (harness/golden/fixes/), replayed through chrono-node.
         path.join(__dirname, "fixes.test.js"),
+        // Coverage cases of generated locales (harness/golden/coverage/, from the onboarding generator).
+        path.join(__dirname, "coverage.test.js"),
     ],
     // Performance tests only time big inputs; they add nothing to golden data.
-    testPathIgnorePatterns: ["/node_modules/", "en_performance\\.test\\.ts$"],
+    testPathIgnorePatterns: ["/node_modules/", "en_performance\\.test\\.ts$", ...generated.map((l) => `/${l.tests}/[a-z_]+_performance\\.test\\.ts$`)],
     transform: {
         "^.+\\.ts$": [
             require.resolve("ts-jest"),

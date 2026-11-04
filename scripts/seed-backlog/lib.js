@@ -46,7 +46,13 @@ function tierFor(paths, tiers) {
 
 // Same rule as build.rs: snake_case files, excluding `mod.rs` and names starting with `_`
 // (those are skipped by the registry, so a step there could never register).
-const REGISTRY_DIR = /^src\/(common|locales\/[a-z]+)\/(parsers|refiners)\/(?!mod\.rs$)[a-z0-9][a-z0-9_]*\.rs$/;
+const REGISTRY_DIR = /^src\/(common|locales\/[a-z_]+)\/(parsers|refiners)\/(?!mod\.rs$)[a-z0-9][a-z0-9_]*\.rs$/;
+// A generated locale's support file (constants, a shared base): one file directly in the locale
+// directory, declared by build.rs. `mod.rs` and `configuration.rs` are the generator's.
+const SUPPORT_FILE = /^src\/locales\/([a-z_]+)\/(?!mod\.rs$|configuration\.rs$)[a-z0-9][a-z0-9_]*\.rs$/;
+// Generated tasks' priorities start here, after every hand-mapped task, and are ranked within their
+// locale, so onboarding a language never re-ranks (and so never changes) an existing contract.
+const GENERATED_PRIORITY_BASE = 1000;
 const TASK_ID = /^[a-z0-9-]+\/[a-z0-9-]+$/;
 
 /**
@@ -67,6 +73,12 @@ function validate({ taskmap, upstreamFiles, configurations }) {
     for (const t of taskmap.tasks || []) {
         if (!TASK_ID.test(t.id || "")) problems.push(`bad task id ${JSON.stringify(t.id)}`);
         add("id", t.id, t.id);
+        if (t.kind === "support") {
+            problems.push(...supportProblems(t, taskmap, upstreamFiles));
+            add("rust", t.rust, t.id);
+            continue;
+        }
+        if (t.kind !== undefined) problems.push(`${t.id}: unknown kind ${JSON.stringify(t.kind)}`);
         add("step", t.step, t.id);
         add("rust", t.rust, t.id);
         if (!REGISTRY_DIR.test(t.rust || "")) problems.push(`${t.id}: rust path must be one file in a parsers/ or refiners/ dir`);
@@ -95,12 +107,35 @@ function validate({ taskmap, upstreamFiles, configurations }) {
             problems.push(`${t.id}: source and rust path disagree on parser/refiner`);
         }
     }
+    for (const t of taskmap.tasks || []) {
+        for (const n of t.needs || []) {
+            const dep = (taskmap.tasks || []).find((x) => x.id === n);
+            if (!dep || dep.kind !== "support" || dep.locale !== t.locale) problems.push(`${t.id}: needs ${n}, not a support task of its locale`);
+        }
+    }
     // Every step of every named configuration (English, German, French, Swedish, Portuguese, Spanish, Japanese) must be done or a task.
     for (const [name, cfg] of Object.entries(configurations)) {
         for (const s of [...cfg.parsers, ...cfg.refiners]) {
             if (!seen.step.has(s.name)) problems.push(`${name} step ${s.name} is neither done nor a task`);
         }
     }
+    return problems;
+}
+
+/** A support task (generated locales only): `{id, kind: support, locale, source, rust, area, unit}`. */
+function supportProblems(t, taskmap, upstreamFiles) {
+    const problems = [];
+    const m = SUPPORT_FILE.exec(t.rust || "");
+    if (!t.locale || !m || m[1] !== t.locale) problems.push(`${t.id}: a support task's rust path is one file directly in src/locales/<its locale>/`);
+    if (t.step !== undefined || t.class !== undefined) problems.push(`${t.id}: a support task has no step`);
+    if (!t.area || !/^[a-z0-9-]+$/.test(t.area)) problems.push(`${t.id}: bad area`);
+    const src = `${taskmap.upstream_root}/${t.source}`;
+    if (!upstreamFiles.has(src)) problems.push(`${t.id}: missing upstream file ${src}`);
+    // Its acceptance: unit cases recorded from chrono-node (constants), or, for a shared base with
+    // nothing to record, a requirement its dependents' golden cases check.
+    const hasUnit = Boolean(t.unit) && Array.isArray(t.unit.cases) && t.unit.cases.length > 0 && typeof t.unit.requirement === "string";
+    const hasRequirement = typeof t.requirement === "string" && t.requirement.trim() !== "";
+    if (hasUnit === hasRequirement) problems.push(`${t.id}: a support task needs exactly one of unit {requirement, cases} or requirement`);
     return problems;
 }
 
@@ -142,32 +177,53 @@ function assertAcyclic(deps) {
     for (const id of deps.keys()) visit(id, []);
 }
 
-/** Build all contracts (sorted by id). */
+/**
+ * Build all contracts (sorted by id). Hand-mapped tasks (no `locale`) see only the hand-scaffolded
+ * golden groups' cases; a generated locale's tasks see only their own group's. So onboarding a
+ * language adds contracts and never changes one (a changed contract would mark in-flight PRs
+ * stale).
+ */
 function buildContracts({ taskmap, pin, tiers, cases }) {
     const doneSteps = new Set((taskmap.done || []).map((d) => d.step));
-    const byStep = new Map(taskmap.tasks.map((t) => [t.step, t]));
-    const facts = goldenFacts([...byStep.keys()], doneSteps, cases);
+    const stepTasks = taskmap.tasks.filter((t) => t.kind !== "support");
+    const byStep = new Map(stepTasks.map((t) => [t.step, t]));
+    const generatedGroups = new Set(taskmap.tasks.map((t) => t.locale).filter(Boolean));
+    const caseScope = (t) => cases.filter((c) => (t.locale ? c.group === t.locale : !generatedGroups.has(c.group)));
+    const facts = new Map();
+    for (const t of stepTasks) facts.set(t.step, goldenFacts([t.step], doneSteps, caseScope(t)).get(t.step));
 
     const deps = new Map();
     for (const t of taskmap.tasks) {
+        if (t.kind === "support") {
+            deps.set(t.id, [...(t.needs || [])].sort());
+            continue;
+        }
         const extra = facts.get(t.step).extra;
         const ids = extra.map((s) => {
             const dep = byStep.get(s);
             if (!dep) throw new Error(`${t.id}: golden data needs ${s}, which is neither done nor a task`);
             return dep.id;
         });
-        deps.set(t.id, [...new Set(ids)].sort());
+        deps.set(t.id, [...new Set([...ids, ...(t.needs || [])])].sort());
     }
     assertAcyclic(deps);
 
-    // Priority 1 = most golden cases; ties by id.
-    const ranked = [...taskmap.tasks].sort((a, b) => facts.get(b.step).count - facts.get(a.step).count || (a.id < b.id ? -1 : 1));
-    const priority = new Map(ranked.map((t, i) => [t.id, i + 1]));
+    // Priority 1 = most golden cases; ties by id. Generated locales: their support tasks first, then
+    // their steps by golden count, after GENERATED_PRIORITY_BASE (see above).
+    const byCount = (a, b) => facts.get(b.step).count - facts.get(a.step).count || (a.id < b.id ? -1 : 1);
+    const priority = new Map(stepTasks.filter((t) => !t.locale).sort(byCount).map((t, i) => [t.id, i + 1]));
+    for (const locale of [...generatedGroups].sort()) {
+        const own = taskmap.tasks.filter((t) => t.locale === locale);
+        const support = own.filter((t) => t.kind === "support").sort((a, b) => (a.id < b.id ? -1 : 1));
+        const steps = own.filter((t) => t.kind !== "support").sort(byCount);
+        [...support, ...steps].forEach((t, i) => priority.set(t.id, GENERATED_PRIORITY_BASE + i));
+    }
     const d = taskmap.acceptance.differential;
 
     return [...taskmap.tasks]
         .sort((a, b) => (a.id < b.id ? -1 : 1))
         .map((t) => {
+            if (t.kind === "support") return supportContract(t, { taskmap, pin, tiers, priority: priority.get(t.id), depends: deps.get(t.id) });
             const f = facts.get(t.step);
             if (f.count === 0) throw new Error(`${t.id}: no golden case needs ${t.step}`);
             return {
@@ -195,6 +251,32 @@ function buildContracts({ taskmap, pin, tiers, cases }) {
 }
 
 /**
+ * A generated locale's support file (constants, a shared base): no step and no golden case of its
+ * own, so its acceptance is the unit cases recorded from the pinned chrono-node (onboard.js). The
+ * steps that import it depend on it, and their golden cases check it again.
+ */
+function supportContract(t, { taskmap, pin, tiers, priority, depends }) {
+    return {
+        id: t.id,
+        title: `Port ${t.source.split("/").pop()} (${t.locale})`,
+        tier: tierFor([t.rust], tiers),
+        area: t.area,
+        priority,
+        source: `${taskmap.upstream_root}/${t.source}`,
+        source_sha: pin.commit,
+        upstream_class: t.source.split("/").pop().replace(/\.ts$/, ""),
+        scope: [t.rust],
+        depends_on: depends,
+        acceptance: [
+            { clippy: taskmap.acceptance.clippy },
+            { public_api: taskmap.acceptance.public_api },
+            t.unit ? { unit: t.unit } : { requirement: t.requirement },
+        ],
+        golden_cases: 0,
+    };
+}
+
+/**
  * Fix tasks from the monitor / bug intake: one contract per fix case in tests/golden/fixes/.
  * Scope: the Rust files of every step chrono-node used for the case (which one diverges is for
  * the fix to find). Area: the first of those steps' task areas (so it serializes with work on the
@@ -204,7 +286,7 @@ function buildContracts({ taskmap, pin, tiers, cases }) {
 function buildFixContracts({ taskmap, pin, tiers, fixes }) {
     const steps = new Map();
     for (const d of taskmap.done || []) steps.set(d.step, { rust: d.rust, area: null, source: null });
-    for (const t of taskmap.tasks) steps.set(t.step, { rust: t.rust, area: t.area, source: `${taskmap.upstream_root}/${t.source}` });
+    for (const t of taskmap.tasks) if (t.kind !== "support") steps.set(t.step, { rust: t.rust, area: t.area, source: `${taskmap.upstream_root}/${t.source}` });
     const d = taskmap.acceptance.differential;
     return (fixes || [])
         .map((f) => {
@@ -283,6 +365,7 @@ function planIssues(contracts, repo) {
         body: [
             MARKER(c.id),
             `Port \`${c.upstream_class}\` from \`${c.source}\` (chrono-node @ \`${c.source_sha.slice(0, 7)}\`).`,
+            ...(c.golden_cases === 0 ? ["", "A support file of a generated locale: no golden case of its own; its acceptance is the contract's unit cases, and the steps that import it depend on it."] : []),
             "",
             `- Contract: [\`contracts/${c.id}.yaml\`](https://github.com/${repo}/blob/main/contracts/${c.id}.yaml)`,
             `- Scope: ${c.scope.map((s) => `\`${s}\``).join(", ")}`,
@@ -332,7 +415,30 @@ function missingLabels(required, existing) {
     return required.filter((l) => !have.has(l.name) && !seen.has(l.name) && seen.add(l.name));
 }
 
+/**
+ * Merge the hand-written task map with the generated locales' fragments (taskmap.d/<module>.yaml,
+ * harness/onboard/onboard.js). A fragment may only add tasks for its own locale.
+ */
+function mergeTaskmaps(base, fragments) {
+    const out = { ...base, tasks: [...(base.tasks || [])] };
+    for (const [file, f] of fragments) {
+        const where = `taskmap.d/${file}`;
+        if (!f || f.version !== 1 || typeof f.locale !== "string" || !Array.isArray(f.tasks) || file !== `${f.locale}.yaml`) {
+            throw new Error(`${where}: want {version: 1, locale: <module>, tasks: [...]} named <module>.yaml`);
+        }
+        const extra = Object.keys(f).filter((k) => !["version", "locale", "generated_by", "tasks"].includes(k));
+        if (extra.length > 0) throw new Error(`${where}: unexpected keys ${extra.join(", ")}`);
+        for (const t of f.tasks) {
+            if (t.locale !== f.locale) throw new Error(`${where}: task ${t.id} is not for locale ${f.locale}`);
+            out.tasks.push(t);
+        }
+    }
+    return out;
+}
+
 module.exports = {
+    mergeTaskmaps,
+    GENERATED_PRIORITY_BASE,
     missingLabels,
     MARKER,
     globToRegExp,

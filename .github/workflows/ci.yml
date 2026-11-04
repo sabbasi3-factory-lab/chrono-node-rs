@@ -126,6 +126,20 @@ jobs:
         working-directory: harness
         run: npm run build:upstream
 
+      # Generated locales (harness/onboard/onboard.js): their scaffold, task map fragment and coverage
+      # requests re-render byte for byte from upstream/ and tests/golden/ (golden:check above covers
+      # the golden files).
+      - name: Generated locales match the onboarding generator
+        working-directory: harness
+        run: node onboard/onboard.js check
+
+      # An onboarding PR also adds contracts: they must be exactly the seed script's output. Only on
+      # those PRs, so a factory pin bump that changes a tier can't turn every PR red.
+      - name: Onboarding PR contracts match the seed script
+        if: startsWith(github.head_ref, 'factory/onboard/')
+        working-directory: scripts/seed-backlog
+        run: npm ci --ignore-scripts --no-audit --no-fund && node seed.js contracts --check
+
       - name: Comparison with chrono-node (contract seed, reproducible)
         working-directory: harness
         env:

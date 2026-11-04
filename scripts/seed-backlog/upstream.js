@@ -79,18 +79,20 @@ function summarize(files, taskmap, ported) {
     );
     for (const f of expanded) {
         const p = f.filename;
-        const lang = /^src\/locales\/([a-z]{2})\//.exec(p)?.[1] || /^test\/([a-z]{2})\//.exec(p)?.[1] || null;
+        // A Rust module per language: `zh/hans` is `zh_hans` (a generated locale, harness/onboard).
+        const m = /^(?:src\/locales|test)\/([a-z]{2})\/(?:(hans|hant)\/)?/.exec(p);
+        const lang = m ? (m[2] ? `${m[1]}_${m[2]}` : m[1]) : null;
         if (lang && !ported.includes(lang)) {
             out.unported.push(p);
             continue;
         }
-        if (/^src\/(locales\/[a-z]{2}|common)\/(parsers|refiners)\/[^/]+\.ts$/.test(p) && !path.basename(p).startsWith("Abstract")) {
+        if (/^src\/(locales\/[a-z]{2}(?:\/[a-z]{4})?|common)\/(parsers|refiners)\/[^/]+\.ts$/.test(p) && !path.basename(p).startsWith("Abstract")) {
             const step = path.basename(p, ".ts");
             const known = bySource.get(p) || (done.has(step) ? { step, task: null } : null);
             if (f.status === "removed") out.removed_steps.push({ file: p, ...(known || { step }) });
             else if (known) out.steps.push({ file: p, status: f.status, ...known });
             else out.new_steps.push({ file: p, status: f.status, step });
-        } else if (/^src\/locales\/[a-z]{2}\/(configuration|index)\.ts$/.test(p) || p === "src/configurations.ts") {
+        } else if (/^src\/locales\/[a-z]{2}(?:\/[a-z]{4})?\/(configuration|index)\.ts$/.test(p) || p === "src/configurations.ts") {
             out.configuration.push(p);
         } else if (p.startsWith("src/")) {
             out.core.push(p);
@@ -156,7 +158,12 @@ async function check() {
         const commit = (await gh("GET", `/repos/${UPSTREAM_REPO}/commits/${latest.tag_name}`)).sha;
         const cmp = await gh("GET", `/repos/${UPSTREAM_REPO}/compare/${from.commit}...${commit}?per_page=300`);
         // Loaded here only: `issue` runs with a write token and must load no third-party module.
-        const taskmap = require("yaml").parse(fs.readFileSync(path.join(__dirname, "taskmap.yaml"), "utf8"));
+        const YAML = require("yaml");
+        const fragDir = path.join(__dirname, "taskmap.d");
+        const fragments = fs.existsSync(fragDir)
+            ? fs.readdirSync(fragDir).filter((f) => f.endsWith(".yaml")).sort().map((f) => [f, YAML.parse(fs.readFileSync(path.join(fragDir, f), "utf8"))])
+            : [];
+        const taskmap = require("./lib").mergeTaskmaps(YAML.parse(fs.readFileSync(path.join(__dirname, "taskmap.yaml"), "utf8")), fragments);
         const ported = fs.readdirSync(path.join(REPO, "src/locales"), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
         Object.assign(report, {
             status: "new_version",

@@ -44,7 +44,38 @@ pub fn parse_date(text: &str, reference: &ReferenceInput) -> Option<JsDate> {
     casual().parse_date(text, reference, &ParsingOption::default())
 }
 
-/// A named configuration: `en.casual`, `en.strict`, `en.GB.casual` or `en.GB.strict`.
+/// The hand-scaffolded named configurations, in this order (then the generated ones).
+const NAMED: [&str; 16] = [
+    "en.casual",
+    "en.strict",
+    "en.GB.casual",
+    "en.GB.strict",
+    "de.casual",
+    "de.strict",
+    "fr.casual",
+    "fr.strict",
+    "sv.casual",
+    "sv.strict",
+    "pt.casual",
+    "pt.strict",
+    "es.casual",
+    "es.strict",
+    "ja.casual",
+    "ja.strict",
+];
+
+/// Every named configuration [`configuration`] knows: the hand-scaffolded ones, then the
+/// generated locales' (`harness/onboard/onboard.js`).
+pub fn configuration_names() -> Vec<&'static str> {
+    NAMED
+        .iter()
+        .copied()
+        .chain(locales::generated().map(|n| n.name))
+        .collect()
+}
+
+/// A named configuration: `en.casual`, `en.strict`, `en.GB.casual`, `en.GB.strict`, `de.casual`, ...
+/// (see [`configuration_names`]).
 pub fn configuration(name: &str) -> Option<&'static Chrono> {
     match name {
         "en.casual" => Some(locales::en::casual()),
@@ -63,6 +94,6 @@ pub fn configuration(name: &str) -> Option<&'static Chrono> {
         "es.strict" => Some(locales::es::strict()),
         "ja.casual" => Some(locales::ja::casual()),
         "ja.strict" => Some(locales::ja::strict()),
-        _ => None,
+        _ => locales::generated().find(|n| n.name == name).map(|n| (n.chrono)()),
     }
 }

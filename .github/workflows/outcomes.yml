@@ -107,7 +107,7 @@ jobs:
                 | (if $ok then [$e.items[] | {type, object_url: ((.object_url // "") | if . == "" then null else . end), outcome_status, zero_touch: (.zero_touch // null)}]
                    else ($o.items // []) end) as $items
                 | {run_id, workflow, title, created_at, aic: ($run.aic // $o.aic // null),
-                   task: ((.title | capture("^(Implement|Repair|Review) (?<t>[a-z0-9]+/[a-z0-9_-]+) ").t? )
+                   task: ((.title | capture("^(Implement|Repair|Review) (?<t>[a-z0-9-]+/[a-z0-9_-]+) ").t? )
                           // ([$items[].object_url // "" | capture("/pull/(?<n>[0-9]+)").n? | $prtask[.]] | map(select(.)) | first) // null),
                    items: $items, eval_failed: (if $ok then false elif $tried[$id] then true else ($o.eval_failed // false) end)}
                 | .drill = ((.task // "") | startswith("drill/"))] as $fresh

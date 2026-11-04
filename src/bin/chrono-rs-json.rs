@@ -14,30 +14,11 @@ use std::io::{self, BufRead, Write};
 use chrono_node::core::json::{parse_request, results_to_json};
 use serde_json::{json, Value};
 
-const CONFIGS: [&str; 16] = [
-    "en.casual",
-    "en.strict",
-    "en.GB.casual",
-    "en.GB.strict",
-    "de.casual",
-    "de.strict",
-    "fr.casual",
-    "fr.strict",
-    "sv.casual",
-    "sv.strict",
-    "pt.casual",
-    "pt.strict",
-    "es.casual",
-    "es.strict",
-    "ja.casual",
-    "ja.strict",
-];
-
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|a| a == "--registered") {
         let mut out = serde_json::Map::new();
-        for name in CONFIGS {
+        for name in chrono_node::configuration_names() {
             let chrono = chrono_node::configuration(name).expect("known configuration");
             out.insert(
                 name.to_string(),

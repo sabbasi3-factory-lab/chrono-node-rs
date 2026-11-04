@@ -2,7 +2,7 @@
 "use strict";
 // Golden-test generator.
 //
-//   node golden/generate.js           regenerate tests/golden/{core,en,de,fr,sv,pt,es,ja}/*.json
+//   node golden/generate.js           regenerate tests/golden/{core,en,de,fr,sv,pt,es,ja,<generated>}/*.json
 //   node golden/generate.js --check   regenerate into a temp dir and fail if tests/golden differs
 //
 // Runs chrono-node's own core, English, German, French, Swedish, Portuguese, Spanish and Japanese
@@ -15,11 +15,16 @@ const { spawnSync } = require("child_process");
 const HARNESS = path.resolve(__dirname, "..");
 const REPO = path.resolve(HARNESS, "..");
 const GOLDEN = path.join(REPO, "tests/golden");
-const AREAS = ["core", "en", "de", "fr", "sv", "pt", "es", "ja"];
+const LOCALES = require("../lib/locales");
+// The hand-scaffolded groups, then the generated locales' (lib/locales.js).
+const GENERATED = LOCALES.generatedLocales();
+const AREAS = LOCALES.goldenGroups();
 // Fix cases (fixes.test.js): one file per fix id, outside index.json so parallel intake PRs
 // never touch the same generated file.
 const FIX_GROUP = "fixes";
 const FIX_SOURCE = "../harness/golden/fixes.test.js";
+// Coverage cases of generated locales (coverage.test.js): tests/golden/<module>/coverage.json.
+const COVERAGE_SOURCE = "../harness/golden/coverage.test.js";
 
 // Used only where an upstream test passes no reference date.
 const DEFAULT_REFERENCE = "2012-08-10T12:00:00.000Z";
@@ -36,6 +41,14 @@ function upstreamPin() {
 
 /** upstream/test/en/en_weekday.test.ts -> en/weekday ; upstream/test/system.test.ts -> core/system */
 function areaOf(source) {
+    // A generated locale: test/zh/hans/zh_hans_date.test.ts -> zh_hans/date
+    for (const l of GENERATED) {
+        if (!source.startsWith(`${l.tests}/`)) continue;
+        const name = source.slice(l.tests.length + 1).replace(/\.test\.ts$/, "");
+        if (name.includes("/")) break;
+        const short = name.startsWith(`${l.module}_`) ? name.slice(l.module.length + 1) : name === l.module ? "general" : name;
+        return `${l.module}/${short}`;
+    }
     const rel = source.replace(/^test\//, "").replace(/\.test\.ts$/, "");
     const parts = rel.split("/");
     if (parts.length === 1) return `core/${parts[0]}`;
@@ -112,6 +125,28 @@ function build(outDir) {
             problems.push(...raw.errors.map((e) => ({ source: raw.source, ...e })));
             if (raw.source === FIX_SOURCE) {
                 for (const [area, data] of fixFiles(raw, pin, problems)) files.set(area, data);
+                continue;
+            }
+            if (raw.source === COVERAGE_SOURCE) {
+                for (const s of raw.skipped) problems.push({ source: raw.source, reason: `coverage case skipped (${s.reason})`, upstream_test: s.upstream_test });
+                const byModule = new Map();
+                for (const c of raw.cases) {
+                    const module = /^([a-z_]+)\/coverage#/.exec(c.upstream_test || "")?.[1];
+                    if (!module || !GENERATED.some((l) => l.module === module)) {
+                        problems.push({ source: raw.source, reason: "coverage case of no generated locale", upstream_test: c.upstream_test });
+                        continue;
+                    }
+                    if (!byModule.has(module)) byModule.set(module, []);
+                    byModule.get(module).push(c);
+                }
+                for (const [module, list] of byModule) {
+                    const area = `${module}/coverage`;
+                    const width = String(list.length).length;
+                    const withIds = list.map((c, i) => ({ id: `${area}#${String(i + 1).padStart(width, "0")}`, ...c }));
+                    const source = `harness/golden/coverage/${module}.json`;
+                    files.set(area, { schema: SCHEMA, generator: "harness/golden/generate.js", upstream: pin, source, cases: withIds });
+                    index.files[area] = { source, cases: withIds.length, skipped: 0, skipped_by_reason: {} };
+                }
                 continue;
             }
             const area = areaOf(raw.source);
