@@ -153,6 +153,8 @@ export function parsePolicies(texts: PolicyTexts): Policies {
       factory_review: num(b, 'budgets', 'per_run.factory_review', 1),
       repair: num(b, 'budgets', 'per_run.repair', 1),
       threat_detection: num(b, 'budgets', 'per_run.threat_detection', 1),
+      // Optional: absent = the needs-human pre-triage agent is off. Present must be a positive cap.
+      needs_human_triage: get(b, 'per_run.needs_human_triage') == null ? null : num(b, 'budgets', 'per_run.needs_human_triage', 1),
       overshoot: overshootOf(b),
     },
     factory_per_day: {

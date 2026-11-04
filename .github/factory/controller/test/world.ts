@@ -182,6 +182,7 @@ export function fakeWorld(opts: WorldOptions = {}): ProjectWorld {
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), () => ({ data: { total_count: 0, workflow_runs: [] } }));
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/review\\.lock\\.yml/runs$`), () => ({ data: { total_count: 0, workflow_runs: [] } }));
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/improve\\.lock\\.yml/runs$`), () => ({ data: { total_count: 0, workflow_runs: [] } }));
+  gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/triage\\.lock\\.yml/runs$`), () => ({ data: { total_count: 0, workflow_runs: [] } }));
   // No reviewer check runs on any head (tests of the reviewer add their own).
   gh.addRoute('GET', new RegExp(`^${r}/commits/[0-9a-f]{40}/check-runs$`), () => ({ data: { total_count: 0, check_runs: [] } }));
   gh.addRoute('GET', new RegExp(`^${r}/actions/workflows/repair\\.lock\\.yml/runs$`), () => ({ data: { total_count: 0, workflow_runs: [] } }));

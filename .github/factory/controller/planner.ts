@@ -172,6 +172,44 @@ export function onboardingFilesOk(code: string, files: readonly { path: string; 
   );
 }
 
+/** At most this many pre-triage dispatches per poll (a burst of hand-offs spreads over polls). */
+export const MAX_TRIAGES_PER_POLL = 2;
+/** Hand-offs older than this aren't pre-triaged (a person has had them for a while). */
+export const TRIAGE_MAX_AGE_HOURS = 24;
+
+/**
+ * Needs-human hand-offs to pre-triage: this poll's needs_human decisions, and recorded live ones
+ * whose task issue still has needs-human and has had no triage since. One per task, oldest
+ * first, at most MAX_TRIAGES_PER_POLL. None unless the policy caps the triage agent.
+ */
+export function triageCandidates(s: Snapshot, p: Policies, decided: readonly Decision[], now: Date): Decision[] {
+  if (typeof p.budgets.per_run.needs_human_triage !== 'number') return [];
+  const issueOfTask = new Map<string, IssueSnap>();
+  for (const i of s.issues) if (i.task_id && i.labels.includes('factory:task')) issueOfTask.set(i.task_id, i);
+  const found = new Map<string, { at: string; d: Decision }>();
+  const add = (task: string, at: string, init: Omit<DecisionInit, 'type' | 'reason' | 'effect' | 'source_ids'> & { cause: ReasonCode }): void => {
+    if (found.has(task) || now.getTime() - Date.parse(at) > TRIAGE_MAX_AGE_HOURS * HOUR_MS) return;
+    const h = s.history[task];
+    if ((h?.triages ?? []).some((t) => t.at >= at)) return;
+    const d = decide({ ...init, type: 'triage_dispatched', reason: 'triage_needed', effect: 'dispatch_workflow:triage', task, source_ids: [`task:${task}`, `handoff:${at}`, `cause:${init.cause}`] });
+    found.set(task, { at, d: { ...d, cause: init.cause } });
+  };
+  const at = now.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  for (const d of decided) {
+    if (d.type !== 'needs_human' || !d.task) continue;
+    const issue = d.issue ?? issueOfTask.get(d.task)?.number ?? null;
+    if (issue === null) continue;
+    add(d.task, at, { cause: d.reason, issue, pr: d.pr, run_id: d.run_id, failure_signature: d.failure_signature });
+  }
+  for (const [task, h] of Object.entries(s.history)) {
+    const nh = h.needs_human;
+    const issue = issueOfTask.get(task);
+    if (!nh || !issue || !issue.labels.includes(LABEL_NEEDS_HUMAN)) continue;
+    add(task, nh.at, { cause: nh.reason as ReasonCode, issue: issue.number, pr: nh.pr, run_id: nh.run_id, failure_signature: nh.failure_signature });
+  }
+  return [...found.values()].sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0)).slice(0, MAX_TRIAGES_PER_POLL).map((x) => x.d);
+}
+
 function wait(reason: ReasonCode, base: Decision): Decision {
   return { ...base, type: 'wait', reason, effect: 'none' };
 }
@@ -934,6 +972,16 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     if (r.task && escalated.has(r.task)) continue;
     if (route(r, globalGate())) {
       out.push(r);
+      planned++;
+    }
+  }
+
+  // ---- needs-human pre-triage (triage.md): one read-only agent comment per hand-off, so the
+  // person's step is a decision. Only when budgets.yaml caps it (per_run.needs_human_triage), and
+  // behind the same gates as every AI dispatch (kill switch, spend, Actions load).
+  for (const t of triageCandidates(s, p, out, now)) {
+    if (route(t, globalGate())) {
+      out.push(t);
       planned++;
     }
   }

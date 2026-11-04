@@ -40,6 +40,25 @@ export function deriveState(events: AuditEvent[], now: Date): DerivedState {
         }
         break;
       }
+      case 'needs_human': {
+        if (!task) break;
+        const { reason, issue, pr, run_id: run, failure_signature: sig } = e.payload;
+        if (typeof reason !== 'string') break;
+        entry(task).needs_human = {
+          at: e.timestamp,
+          reason,
+          issue: typeof issue === 'number' ? issue : null,
+          pr: typeof pr === 'number' ? pr : null,
+          run_id: typeof run === 'number' ? run : null,
+          failure_signature: typeof sig === 'string' ? sig : null,
+        };
+        break;
+      }
+      case 'triage_dispatched': {
+        if (!task) break;
+        (entry(task).triages ??= []).push({ at: e.timestamp });
+        break;
+      }
       case 'repair_dispatched': {
         if (!task) break;
         const h = entry(task);

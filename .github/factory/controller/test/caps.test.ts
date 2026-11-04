@@ -19,6 +19,16 @@ describe('the spend bound is real: compiled caps equal the policy', () => {
     assert.equal(lockCapsMismatch(await read(), (await testPolicies()).budgets.per_run), null);
   });
 
+  it('the needs-human triage lock: not checked while the policy leaves it off; with a cap, it must enforce exactly that', async () => {
+    const per = (await testPolicies()).budgets.per_run;
+    const locks = await read();
+    assert.equal(per.needs_human_triage ?? null, null);
+    assert.equal(lockCapsMismatch({ ...locks, triage: null }, per), null, 'off: a missing lock is fine');
+    assert.equal(lockCapsMismatch(locks, { ...per, needs_human_triage: 150 }), null);
+    assert.match(String(lockCapsMismatch(locks, { ...per, needs_human_triage: 200 })), /triage\.lock\.yml agent cap 150(,150)* ≠ per_run\.needs_human_triage 200/);
+    assert.match(String(lockCapsMismatch({ ...locks, triage: null }, { ...per, needs_human_triage: 150 })), /triage\.lock\.yml could not be read/);
+  });
+
   it('any drift is a mismatch: agent cap, detection cap, a variable override, a missing lock, a policy change', async () => {
     const per = (await testPolicies()).budgets.per_run;
     const locks = await read();
@@ -64,7 +74,7 @@ describe('the spend bound is real: compiled caps equal the policy', () => {
     const per = (await testPolicies()).budgets.per_run;
     const legacy = (agent: number, evals?: number) =>
       `  agent:\n    run: '{"maxAiCredits":${agent}}'\n  detection:\n    run: '{"maxAiCredits":400}'\n${evals === undefined ? '' : `  evals:\n    run: '{"maxAiCredits":${evals}}'\n`}`;
-    const l = { implement: legacy(500, 500), repair: legacy(300), review: legacy(200), improve: legacy(500) };
+    const l = { implement: legacy(500, 500), repair: legacy(300), review: legacy(200), improve: legacy(500), triage: null };
     assert.equal(lockCapsMismatch(l, per), null);
     assert.match(String(lockCapsMismatch({ ...l, implement: legacy(600, 500) }, per)), /implement\.lock\.yml agent cap 600/);
     assert.match(String(lockCapsMismatch({ ...l, implement: legacy(500, 600) }, per)), /implement\.lock\.yml evals cap 600/);

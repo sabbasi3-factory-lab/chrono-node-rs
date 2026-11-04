@@ -56,7 +56,8 @@ export const IMPLEMENT_WORKFLOW_FILE = 'implement.lock.yml';
 export const REPAIR_WORKFLOW_FILE = 'repair.lock.yml';
 export const REVIEW_WORKFLOW_FILE = 'review.lock.yml';
 export const IMPROVE_WORKFLOW_FILE = 'improve.lock.yml';
-const WORKFLOW_FILES: Record<CappedWorkflow, string> = { implement: IMPLEMENT_WORKFLOW_FILE, repair: REPAIR_WORKFLOW_FILE, review: REVIEW_WORKFLOW_FILE, improve: IMPROVE_WORKFLOW_FILE };
+export const TRIAGE_WORKFLOW_FILE = 'triage.lock.yml';
+const WORKFLOW_FILES: Record<CappedWorkflow, string> = { implement: IMPLEMENT_WORKFLOW_FILE, repair: REPAIR_WORKFLOW_FILE, review: REVIEW_WORKFLOW_FILE, improve: IMPROVE_WORKFLOW_FILE, triage: TRIAGE_WORKFLOW_FILE };
 /** Workflows that work on no task: their runs count toward the daily total, never toward a task's budget. */
 const TASKLESS_FILES = new Set([IMPROVE_WORKFLOW_FILE]);
 export const USAGE_ARTIFACT = 'usage';
@@ -122,7 +123,8 @@ export interface TaskSpend {
 
 /** A dispatch the controller recorded in the audit log (non-dry-run `dispatched` / `repair_dispatched`). */
 export interface DispatchRecord {
-  kind: 'implement' | 'repair';
+  /** `triage`: a needs-human pre-triage (`triage_dispatched`); its attempt is 0. */
+  kind: 'implement' | 'repair' | 'triage';
   task: string;
   issue: number;
   attempt: number;
@@ -140,13 +142,16 @@ export const DISPATCH_MATCH_MINUTES = 30;
  */
 export function attributedTask(run: Rec, dispatches: readonly DispatchRecord[]): string | null {
   const title = typeof run.display_title === 'string' ? run.display_title : '';
-  const m = /^(Implement|Repair) ([a-z0-9-]+(?:\/[a-z0-9-]+)+) #([1-9][0-9]{0,8}) attempt ([1-9][0-9]?)$/.exec(title);
+  const m =
+    /^(Implement|Repair) ([a-z0-9-]+(?:\/[a-z0-9-]+)+) #([1-9][0-9]{0,8}) attempt ([1-9][0-9]?)$/.exec(title) ??
+    /^(Triage) ([a-z0-9-]+(?:\/[a-z0-9-]+)+) #([1-9][0-9]{0,8})()$/.exec(title);
   const created = typeof run.created_at === 'string' ? Date.parse(run.created_at) : NaN;
   if (!m || !Number.isFinite(created)) return null;
-  const kind = m[1] === 'Implement' ? 'implement' : 'repair';
+  const kind = m[1] === 'Implement' ? 'implement' : m[1] === 'Repair' ? 'repair' : 'triage';
+  const attempt = kind === 'triage' ? 0 : Number(m[4]);
   const hit = dispatches.some((d) => {
     const at = Date.parse(d.at);
-    return d.kind === kind && d.task === m[2] && d.issue === Number(m[3]) && d.attempt === Number(m[4]) && at <= created && created - at <= DISPATCH_MATCH_MINUTES * 60_000;
+    return d.kind === kind && d.task === m[2] && d.issue === Number(m[3]) && d.attempt === attempt && at <= created && created - at <= DISPATCH_MATCH_MINUTES * 60_000;
   });
   return hit ? m[2]! : null;
 }
@@ -175,6 +180,8 @@ export interface SpendCaps {
   factory_review: number;
   /** budgets.yaml per_run.threat_detection */
   threat_detection: number;
+  /** budgets.yaml per_run.needs_human_triage; absent or null = the triage agent is off (its runs aren't listed). */
+  needs_human_triage?: number | null;
 }
 
 // ---------------------------------------------------------------- zip (read-only, minimal)
@@ -353,10 +360,12 @@ export function allJobsFinished(jobs: readonly unknown[]): boolean {
 const round = (n: number): number => Math.round(n * 1e6) / 1e6;
 
 /** Today's (UTC) implement spend. Never throws for unreadable data: that's { aic: null }. */
-/** The task in an AI workflow run's name (`Implement <task> #<issue> attempt <n>`, `Repair …`), or null. */
+/** The task in an AI workflow run's name (`Implement <task> #<issue> attempt <n>`, `Repair …`, `Triage <task> #<issue>`), or null. */
 export function taskOfRun(run: Rec): string | null {
   const title = typeof run.display_title === 'string' ? run.display_title : '';
-  const m = /^(?:Implement|Repair) ([a-z0-9-]+(?:\/[a-z0-9-]+)+) #[1-9][0-9]{0,8} attempt [1-9][0-9]?$/.exec(title);
+  const m =
+    /^(?:Implement|Repair) ([a-z0-9-]+(?:\/[a-z0-9-]+)+) #[1-9][0-9]{0,8} attempt [1-9][0-9]?$/.exec(title) ??
+    /^Triage ([a-z0-9-]+(?:\/[a-z0-9-]+)+) #[1-9][0-9]{0,8}$/.exec(title);
   return m ? m[1]! : null;
 }
 
@@ -384,8 +393,11 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   // Every AI workflow with its in-flight reservation (the caps of its AI jobs) and how many AI jobs
   // can each overshoot. A workflow whose runs can't be listed (including a missing workflow file)
   // makes spend unknown.
+  // An optional workflow (triage) is always counted, even with its cap gone from the policy (off):
+  // runs started before that still spend. Its reservation then falls back to the reviewer's cap,
+  // above triage's compiled one.
   const workflows = (Object.keys(WORKFLOW_FILES) as CappedWorkflow[]).map((wf) => {
-    const cap = caps[CAPPED_WORKFLOWS[wf]];
+    const cap = caps[CAPPED_WORKFLOWS[wf]] ?? caps.reviewer_agent;
     const evals = EVALS_WORKFLOWS.includes(wf);
     return { file: WORKFLOW_FILES[wf], reserve: cap + caps.threat_detection + (evals ? cap : 0), jobs: evals ? 3 : 2 };
   });
