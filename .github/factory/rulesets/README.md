@@ -39,12 +39,19 @@ gh api -X PUT repos/$R/rulesets/<id> -f enforcement=disabled                    
 Verify once after applying: the next agent PR merges through the queue untouched, and the next
 human-tier PR shows "Review required (code owner)" and merges through the admin bypass.
 
-## Code scanning results (not applied yet)
+## Code scanning results (applied 2026-11-04)
 
-`{"type": "code_scanning", "parameters": {"code_scanning_tools": [{"tool": "CodeQL", "security_alerts_threshold": "high_or_higher", "alerts_threshold": "errors"}]}}`
-in the main ruleset would block a PR until CodeQL has analysed its head and found no new high or
-critical alert in the diff (merge protection doesn't apply to merge-queue groups). It isn't applied
-yet: the controller enqueues a PR as soon as `checks` and `gates` are green, and CodeQL's Rust
-analysis (about 4 min) can still be running then. GitHub would refuse the enqueue, and the
-controller hands a refused enqueue to a person (`merge_queue_rejected`). The controller must first
-wait for code scanning on the head; then add the rule.
+The main ruleset (`main: PR + merge queue`, id 25260035) has
+`{"type": "code_scanning", "parameters": {"code_scanning_tools": [{"tool": "CodeQL", "security_alerts_threshold": "high_or_higher", "alerts_threshold": "errors"}]}}`.
+A PR can't be queued until CodeQL has analysed its head and found no new high or critical alert, or
+error-level alert, in the diff. Merge protection doesn't apply to merge-queue groups; it is checked
+at enqueue. So the controller waits for CodeQL's check on the head first
+(`limits.yaml ci.wait_for_code_scanning`, #275): one re-run of a failed analysis, then a person.
+
+Roll back (remove only this rule):
+
+```sh
+R=sabbasi3-factory-lab/chrono-node-rs
+gh api repos/$R/rulesets/25260035 | jq '{name, target, enforcement, conditions, bypass_actors, rules: [.rules[] | select(.type != "code_scanning")]}' \
+  | gh api -X PUT repos/$R/rulesets/25260035 --input -
+```
