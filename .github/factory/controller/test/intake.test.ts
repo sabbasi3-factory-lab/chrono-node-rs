@@ -37,7 +37,7 @@ const world = (pr: PullSnap, ci = 'success', gates = 'success', extra: PullSnap[
     pulls: [pr, ...extra],
     check_runs: [
       checkRun(960, { head_sha: pr.head_sha, pull_requests: [pr.number], conclusion: ci }),
-      checkRun(961, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, conclusion: gates }),
+      checkRun(961, { workflow: 'gates', event: 'pull_request_target', head_sha: hex40('e'), candidate_sha: pr.head_sha, pull_requests: [pr.number], conclusion: gates }),
     ],
   });
 const run = (s: ReturnType<typeof world>, p = withIntake(), env = ON) => plan(s, p, env, NOW);
@@ -127,3 +127,20 @@ describe('tiers.yaml intake_fixes parsing', () => {
     await assert.rejects(load('intake_fixes:\n  auto_merge: true\n  max_per_day: 100'), /max_per_day/);
   });
 });
+
+describe('intake loop: review fixes (as in #272)', () => {
+  it("another PR's green checks at the same commit don't count for this one", () => {
+    const pr = intakePr();
+    const s = world(pr);
+    for (const r of s.check_runs) r.pull_requests = [99];
+    assert.deepEqual(kinds(run(s)), []);
+  });
+
+  it('with the kill switch off, a ready PR over the cap is not handed to a person; it waits on the switch', () => {
+    const merged = (n: number) => intakePr(n, { state: 'merged', merged_at: `${NOW.toISOString().slice(0, 10)}T01:00:00Z`, head_ref: `factory/intake/en-fix-0000000${n % 10}` });
+    const s = world(intakePr(), 'success', 'success', [merged(31), merged(32), merged(33)]);
+    assert.deepEqual(kinds(run(s, withIntake(), { FACTORY_ENABLED: undefined } as { FACTORY_ENABLED: string | undefined })), ['kill_switch/kill_switch']);
+    assert.deepEqual(kinds(run(s)), ['needs_human/intake_fix_daily_cap']);
+  });
+});
+

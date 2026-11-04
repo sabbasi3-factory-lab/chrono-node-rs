@@ -591,19 +591,23 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       out.push(decide({ ...base, type: 'needs_human', reason: 'intake_fix_not_additive', effect: 'label:needs-human', source_ids: [pr.node_id, pr.head_sha] }));
       continue;
     }
-    const ci = latestCheck(s, pr, CI_WORKFLOW);
-    const gates = latestCheck(s, pr, GATES_WORKFLOW);
+    const ci = latestCheckOfPr(s, pr, CI_WORKFLOW);
+    const gates = latestCheckOfPr(s, pr, GATES_WORKFLOW);
     const failed = [ci, gates].find((r) => r?.conclusion && FAILED_CONCLUSIONS.has(r.conclusion));
     if (failed) {
       out.push(decide({ ...base, type: 'needs_human', reason: 'intake_fix_checks_failed', effect: 'label:needs-human', run_id: failed.run_id, source_ids: [`${failed.run_id}/attempts/${failed.run_attempt}`, pr.node_id] }));
       continue;
     }
     if (ci?.conclusion !== 'success' || gates?.conclusion !== 'success' || pr.mergeable !== 'MERGEABLE') continue;
-    if (intakeToday >= intake.max_per_day) {
-      out.push(decide({ ...base, type: 'needs_human', reason: 'intake_fix_daily_cap', effect: 'label:needs-human', source_ids: [pr.node_id, `day:${today}`] }));
-      continue;
+    // With the kill switch off nothing is enqueued, so no slot is taken and no cap hand-off is made:
+    // the enqueue below just waits on the kill switch.
+    if (killSwitchEnabled(env)) {
+      if (intakeToday >= intake.max_per_day) {
+        out.push(decide({ ...base, type: 'needs_human', reason: 'intake_fix_daily_cap', effect: 'label:needs-human', source_ids: [pr.node_id, `day:${today}`] }));
+        continue;
+      }
+      intakeToday++;
     }
-    intakeToday++;
     merges.push({ ...decide({ ...base, type: 'auto_merge', reason: 'intake_fix_ready', effect: 'enqueue_merge', run_id: ci.run_id, source_ids: [pr.node_id, pr.head_sha] }), head_sha: pr.head_sha });
   }
 
