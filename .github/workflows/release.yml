@@ -44,9 +44,11 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       sha: ${{ steps.version.outputs.sha }}
     steps:
+      # The dispatch's own commit (github.sha), not a moving `main`: build provenance names exactly
+      # the commit the crate was built from.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -107,13 +109,22 @@ jobs:
       # SBOM from GitHub's own dependency graph (SPDX 2.3; built in, no third-party generator). It
       # covers the repository's manifests on main: the crate's Cargo.lock, and the harness's and the
       # vendored upstream's npm dev tooling (CI only, never shipped).
+      # The graph is main's latest: it must match this commit's Cargo.lock exactly (every locked crate,
+      # name@version, and no other cargo package), or no SBOM is attested.
       - name: SBOM (GitHub dependency graph, SPDX)
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.version.outputs.sha }}
         run: |
           gh api "repos/${GITHUB_REPOSITORY}/dependency-graph/sbom" --jq .sbom > target/package/sbom.spdx.json
           jq -e '.spdxVersion and (.packages | length > 0)' target/package/sbom.spdx.json > /dev/null
-          echo "SBOM: $(jq '.packages | length' target/package/sbom.spdx.json) packages" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '[.packages[].externalRefs[]?.referenceLocator | select(startswith("pkg:cargo/")) | sub("^pkg:cargo/"; "")] | unique | .[]' target/package/sbom.spdx.json > "$RUNNER_TEMP/sbom-cargo.txt"
+          git show "${SHA}:Cargo.lock" | awk '/^\[\[package\]\]/{n="";v=""} /^name = /{gsub(/"/,"",$3);n=$3} /^version = /{gsub(/"/,"",$3);v=$3; if (n != "" && n != "chrono-node-rs") print n"@"v}' | sort -u > "$RUNNER_TEMP/lock-cargo.txt"
+          if ! diff -u "$RUNNER_TEMP/lock-cargo.txt" "$RUNNER_TEMP/sbom-cargo.txt"; then
+            echo "::error::the dependency graph's cargo packages differ from Cargo.lock at ${SHA} (graph not indexed yet, or main moved): re-run later"; exit 1
+          fi
+          echo "SBOM: $(jq '.packages | length' target/package/sbom.spdx.json) packages; cargo packages match Cargo.lock at ${SHA}" >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -143,6 +154,11 @@ jobs:
 
       # Build provenance (SLSA, GitHub artifact attestations) for the .crate, and the SBOM attested
       # to it. Verify with: gh attestation verify <file>.crate --repo sabbasi3-factory-lab/chrono-node-rs
+      - name: The prepared commit is the run's commit
+        env:
+          SHA: ${{ needs.prepare.outputs.sha }}
+        run: '[ "$SHA" = "$GITHUB_SHA" ] || { echo "::error::prepared ${SHA}, run is for ${GITHUB_SHA}: provenance would name another commit"; exit 1; }'
+
       - name: Attest build provenance (.crate)
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
