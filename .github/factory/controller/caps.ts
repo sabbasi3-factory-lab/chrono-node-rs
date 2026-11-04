@@ -114,10 +114,11 @@ export function lockCapsMismatch(locks: Record<CappedWorkflow, string | null>, p
     if (detection.length === 0 || detection.some((c) => c !== perRun.threat_detection)) {
       return `${wf}.lock.yml detection cap ${detection.join(',') || 'missing'} ≠ per_run.threat_detection ${perRun.threat_detection}`;
     }
-    if (EVALS_WORKFLOWS.includes(wf)) {
+    // A lock without the evals job (implement before #164) spends less than reserved: it still verifies.
+    if (EVALS_WORKFLOWS.includes(wf) && hasJob(lock, 'evals')) {
       const evals = jobCaps(lock, 'evals');
       if (evals.length === 0 || evals.some((c) => c !== want)) return `${wf}.lock.yml evals cap ${evals.join(',') || 'missing'} ≠ per_run.${String(key)} ${want}`;
-    } else if (hasJob(lock, 'evals')) {
+    } else if (!EVALS_WORKFLOWS.includes(wf) && hasJob(lock, 'evals')) {
       return `${wf}.lock.yml has an evals job the controller doesn't reserve (caps.ts EVALS_WORKFLOWS)`;
     }
   }
