@@ -30,6 +30,10 @@ const { evaluate, needsFullRegression, reviewGate } = require("./scope");
 const REPO = path.resolve(__dirname, "../..");
 const MODE = process.env.GATE_MODE || "enforce";
 const AGENT_LOGIN = "sabbasi3-factory-agent[bot]";
+const CONTROLLER_LOGIN = "sabbasi3-factory-controller[bot]";
+/** A dependency-steward PR: the controller App on `factory/deps/<crate>-<x.y.z>` (harness/steward). */
+const isStewardPr = (pr) =>
+    Boolean(pr && pr.user && pr.user.login === CONTROLLER_LOGIN && pr.head && /^factory\/deps\/[A-Za-z0-9_-]+-\d+\.\d+\.\d+$/.test(pr.head.ref || ""));
 
 const git = (...args) => execFileSync("git", args, { cwd: REPO, encoding: "utf8" }).trim();
 
@@ -158,6 +162,9 @@ async function main() {
         }
     };
     const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract, readFile });
+    // The dependency steward's PRs (controller App, factory/deps/*) have no task, but they merge
+    // without a person: the strict gates must be enforced on them exactly as on factory PRs.
+    const steward = isStewardPr(pr);
     // A factory PR's contract decides too (its tier and every scope path). A missing or unreadable
     // contract fails closed: run the full regression.
     let strict;
@@ -198,7 +205,7 @@ async function main() {
         fs.appendFileSync(
             process.env.GITHUB_OUTPUT,
             [
-                `kind=${result.kind}`,
+                `kind=${steward ? "factory" : result.kind}`,
                 `golden_areas=${result.goldenAreas.join(",")}`,
                 `golden_step=${result.goldenStep || ""}`,
                 `differential_seed=${d.seed}`,
@@ -221,7 +228,7 @@ async function main() {
     console.log(result.kind === "human" ? "human PR: scope gate not applicable" : "scope and contract SHA ok");
 }
 
-module.exports = { mergeGroupReview };
+module.exports = { mergeGroupReview, isStewardPr };
 
 if (require.main === module) {
     main().catch((e) => {

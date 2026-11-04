@@ -19,6 +19,11 @@
     { "name": "intake:not-a-port-bug", "color": "EDEDED", "description": "chrono-node gives the same result: the port is faithful" },
     { "name": "intake:not-ported-yet", "color": "EDEDED", "description": "Needs steps the port doesn't have yet" },
     { "name": "upstream", "color": "5319E7", "description": "A new chrono-node release (upstream sync)" },
-    { "name": "upstream:bump", "color": "5319E7", "description": "Draft the human-tier bump PR for this upstream release" }
+    { "name": "upstream:bump", "color": "5319E7", "description": "Draft the human-tier bump PR for this upstream release" },
+    { "name": "dependency-request", "color": "BFDADC", "description": "A crate request for the dependency steward" },
+    { "name": "dependency:borderline", "color": "FBCA04", "description": "Hard checks passed, soft checks didn't: the owner decides within 24 h" },
+    { "name": "dependency:approved", "color": "0E8A16", "description": "The owner accepts a borderline dependency request" },
+    { "name": "dependency:rejected", "color": "B60205", "description": "The dependency steward rejected the request" },
+    { "name": "dependency:pr-open", "color": "C2E0C6", "description": "The dependency steward opened the PR" }
   ]
 }

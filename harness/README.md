@@ -9,6 +9,7 @@ Node tools that run the **real chrono-node** from `upstream/` as the judge for t
 | Golden-test generator | `npm run golden` / `npm run golden:check` | Records chrono-node's outputs for its own core, English, German, French, Swedish, Portuguese, Spanish and Japanese test cases into `tests/golden/`. See `tests/golden/README.md`. |
 | Comparison harness | `npm run build:upstream`, then `npm run compare -- [--seed N] [--phrases N] [--rust PATH] [--report FILE] [--requests FILE] [--plant]` | Generates seeded random phrases and random reference dates (or reads given requests with `--requests`), runs them through chrono-node and the Rust `chrono-rs-json` CLI, and compares the outputs. See below. |
 | Monitor and bug intake | `feedback/monitor.js`, `feedback/intake.js` (run by `monitor.yml` and `intake.yml`) | Nightly fresh-seed comparison → deduplicated `factory:bug` issues; bug reports → fix task PRs (contract + golden case). See [`feedback/README.md`](feedback/README.md). |
+| Dependency steward | `steward/steward.js` (run by `dependency-steward.yml`) | Checks `dependency-request` issues against factory `policies/dependencies.yaml`; a pass becomes an auto-strict PR adding the crate. See [`steward/README.md`](steward/README.md). |
 
 Setup: Node 24 or later, then `npm ci` in this directory. Dependency versions are pinned exactly and match `upstream/package-lock.json`.
 

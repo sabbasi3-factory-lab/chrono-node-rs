@@ -225,6 +225,14 @@ safe-outputs:
       - "src/locales/**"
       - "src/common/parsers/**"
       - "src/common/refiners/**"
+  # A dependency request for the steward (agents can't edit Cargo.toml; DESIGN §9). gh-aw v1.0.1
+  # adds this label but doesn't restrict others the agent adds; they're inert: every consumer checks
+  # who labelled (an agent can't approve, triage or bump), and gh-aw strips HTML comments, so the
+  # body can't carry a factory-task or monitor marker.
+  create-issue:
+    max: 1
+    title-prefix: "[dependency-request] "
+    labels: [dependency-request]
   add-comment:
     max: 1
     target: ${{ github.event.inputs.issue }}
@@ -306,6 +314,7 @@ safe-outputs:
   - Add tests to the scope file's `#[cfg(test)]` module so that each listed mutation would change a test's outcome. Don't change the ported code to make mutants disappear, and don't add `mutants::skip`.
   - Every expected value in a new test must come from **upstream's behaviour**, never from what the Rust code returns. Cite it in a comment on the test: the upstream file and line(s) under `upstream/src/` that produce it, or the upstream test under `upstream/test/` that asserts it.
   - If a mutant can't be killed without a test that upstream's behaviour doesn't decide (an equivalent mutant), don't guess: say which one and why in your issue comment.
+- If you need a crate that isn't already a dependency, don't add it: you can't edit `Cargo.toml`. File **one** dependency request with `create_issue` instead. Title: `<crate> <version>`. Body: exactly these headings, each followed by a blank line and its value: `### Crate`, `### Version` (`1` or `1.2`), `### Kind` (`runtime` or `dev`), `### Reason` (why the approved crates aren't enough), `### Task` (`${{ github.event.inputs.task }}`). The dependency steward checks it against the factory's policy, and a crate that passes is available from a later run. Then do what you can without it, and say so in your comment.
 - If the failure isn't in the scope file, or you can't fix it within the scope, don't push anything: add one comment to issue #${{ github.event.inputs.issue }} saying why. The controller then hands the task to a person.
 
 ## Output
