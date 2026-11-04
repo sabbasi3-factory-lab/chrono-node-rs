@@ -21,8 +21,9 @@ CODEOWNERS itself stays: it requests the owner's review and documents the human 
   scope gate rejects protected paths), and the steward changes only `Cargo.toml`/`Cargo.lock`.
   Controller revert PRs revert agent merges, so they touch only the agent's paths.
 - **Bypass: repository admins, for pull requests only.** With one person owning the repo, the
-  owner's own PRs can't get a second code owner's approval. If the break-glass set is applied, narrow
-  `.github/CODEOWNERS` (or a second file) to those paths first.
+  owner's own PRs can't get a second code owner's approval. GitHub reads only one CODEOWNERS file
+  (`.github/CODEOWNERS` first), so the break-glass option means narrowing `.github/CODEOWNERS` itself
+  to those paths before enabling this ruleset; the human-tier ownership then lives in tiers.yaml only.
 - **Generated onboarding PRs** (`harness/onboard/`): the approved languages' generated paths
   (`contracts/<code>/`, `tests/golden/<module>/`, `harness/golden/coverage/<module>.json`) and the two
   golden indexes have no owner, so tiers.yaml `onboarding` decides, as for intake fixes. A new
