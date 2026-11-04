@@ -180,7 +180,7 @@ export interface ContractSnap {
   area: string | null;
 }
 
-export type CheckEvent = 'pull_request' | 'pull_request_target' | 'merge_group' | 'push';
+export type CheckEvent = 'pull_request' | 'pull_request_target' | 'merge_group' | 'push' | 'workflow_dispatch';
 
 export interface CheckRunSnap {
   run_id: number;

@@ -6,11 +6,11 @@
 //
 // Usage:
 //   node main.ts                                   (CI; needs GH_TOKEN etc.)
-//   node main.ts --fixture test/fixtures/snapshot.json --print [--now <iso>]
+//   node main.ts --fixture test/fixtures/snapshot.json --print [--now <iso>] [--policies <dir>]
 
 import { appendFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { AuditLog, AuditValidationError, dedupeKey, isoSeconds } from './audit.ts';
 import { canonicalize } from './canonical.ts';
 import { decisionEvent, describe, execute, executeLive, isLive, liveDecision, pendingHandoffs } from './executor.ts';
@@ -384,18 +384,22 @@ interface CliArgs {
   fixture: string | null;
   print: boolean;
   now: string | null;
+  /** Fixture mode only: load policies from this directory instead of the test copies (fire drills use the pinned live policies). */
+  policies: string | null;
 }
 
 export function parseArgs(argv: string[]): CliArgs {
-  const out: CliArgs = { fixture: null, print: false, now: null };
+  const out: CliArgs = { fixture: null, print: false, now: null, policies: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--fixture') out.fixture = argv[++i] ?? null;
     else if (a === '--print') out.print = true;
     else if (a === '--now') out.now = argv[++i] ?? null;
+    else if (a === '--policies') out.policies = argv[++i] ?? null;
     else throw new Error(`unknown argument: ${a}`);
   }
   if (out.fixture === '') throw new Error('--fixture needs a path');
+  if (out.policies !== null && (out.policies === '' || out.fixture === null)) throw new Error('--policies needs a path and --fixture');
   return out;
 }
 
@@ -411,7 +415,7 @@ async function cli(): Promise<void> {
     deps = {
       client: new FakeGitHub(snapshot.repo),
       repo: snapshot.repo,
-      policies: await loadPoliciesFromDir(FIXTURE_POLICIES_DIR),
+      policies: await loadPoliciesFromDir(args.policies ? pathToFileURL(resolve(args.policies) + '/') : FIXTURE_POLICIES_DIR),
       factoryVersion,
       env: { FACTORY_ENABLED: process.env.FACTORY_ENABLED, GITHUB_RUN_ID: '0', GITHUB_EVENT_NAME: 'local' },
       now,

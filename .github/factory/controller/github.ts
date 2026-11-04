@@ -28,10 +28,13 @@ export const API_BASE = 'https://api.github.com';
 export const MAX_PAGES = 40;
 export const CI_WORKFLOW_NAME = 'ci';
 export const GATES_WORKFLOW_NAME = 'gates';
+/** Fire drills (drills.yml, dispatched by drill-schedule.yml): recorded as check_result only, so every drill result is in the audit log. The planner ignores them. */
+export const DRILLS_WORKFLOW_NAME = 'drills';
 /** Gate workflows recorded as check_result, and the events each one runs on. */
 const CHECK_WORKFLOWS: Record<string, readonly string[]> = {
   [CI_WORKFLOW_NAME]: ['pull_request', 'merge_group', 'push'],
   [GATES_WORKFLOW_NAME]: ['pull_request_target', 'merge_group'],
+  [DRILLS_WORKFLOW_NAME]: ['workflow_dispatch'],
 };
 export const CHECKS_JOB_NAME = 'checks';
 

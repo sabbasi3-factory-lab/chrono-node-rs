@@ -228,6 +228,7 @@ describe('snapshot reader', () => {
       [
         ['ci', 'pull_request', 'success'],
         ['gates', 'pull_request_target', 'failure'],
+        ['drills', 'workflow_dispatch', 'failure'],
       ],
     );
     assert.equal(s.check_runs[0]!.heldout_seed, '9007199254740993');

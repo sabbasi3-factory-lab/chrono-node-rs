@@ -143,6 +143,10 @@ export function fakeWorld(opts: WorldOptions = {}): ProjectWorld {
           { id: 4244, run_attempt: 1, name: 'gates', event: 'pull_request_target', head_sha: MAIN_SHA, pull_requests: [{ number: 11, head: { sha: hex40('1') } }], status: 'completed', conclusion: 'failure', created_at: at, updated_at: at },
           // gates on an event it never runs on is ignored.
           { id: 4245, run_attempt: 1, name: 'gates', event: 'push', head_sha: hex40('2'), status: 'completed', conclusion: 'success', created_at: at, updated_at: at },
+          // Fire drills (dispatched by drill-schedule): recorded (audit log), never planned on.
+          { id: 4246, run_attempt: 1, name: 'drills', event: 'workflow_dispatch', head_sha: hex40('2'), pull_requests: [], status: 'completed', conclusion: 'failure', created_at: at, updated_at: at },
+          // drills on an event it never runs on is ignored.
+          { id: 4247, run_attempt: 1, name: 'drills', event: 'push', head_sha: hex40('2'), status: 'completed', conclusion: 'success', created_at: at, updated_at: at },
         ],
       },
     };

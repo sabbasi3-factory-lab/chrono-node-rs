@@ -1,0 +1,144 @@
+# Fire drills (factory policies/cadence.yaml `fire_drills`): prove the guardrails still bite.
+# Plain code, no AI. Started by drill-schedule.yml (about weekly, at random) or by hand.
+#
+# Every drill plants one fault in a throwaway copy of its inputs and runs main's real guardrail code
+# with the pinned live policies; each also runs a control without the fault, which must pass
+# (harness/drills/README.md):
+#   golden-mismatch      a wrong expectation in a checked golden case fails the golden suite
+#   comparison-mismatch  a planted mismatch with chrono-node is reported, exactly one
+#   scope-reject         the scope gate rejects out-of-scope, protected-path and stale-contract changes
+#   kill-switch          with FACTORY_ENABLED off, the controller dispatches nothing
+#   over-cap             daily spend at the cap pauses dispatch; at alert_at_pct it alerts
+#   audit-tamper         the factory's audit verifier fails on a tampered copy of the real log
+# All are dry runs: nothing is written to GitHub except, on a failure in live mode, one
+# factory:alert issue. Each run's result is in the audit log: the controller records `drills` runs
+# as check_result events. The per-drill detail is the run's summary and its `drill-results` artifact.
+# Human tier: changes need the owner's review.
+name: drills
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Comma-separated drill ids (empty = all)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: drills
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  drills:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions: { contents: read }
+    outputs:
+      failed: ${{ steps.run.outputs.failed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0 # the scope drill reads a contract's last commit
+          persist-credentials: false
+
+      - name: Inputs (audit branch, pinned policies, factory verifier and anchors)
+        run: |
+          git fetch -q --no-tags origin "+refs/heads/audit:refs/remotes/origin/audit"
+          echo "AUDIT_HEAD=$(git rev-parse origin/audit)" >> "$GITHUB_ENV"
+          version=$(cat .github/factory/factory-version)
+          [[ "$version" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad factory-version"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/policies"
+          for f in limits budgets tiers cadence; do
+            curl -fsSL "https://raw.githubusercontent.com/sabbasi3-factory-lab/factory/${version}/policies/${f}.yaml" -o "$RUNNER_TEMP/policies/${f}.yaml"
+          done
+          git clone -q https://github.com/sabbasi3-factory-lab/factory "$RUNNER_TEMP/factory"
+          git -C "$RUNNER_TEMP/factory" checkout -q "$version"
+          git -C "$RUNNER_TEMP/factory" fetch -q origin "+refs/heads/anchors:refs/remotes/origin/anchors"
+          echo "POLICIES_DIR=$RUNNER_TEMP/policies" >> "$GITHUB_ENV"
+          echo "FACTORY_GIT_DIR=$RUNNER_TEMP/factory" >> "$GITHUB_ENV"
+          echo "AUDIT_GIT_DIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install Rust toolchain (rust-toolchain.toml)
+        run: rustup toolchain install && rustc --version
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Build
+        run: |
+          cargo build --locked --bin chrono-rs-json
+          cargo test --locked --test golden --no-run
+          (cd harness && npm ci --ignore-scripts --no-audit --no-fund && npm run build:upstream)
+          (cd .github/factory/controller && npm ci --ignore-scripts --no-audit --no-fund)
+
+      - name: Drills
+        id: run
+        working-directory: harness
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          [[ -z "$ONLY" || "$ONLY" =~ ^[a-z-]+(,[a-z-]+)*$ ]] || { echo "::error::bad drill list"; exit 1; }
+          set +e
+          node drills/drills.js run ${ONLY:+--only "$ONLY"} --out "$RUNNER_TEMP/drill-results.json"
+          status=$?
+          set -e
+          {
+            echo "| Drill | Result | What it showed | Seconds |"
+            echo "|---|---|---|---|"
+            jq -r '.results[] | "| \(.id) | \(.result) | \(.summary | gsub("\\|"; "/")) | \(.seconds) |"' "$RUNNER_TEMP/drill-results.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "failed=$(jq -r '[.results[] | select(.result != "pass") | .id] | join(",")' "$RUNNER_TEMP/drill-results.json")" >> "$GITHUB_OUTPUT"
+          exit $status
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: drill-results
+          path: ${{ runner.temp }}/drill-results.json
+          retention-days: 90
+
+  # A drill failed: a guardrail may not bite. One factory:alert issue (live only), so a person looks.
+  alert:
+    needs: drills
+    if: failure() && vars.FACTORY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      R: ${{ github.repository }}
+      FAILED: ${{ needs.drills.outputs.failed }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Create controller App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-issues: write
+
+      - name: Raise the alert
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          [[ -z "$FAILED" || "$FAILED" =~ ^[a-z-]+(,[a-z-]+)*$ ]] || { echo "::error::bad drill ids"; exit 1; }
+          marker="<!-- factory-drill-failed -->"
+          open=$(gh api "repos/$R/issues?labels=factory:alert&state=open&per_page=100" --jq "[.[] | select(.body | contains(\"$marker\"))] | .[0].number // empty")
+          body=$(printf '%s\n' "$marker" "**Fire drill failed** (plain code, no AI): \`${FAILED:-the drill job}\`." "" \
+            "A guardrail may not bite any more. Run: ${RUN_URL} (per-drill detail in its summary and the \`drill-results\` artifact)." \
+            "Drills are dry runs: nothing was changed. Close this once the guardrail (or the drill) is fixed.")
+          if [ -n "$open" ]; then gh issue comment "$open" --repo "$R" --body "$body"
+          else gh issue create --repo "$R" --title "Fire drill failed: ${FAILED:-drills}" --label factory:alert --body "$body"; fi

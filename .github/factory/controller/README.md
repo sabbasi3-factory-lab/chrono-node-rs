@@ -27,7 +27,7 @@ It never queues, merges, closes or reverts anything, and never removes a label, 
      every `commits?path=contracts/<task>.yaml&sha=<main_sha>` lookup use that SHA, so contents and the
      contract commit SHA always come from the same state of main.
    - the contracts the planner needs, each with its blob SHA and **last commit SHA on main**
-   - `ci` and `gates` workflow runs. There is no `created>=` cutoff, because re-runs keep their
+   - `ci` and `gates` workflow runs, and `drills` runs (fire drills, `harness/drills/`: recorded as `check_result` only, never planned on). There is no `created>=` cutoff, because re-runs keep their
      original `created_at`. The controller reads the newest 3 pages (×100) of `/actions/runs`, plus one
      `?head_sha=` page for each open PR head (at most 30). It keeps runs updated in the last 24 h, or
      runs for an open PR head. That is at most 33 list calls per poll.
@@ -54,6 +54,8 @@ npm test                      # node --test "test/*.test.ts" (Node 24+, native t
 npm run typecheck             # optional: tsc --noEmit
 # Whole pipeline on a fixture, in memory, no credentials or network:
 FACTORY_ENABLED=true node main.ts --fixture test/fixtures/snapshot.json --print
+# The same with other policies (the fire drills use the pinned live ones):
+node main.ts --fixture test/fixtures/snapshot.json --print --policies <dir>
 ```
 
 In fixture mode, `now` is the fixture's `fetched_at` (override it with `--now <iso>`). Fixture mode uses the

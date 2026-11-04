@@ -204,7 +204,9 @@ describe('executor', () => {
 
 describe('CLI', () => {
   it('parses arguments strictly', () => {
-    assert.deepEqual(parseArgs(['--fixture', 'x.json', '--print']), { fixture: 'x.json', print: true, now: null });
+    assert.deepEqual(parseArgs(['--fixture', 'x.json', '--print']), { fixture: 'x.json', print: true, now: null, policies: null });
+    assert.deepEqual(parseArgs(['--fixture', 'x.json', '--policies', 'p']), { fixture: 'x.json', print: false, now: null, policies: 'p' });
+    assert.throws(() => parseArgs(['--policies', 'p']), /--policies needs a path and --fixture/);
     assert.throws(() => parseArgs(['--execute']), /unknown argument/);
   });
 
