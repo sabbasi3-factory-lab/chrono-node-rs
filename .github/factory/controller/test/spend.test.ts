@@ -281,29 +281,39 @@ describe('spend collector: today\'s implement spend', () => {
       zips: { [id * 10]: zip({ 'agent_usage.json': JSON.stringify({ ai_credits: agent }), 'agent/token_usage.jsonl': timed(recs) }) },
     });
 
-    const missing: [string, FakeRun, string][] = [
+    const missing: [string, FakeRun, string, { readable_aic?: number }?][] = [
       ['no usage artifact', { id: 9 }, 'no_usage_artifact'],
       ['an expired usage artifact', { id: 9, artifacts: [{ id: 90, name: 'usage', expired: true }] }, 'usage_artifact_expired'],
-      ['a usage artifact without agent_usage.json (drill D1: the token step failed)', { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(null, [3]) } }, 'usage_file_missing'],
-      ['detection ran without records (#318: its engine never started)', { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(5, []) } }, 'usage_file_empty'],
+      ['a usage artifact without agent_usage.json (drill D1: the token step failed)', { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(null, [3]) } }, 'usage_file_missing', { readable_aic: 3 }],
+      ['detection ran without records (#318: its engine never started)', { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(0, []) } }, 'usage_file_empty'],
     ];
-    for (const [what, run, reason] of missing) {
+    for (const [what, run, reason, extra = {}] of missing) {
       it(`completed, ${what} → counts at its bound (agent + detection + evals caps + 3 × margin), named in the audit event`, async () => {
         const res = await read([{ ...run, title: 'Implement en/a #3 attempt 1' }]);
-        assert.deepEqual(today(res), { aic: IMPL_BOUND, runs: [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason }] });
+        assert.deepEqual(today(res), { aic: IMPL_BOUND, runs: [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason, ...extra }] });
         assert.equal(res.tasks?.by_task['en/a'], IMPL_BOUND);
         assert.equal(res.alert, null);
-        assert.deepEqual(spendSnapshotFields('2026-10-16', res as unknown as { aic: number; runs: never[] }).runs, [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason }]);
+        assert.deepEqual(spendSnapshotFields('2026-10-16', res as unknown as { aic: number; runs: never[] }).runs, [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason, ...extra }]);
       });
       it(`completed, ${what}, but no bound in force (no margin in the policy, or the locks differ) → unknown`, async () => {
         assert.equal((await read([run], null)).aic, null);
       });
     }
 
+    it('an empty usage file keeps the readable total; above the bound it alerts and bounding is off (#338 review)', async () => {
+      const empty = (agent: number): FakeRun => ({ id: 9, detection: 'success', title: 'Implement en/a #3 attempt 1', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(agent, []) } });
+      const within = await read([empty(40)]);
+      assert.deepEqual(within.runs, [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason: 'usage_file_empty', readable_aic: 40 }]);
+      assert.equal(within.alert, null);
+      const over = await read([empty(3000)]);
+      assert.equal(over.aic, null, 'a bound the readable usage already exceeds is no bound');
+      assert.deepEqual(over.alert, { code: 'overshoot_assumption_exceeded', run_id: 9, max_concurrency: 0, max_response_aic: 0, aic: 3000, bound: IMPL_BOUND });
+    });
+
     it('a bounded run logs the agent artifact\'s own usage (informational, never counted)', async () => {
       const run: FakeRun = { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }, { id: 91, name: 'agent' }], zips: { 90: usageZip(null, [3]), 91: zip({ 'agent_usage.json': '{"ai_credits":14.26}' }) } };
       const res = await read([run]);
-      assert.deepEqual(res.runs, [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason: 'usage_file_missing', observed_aic: 14.26 }]);
+      assert.deepEqual(res.runs, [{ run_id: 9, status: 'bounded', aic: IMPL_BOUND, reason: 'usage_file_missing', readable_aic: 3, observed_aic: 14.26 }]);
     });
 
     it('a run not reported completed (stale in progress, all jobs done) with no usage stays unknown', async () => {
