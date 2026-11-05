@@ -1,7 +1,70 @@
 {
-  "generated_at": "2026-11-05T15:25:47Z",
+  "generated_at": "2026-11-05T15:43:16Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 41906119717,
+      "workflow": "implement",
+      "title": "Implement fi/casual-time-parser #291 attempt 1",
+      "created_at": "2026-11-04T20:23:19Z",
+      "aic": 28.32328,
+      "task": "fi/casual-time-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/291#issuecomment-6641336378",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-05T15:43:16Z",
+      "drill": false
+    },
+    {
+      "run_id": 41906107478,
+      "workflow": "implement",
+      "title": "Implement fi/time-expression-parser #296 attempt 1",
+      "created_at": "2026-11-04T20:23:14Z",
+      "aic": 20.63,
+      "task": "fi/time-expression-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/296#issuecomment-6641297746",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-05T15:43:16Z",
+      "drill": false
+    },
+    {
+      "run_id": 41906093565,
+      "workflow": "implement",
+      "title": "Implement fi/constants #292 attempt 1",
+      "created_at": "2026-11-04T20:23:09Z",
+      "aic": 45.42978,
+      "task": "fi/constants",
+      "items": [
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/301",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        },
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/292#issuecomment-6641364486",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-05T15:43:16Z",
+      "drill": false
+    },
     {
       "run_id": 41899715996,
       "workflow": "implement",
@@ -2680,8 +2743,8 @@
     }
   ],
   "summary": {
-    "accepted": 97,
-    "pending": 80,
+    "accepted": 98,
+    "pending": 83,
     "rejected": 11,
     "unknown": 14
   }
