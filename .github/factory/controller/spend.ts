@@ -78,6 +78,8 @@ export interface RunSpend {
   /** Measured runs: the most model requests in flight at once, and the largest single response. */
   max_concurrency?: number;
   max_response_aic?: number;
+  /** A bounded run's readable usage files' total (a lower bound; the assumption guard, never accounting). */
+  readable_aic?: number;
   /** Sum of the readable per-response records (the assumption guard; never accounting). */
   responses_aic?: number;
   /** Bounded runs: the agent's usage from the `agent` artifact, if readable (informational only). */
@@ -102,14 +104,17 @@ export interface BoundAlert {
   bound: number;
 }
 
-export type UsageMissingCode = 'no_usage_artifact' | 'usage_artifact_expired' | 'usage_file_missing';
+export type UsageMissingCode = 'no_usage_artifact' | 'usage_artifact_expired' | 'usage_file_missing' | 'usage_file_empty';
 
 /** The run's usage is missing (not malformed): a completed run counts at its bound instead. */
 export class UsageMissing extends Error {
   readonly code: UsageMissingCode;
-  constructor(code: UsageMissingCode, message: string) {
+  /** What the run's readable usage files add up to (a lower bound on its spend); 0 if none. */
+  readonly readable_aic: number;
+  constructor(code: UsageMissingCode, message: string, readable_aic = 0) {
     super(message);
     this.code = code;
+    this.readable_aic = readable_aic;
   }
 }
 
@@ -255,6 +260,7 @@ export const usageFileFor = (job: string): string => (job === 'agent' ? 'agent_u
 export function runAIC(files: Map<string, string>, inferredJobs: readonly string[]): number {
   let aic = 0;
   let missing: string | null = null;
+  let missingCode: UsageMissingCode | null = null;
   // Every present file is validated first: malformed accounting is unknown (blocks) whatever the
   // job order, and only then is a missing file reported as missing.
   for (const job of inferredJobs) {
@@ -262,6 +268,7 @@ export function runAIC(files: Map<string, string>, inferredJobs: readonly string
     const text = files.get(file);
     if (text === undefined) {
       missing ??= `${job} made model calls but ${file} is missing`;
+      missingCode ??= 'usage_file_missing';
       continue;
     }
     if (job === 'agent') {
@@ -285,13 +292,20 @@ export function runAIC(files: Map<string, string>, inferredJobs: readonly string
       }
       records++;
     }
-    if (records === 0) throw new Error(`${job} made model calls but recorded no usage`);
+    // An empty but well-formed file (the job's engine failed before or without recording a response,
+    // e.g. threat detection that never started: #318) is missing usage, not malformed accounting: it
+    // counts at the bound like a missing file (unknown without one). Malformed records still throw.
+    if (records === 0) {
+      missing ??= `${job} made model calls but recorded no usage`;
+      missingCode ??= 'usage_file_empty';
+      continue;
+    }
     // A cumulative total above the sum of the responses means records are missing: unknown,
     // never a smaller known number (gh-aw keeps the reported total in that case).
     if (reportedTotal > sum + Math.max(0.001, sum * 1e-6)) throw new Error(`${file} reports ${reportedTotal} AIC in total but its responses add up to ${sum}: records are missing`);
     aic += sum;
   }
-  if (missing !== null) throw new UsageMissing('usage_file_missing', missing);
+  if (missing !== null) throw new UsageMissing(missingCode ?? 'usage_file_missing', missing, aic);
   return aic;
 }
 
@@ -459,6 +473,12 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
       if (r.status === 'bounded') {
         // A bounded run's readable records (a re-run's attempts, or the ones left beside a missing
         // totals file) must fit the assumptions too, and add up to no more than what it's counted at.
+        // Its readable usage files alone are a lower bound on its spend: above the bound, the bound
+        // is wrong, with or without per-response records.
+        if ((r.readable_aic ?? 0) > r.aic) {
+          alert = { code: 'overshoot_assumption_exceeded', run_id: r.run_id, max_concurrency: r.max_concurrency ?? 0, max_response_aic: r.max_response_aic ?? 0, aic: r.readable_aic!, bound: r.aic };
+          break;
+        }
         if (r.max_concurrency === undefined || r.max_response_aic === undefined) continue;
         if (r.max_concurrency > bounding.max_concurrency || r.max_response_aic > bounding.max_response_aic || (r.responses_aic ?? 0) > r.aic) {
           alert = { code: 'overshoot_assumption_exceeded', run_id: r.run_id, max_concurrency: r.max_concurrency, max_response_aic: r.max_response_aic, aic: r.responses_aic ?? 0, bound: r.aic };
@@ -636,7 +656,15 @@ async function measureRun(client: GitHubClient, repo: string, run: Rec, id: numb
       const observed = await observedAgentAIC(client, repo, artifacts);
       // Records that are present still go to the assumption guard.
       const stats = files ? responseStats(files) : null;
-      return { run_id: id, status: 'bounded', aic: bound, reason: err.code, ...(observed !== undefined ? { observed_aic: observed } : {}), ...(stats ?? {}) };
+      return {
+        run_id: id,
+        status: 'bounded',
+        aic: bound,
+        reason: err.code,
+        ...(err.readable_aic > 0 ? { readable_aic: round(err.readable_aic) } : {}),
+        ...(observed !== undefined ? { observed_aic: observed } : {}),
+        ...(stats ?? {}),
+      };
     }
     return `run ${id}'s spend could not be read (${(err as Error).message})`;
   }
@@ -654,6 +682,7 @@ export function spendSnapshotFields(day: string, spend: { aic: number; runs: Run
       ...(r.reason ? { reason: r.reason } : {}),
       ...(r.max_concurrency !== undefined ? { max_concurrency: r.max_concurrency } : {}),
       ...(r.max_response_aic !== undefined ? { max_response_aic: r.max_response_aic } : {}),
+      ...(r.readable_aic !== undefined ? { readable_aic: r.readable_aic } : {}),
       ...(r.observed_aic !== undefined ? { observed_aic: r.observed_aic } : {}),
       ...(r.responses_aic !== undefined ? { responses_aic: r.responses_aic } : {}),
     })),
