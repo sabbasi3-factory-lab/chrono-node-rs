@@ -1,7 +1,26 @@
 {
-  "generated_at": "2026-11-05T15:43:16Z",
+  "generated_at": "2026-11-05T15:58:18Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 41910026124,
+      "workflow": "implement",
+      "title": "Implement fi/weekday-parser #300 attempt 1",
+      "created_at": "2026-11-04T20:48:03Z",
+      "aic": 24.93936,
+      "task": "fi/weekday-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/300#issuecomment-6641863344",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-05T15:58:18Z",
+      "drill": false
+    },
     {
       "run_id": 41906119717,
       "workflow": "implement",
@@ -2740,11 +2759,49 @@
       "eval_failed": true,
       "evaluated_at": "2026-11-04T18:46:45Z",
       "drill": false
+    },
+    {
+      "run_id": 41907846568,
+      "workflow": "triage",
+      "title": "Triage fi/time-expression-parser #296",
+      "created_at": "2026-11-04T20:34:11Z",
+      "aic": 9.10757,
+      "task": "fi/time-expression-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/296#issuecomment-6641534490",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-05T15:58:18Z",
+      "drill": false
+    },
+    {
+      "run_id": 41907834320,
+      "workflow": "triage",
+      "title": "Triage fi/casual-time-parser #291",
+      "created_at": "2026-11-04T20:34:07Z",
+      "aic": 8.49635,
+      "task": "fi/casual-time-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/291#issuecomment-6641554583",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-05T15:58:18Z",
+      "drill": false
     }
   ],
   "summary": {
     "accepted": 98,
-    "pending": 83,
+    "pending": 86,
     "rejected": 11,
     "unknown": 14
   }
