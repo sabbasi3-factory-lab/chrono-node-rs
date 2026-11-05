@@ -58,7 +58,7 @@ jobs:
           version=$(cat .github/factory/factory-version)
           [[ "$version" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad factory-version"; exit 1; }
           mkdir -p "$RUNNER_TEMP/policies"
-          for f in limits budgets tiers cadence; do
+          for f in limits budgets tiers cadence onboarding; do
             curl -fsSL "https://raw.githubusercontent.com/sabbasi3-factory-lab/factory/${version}/policies/${f}.yaml" -o "$RUNNER_TEMP/policies/${f}.yaml"
           done
           git clone -q https://github.com/sabbasi3-factory-lab/factory "$RUNNER_TEMP/factory"

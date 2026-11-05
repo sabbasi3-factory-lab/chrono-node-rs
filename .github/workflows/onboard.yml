@@ -47,7 +47,7 @@ jobs:
     if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: { contents: read, issues: read, pull-requests: read }
+    permissions: { contents: read, issues: read, pull-requests: read, actions: read }
     env:
       GH_TOKEN: ${{ github.token }}
       R: ${{ github.repository }}
@@ -74,9 +74,17 @@ jobs:
           # The owner's language list and stop rules. Missing = no scheduled onboarding.
           curl -fsSL "https://raw.githubusercontent.com/sabbasi3-factory-lab/factory/${version}/policies/onboarding.yaml" -o "$d/policy.yaml" || : > "$d/policy.yaml"
           # gh-aw Outcomes (outcomes.yml): spend and first-try merges per task. Missing = wait.
-          gh api "repos/$R/contents/outcomes.json?ref=outcomes" --jq .content 2>/dev/null | base64 -d > "$d/outcomes.json" || : > "$d/outcomes.json"
-          gh api --paginate "repos/$R/issues?labels=factory:task&state=open&per_page=100" --jq '[.[] | select(.pull_request == null) | {body, labels: [.labels[].name]}]' | jq -s add > "$d/issues.json"
-          gh api --paginate "repos/$R/pulls?state=open&per_page=100" --jq '[.[] | {head: {ref: .head.ref}}]' | jq -s add > "$d/prs.json"
+          gh api "repos/$R/contents/outcomes.json?ref=outcomes" -H "Accept: application/vnd.github.raw" > "$d/outcomes.json" 2>/dev/null || : > "$d/outcomes.json"
+          gh api --paginate "repos/$R/issues?labels=factory:task&state=open&per_page=100" --jq '[.[] | select(.pull_request == null) | {body, labels: [.labels[].name]}]' | jq -s 'add // []' > "$d/issues.json"
+          gh api --paginate "repos/$R/pulls?state=open&per_page=100" --jq '[.[] | {head: {ref: .head.ref}}]' | jq -s 'add // []' > "$d/prs.json"
+          # The ledger outcomes.json must cover (it lags: a few runs per collector run). From the
+          # Actions and pulls APIs; a failed read fails this step (pipefail), so nothing onboards.
+          for w in implement repair review triage; do
+            gh api --paginate "repos/$R/actions/workflows/$w.lock.yml/runs?status=completed&created=>=2026-10-01&per_page=100" \
+              --jq '.workflow_runs[] | {run_id: .id, workflow: "'"$w"'", title: .display_title, conclusion, created_at}'
+          done | jq -s . > "$d/runs.json"
+          gh api --paginate "repos/$R/pulls?state=closed&per_page=100" \
+            --jq '[.[] | select(.merged_at != null and .user.login == "sabbasi3-factory-agent[bot]") | {title}]' | jq -s 'add // []' > "$d/merged.json"
 
       - name: Decision
         id: decision
@@ -92,7 +100,7 @@ jobs:
             fi
             decision=$(jq -nc --arg c "$CODE" '{action: "onboard", code: $c, reason: "dispatched"}')
           else
-            decision=$(node onboard/onboard.js next --policy "$d/policy.yaml" --outcomes "$d/outcomes.json" --issues "$d/issues.json" --prs "$d/prs.json")
+            decision=$(node onboard/onboard.js next --policy "$d/policy.yaml" --outcomes "$d/outcomes.json" --issues "$d/issues.json" --prs "$d/prs.json" --runs "$d/runs.json" --merged "$d/merged.json")
           fi
           echo "$decision"
           echo "decision: \`$decision\`" >> "$GITHUB_STEP_SUMMARY"

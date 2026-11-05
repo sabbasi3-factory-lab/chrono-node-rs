@@ -58,6 +58,14 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
    locales' tasks (gh-aw Outcomes) reach `budget_aic`; first-try merge rate below
    `min_first_try_merge_rate` after `min_sample` merged tasks; `max_open_needs_human` open
    needs-human tasks. No policy, unreadable outcomes or no budget = no onboarding (fail closed).
+   **Coverage.** The spend and first-try rules read `outcomes.json`, which the outcomes collector
+   fills a few runs per invocation, so it lags. The decision also reads the ledger of what ran and
+   merged: completed agent runs from the Actions API and merged agent PRs. It waits
+   (`outcomes_behind:N`) until `outcomes.json` has every ledger run of a generated locale's task
+   (and every review run since the first of those), with a cost, and an accepted PR for every
+   merged task. A missing or unreadable input (issues, PRs, runs, merged) also waits, never reads
+   as "none". The `onboard-stop-rules` fire drill checks this. (#317 onboarded `id` on 0 AIC and
+   0/0 first-try because `outcomes.json` had none of `fi`'s runs yet.)
 2. **generate**: the generator on main with a read-only token, then the exact file set is checked.
 3. **apply** (live): the controller App opens `factory/onboard/<code>`. Human tier.
 4. **issues** (live, after merge): task issues with "blocked by" links (`issues.js`, no third-party
@@ -76,7 +84,7 @@ node onboard/onboard.js check --write     # after a generator change: re-render 
 node onboard/onboard.js drill [code...]   # onboard each (default: every candidate) in a throwaway copy;
                                           # fail if a contract scope file's directory isn't generated,
                                           # or onboard.yml's artifact would drop the skeleton's .gitkeep files
-node onboard/onboard.js next --policy P --outcomes O --issues I --prs R   # the scheduled decision
+node onboard/onboard.js next --policy P --outcomes O --issues I --prs R --runs U --merged M   # the scheduled decision
 node onboard/summary.js fi                # the onboarding PR's body
 node --test onboard/test/*.test.js        # unit tests (also in npm run test:gates)
 ```

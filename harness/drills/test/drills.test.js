@@ -53,3 +53,12 @@ test("compare summary and daily seed", () => {
     assert.strictEqual(lib.seedFor(new Date("2026-11-04T01:00:00Z")), lib.seedFor(new Date("2026-11-04T23:00:00Z")));
     assert.notStrictEqual(lib.seedFor(new Date("2026-11-04T01:00:00Z")), lib.seedFor(new Date("2026-11-05T01:00:00Z")));
 });
+
+test("onboard cases: one complete control, faults that each break exactly one input", () => {
+    const cases = lib.onboardCases({ stop: { min_sample: 3, budget_aic: 50 } }, "fi");
+    assert.deepStrictEqual(cases.map((c) => c.ok), [true, false, false, false, false, false, false]);
+    const control = cases[0].files;
+    assert.strictEqual(JSON.parse(control.runs).length, 3);
+    assert.ok(JSON.parse(control.runs).every((r) => /^Implement fi\/drill-step-\d #\d attempt 1$/.test(r.title)));
+    for (const c of cases.slice(1)) assert.strictEqual(Object.keys(c.files).filter((k) => c.files[k] !== control[k]).length, 1, c.name);
+});
