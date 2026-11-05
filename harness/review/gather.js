@@ -9,11 +9,15 @@
 // Inputs: `gh aw logs --json` output per AI workflow (--logs DIR, from the workflow step), the
 // `outcomes` branch's outcomes.json, the `audit` branch (last 7 days), the pinned factory policy
 // files' last change dates, and this repo's prompt files' last change dates.
-// Outputs (DIR): summary.md (tables + area eligibility), runs.jsonl (one compact line per run),
-// outcomes.json (runs in the window), audit-counts.json, areas.json.
+// Outputs (DIR): summary.md (tables + area eligibility + failures + platform reliability), runs.jsonl
+// (one compact line per run), outcomes.json (runs in the window), audit-counts.json, areas.json,
+// failures.json (each needs-human event attributed: agent, factory, platform or policy, failures.js)
+// and platform-reliability.json (failed gh-aw runs by kind; the dashboard reads it from the
+// `factory-review-data` artifact).
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
+const failures = require("./failures");
 
 const REPO_DIR = path.resolve(__dirname, "../..");
 const REPO = process.env.GITHUB_REPOSITORY || "sabbasi3-factory-lab/chrono-node-rs";
@@ -177,14 +181,38 @@ async function main() {
     }
     const areaList = areas(Object.fromEntries(Object.entries(lastChange).map(([k, v]) => [k, v ? new Date(v).toISOString() : null])), events, now);
 
+    // Failures: where each failed gh-aw run stopped, and who caused each needs-human (failures.js).
+    const workflows = fs
+        .readdirSync(path.join(REPO_DIR, ".github/workflows"))
+        .filter((f) => f.endsWith(".lock.yml"))
+        .sort()
+        .map((file) => {
+            const name = file.replace(/\.lock\.yml$/, "");
+            // Fails the step if unreadable: the factory's own steps mustn't be counted as gh-aw's.
+            const fm = failures.frontmatterOf(fs.readFileSync(path.join(REPO_DIR, ".github/workflows", `${name}.md`), "utf8"));
+            return { name, file, factorySteps: failures.factoryStepNames(fm) };
+        });
+    const fd = await failures.fetchFailureData({ gh, repo: REPO, since, workflows, events });
+    const runById = new Map(fd.runs.map((r) => [r.run_id, r]));
+    for (const r of runs) {
+        const f = runById.get(r.run_id);
+        if (f) Object.assign(r, { failure_class: f.class, failure_kind: f.kind });
+    }
+    const incidentEvents = all.filter((e) => e.type === "human_action" && e.payload.action === "infra_incident");
+    const attributed = failures.attributeFailures({ events, incidentEvents, labeled: fd.labeled, runs: runById, triage: fd.triage });
+    const reliability = failures.platformReliability(fd.runs, { from: since, to: now.toISOString() });
+
+    fs.writeFileSync(path.join(out, "failures.json"), JSON.stringify(attributed, null, 1) + "\n");
+    fs.writeFileSync(path.join(out, "platform-reliability.json"), JSON.stringify(reliability, null, 1) + "\n");
     fs.writeFileSync(path.join(out, "runs.jsonl"), runs.map((r) => JSON.stringify(r)).join("\n") + "\n");
     fs.writeFileSync(path.join(out, "outcomes.json"), JSON.stringify(outcomes, null, 1) + "\n");
     fs.writeFileSync(path.join(out, "audit-counts.json"), JSON.stringify(counts, null, 1) + "\n");
     fs.writeFileSync(path.join(out, "areas.json"), JSON.stringify(areaList, null, 1) + "\n");
-    fs.writeFileSync(path.join(out, "summary.md"), summaryMd(counts, runs, areaList, outcomes));
+    fs.writeFileSync(path.join(out, "summary.md"), summaryMd(counts, runs, areaList, outcomes) + failures.failuresMd(attributed, reliability));
     const eligible = areaList.filter((a) => a.eligible).map((a) => a.area);
     console.log(`eligible areas: ${eligible.join(", ") || "none"}`);
-    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `eligible=${eligible.length}\n`);
+    console.log(`platform failures: ${reliability.platform_failures}; recurring kinds: ${reliability.recurring.join(", ") || "none"}`);
+    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `eligible=${eligible.length}\nplatform_failures=${reliability.platform_failures}\n`);
 }
 
 module.exports = { auditCounts, compactRuns, areas, summaryMd };
