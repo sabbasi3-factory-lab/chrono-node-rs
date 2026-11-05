@@ -456,7 +456,8 @@ function nextLanguage({ policy, onboarded, candidates, outcomes, issues, openPRs
     const runs = outcomes.runs.filter((r) => r && typeof r.task === "string" && generated.has(codeOf(r.task)) && !r.drill);
     // A run without a known cost means the spend is unknown, never zero.
     if (runs.some((r) => !Number.isFinite(r.aic))) return { action: "wait", reason: "spend_unknown" };
-    const spent = runs.reduce((n, r) => n + r.aic, 0);
+    const unattributed = unattributedReviews(outcomes, ledger, generated);
+    const spent = [...runs, ...unattributed].reduce((n, r) => n + r.aic, 0);
     if (!Number.isFinite(stop.budget_aic)) return { action: "stop", reason: "no_budget" };
     if (spent >= stop.budget_aic) return { action: "stop", reason: `budget_spent:${Math.round(spent)}/${stop.budget_aic}` };
     // First try: the task's only agent run is its first implement, and that PR was accepted zero-touch.
@@ -501,9 +502,9 @@ function outcomesBehind(outcomes, ledger, generated) {
     for (const r of [...ours, ...reviews]) {
         const o = recorded.get(r.run_id);
         if (!o) out.push(`run:${r.run_id}`);
-        // A failed evaluation keeps the run's earlier record: behind only if its cost is unknown (a
-        // missing acceptance is caught below, per merged task).
-        else if (o.eval_failed && !Number.isFinite(o.aic)) out.push(`run:${r.run_id}:eval_failed`);
+        // Every covered run needs a known cost, evaluated or not (a missing acceptance is caught
+        // below, per merged task).
+        else if (!Number.isFinite(o.aic)) out.push(`run:${r.run_id}:${o.eval_failed ? "eval_failed" : "no_cost"}`);
     }
     const accepted = new Set(
         outcomes.runs.filter((r) => r && typeof r.task === "string" && (r.items || []).some((i) => i.type === "create_pull_request" && i.outcome_status === "accepted")).map((r) => r.task),
@@ -512,5 +513,22 @@ function outcomesBehind(outcomes, ledger, generated) {
     return out;
 }
 
+/**
+ * Covered review runs (see outcomesBehind) that outcomes.json attributes to no task: their cost
+ * can't be placed, so it counts toward the generated locales' spend (never dropped).
+ */
+function unattributedReviews(outcomes, ledger, generated) {
+    const codeOf = (task) => String(task).split("/")[0];
+    const recorded = new Map(outcomes.runs.filter((r) => r && Number.isSafeInteger(r.run_id)).map((r) => [r.run_id, r]));
+    const taskOf = (r) => (LEDGER_TASK.exec((r && r.title) || "") || [])[1];
+    const since = ledger.runs.filter((r) => r && r.conclusion !== "skipped" && taskOf(r) && generated.has(codeOf(taskOf(r)))).map((r) => String(r.created_at || "")).sort()[0] ?? null;
+    if (since === null) return [];
+    return ledger.runs
+        .filter((r) => r && r.workflow === "review" && r.conclusion !== "skipped" && !(String(r.created_at || "") < since))
+        .map((r) => recorded.get(r.run_id))
+        .filter((o) => o && typeof o.task !== "string");
+}
+
 module.exports.nextLanguage = nextLanguage;
 module.exports.outcomesBehind = outcomesBehind;
+module.exports.unattributedReviews = unattributedReviews;

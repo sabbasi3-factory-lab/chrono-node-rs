@@ -62,8 +62,8 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
    fills a few runs per invocation, so it lags. The decision also reads the ledger of what ran and
    merged: completed agent runs from the Actions API and merged agent PRs. It waits
    (`outcomes_behind:N`) until `outcomes.json` has every ledger run of a generated locale's task
-   (and every review run since the first of those), with a cost, and an accepted PR for every
-   merged task. A missing or unreadable input (issues, PRs, runs, merged) also waits, never reads
+   (and every review run since the first of those), each with a cost, and an accepted PR for every
+   merged task. A covered review that outcomes attributes to no task counts toward the spend. A missing or unreadable input (issues, PRs, runs, merged) also waits, never reads
    as "none". The `onboard-stop-rules` fire drill checks this. (#317 onboarded `id` on 0 AIC and
    0/0 first-try because `outcomes.json` had none of `fi`'s runs yet.)
 2. **generate**: the generator on main with a read-only token, then the exact file set is checked.

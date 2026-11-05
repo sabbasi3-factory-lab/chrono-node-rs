@@ -221,6 +221,14 @@ test("next language fails closed when outcomes.json lags the ledger (#317: id on
     assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, ledger: { runs: ledgerRuns } }), { action: "wait", reason: "ledger_unreadable" });
     assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, issues: null }), { action: "wait", reason: "inputs_unreadable:issues" });
     assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, openPRs: undefined }), { action: "wait", reason: "inputs_unreadable:prs" });
+    // Every covered run needs a known cost, even when evaluated (#337 review).
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: { runs: full.runs.map((r) => (r.run_id === 23 ? { ...r, aic: null } : r)) } }).behind, ["run:23:no_cost"]);
+    // A covered review attributed to no task still counts toward the spend (#337 review).
+    const unattributedBig = { runs: full.runs.map((r) => (r.run_id === 23 ? { ...r, task: null, aic: 2000 } : r)) };
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: unattributedBig }), { action: "stop", reason: "budget_spent:2030/1000" });
+    // A review before the first generated-locale run is never ours, attributed or not.
+    const old = { runs: [...full.runs, O(10, null, "review", 5000, false, "2026-10-27T10:00:00Z")] };
+    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: old }).reason, "first_try_rate:1/2");
     // No generated locale yet: nothing to cover.
     assert.strictEqual(lib.nextLanguage({ ...base, onboarded: [], candidates: ["fi", "id"], outcomes: { runs: [] } }).code, "fi");
 });
