@@ -7,6 +7,14 @@ import { AUTO_READY_HOLDS, LABEL_NEEDS_HUMAN, LABEL_PICKED, LABEL_READY, LABEL_T
 import { REPO } from './helpers.ts';
 
 describe('factory labels (.github/factory/labels.json)', () => {
+  it('every label is one GitHub accepts (labels-sync.yml creates them on merge): name ≤ 50, 6-hex colour, description ≤ 100', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const doc = JSON.parse(await readFile(new URL('../../labels.json', import.meta.url), 'utf8')) as { labels: { name: string; color: string; description?: string }[] };
+    const bad = doc.labels.filter((l) => !(l.name.length > 0 && l.name.length <= 50 && /^[0-9A-Fa-f]{6}$/.test(l.color) && (l.description ?? '').length <= 100));
+    assert.deepEqual(bad, []);
+    assert.equal(new Set(doc.labels.map((l) => l.name)).size, doc.labels.length, 'no duplicate names');
+  });
+
   it('lists every label the controller reads or writes, including the revert hand-off', async () => {
     const names = await requiredLabels();
     for (const l of [LABEL_TASK, LABEL_READY, LABEL_PICKED, LABEL_NEEDS_HUMAN, LABEL_ALERT, REVERT_REVIEWED_LABEL, ...AUTO_READY_HOLDS]) {

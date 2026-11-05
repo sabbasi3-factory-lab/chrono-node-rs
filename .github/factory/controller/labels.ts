@@ -1,5 +1,5 @@
-// The labels the factory relies on (.github/factory/labels.json, seeded by
-// `node scripts/seed-backlog/seed.js labels`). A missing label silently breaks a hand-off: e.g. a
+// The labels the factory relies on (.github/factory/labels.json; created on merge by
+// .github/workflows/labels-sync.yml, or by hand with `node scripts/seed-backlog/seed.js labels`). A missing label silently breaks a hand-off: e.g. a
 // person can't apply `factory:revert-reviewed` if it doesn't exist (drill D7). The controller checks
 // at startup and warns; it never fails a run over it.
 
