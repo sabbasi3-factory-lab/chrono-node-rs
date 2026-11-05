@@ -1,7 +1,82 @@
 {
-  "generated_at": "2026-11-05T17:43:32Z",
+  "generated_at": "2026-11-05T18:09:03Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 41934025380,
+      "workflow": "implement",
+      "title": "Implement fi/weekday-parser #300 attempt 2",
+      "created_at": "2026-11-04T23:28:48Z",
+      "aic": 20.52269,
+      "task": "fi/weekday-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/300#issuecomment-6645216126",
+          "outcome_status": "accepted",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/306",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-05T18:09:03Z",
+      "drill": false
+    },
+    {
+      "run_id": 41934015942,
+      "workflow": "implement",
+      "title": "Implement fi/casual-time-parser #291 attempt 2",
+      "created_at": "2026-11-04T23:28:43Z",
+      "aic": 21.28251,
+      "task": "fi/casual-time-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/291#issuecomment-6645198765",
+          "outcome_status": "accepted",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/304",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-05T18:09:03Z",
+      "drill": false
+    },
+    {
+      "run_id": 41934007228,
+      "workflow": "implement",
+      "title": "Implement fi/time-expression-parser #296 attempt 2",
+      "created_at": "2026-11-04T23:28:39Z",
+      "aic": 19.72669,
+      "task": "fi/time-expression-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/296#issuecomment-6645201876",
+          "outcome_status": "accepted",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/305",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-05T18:09:03Z",
+      "drill": false
+    },
     {
       "run_id": 41910037314,
       "workflow": "implement",
@@ -2857,7 +2932,7 @@
     }
   ],
   "summary": {
-    "accepted": 101,
+    "accepted": 107,
     "pending": 86,
     "rejected": 11,
     "unknown": 14
