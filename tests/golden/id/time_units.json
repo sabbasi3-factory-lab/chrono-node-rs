@@ -1,0 +1,758 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/id/id_time_units.test.ts",
+  "cases": [
+    {
+      "id": "id/time_units#01",
+      "text": "Dia pergi 5 hari yang lalu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 10,
+          "text": "5 hari yang lalu",
+          "start": {
+            "known": {
+              "day": 5,
+              "month": 8,
+              "weekday": 0,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-05T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ago format"
+    },
+    {
+      "id": "id/time_units#02",
+      "text": "2 minggu lalu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDRelativeDateFormatParser",
+          "IDTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 minggu lalu",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 5
+            },
+            "date": "2012-07-27T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ago format"
+    },
+    {
+      "id": "id/time_units#03",
+      "text": "setahun silam",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "setahun silam",
+          "start": {
+            "known": {
+              "year": 2011
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2011-08-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ago format"
+    },
+    {
+      "id": "id/time_units#04",
+      "text": "1 jam 30 menit yang lalu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 jam 30 menit yang lalu",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 44,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T10:44:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ago format"
+    },
+    {
+      "id": "id/time_units#05",
+      "text": "tiga bulan yang lalu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDRelativeDateFormatParser",
+          "IDTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tiga bulan yang lalu",
+          "start": {
+            "known": {
+              "month": 5,
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-05-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ago format"
+    },
+    {
+      "id": "id/time_units#06",
+      "text": "Kembali 3 hari lagi",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "3 hari lagi",
+          "start": {
+            "known": {
+              "day": 13,
+              "month": 8,
+              "weekday": 1,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-13T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Later format"
+    },
+    {
+      "id": "id/time_units#07",
+      "text": "setengah jam lagi",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "setengah jam lagi",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 44,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:44:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Later format"
+    },
+    {
+      "id": "id/time_units#08",
+      "text": "seminggu kemudian",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "seminggu kemudian",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 5
+            },
+            "date": "2012-08-17T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Later format"
+    },
+    {
+      "id": "id/time_units#09",
+      "text": "2 jam dan 15 menit lagi",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeExpressionParser",
+          "IDTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2 jam dan 15 menit lagi",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 29,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T14:29:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Later format"
+    },
+    {
+      "id": "id/time_units#10",
+      "text": "Selesai dalam 5 menit",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "dalam 5 menit",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 19,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:19:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Within format"
+    },
+    {
+      "id": "id/time_units#11",
+      "text": "dalam waktu dua minggu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "dalam waktu dua minggu",
+          "start": {
+            "known": {
+              "day": 24,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 5
+            },
+            "date": "2012-08-24T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Within format"
+    },
+    {
+      "id": "id/time_units#12",
+      "text": "dalam sebulan",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "dalam sebulan",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-09-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Within format"
+    },
+    {
+      "id": "id/time_units#13",
+      "text": "minggu depan",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "minggu depan",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 5
+            },
+            "date": "2012-08-17T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative unit"
+    },
+    {
+      "id": "id/time_units#14",
+      "text": "Dia pindah bulan lalu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 11,
+          "text": "bulan lalu",
+          "start": {
+            "known": {
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-07-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative unit"
+    },
+    {
+      "id": "id/time_units#15",
+      "text": "tahun depan",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tahun depan",
+          "start": {
+            "known": {
+              "year": 2013
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2013-08-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative unit"
+    },
+    {
+      "id": "id/time_units#16",
+      "text": "bulan ini",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "bulan ini",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Relative unit"
+    }
+  ]
+}

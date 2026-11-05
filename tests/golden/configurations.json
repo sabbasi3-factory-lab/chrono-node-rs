@@ -1255,6 +1255,190 @@
         }
       ]
     },
+    "id.casual": {
+      "parsers": [
+        {
+          "name": "IDRelativeDateFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "IDMonthNameParser",
+          "flags": {}
+        },
+        {
+          "name": "IDCasualTimeParser",
+          "flags": {}
+        },
+        {
+          "name": "IDCasualDateParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "IDMonthNameLittleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "IDMonthNameMiddleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "IDWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "IDTimeExpressionParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "IDTimeUnitWithinFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "IDTimeUnitAgoFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "IDTimeUnitLaterFormatParser",
+          "flags": {}
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "IDMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "IDMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": false
+          }
+        }
+      ]
+    },
+    "id.strict": {
+      "parsers": [
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "IDMonthNameLittleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "IDMonthNameMiddleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "IDWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "IDTimeExpressionParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "IDTimeUnitWithinFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "IDTimeUnitAgoFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "IDTimeUnitLaterFormatParser",
+          "flags": {}
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "IDMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "IDMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": true
+          }
+        }
+      ]
+    },
     "ja.casual": {
       "parsers": [
         {

@@ -1,0 +1,11 @@
+{
+  "generator": "harness/onboard/onboard.js",
+  "code": "id",
+  "module": "id",
+  "upstream": "locales/id",
+  "tests": "test/id",
+  "configs": {
+    "id.casual": "casual",
+    "id.strict": "strict"
+  }
+}

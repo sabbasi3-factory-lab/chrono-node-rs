@@ -1,0 +1,594 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/id/id_weekday.test.ts",
+  "cases": [
+    {
+      "id": "id/weekday#01",
+      "text": "Senin",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Senin",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 6,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single weekday"
+    },
+    {
+      "id": "id/weekday#02",
+      "text": "Kita bertemu hari Jumat",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 13,
+          "text": "hari Jumat",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single weekday"
+    },
+    {
+      "id": "id/weekday#03",
+      "text": "pada hari Minggu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "pada hari Minggu",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 12,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single weekday"
+    },
+    {
+      "id": "id/weekday#04",
+      "text": "Ahad",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Ahad",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 12,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single weekday"
+    },
+    {
+      "id": "id/weekday#05",
+      "text": "Senin depan",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Senin depan",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with modifier"
+    },
+    {
+      "id": "id/weekday#06",
+      "text": "Senin minggu depan",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDRelativeDateFormatParser",
+          "IDWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Senin minggu depan",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with modifier"
+    },
+    {
+      "id": "id/weekday#07",
+      "text": "Senin mendatang",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Senin mendatang",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with modifier"
+    },
+    {
+      "id": "id/weekday#08",
+      "text": "Rabu lalu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Rabu lalu",
+          "start": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 8,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-08T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with modifier"
+    },
+    {
+      "id": "id/weekday#09",
+      "text": "Selasa kemarin",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser",
+          "IDWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Selasa kemarin",
+          "start": {
+            "known": {
+              "weekday": 2
+            },
+            "implied": {
+              "day": 7,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with modifier"
+    },
+    {
+      "id": "id/weekday#10",
+      "text": "Sabtu ini",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Sabtu ini",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 11,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-11T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with modifier"
+    },
+    {
+      "id": "id/weekday#11",
+      "text": "Jumat jam 7 malam",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualTimeParser",
+          "IDTimeExpressionParser",
+          "IDWeekdayParser"
+        ],
+        "refiners": [
+          "IDMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Jumat jam 7 malam",
+          "start": {
+            "known": {
+              "hour": 19,
+              "meridiem": 1,
+              "minute": 0,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T19:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with time"
+    },
+    {
+      "id": "id/weekday#12",
+      "text": "Senin - Rabu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDWeekdayParser"
+        ],
+        "refiners": [
+          "IDMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Senin - Rabu",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 6,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 8,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-08T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Weekday with time"
+    },
+    {
+      "id": "id/weekday#13",
+      "text": "selama 2 minggu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - 'minggu' as week is not Sunday"
+    },
+    {
+      "id": "id/weekday#14",
+      "text": "setiap minggu",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - 'minggu' as week is not Sunday"
+    }
+  ]
+}
