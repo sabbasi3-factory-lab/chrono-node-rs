@@ -1,0 +1,1063 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/id/id_month_name.test.ts",
+  "cases": [
+    {
+      "id": "id/month_name#01",
+      "text": "17 Agustus 1945",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameLittleEndianParser",
+          "IDMonthNameParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "17 Agustus 1945",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 8,
+              "year": 1945
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1945-08-17T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Day and month name"
+    },
+    {
+      "id": "id/month_name#02",
+      "text": "Proklamasi pada tanggal 17 Agustus 1945.",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameLittleEndianParser",
+          "IDMonthNameParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 11,
+          "text": "pada tanggal 17 Agustus 1945",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 8,
+              "year": 1945
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1945-08-17T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Day and month name"
+    },
+    {
+      "id": "id/month_name#03",
+      "text": "tgl. 5 Des 2023",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameLittleEndianParser",
+          "IDMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tgl. 5 Des 2023",
+          "start": {
+            "known": {
+              "day": 5,
+              "month": 12,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-12-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Day and month name"
+    },
+    {
+      "id": "id/month_name#04",
+      "text": "Acaranya 10 Nopember",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameLittleEndianParser",
+          "IDMonthNameParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "10 Nopember",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 11
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-11-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Day and month name"
+    },
+    {
+      "id": "id/month_name#05",
+      "text": "1 Mei 500 SM",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameLittleEndianParser",
+          "IDMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 Mei 500 SM",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 5,
+              "year": -500
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "-000500-05-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Day and month name"
+    },
+    {
+      "id": "id/month_name#06",
+      "text": "Senin, 5 Februari 2024",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameLittleEndianParser",
+          "IDMonthNameParser",
+          "IDWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Senin, 5 Februari 2024",
+          "start": {
+            "known": {
+              "day": 5,
+              "month": 2,
+              "weekday": 1,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-02-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Day and month name"
+    },
+    {
+      "id": "id/month_name#07",
+      "text": "5-7 Januari 2024",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameLittleEndianParser",
+          "IDMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5-7 Januari 2024",
+          "start": {
+            "known": {
+              "day": 5,
+              "month": 1,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-01-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "month": 1,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-01-07T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Day and month name range"
+    },
+    {
+      "id": "id/month_name#08",
+      "text": "5 s.d. 7 Jan 2024",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameLittleEndianParser",
+          "IDMonthNameParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 s.d. 7 Jan 2024",
+          "start": {
+            "known": {
+              "day": 5,
+              "month": 1,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-01-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "month": 1,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-01-07T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Day and month name range"
+    },
+    {
+      "id": "id/month_name#09",
+      "text": "1 Maret sampai 3 April 2024",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameLittleEndianParser",
+          "IDMonthNameParser"
+        ],
+        "refiners": [
+          "IDMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 Maret sampai 3 April 2024",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 3
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-03-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 3,
+              "month": 4,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-04-03T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Day and month name range"
+    },
+    {
+      "id": "id/month_name#10",
+      "text": "September 23, 2026",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameMiddleEndianParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "September 23, 2026",
+          "start": {
+            "known": {
+              "day": 23,
+              "month": 9,
+              "year": 2026
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2026-09-23T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month name and day"
+    },
+    {
+      "id": "id/month_name#11",
+      "text": "Rapatnya Januari 5 2024 di kantor",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameMiddleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "Januari 5 2024",
+          "start": {
+            "known": {
+              "day": 5,
+              "month": 1,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-01-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month name and day"
+    },
+    {
+      "id": "id/month_name#12",
+      "text": "Acaranya Nov 10",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameMiddleEndianParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "Nov 10",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 11
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-11-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month name and day"
+    },
+    {
+      "id": "id/month_name#13",
+      "text": "Januari 5 - 7, 2024",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameMiddleEndianParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Januari 5 - 7, 2024",
+          "start": {
+            "known": {
+              "day": 5,
+              "month": 1,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-01-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "month": 1,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-01-07T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Month name and day range"
+    },
+    {
+      "id": "id/month_name#14",
+      "text": "Maret 1 sampai 3",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameMiddleEndianParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Maret 1 sampai 3",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 3
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-03-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 3,
+              "month": 3
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-03-03T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Month name and day range"
+    },
+    {
+      "id": "id/month_name#15",
+      "text": "Januari 2024",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Januari 2024",
+          "start": {
+            "known": {
+              "month": 1,
+              "year": 2024
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month name and year"
+    },
+    {
+      "id": "id/month_name#16",
+      "text": "Libur pada bulan Desember",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 6,
+          "text": "pada bulan Desember",
+          "start": {
+            "known": {
+              "month": 12
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-12-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month name and year"
+    },
+    {
+      "id": "id/month_name#17",
+      "text": "Agustus tahun 1945",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Agustus tahun 1945",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 1945
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1945-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month name and year"
+    },
+    {
+      "id": "id/month_name#18",
+      "text": "17 Agustus 1945 pukul 10.00 WIB",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameLittleEndianParser",
+          "IDMonthNameParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner",
+          "IDMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "17 Agustus 1945 pukul 10.00 WIB",
+          "start": {
+            "known": {
+              "day": 17,
+              "hour": 10,
+              "minute": 0,
+              "month": 8,
+              "timezoneOffset": 420,
+              "year": 1945
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "1945-08-17T03:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date with time"
+    },
+    {
+      "id": "id/month_name#19",
+      "text": "17/08/1945",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "SlashDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "17/08/1945",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 8,
+              "year": 1945
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1945-08-17T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Slash format"
+    },
+    {
+      "id": "id/month_name#20",
+      "text": "Jan pergi ke pasar",
+      "config": "id.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "id/month_name#21",
+      "text": "Januari 12:00",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "12:00",
+          "start": {
+            "known": {
+              "hour": 12,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month name followed by a time is not taken as a day"
+    },
+    {
+      "id": "id/month_name#22",
+      "text": "Januari 12.30",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Month name followed by a time is not taken as a day"
+    },
+    {
+      "id": "id/month_name#23",
+      "text": "96 Agustus 2024",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "Agustus 2024",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 2024
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Out of range day is not taken as a day"
+    }
+  ]
+}

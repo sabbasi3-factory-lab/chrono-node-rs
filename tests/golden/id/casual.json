@@ -1,0 +1,955 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/id/id_casual.test.ts",
+  "cases": [
+    {
+      "id": "id/casual#01",
+      "text": "Rapatnya sekarang",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "sekarang",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 8,
+              "meridiem": 0,
+              "millisecond": 11,
+              "minute": 9,
+              "month": 8,
+              "second": 10,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T08:09:10.011Z",
+            "tags": [
+              "casualReference/now"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#02",
+      "text": "Batas waktunya hari ini",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "hari ini",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#03",
+      "text": "Batas waktunya besok",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "besok",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T12:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#04",
+      "text": "besok",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-31T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "besok",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#05",
+      "text": "Batas waktunya kemarin",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "kemarin",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": [
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#06",
+      "text": "lusa",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "lusa",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#07",
+      "text": "besok lusa",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "besok lusa",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#08",
+      "text": "kemarin lusa",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "kemarin lusa",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-08T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#09",
+      "text": "Kami bertemu tadi malam",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser",
+          "IDCasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 13,
+          "text": "tadi malam",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#10",
+      "text": "Kita bertemu nanti malam",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser",
+          "IDCasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 13,
+          "text": "nanti malam",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": [
+              "casualReference/tonight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#11",
+      "text": "malam ini",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "malam ini",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": [
+              "casualReference/tonight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single expression"
+    },
+    {
+      "id": "id/casual#12",
+      "text": "pagi ini",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "pagi ini",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time"
+    },
+    {
+      "id": "id/casual#13",
+      "text": "siang",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "siang",
+          "start": {
+            "known": {
+              "hour": 12
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/noon"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time"
+    },
+    {
+      "id": "id/casual#14",
+      "text": "sore",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "sore",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time"
+    },
+    {
+      "id": "id/casual#15",
+      "text": "Hari ini Pkl. 13:58",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "IDMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Hari ini Pkl. 13:58",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 58,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T13:58:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time"
+    },
+    {
+      "id": "id/casual#16",
+      "text": "malam",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "malam",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time"
+    },
+    {
+      "id": "id/casual#17",
+      "text": "tengah malam",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tengah malam",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 11,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-08-11T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual time"
+    },
+    {
+      "id": "id/casual#18",
+      "text": "Rapatnya besok pagi",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser",
+          "IDCasualTimeParser"
+        ],
+        "refiners": [
+          "IDMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "besok pagi",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined expression"
+    },
+    {
+      "id": "id/casual#19",
+      "text": "besok pukul 10.30",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "IDMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "besok pukul 10.30",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 10,
+              "minute": 30,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T10:30:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined expression"
+    },
+    {
+      "id": "id/casual#20",
+      "text": "kemarin jam 3 sore",
+      "config": "id.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDCasualDateParser",
+          "IDCasualTimeParser",
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "IDMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "kemarin jam 3 sore",
+          "start": {
+            "known": {
+              "day": 9,
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T15:00:00.000Z",
+            "tags": [
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined expression"
+    },
+    {
+      "id": "id/casual#21",
+      "text": "Selamat datang di Jakarta",
+      "config": "id.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "id/casual#22",
+      "text": "Harganya Rp 10.500",
+      "config": "id.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "IDTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    }
+  ]
+}
