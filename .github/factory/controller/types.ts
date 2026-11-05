@@ -106,8 +106,14 @@ export interface IssueSnap {
   marker_status: MarkerStatus;
   /** When the issue was last reopened (only read for issues whose task has a recorded pick); null if never or unknown. */
   reopened_at?: string | null;
-  /** The `factory:infra-incident` record (only read for issues carrying the label); null if unreadable or incomplete. */
-  infra_incident?: InfraIncidentSnap | null;
+}
+
+/** A task issue, open or closed, carrying `factory:infra-incident`, with its record (null if unreadable or incomplete). */
+export interface InfraIncidentIssueSnap {
+  number: number;
+  node_id: string;
+  task_id: string;
+  record: InfraIncidentSnap | null;
 }
 
 /**
@@ -292,6 +298,8 @@ export interface Snapshot {
   repo: string;
   fetched_at: string;
   issues: IssueSnap[];
+  /** Task issues labelled `factory:infra-incident`, open or closed (observed for the audit log only; the planner never reads them). */
+  infra_incidents?: InfraIncidentIssueSnap[];
   pulls: PullSnap[];
   /** The main commit the contracts were read at (resolved once per run); null when not read. */
   main_sha: string | null;

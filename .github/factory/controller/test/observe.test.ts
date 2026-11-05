@@ -67,16 +67,16 @@ describe('observe', () => {
 
   it('records a person\'s infra-incident record as human_action/infra_incident (IDs only, audit-safe)', () => {
     const base = snapshot({});
-    const iss = { number: 291, node_id: 'I_291', labels: ['factory:task', 'factory:infra-incident'], task_id: 'fi/casual-time-parser', marker_status: 'ok' as const };
+    const iss = { number: 291, node_id: 'I_291', task_id: 'fi/casual-time-parser' };
     const rec = { actor: 'sabbasi3', labeled_at: '2026-10-16T10:00:00Z', incident: '#303', comment_url: 'https://github.com/o/r/issues/291#issuecomment-1' };
-    const ev = observe({ ...base, issues: [{ ...iss, infra_incident: rec }] }, NOW);
+    const ev = observe({ ...base, infra_incidents: [{ ...iss, record: rec }] }, NOW);
     assert.deepEqual(ev.map((e) => [e.type, e.source_ids]), [['human_action', ['I_291/infra-incident/2026-10-16T10:00:00Z']]]);
     assert.deepEqual(ev[0]!.fields, { action: 'infra_incident', issue: 291, task: 'fi/casual-time-parser', ...rec });
     const ts = '2026-10-16T10:00:01Z';
     buildEvent({ type: 'human_action', timestamp: ts, parents: [], payload: { ...ev[0]!.fields, dedupe_key: dedupeKey('human_action', ev[0]!.source_ids), factory_version: 'x', dry_run: false } });
     // No record, or outside the window → nothing.
-    assert.deepEqual(observe({ ...base, issues: [{ ...iss, infra_incident: null }] }, NOW), []);
-    assert.deepEqual(observe({ ...base, issues: [{ ...iss, infra_incident: { ...rec, labeled_at: '2026-10-14T10:00:00Z' } }] }, NOW), []);
+    assert.deepEqual(observe({ ...base, infra_incidents: [{ ...iss, record: null }] }, NOW), []);
+    assert.deepEqual(observe({ ...base, infra_incidents: [{ ...iss, record: { ...rec, labeled_at: '2026-10-14T10:00:00Z' } }] }, NOW), []);
   });
 
   it('records a pending run with its failure signature, marked pending and without a seed (#253, #266 review)', () => {

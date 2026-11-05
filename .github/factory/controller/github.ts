@@ -13,6 +13,7 @@ import type {
   ContractSnap,
   GitHubClient,
   HttpMethod,
+  InfraIncidentIssueSnap,
   InfraIncidentSnap,
   IssueSnap,
   MergeQueueEventSnap,
@@ -1052,6 +1053,30 @@ export async function readInfraIncident(client: GitHubClient, repo: string, issu
   }
 }
 
+/**
+ * Task issues labelled INFRA_INCIDENT_LABEL in any state, each with its record. A failed listing is
+ * none (nothing is excused: the first-try rate then counts every attempt, stricter, never looser).
+ */
+export async function readInfraIncidents(client: GitHubClient, repo: string): Promise<InfraIncidentIssueSnap[]> {
+  let items: unknown[];
+  try {
+    items = await paginate(client, `/repos/${repo}/issues?labels=${encodeURIComponent(INFRA_INCIDENT_LABEL)}&state=all&per_page=100`, asArr, 5);
+  } catch {
+    return [];
+  }
+  const out: InfraIncidentIssueSnap[] = [];
+  for (const it of items) {
+    const i = asRec(it);
+    if (i.pull_request !== undefined) continue;
+    const task_id = parseTaskMarker(asStr(i.body)).task_id;
+    const number = i.number;
+    const node_id = asStr(i.node_id);
+    if (!task_id || typeof number !== 'number' || !Number.isSafeInteger(number) || !node_id) continue;
+    out.push({ number, node_id, task_id, record: await readInfraIncident(client, repo, number) });
+  }
+  return out;
+}
+
 /** A workflow's runs created in the last two days; null if they can't be listed (unknown). */
 export async function readWorkflowRuns(client: GitHubClient, repo: string, workflowFile: string, now: Date): Promise<RepairRunSnap[] | null> {
   const since = new Date(now.getTime() - 2 * 24 * 3600_000).toISOString().slice(0, 10);
@@ -1088,8 +1113,9 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
   // Reopen times only where they matter: open task issues whose task has history (a recorded pick).
   const withHistory = new Set(o.historyTasks);
   for (const i of issues) if (i.task_id && withHistory.has(i.task_id)) i.reopened_at = await readReopenedAt(client, o.repo, i.number);
-  // Infra-incident records only for task issues carrying the label (a person adds it, rarely).
-  for (const i of issues) if (i.task_id && i.labels.includes(INFRA_INCIDENT_LABEL)) i.infra_incident = await readInfraIncident(client, o.repo, i.number);
+  // Infra-incident records: task issues carrying the label, open or closed (the tasks are usually
+  // merged and closed by the time a person records one), read apart from the planner's open issues.
+  const infra_incidents = await readInfraIncidents(client, o.repo);
   const pulls = await readPulls(client, o.repo);
   // Changed files, only for open bug-intake fix PRs (the planner's additive-only check).
   for (const p of pulls) if (p.state === 'open' && intakeFixOf(p) !== null) p.files = await readPullFiles(client, o.repo, p.number);
@@ -1114,6 +1140,7 @@ export async function readSnapshot(client: GitHubClient, o: ReadSnapshotOptions)
     repo: o.repo,
     fetched_at: isoSeconds(o.now),
     issues,
+    infra_incidents,
     pulls,
     main_sha,
     contracts,

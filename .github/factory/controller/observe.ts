@@ -64,9 +64,9 @@ export function observe(s: Snapshot, now: Date, windowHours = OBSERVE_WINDOW_HOU
 
   // A person's infra-incident record on a task issue (factory:infra-incident + reason comment): kept
   // in the audit log, where onboarding's first-try rate reads it (harness/onboard, onboard.yml).
-  for (const i of s.issues) {
-    const r = i.infra_incident;
-    if (!r || !i.task_id || !inWindow(r.labeled_at)) continue;
+  for (const i of s.infra_incidents ?? []) {
+    const r = i.record;
+    if (!r || !inWindow(r.labeled_at)) continue;
     add(r.labeled_at, 'human_action', [`${i.node_id}/infra-incident/${r.labeled_at}`], {
       action: 'infra_incident',
       issue: i.number,
