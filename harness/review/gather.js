@@ -199,7 +199,8 @@ async function main() {
         if (f) Object.assign(r, { failure_class: f.class, failure_kind: f.kind });
     }
     const incidentEvents = all.filter((e) => e.type === "human_action" && e.payload.action === "infra_incident");
-    const attributed = failures.attributeFailures({ events, incidentEvents, labeled: fd.labeled, runs: runById, triage: fd.triage });
+    const dispatches = all.filter((e) => e.type === "repair_dispatched");
+    const attributed = failures.attributeFailures({ events, incidentEvents, dispatches, labeled: fd.labeled, runs: runById, triage: fd.triage });
     const reliability = failures.platformReliability(fd.runs, { from: since, to: now.toISOString() });
 
     fs.writeFileSync(path.join(out, "failures.json"), JSON.stringify(attributed, null, 1) + "\n");

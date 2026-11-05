@@ -92,3 +92,68 @@ test("failuresMd: table cells escape backslashes before pipes", () => {
     const md = f.failuresMd([{ issue: 1, task: "a\\|b", reason: "r", run_id: null, run: null, triage: null, infra_incident: null, attribution: "unclear", basis: "x" }], f.platformReliability([], {}));
     assert.match(md, /\| a\\\\\\\|b \|/);
 });
+
+test("review #349: frontmatter fails closed; CRLF reads the same", () => {
+    assert.throws(() => f.frontmatterOf("# no frontmatter\n"), /no frontmatter/);
+    assert.throws(() => f.frontmatterOf("---\n- a\n---\n"), /not a mapping/);
+    assert.throws(() => f.frontmatterOf("---\nsteps: [\n---\n"));
+    const crlf = "---\r\nsteps:\r\n  - name: Kill switch\r\n    run: x\r\n---\r\n# body\r\n";
+    assert.deepStrictEqual([...f.factoryStepNames(f.frontmatterOf(crlf))], ["Kill switch"]);
+});
+
+test("review #349: source-defined threat-detection steps are factory steps, before the platform rules", () => {
+    const fm = { steps: [{ name: "A" }], "safe-outputs": { "threat-detection": { steps: [{ name: "Repair scope (trusted) - the patch may change only the contract's scope files" }] }, steps: [{ name: "S" }] }, jobs: { extra: { steps: [{ name: "J" }] } } };
+    const names = f.factoryStepNames(fm);
+    assert.deepStrictEqual([...names].sort(), ["A", "J", "Repair scope (trusted) - the patch may change only the contract's scope files", "S"]);
+    const gate = "Repair scope (trusted) - the patch may change only the contract's scope files";
+    const det = job("detection", "failure", [step(1, gate, "failure"), step(2, "Conclude threat detection", "failure")]);
+    // Even with the no-result message (the gate stopped the job before a result), it's the factory's gate.
+    const r = f.classifyRun([det], { detection: ["ERR_SYSTEM: ❌ Detection result file not found"] }, names);
+    assert.deepStrictEqual([r.class, r.kind], ["factory", "factory_step:repair_scope_trusted_the_patch_may_change_only_the_contract_s_scope_files"]);
+});
+
+test("review #349: implement_failed / repair_failed / review_timeout with no resolving signal stay unclear", () => {
+    for (const reason of ["implement_failed", "repair_failed", "review_timeout"]) {
+        assert.strictEqual(f.attribute({ reason }).attribution, "unclear", reason);
+        assert.strictEqual(f.attribute({ reason, run: { run_id: 1, class: "unclear", kind: "agent_execution_failed" } }).attribution, "unclear", reason);
+        assert.strictEqual(f.attribute({ reason, run: { run_id: 1, class: "agent_reported", kind: "agent_reported_failure" } }).attribution, "unclear", reason);
+    }
+    assert.match(f.attribute({ reason: "implement_failed" }).basis, /run cause unavailable, no triage verdict/);
+    assert.strictEqual(f.attribute({ reason: "implement_failed", triage: { class: "port-bug" } }).attribution, "agent");
+});
+
+test("review #349: repair_failed joins the repair run (resolved from its repair_dispatched record), not the CI run", () => {
+    const ev = (type, ts, payload) => ({ type, timestamp: ts, payload: { dry_run: false, ...payload } });
+    const nh = ev("needs_human", "2026-11-05T12:00:00Z", { issue: 7, task: "en/a", reason: "repair_failed", run_id: 500 });
+    const dispatches = [
+        ev("repair_dispatched", "2026-11-05T10:00:00Z", { task: "en/a", issue: 7, attempt: 2, run_id: 500 }),
+        ev("repair_dispatched", "2026-11-05T09:00:00Z", { task: "en/a", issue: 7, attempt: 2, run_id: 499 }),
+        ev("repair_dispatched", "2026-11-05T13:00:00Z", { task: "en/a", issue: 7, attempt: 3, run_id: 500 }),
+    ];
+    const r = (id, title, at, extra = {}) => [id, { workflow: "repair", run_id: id, title, created_at: at, url: `u${id}`, class: "platform", kind: "mcp_gateway_start", job: "agent", step: "Start MCP Gateway", ...extra }];
+    const runs = new Map([
+        r(900, "Repair en/a #7 attempt 2", "2026-11-05T10:05:00Z"),
+        r(901, "Repair en/a #7 attempt 2", "2026-11-05T11:00:00Z"), // too late after the dispatch
+        r(902, "Repair en/b #7 attempt 2", "2026-11-05T10:05:00Z"),
+        [500, { workflow: "ci", run_id: 500, class: "factory", kind: "x" }],
+    ]);
+    assert.strictEqual(f.eventRunId(nh, dispatches, runs), 900);
+    const [a] = f.attributeFailures({ events: [nh], incidentEvents: [], dispatches, labeled: new Set(), runs, triage: new Map() });
+    assert.deepStrictEqual([a.run_id, a.ci_run_id, a.run.url, a.attribution], [900, 500, "u900", "platform"]);
+    // No matching repair run: unknown cause, never the CI run's.
+    const [b] = f.attributeFailures({ events: [nh], incidentEvents: [], dispatches: dispatches.slice(1), labeled: new Set(), runs, triage: new Map() });
+    assert.deepStrictEqual([b.run_id, b.run, b.attribution], [null, null, "unclear"]);
+    // implement_failed keeps its own run id.
+    assert.strictEqual(f.eventRunId(ev("needs_human", "2026-11-05T12:00:00Z", { reason: "implement_failed", run_id: 42 }), dispatches, runs), 42);
+});
+
+test("review #349: each hand-off gets the triage verdict between it and the issue's next hand-off", () => {
+    const ev = (type, ts, payload) => ({ type, timestamp: ts, payload: { dry_run: false, ...payload } });
+    const events = [
+        ev("needs_human", "2026-11-04T10:00:00Z", { issue: 9, task: "en/a", reason: "implement_failed", run_id: 1 }),
+        ev("needs_human", "2026-11-05T10:00:00Z", { issue: 9, task: "en/a", reason: "implement_failed", run_id: 2 }),
+    ];
+    const triage = new Map([[9, [{ class: "port-bug", confidence: "high", at: "2026-11-04T10:20:00Z" }, { class: "shared-infra-gap", confidence: "high", at: "2026-11-05T10:20:00Z" }]]]);
+    const out = f.attributeFailures({ events, incidentEvents: [], labeled: new Set(), runs: new Map(), triage });
+    assert.deepStrictEqual(out.map((x) => [x.triage.class, x.attribution]), [["port-bug", "agent"], ["shared-infra-gap", "factory"]]);
+});

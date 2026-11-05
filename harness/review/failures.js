@@ -47,9 +47,10 @@ const REASON_CLASS = {
     review_objected: "agent",
     code_scanning_alerts: "agent",
     main_regressed: "agent",
-    // Depend on where the run stopped (signal 2); agent only when nothing else explains it.
-    implement_failed: "agent",
-    repair_failed: "agent",
+    // Depend on where the run stopped (signal 2) or the pre-triage verdict; otherwise unclear.
+    implement_failed: "run",
+    repair_failed: "run",
+    review_timeout: "run",
 };
 
 const TRIAGE_ATTRIBUTION = {
@@ -66,18 +67,36 @@ const KNOWN_KINDS = { "Start MCP Gateway": "mcp_gateway_start" };
 const slug = (s) => String(s || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 const kindOf = (prefix, step) => KNOWN_KINDS[step] || `${prefix}:${slug(step)}`;
 
-/** Step names the factory itself defines (the workflow source's `steps:`/`post-steps:`), not gh-aw's. Pure. */
+/**
+ * Step names the factory itself defines in the workflow source, not gh-aw's: the agent job's
+ * `steps:`/`pre-agent-steps:`/`post-steps:`, the trusted threat-detection steps (e.g. repair.md's
+ * repair-scope gate), safe-outputs steps and custom `jobs:`. A failure there is never platform. Pure.
+ */
 function factoryStepNames(frontmatter) {
     const names = new Set();
-    for (const key of ["steps", "post-steps"]) for (const s of (frontmatter && frontmatter[key]) || []) if (s && s.name) names.add(s.name);
+    const add = (list) => {
+        for (const s of Array.isArray(list) ? list : []) if (s && s.name) names.add(s.name);
+    };
+    const fm = frontmatter || {};
+    for (const key of ["steps", "pre-agent-steps", "post-steps"]) add(fm[key]);
+    const so = fm["safe-outputs"] || {};
+    add(so.steps);
+    const td = so["threat-detection"];
+    if (td && typeof td === "object") for (const key of ["steps", "pre-steps", "post-steps"]) add(td[key]);
+    for (const job of Object.values(fm.jobs || {})) if (job && typeof job === "object") add(job.steps);
     return names;
 }
 
-/** The workflow source's frontmatter (between the first two `---` lines), parsed. Throws if unreadable. */
+/**
+ * The workflow source's frontmatter (between the first two `---` lines), parsed. Throws when it
+ * can't be read (fail closed): an empty step set would count the factory's own steps as gh-aw's.
+ */
 function frontmatterOf(md) {
-    const m = /^---\n([\s\S]*?)\n---/.exec(md);
-    if (!m) return {};
-    return require("yaml").parse(m[1]) || {};
+    const m = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(String(md).replace(/\r\n?/g, "\n"));
+    if (!m) throw new Error("no frontmatter block");
+    const fm = require("yaml").parse(m[1]);
+    if (!fm || typeof fm !== "object" || Array.isArray(fm)) throw new Error("frontmatter is not a mapping");
+    return fm;
 }
 
 const firstFailedStep = (job) => (job.steps || []).find((s) => s.conclusion === "failure");
@@ -113,6 +132,8 @@ function classifyRun(jobs, annotations, factorySteps) {
     if (detection) {
         const step = firstFailedStep(detection);
         const name = step && step.name;
+        // A trusted gate the factory runs in the detection job (e.g. repair scope): the factory's verdict.
+        if (name && factorySteps.has(name)) return out(policyStep(name) ? "policy" : "factory", `factory_step:${slug(name)}`, detection, name);
         // Without its annotations a flagged run and an engine failure look the same: don't guess.
         if (!annotations.detection) return out("unclear", "detection_unreadable", detection, name);
         const msg = usefulMessage(annotations.detection) || "";
@@ -152,41 +173,69 @@ function attribute({ reason, run, triage, incident }) {
     }
     if (run && ["platform", "factory", "policy"].includes(run.class)) return { attribution: run.class, basis: `run ${run.run_id} stopped at ${run.job}/${run.step || "?"} (${run.kind})` };
     const rc = REASON_CLASS[reason];
-    if (rc && rc !== "agent") return { attribution: rc, basis: `reason ${reason} is a ${rc === "policy" ? "policy hold" : "factory control"}` };
+    if (rc && rc !== "agent" && rc !== "run") return { attribution: rc, basis: `reason ${reason} is a ${rc === "policy" ? "policy hold" : "factory control"}` };
     if (triage) return { attribution: TRIAGE_ATTRIBUTION[triage.class], basis: `pre-triage: ${triage.class}${triage.confidence ? `, ${triage.confidence} confidence` : ""} (AI, advisory)` };
     if (rc === "agent") return { attribution: "agent", basis: `reason ${reason}; no platform, factory or triage signal` };
+    // A failed run whose cause is unknown or unreadable: never counted against the agent.
+    if (rc === "run") return { attribution: "unclear", basis: `reason ${reason}; run cause ${run ? `${run.class} (${run.kind})` : "unavailable"}, no triage verdict` };
     return { attribution: "unclear", basis: `reason ${reason || "unknown"}: no signal` };
+}
+
+const DISPATCH_MATCH_MINUTES = 30; // spend.ts: a dispatched run is created within 30 minutes
+
+/**
+ * The run a needs-human event is about. For `repair_failed` the event's run_id is the failing CI run
+ * the repair was for (planner.ts), so the repair run is resolved like the controller does: its latest
+ * `repair_dispatched` record for that CI run, then the repair run with that exact title created
+ * within DISPATCH_MATCH_MINUTES after it. Null if not found (then the run's cause is unknown). Pure.
+ */
+function eventRunId(e, dispatches, runs) {
+    const p = e.payload;
+    if (p.reason !== "repair_failed") return p.run_id ?? null;
+    const rec = dispatches
+        .filter((d) => d.type === "repair_dispatched" && d.payload.task === p.task && d.payload.run_id === p.run_id && d.timestamp <= e.timestamp)
+        .sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1))[0];
+    if (!rec) return null;
+    const title = `Repair ${p.task} #${rec.payload.issue} attempt ${rec.payload.attempt}`;
+    const t = Date.parse(rec.timestamp);
+    const match = [...runs.values()]
+        .filter((r) => r.workflow === "repair" && r.title === title && Date.parse(r.created_at) >= t && Date.parse(r.created_at) - t <= DISPATCH_MATCH_MINUTES * 60_000)
+        .sort((a, b) => b.run_id - a.run_id)[0];
+    return match ? match.run_id : null;
 }
 
 /**
  * The window's needs-human events, each attributed. Pure.
  *   events: window audit events; incidentEvents: human_action/infra_incident (any time)
- *   labeled: issue numbers labeled INFRA_LABEL; runs: Map run_id → classified failed run
- *   triage: Map issue → [verdict] (from triageVerdict)
+ *   dispatches: repair_dispatched events (window + lookback); labeled: issue numbers labeled INFRA_LABEL
+ *   runs: Map run_id → classified failed run; triage: Map issue → [verdict] (from triageVerdict)
  */
-function attributeFailures({ events, incidentEvents, labeled, runs, triage }) {
+function attributeFailures({ events, incidentEvents, dispatches = [], labeled, runs, triage }) {
     const incidents = new Map();
     for (const e of incidentEvents) if (e.payload.issue) incidents.set(e.payload.issue, { ref: e.payload.incident, comment_url: e.payload.comment_url, labeled_at: e.payload.labeled_at });
-    return events
-        .filter((e) => e.type === "needs_human")
-        .map((e) => {
-            const p = e.payload;
-            const run = p.run_id ? runs.get(p.run_id) || null : null;
-            const verdicts = (triage.get(p.issue) || []).filter((v) => v.at >= e.timestamp).sort((a, b) => (a.at < b.at ? 1 : -1));
-            const incident = incidents.get(p.issue) || (labeled.has(p.issue) ? { ref: null } : null);
-            const t = verdicts[0] || null;
-            return {
-                at: e.timestamp,
-                issue: p.issue ?? null,
-                task: p.task ?? null,
-                reason: p.reason,
-                run_id: p.run_id ?? null,
-                run: run ? { class: run.class, kind: run.kind, job: run.job, step: run.step, url: run.url } : null,
-                triage: t,
-                infra_incident: incident,
-                ...attribute({ reason: p.reason, run, triage: t, incident }),
-            };
-        });
+    const handoffs = events.filter((e) => e.type === "needs_human");
+    return handoffs.map((e) => {
+        const p = e.payload;
+        const runId = eventRunId(e, dispatches, runs);
+        const run = runId ? runs.get(runId) || null : null;
+        // This hand-off's verdict: after it, and before the issue's next hand-off (a later attempt's).
+        const next = handoffs.filter((x) => x.payload.issue === p.issue && x.timestamp > e.timestamp).map((x) => x.timestamp).sort()[0];
+        const verdicts = (triage.get(p.issue) || []).filter((v) => v.at >= e.timestamp && (!next || v.at < next)).sort((a, b) => (a.at < b.at ? 1 : -1));
+        const incident = incidents.get(p.issue) || (labeled.has(p.issue) ? { ref: null } : null);
+        const t = verdicts[0] || null;
+        return {
+            at: e.timestamp,
+            issue: p.issue ?? null,
+            task: p.task ?? null,
+            reason: p.reason,
+            run_id: runId,
+            ...(runId !== (p.run_id ?? null) ? { ci_run_id: p.run_id ?? null } : {}),
+            run: run ? { class: run.class, kind: run.kind, job: run.job, step: run.step, url: run.url } : null,
+            triage: t,
+            infra_incident: incident,
+            ...attribute({ reason: p.reason, run, triage: t, incident }),
+        };
+    });
 }
 
 /** Platform failures by kind, with run links; a kind seen RECUR_AT+ times is flagged. Pure. */
@@ -261,7 +310,7 @@ async function fetchFailureData({ gh, repo, since, workflows, events, maxRuns = 
             console.log(`::warning::${name} runs unreadable (${e.message}): its failures are missing from the data`);
             continue;
         }
-        for (const r of list.workflow_runs || []) if (r.created_at >= since) failed.push({ workflow: name, run_id: r.id, url: r.html_url, created_at: r.created_at, factorySteps });
+        for (const r of list.workflow_runs || []) if (r.created_at >= since) failed.push({ workflow: name, run_id: r.id, url: r.html_url, title: r.display_title, created_at: r.created_at, factorySteps });
     }
     failed.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
     if (failed.length > maxRuns) console.log(`::warning::${failed.length} failed runs; classifying the newest ${maxRuns}`);
@@ -282,7 +331,7 @@ async function fetchFailureData({ gh, repo, since, workflows, events, maxRuns = 
         } catch (e) {
             c = { class: "unclear", kind: "jobs_unreadable", job: null, step: null, message: clip(e.message) };
         }
-        runs.push({ workflow: r.workflow, run_id: r.run_id, url: r.url, created_at: r.created_at, ...c });
+        runs.push({ workflow: r.workflow, run_id: r.run_id, url: r.url, title: r.title, created_at: r.created_at, ...c });
     }
 
     const triage = new Map();
@@ -305,4 +354,4 @@ async function fetchFailureData({ gh, repo, since, workflows, events, maxRuns = 
     return { runs, triage, labeled };
 }
 
-module.exports = { REASON_CLASS, RECUR_AT, factoryStepNames, frontmatterOf, classifyRun, triageVerdict, attribute, attributeFailures, platformReliability, failuresMd, fetchFailureData };
+module.exports = { REASON_CLASS, RECUR_AT, factoryStepNames, eventRunId, frontmatterOf, classifyRun, triageVerdict, attribute, attributeFailures, platformReliability, failuresMd, fetchFailureData };
