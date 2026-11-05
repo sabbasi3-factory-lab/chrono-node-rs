@@ -10,7 +10,7 @@ import { FakeGitHub, type RecordedCall } from '../fake.ts';
 import { logWaits, parseArgs, run, type RunDeps } from '../main.ts';
 import { IMPLEMENTED_STRICT_GATES } from '../planner.ts';
 import { deriveState } from '../history.ts';
-import { readReopenedAt, readRepairRuns, readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
+import { readInfraIncident, readInfraIncidents, readReopenedAt, readRepairRuns, readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
 import type { Decision, Policies, Snapshot } from '../types.ts';
 import { checkRun, commitSha, contract, hex40, history, issue, mergedPull, NOW, pull, REPO, snapshot, testPolicies } from './helpers.ts';
 import { dedupeKey } from '../audit.ts';
@@ -1115,6 +1115,65 @@ describe('reviewer checks and history', () => {
     assert.equal(await readReopenedAt(gh, REPO, 5), '2026-10-16T09:00:00Z');
     assert.equal(await readReopenedAt(gh, REPO, 6), null);
     assert.equal(await readReopenedAt(gh, REPO, 7), null);
+  });
+
+  it('readInfraIncident: a user\'s latest label plus their ref comment; bots, missing or unsafe refs and read errors → null', async () => {
+    const gh = new FakeGitHub(REPO);
+    const L = { name: 'factory:infra-incident' };
+    const user = (login: string) => ({ login, type: 'User' });
+    const ev = (n: number, data: unknown[]) => gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/${n}/events$`), () => ({ data }));
+    const cm = (n: number, data: unknown[]) => gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/${n}/comments$`), () => ({ data }));
+    const c = (login: string, body: string, at: string, id = 1) => ({ user: user(login), body, created_at: at, html_url: `https://github.com/${REPO}/issues/1#issuecomment-${id}` });
+    ev(1, [
+      { event: 'labeled', label: L, actor: user('sabbasi3'), created_at: '2026-10-16T09:00:00Z' },
+      { event: 'labeled', label: L, actor: { login: 'sabbasi3-factory-controller[bot]', type: 'Bot' }, created_at: '2026-10-16T10:00:00Z' },
+      { event: 'labeled', label: { name: 'needs-human' }, actor: user('sabbasi3'), created_at: '2026-10-16T11:00:00Z' },
+    ]);
+    cm(1, [
+      c('sabbasi3', 'Infra incident: #303 the agent could not mkdir parsers/', '2026-10-16T09:01:00Z', 7),
+      c('someone', 'Infra incident: #999 not the labeler', '2026-10-16T09:02:00Z', 8),
+    ]);
+    assert.deepEqual(await readInfraIncident(gh, REPO, 1), {
+      actor: 'sabbasi3',
+      labeled_at: '2026-10-16T09:00:00Z',
+      incident: '#303',
+      comment_url: `https://github.com/${REPO}/issues/1#issuecomment-7`,
+    });
+    // Only a bot added it → no record.
+    ev(2, [{ event: 'labeled', label: L, actor: { login: 'x[bot]', type: 'Bot' }, created_at: '2026-10-16T09:00:00Z' }]);
+    cm(2, [c('x[bot]', 'Infra incident: #303', '2026-10-16T09:01:00Z')]);
+    assert.equal(await readInfraIncident(gh, REPO, 2), null);
+    // No reference (prose only), or an unsafe one → no record.
+    ev(3, [{ event: 'labeled', label: L, actor: user('sabbasi3'), created_at: '2026-10-16T09:00:00Z' }]);
+    cm(3, [c('sabbasi3', 'Infra incident: mkdir was missing', '2026-10-16T09:01:00Z'), c('sabbasi3', 'Infra incident: #12;rm', '2026-10-16T09:02:00Z')]);
+    assert.equal(await readInfraIncident(gh, REPO, 3), null);
+    // Unreadable → null.
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/4/events$`), () => ({ status: 500, data: null }));
+    assert.equal(await readInfraIncident(gh, REPO, 4), null);
+  });
+
+  it('readInfraIncidents: labelled task issues in any state (the fi tasks were closed), PRs and markerless issues skipped; a listing error → none (#309 review)', async () => {
+    const gh = new FakeGitHub(REPO);
+    const marker = (t: string) => `<!-- factory-task: ${t} -->`;
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues$`), (path) => {
+      const q = decodeURIComponent(path);
+      assert.match(q, /labels=factory:infra-incident/);
+      assert.match(q, /state=all/);
+      return { data: [
+        { number: 291, node_id: 'I_291', state: 'closed', body: marker('fi/casual-time-parser') },
+        { number: 5, node_id: 'PR_5', state: 'open', body: marker('fi/x'), pull_request: {} },
+        { number: 6, node_id: 'I_6', state: 'open', body: 'no marker' },
+      ] };
+    });
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/291/events$`), () => ({ data: [{ event: 'labeled', label: { name: 'factory:infra-incident' }, actor: { login: 'sabbasi3', type: 'User' }, created_at: '2026-10-16T09:00:00Z' }] }));
+    gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/291/comments$`), () => ({ data: [{ user: { login: 'sabbasi3' }, body: 'Infra incident: #303 no parsers/ dir', created_at: '2026-10-16T09:01:00Z', html_url: `https://github.com/${REPO}/issues/291#issuecomment-1` }] }));
+    assert.deepEqual(await readInfraIncidents(gh, REPO), [{
+      number: 291, node_id: 'I_291', task_id: 'fi/casual-time-parser',
+      record: { actor: 'sabbasi3', labeled_at: '2026-10-16T09:00:00Z', incident: '#303', comment_url: `https://github.com/${REPO}/issues/291#issuecomment-1` },
+    }]);
+    const broken = new FakeGitHub(REPO);
+    broken.addRoute('GET', new RegExp(`^/repos/${REPO}/issues$`), () => ({ status: 500, data: null }));
+    assert.deepEqual(await readInfraIncidents(broken, REPO), []);
   });
 
   it('readRepairRuns lists two days of repair runs; a listing failure is unknown (null), never empty', async () => {

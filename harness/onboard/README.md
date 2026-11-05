@@ -66,6 +66,13 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
    merged task. A covered review that outcomes attributes to no task counts toward the spend. A missing or unreadable input (issues, PRs, runs, merged) also waits, never reads
    as "none". The `onboard-stop-rules` fire drill checks this. (#317 onboarded `id` on 0 AIC and
    0/0 first-try because `outcomes.json` had none of `fi`'s runs yet.)
+   **Infra incidents.** When a factory defect (not agent work) broke a task's attempts, a person
+   adds `factory:infra-incident` to the task issue (open or closed) and comments `Infra incident:
+   <ref> <reason>`, where `<ref>` is the fixing PR or incident issue (`#303`). The controller records
+   it in the audit log (`human_action`, `action: infra_incident`: issue, task, actor, time, ref and
+   the comment's URL); a bot or App adding the label, or a comment without a ref, records nothing.
+   For the first-try rate only, that task's implement attempts started before the record that
+   opened no accepted PR aren't counted. Spend counts every run, and the threshold is unchanged.
 2. **generate**: the generator on main with a read-only token, then the exact file set is checked.
 3. **apply** (live): the controller App opens `factory/onboard/<code>`. Human tier.
 4. **issues** (live, after merge): task issues with "blocked by" links (`issues.js`, no third-party
@@ -84,7 +91,7 @@ node onboard/onboard.js check --write     # after a generator change: re-render 
 node onboard/onboard.js drill [code...]   # onboard each (default: every candidate) in a throwaway copy;
                                           # fail if a contract scope file's directory isn't generated,
                                           # or onboard.yml's artifact would drop the skeleton's .gitkeep files
-node onboard/onboard.js next --policy P --outcomes O --issues I --prs R --runs U --merged M   # the scheduled decision
+node onboard/onboard.js next --policy P --outcomes O --issues I --prs R --runs U --merged M [--incidents A]   # the scheduled decision (A: audit jsonl)
 node onboard/summary.js fi                # the onboarding PR's body
 node --test onboard/test/*.test.js        # unit tests (also in npm run test:gates)
 ```

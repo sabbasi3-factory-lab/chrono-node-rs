@@ -8,6 +8,7 @@
     { "name": "blocked", "color": "B60205", "description": "Can't be dispatched (bad marker, contract or duplicate)" },
     { "name": "stale-contract", "color": "FBCA04", "description": "The contract changed after dispatch" },
     { "name": "factory:alert", "color": "B60205", "description": "A person must review (spend-bound alert)" },
+    { "name": "factory:infra-incident", "color": "FBCA04", "description": "A factory defect broke this task's attempts (see the Infra incident comment)" },
     { "name": "factory:revert-reviewed", "color": "0E8A16", "description": "A person reviewed the controller's auto-revert PR" },
     { "name": "tier:auto", "color": "C2E0C6", "description": "Contract tier: auto" },
     { "name": "tier:auto-strict", "color": "BFD4F2", "description": "Contract tier: auto-strict" },

@@ -432,6 +432,11 @@ module.exports = {
  *   ledger:     what actually ran and merged, from the Actions and pulls APIs (not from outcomes.json):
  *               {runs: [{run_id, workflow, title, conclusion, created_at}] completed agent runs, merged: [task]
  *               tasks of merged agent PRs}, or null if unreadable
+ *   incidents:  infra-incident records from the audit log [{task, labeled_at}] (human_action
+ *               infra_incident: a person labeled the task factory:infra-incident with a reference).
+ *               For the first-try rate only, a task's implement attempts started before its record
+ *               that opened no accepted PR are not counted: the factory failed, not the agent. Spend
+ *               still counts them.
  * Returns {action: "onboard", code} | {action: "wait" | "stop", reason}.
  *
  * Fails closed: the stop rules are computed from outcomes.json, which the outcomes collector fills a
@@ -439,7 +444,7 @@ module.exports = {
  * every review run, which names no task) and has the accepted PR of every merged task, missing runs
  * would read as zero spend and no merges (#317 onboarded id on 0 AIC, 0/0 with fi done): wait instead.
  */
-function nextLanguage({ policy, onboarded, candidates, outcomes, issues, openPRs, ledger }) {
+function nextLanguage({ policy, onboarded, candidates, outcomes, issues, openPRs, ledger, incidents = [] }) {
     if (!policy || !Array.isArray(policy.languages) || policy.languages.length === 0) return { action: "stop", reason: "no_onboarding_policy" };
     const stop = policy.stop || {};
     if (!Array.isArray(issues) || !Array.isArray(openPRs)) return { action: "wait", reason: `inputs_unreadable:${!Array.isArray(issues) ? "issues" : "prs"}` };
@@ -465,11 +470,17 @@ function nextLanguage({ policy, onboarded, candidates, outcomes, issues, openPRs
     for (const r of runs) byTask.set(r.task, [...(byTask.get(r.task) || []), r]);
     let merged = 0;
     let firstTry = 0;
+    const incidentAt = new Map();
+    for (const i of incidents) {
+        if (i && typeof i.task === "string" && typeof i.labeled_at === "string" && !(incidentAt.get(i.task) >= i.labeled_at)) incidentAt.set(i.task, i.labeled_at);
+    }
+    const accepted = (r) => (r.items || []).some((i) => i.type === "create_pull_request" && i.outcome_status === "accepted");
+    const excused = (r) => r.workflow === "implement" && !accepted(r) && typeof r.created_at === "string" && incidentAt.has(r.task) && r.created_at < incidentAt.get(r.task);
     for (const list of byTask.values()) {
         const prs = list.flatMap((r) => (r.items || []).filter((i) => i.type === "create_pull_request"));
         if (!prs.some((i) => i.outcome_status === "accepted")) continue;
         merged++;
-        const implement = list.filter((r) => r.workflow === "implement");
+        const implement = list.filter((r) => r.workflow === "implement" && !excused(r));
         if (implement.length === 1 && !list.some((r) => r.workflow === "repair") && prs.some((i) => i.outcome_status === "accepted" && i.zero_touch === true)) firstTry++;
     }
     const minSample = stop.min_sample ?? 5;

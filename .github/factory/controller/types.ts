@@ -108,6 +108,27 @@ export interface IssueSnap {
   reopened_at?: string | null;
 }
 
+/** A task issue, open or closed, carrying `factory:infra-incident`, with its record (null if unreadable or incomplete). */
+export interface InfraIncidentIssueSnap {
+  number: number;
+  node_id: string;
+  task_id: string;
+  record: InfraIncidentSnap | null;
+}
+
+/**
+ * A person's record that a task's earlier failed attempts were a factory defect, not agent work:
+ * who added the `factory:infra-incident` label (a user, never a bot or App) and when, and from their
+ * `Infra incident: <ref> <reason>` comment on the issue: the incident's reference (the fixing PR or
+ * incident issue; the audit log keeps IDs only) and the comment's URL (the prose reason).
+ */
+export interface InfraIncidentSnap {
+  actor: string;
+  labeled_at: string;
+  incident: string;
+  comment_url: string;
+}
+
 export interface ReviewSnap {
   node_id: string;
   author: string | null;
@@ -277,6 +298,8 @@ export interface Snapshot {
   repo: string;
   fetched_at: string;
   issues: IssueSnap[];
+  /** Task issues labelled `factory:infra-incident`, open or closed (observed for the audit log only; the planner never reads them). */
+  infra_incidents?: InfraIncidentIssueSnap[];
   pulls: PullSnap[];
   /** The main commit the contracts were read at (resolved once per run); null when not read. */
   main_sha: string | null;
