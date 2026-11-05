@@ -102,7 +102,7 @@ export interface BoundAlert {
   bound: number;
 }
 
-export type UsageMissingCode = 'no_usage_artifact' | 'usage_artifact_expired' | 'usage_file_missing';
+export type UsageMissingCode = 'no_usage_artifact' | 'usage_artifact_expired' | 'usage_file_missing' | 'usage_file_empty';
 
 /** The run's usage is missing (not malformed): a completed run counts at its bound instead. */
 export class UsageMissing extends Error {
@@ -255,6 +255,7 @@ export const usageFileFor = (job: string): string => (job === 'agent' ? 'agent_u
 export function runAIC(files: Map<string, string>, inferredJobs: readonly string[]): number {
   let aic = 0;
   let missing: string | null = null;
+  let missingCode: UsageMissingCode | null = null;
   // Every present file is validated first: malformed accounting is unknown (blocks) whatever the
   // job order, and only then is a missing file reported as missing.
   for (const job of inferredJobs) {
@@ -262,6 +263,7 @@ export function runAIC(files: Map<string, string>, inferredJobs: readonly string
     const text = files.get(file);
     if (text === undefined) {
       missing ??= `${job} made model calls but ${file} is missing`;
+      missingCode ??= 'usage_file_missing';
       continue;
     }
     if (job === 'agent') {
@@ -285,13 +287,20 @@ export function runAIC(files: Map<string, string>, inferredJobs: readonly string
       }
       records++;
     }
-    if (records === 0) throw new Error(`${job} made model calls but recorded no usage`);
+    // An empty but well-formed file (the job's engine failed before or without recording a response,
+    // e.g. threat detection that never started: #318) is missing usage, not malformed accounting: it
+    // counts at the bound like a missing file (unknown without one). Malformed records still throw.
+    if (records === 0) {
+      missing ??= `${job} made model calls but recorded no usage`;
+      missingCode ??= 'usage_file_empty';
+      continue;
+    }
     // A cumulative total above the sum of the responses means records are missing: unknown,
     // never a smaller known number (gh-aw keeps the reported total in that case).
     if (reportedTotal > sum + Math.max(0.001, sum * 1e-6)) throw new Error(`${file} reports ${reportedTotal} AIC in total but its responses add up to ${sum}: records are missing`);
     aic += sum;
   }
-  if (missing !== null) throw new UsageMissing('usage_file_missing', missing);
+  if (missing !== null) throw new UsageMissing(missingCode ?? 'usage_file_missing', missing);
   return aic;
 }
 

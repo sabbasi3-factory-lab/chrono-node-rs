@@ -398,8 +398,9 @@ after reviewing), and **the run's own commit's** workflow (`head_sha`, read thro
 has those caps too). `max-ai-credits` is "stop after the response that crosses the cap", not a strict
 hard stop (the firewall checks the recorded total before each request), so:
 `bound = the run's reservation + one overshoot_margin per AI job`: implement 500 + 400 + 500 + 3 × 400 = 2600 (agent, detection and evals job); repair and review `per_run.<workflow> + per_run.threat_detection + 2 × overshoot_margin`. `caps.ts` also requires implement's evals job to enforce `per_run.implement`, and no other workflow to have an evals job (else the bound is off, as for any cap mismatch).
-- a **completed** run whose usage is **missing** (no `usage` artifact, an expired one, or a job's usage
-  file absent) counts at its bound (`bounded`, with an enum reason; the summary warns and
+- a **completed** run whose usage is **missing** (no `usage` artifact, an expired one, a job's usage
+  file absent, or present but with no records: `usage_file_empty`, e.g. a detection engine that never
+  started) counts at its bound (`bounded`, with an enum reason; the summary warns and
   `spend_snapshot` lists it, with the agent artifact's own figure as `observed_aic` when readable);
 - a **re-run** counts n × its bound (`bounded`, `rerun`); a re-run started today counts today;
 - every readable run's **max concurrency** and **largest response** are recorded; if any run exceeds

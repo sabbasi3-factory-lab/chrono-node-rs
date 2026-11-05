@@ -285,6 +285,7 @@ describe('spend collector: today\'s implement spend', () => {
       ['no usage artifact', { id: 9 }, 'no_usage_artifact'],
       ['an expired usage artifact', { id: 9, artifacts: [{ id: 90, name: 'usage', expired: true }] }, 'usage_artifact_expired'],
       ['a usage artifact without agent_usage.json (drill D1: the token step failed)', { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(null, [3]) } }, 'usage_file_missing'],
+      ['detection ran without records (#318: its engine never started)', { id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(5, []) } }, 'usage_file_empty'],
     ];
     for (const [what, run, reason] of missing) {
       it(`completed, ${what} → counts at its bound (agent + detection + evals caps + 3 × margin), named in the audit event`, async () => {
@@ -498,7 +499,6 @@ describe('spend collector: today\'s implement spend', () => {
     const cases: [string, FakeRun[], RegExp][] = [
       ['two usage artifacts', [{ id: 9, artifacts: [{ id: 90, name: 'usage' }, { id: 91, name: 'usage' }] }], /2 usage artifacts/],
       ['a download error', [{ id: 9, artifacts: [{ id: 90, name: 'usage' }], zips: { 90: { status: 410 } } }], /could not be read/],
-      ['detection ran without records', [{ id: 9, detection: 'success', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(5, []) } }], /recorded no usage/],
       ['a corrupt zip entry', [{ id: 9, artifacts: [{ id: 90, name: 'usage' }], zips: { 90: zip({ 'agent_usage.json': '{"ai_credits":5}' }, { corruptCrc: 'agent_usage.json' }) } }], /CRC/],
       ['an implausible attempt number', [{ id: 9, attempt: 11 }], /unexpected run_attempt \(11\)/],
       ['attempt 0', [{ id: 9, attempt: 0 }], /unexpected run_attempt \(0\)/],
