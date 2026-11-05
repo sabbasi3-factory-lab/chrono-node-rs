@@ -87,3 +87,8 @@ test("platformReliability: platform failures by kind, flagged at 2+, and the sum
     assert.match(md, /\| implement \| \[4\]\(u4\) \| agent_reported \| agent_reported_failure \|/);
     assert.match(f.failuresMd([], f.platformReliability([], {})), /platform failures: none/);
 });
+
+test("failuresMd: table cells escape backslashes before pipes", () => {
+    const md = f.failuresMd([{ issue: 1, task: "a\\|b", reason: "r", run_id: null, run: null, triage: null, infra_incident: null, attribution: "unclear", basis: "x" }], f.platformReliability([], {}));
+    assert.match(md, /\| a\\\\\\\|b \|/);
+});

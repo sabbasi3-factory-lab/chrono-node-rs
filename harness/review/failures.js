@@ -211,7 +211,7 @@ function platformReliability(failedRuns, window) {
     };
 }
 
-const cell = (s) => String(s ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
+const cell = (s) => String(s ?? "").replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\n/g, " ");
 
 /** The summary.md sections for failures and platform reliability. Pure. */
 function failuresMd(failures, reliability) {
