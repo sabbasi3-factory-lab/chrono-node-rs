@@ -68,6 +68,14 @@ jobs:
         working-directory: harness
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      # The candidate's labels.json must be one labels-sync.yml can apply on merge (GitHub's label limits).
+      - name: Factory labels are valid (labels.json)
+        run: |
+          jq -e '.labels | type == "array" and length > 0
+            and all(.[]; (.name | type == "string" and length > 0 and length <= 50) and (.color | type == "string" and test("^[0-9A-Fa-f]{6}$")) and ((.description // "") | type == "string" and length <= 100))
+            and (map(.name) | length == (unique | length))' .github/factory/labels.json > /dev/null \
+            || { echo "::error file=.github/factory/labels.json::every label needs a unique name (≤ 50), a 6-hex colour and a description ≤ 100 characters"; exit 1; }
+
       - name: Gate and feedback tests (scope logic, monitor and intake)
         working-directory: harness
         run: npm run test:gates

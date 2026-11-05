@@ -1,0 +1,57 @@
+# Factory labels (.github/factory/labels.json) → the repo. Plain code, no AI, no third-party code
+# (checkout, jq and gh only). A label added to labels.json used to exist only after someone ran
+# `node scripts/seed-backlog/seed.js labels` by hand (factory:infra-incident, #309): a person couldn't
+# apply it, and the controller only warned. On every main commit that changes labels.json, this
+# creates the labels that are missing. It never edits or deletes an existing label.
+# Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written (the plan is printed).
+# Human tier: changes need the owner's review.
+name: labels-sync
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/factory/labels.json"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: labels-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: read, issues: write }
+    env:
+      GH_TOKEN: ${{ github.token }}
+      R: ${{ github.repository }}
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: .github/factory
+
+      - name: Create missing labels
+        run: |
+          set -euo pipefail
+          f=.github/factory/labels.json
+          jq -e '.labels | type == "array" and length > 0 and all(.[]; (.name | type == "string" and length > 0 and length <= 50) and (.color | test("^[0-9A-Fa-f]{6}$")) and ((.description // "") | length <= 100))' "$f" > /dev/null \
+            || { echo "::error::$f: every label needs a name (≤ 50), a 6-hex colour and a description ≤ 100 characters"; exit 1; }
+          gh api --paginate "repos/$R/labels?per_page=100" --jq '.[].name' | sort -u > have.txt
+          jq -c --rawfile have have.txt '($have | split("\n")) as $h | .labels[] | select(.name as $n | $h | index($n) | not) | {name, color, description: (.description // "")}' "$f" > missing.jsonl
+          if [ ! -s missing.jsonl ]; then echo "all $(jq '.labels | length' "$f") factory labels exist"; exit 0; fi
+          while read -r l; do
+            name=$(jq -r .name <<<"$l")
+            if [ "$FACTORY_ENABLED" = "true" ]; then
+              gh api -X POST "repos/$R/labels" --input - <<<"$l" > /dev/null
+              echo "created label $name"
+            else
+              echo "[dry-run] would create label $name"
+            fi
+          done < missing.jsonl

@@ -1,5 +1,5 @@
 {
-  "comment": "Labels the factory relies on. Seed with `node scripts/seed-backlog/seed.js labels` (creates missing ones, never edits); the controller warns at startup if any is missing. A label that doesn't exist can't be applied by a person (e.g. factory:revert-reviewed, needed for D7's revert).",
+  "comment": "Labels the factory relies on. Created on merge by .github/workflows/labels-sync.yml, or by hand with `node scripts/seed-backlog/seed.js labels` (both create missing ones, never edit); the controller warns at startup if any is missing. A label that doesn't exist can't be applied by a person (e.g. factory:revert-reviewed, needed for D7's revert).",
   "labels": [
     { "name": "factory:task", "color": "0E8A16", "description": "A factory task issue (one contract)" },
     { "name": "factory:ready", "color": "1D76DB", "description": "Ready to dispatch" },
