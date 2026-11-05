@@ -93,4 +93,28 @@ function shouldRun({ now, lastPassAt, random, slotsPerDay = 4 }) {
     return { run: false, why: "not this slot" };
 }
 
-module.exports = { pass, fail, plantGoldenMismatch, seedFor, compareSummary, pickContract, scopeCases, controllerReasons, tamperPayload, truncateHalf, shouldRun };
+/**
+ * The onboarding decision's inputs (onboard.js next files), for one generated locale `code`: a
+ * control with complete data (min_sample merged first-try tasks, every run recorded) and faults
+ * that must never onboard. `ok` cases must decide "onboard"; the rest must not.
+ */
+function onboardCases(policy, code) {
+    const n = Math.max(1, policy.stop.min_sample ?? 5);
+    const tasks = Array.from({ length: n }, (_, i) => `${code}/drill-step-${i}`);
+    const at = (i) => `2026-01-01T00:${String(i).padStart(2, "0")}:00Z`;
+    const ledgerRuns = tasks.map((t, i) => ({ run_id: 1000 + i, workflow: "implement", title: `Implement ${t} #${i + 1} attempt 1`, conclusion: "success", created_at: at(i) }));
+    const merged = tasks.map((t) => ({ title: `[factory] ${t}: port it` }));
+    const outcomes = { runs: tasks.map((t, i) => ({ run_id: 1000 + i, task: t, workflow: "implement", aic: 1, created_at: at(i), items: [{ type: "create_pull_request", outcome_status: "accepted", zero_touch: true }] })) };
+    const files = { outcomes: JSON.stringify(outcomes), issues: "[]", prs: "[]", runs: JSON.stringify(ledgerRuns), merged: JSON.stringify(merged) };
+    return [
+        { name: "control: complete data", files, ok: true },
+        { name: "outcomes.json without the locale's runs (#317)", files: { ...files, outcomes: JSON.stringify({ runs: [] }) }, ok: false },
+        { name: "outcomes.json missing one run", files: { ...files, outcomes: JSON.stringify({ runs: outcomes.runs.slice(1) }) }, ok: false },
+        { name: "outcomes.json empty", files: { ...files, outcomes: "" }, ok: false },
+        { name: "issues unreadable (empty file)", files: { ...files, issues: "" }, ok: false },
+        { name: "run ledger unreadable", files: { ...files, runs: "" }, ok: false },
+        { name: "spend at the budget", files: { ...files, outcomes: JSON.stringify({ runs: outcomes.runs.map((r, i) => (i === 0 ? { ...r, aic: policy.stop.budget_aic } : r)) }) }, ok: false },
+    ];
+}
+
+module.exports = { pass, fail, onboardCases, plantGoldenMismatch, seedFor, compareSummary, pickContract, scopeCases, controllerReasons, tamperPayload, truncateHalf, shouldRun };

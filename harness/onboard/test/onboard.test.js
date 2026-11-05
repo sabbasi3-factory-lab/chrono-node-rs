@@ -161,7 +161,7 @@ const policy = { languages: ["fi", "id"], max_languages_in_flight: 1, stop: { bu
 const run = (task, workflow, aic, accepted, zero = true) => ({ task, workflow, aic, items: [{ type: "create_pull_request", outcome_status: accepted ? "accepted" : "pending", zero_touch: zero }] });
 
 test("next language: policy order, one at a time, waits on open PRs and in-flight tasks", () => {
-    const base = { policy, onboarded: [], candidates: ["ar", "fi", "id"], outcomes: { runs: [] }, issues: [], openPRs: [] };
+    const base = { policy, onboarded: [], candidates: ["ar", "fi", "id"], outcomes: { runs: [] }, issues: [], openPRs: [], ledger: { runs: [], merged: [] } };
     assert.deepStrictEqual(lib.nextLanguage(base), { action: "onboard", code: "fi", spent: 0, first_try: "0/0" });
     assert.strictEqual(lib.nextLanguage({ ...base, openPRs: ["fi"] }).action, "wait");
     const inFlight = { ...base, onboarded: ["fi"], candidates: ["ar", "id"], issues: [{ id: "fi/weekday-parser", labels: [] }] };
@@ -171,7 +171,7 @@ test("next language: policy order, one at a time, waits on open PRs and in-fligh
 });
 
 test("next language: stop rules (budget, first-try rate, needs-human cluster) and fail closed", () => {
-    const base = { policy, onboarded: ["fi"], candidates: ["id"], issues: [], openPRs: [] };
+    const base = { policy, onboarded: ["fi"], candidates: ["id"], issues: [], openPRs: [], ledger: { runs: [], merged: [] } };
     assert.deepStrictEqual(lib.nextLanguage({ ...base, policy: null, outcomes: { runs: [] } }), { action: "stop", reason: "no_onboarding_policy" });
     assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: null }), { action: "wait", reason: "outcomes_unreadable" });
     const spent = { runs: [run("fi/a", "implement", 600, true), run("fi/b", "implement", 450, true), run("sv/x", "implement", 5000, true)] };
@@ -185,4 +185,75 @@ test("next language: stop rules (budget, first-try rate, needs-human cluster) an
     assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: good, policy: { ...policy, stop: {} } }), { action: "stop", reason: "no_budget" });
     // A run without a known cost: the spend is unknown, so wait (never count it as zero).
     assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: { runs: [...good.runs, { ...run("fi/c", "implement", 0, false), aic: null }] } }), { action: "wait", reason: "spend_unknown" });
+});
+
+test("next language fails closed when outcomes.json lags the ledger (#317: id onboarded on 0 AIC, 0/0 with fi done)", () => {
+    const L = (run_id, title, created_at, conclusion = "success", workflow = title.split(" ")[0].toLowerCase()) => ({ run_id, workflow, title, conclusion, created_at });
+    const O = (run_id, task, workflow, aic, accepted, created_at, extra = {}) => ({ run_id, task, workflow, aic, created_at, items: accepted ? [{ type: "create_pull_request", outcome_status: "accepted", zero_touch: true }] : [], ...extra });
+    const ledgerRuns = [
+        L(10, "Review one factory PR", "2026-10-27T10:00:00Z"), // before any generated-locale run: not ours
+        L(11, "Implement sv/weekday-parser #9 attempt 1", "2026-10-28T10:00:00Z"), // not a generated locale
+        L(20, "Implement fi/a #1 attempt 1", "2026-11-04T20:00:00Z"),
+        L(21, "Implement fi/b #2 attempt 1", "2026-11-04T20:05:00Z", "failure"),
+        L(22, "Implement fi/b #2 attempt 2", "2026-11-04T23:00:00Z"),
+        L(23, "Review one factory PR", "2026-11-04T21:00:00Z"),
+        L(24, "Implement fi/c #3 attempt 1", "2026-11-04T23:10:00Z", "skipped"),
+    ];
+    const ledger = { runs: ledgerRuns, merged: ["fi/a", "fi/b", "sv/weekday-parser"] };
+    const full = { runs: [O(20, "fi/a", "implement", 10, true, "2026-11-04T20:00:00Z"), O(21, "fi/b", "implement", 10, false, "2026-11-04T20:05:00Z"), O(22, "fi/b", "implement", 10, true, "2026-11-04T23:00:00Z"), O(23, "fi/a", "review", 5, false, "2026-11-04T21:00:00Z")] };
+    const base = { policy, onboarded: ["fi"], candidates: ["id"], issues: [], openPRs: [], ledger };
+    // Complete: the real numbers (spend 35, first try 1/2) stop it.
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full }), { action: "stop", reason: "first_try_rate:1/2" });
+    // The incident: outcomes.json has none of fi's runs. Before: onboard on 0 / 0/0. Now: wait.
+    const empty = lib.nextLanguage({ ...base, outcomes: { runs: [] } });
+    assert.strictEqual(empty.action, "wait");
+    assert.strictEqual(empty.reason, "outcomes_behind:6");
+    assert.deepStrictEqual(empty.behind, ["run:20", "run:21", "run:22", "run:23", "merged:fi/a", "merged:fi/b"]);
+    // One run (or one merged task's acceptance) missing is enough to wait.
+    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: { runs: full.runs.filter((r) => r.run_id !== 21) } }).reason, "outcomes_behind:1");
+    const pending = { runs: full.runs.map((r) => (r.run_id === 22 ? { ...r, items: [{ type: "create_pull_request", outcome_status: "pending" }] } : r)) };
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: pending }).behind, ["merged:fi/b"]);
+    // A failed evaluation is behind only when the run's cost is unknown.
+    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: { runs: full.runs.map((r) => (r.run_id === 23 ? { ...r, eval_failed: true } : r)) } }).reason, "first_try_rate:1/2");
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: { runs: full.runs.map((r) => (r.run_id === 23 ? { ...r, eval_failed: true, aic: null } : r)) } }).behind, ["run:23:eval_failed"]);
+    // Unreadable inputs wait; they never read as "nothing".
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, ledger: null }), { action: "wait", reason: "ledger_unreadable" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, ledger: { runs: ledgerRuns } }), { action: "wait", reason: "ledger_unreadable" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, issues: null }), { action: "wait", reason: "inputs_unreadable:issues" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, openPRs: undefined }), { action: "wait", reason: "inputs_unreadable:prs" });
+    // Every covered run needs a known cost, even when evaluated (#337 review).
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: { runs: full.runs.map((r) => (r.run_id === 23 ? { ...r, aic: null } : r)) } }).behind, ["run:23:no_cost"]);
+    // A covered review attributed to no task still counts toward the spend (#337 review).
+    const unattributedBig = { runs: full.runs.map((r) => (r.run_id === 23 ? { ...r, task: null, aic: 2000 } : r)) };
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: unattributedBig }), { action: "stop", reason: "budget_spent:2030/1000" });
+    // A review before the first generated-locale run is never ours, attributed or not.
+    const old = { runs: [...full.runs, O(10, null, "review", 5000, false, "2026-10-27T10:00:00Z")] };
+    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: old }).reason, "first_try_rate:1/2");
+    // No generated locale yet: nothing to cover.
+    assert.strictEqual(lib.nextLanguage({ ...base, onboarded: [], candidates: ["fi", "id"], outcomes: { runs: [] } }).code, "fi");
+});
+
+test("next CLI: a missing or empty input file waits (never 'none')", () => {
+    const fs = require("fs");
+    const os = require("os");
+    const path = require("path");
+    const { spawnSync } = require("child_process");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "next-"));
+    const w = (f, t) => fs.writeFileSync(path.join(dir, f), t);
+    w("policy.yaml", "languages: [zz]\nstop: {budget_aic: 10}\n");
+    w("outcomes.json", JSON.stringify({ runs: [] }));
+    for (const f of ["issues", "prs", "runs", "merged"]) w(`${f}.json`, "[]");
+    const next = (over = {}) => {
+        const args = ["policy.yaml", "outcomes.json", "issues.json", "prs.json", "runs.json", "merged.json"].flatMap((f) => [`--${f.split(".")[0]}`, path.join(dir, over[f] ?? f)]);
+        const r = spawnSync(process.execPath, [path.join(__dirname, "../onboard.js"), "next", ...args], { encoding: "utf8" });
+        return JSON.parse(r.stdout);
+    };
+    assert.notStrictEqual(next().reason, "ledger_unreadable");
+    w("empty", "");
+    w("object.json", "{}");
+    assert.deepStrictEqual(next({ "issues.json": "empty" }), { action: "wait", reason: "inputs_unreadable:issues" });
+    assert.deepStrictEqual(next({ "prs.json": "absent.json" }), { action: "wait", reason: "inputs_unreadable:prs" });
+    assert.deepStrictEqual(next({ "runs.json": "empty" }), { action: "wait", reason: "ledger_unreadable" });
+    assert.deepStrictEqual(next({ "merged.json": "object.json" }), { action: "wait", reason: "ledger_unreadable" });
+    fs.rmSync(dir, { recursive: true, force: true });
 });

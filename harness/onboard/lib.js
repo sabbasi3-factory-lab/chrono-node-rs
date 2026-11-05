@@ -429,11 +429,20 @@ module.exports = {
  *   outcomes:   outcomes.json (gh-aw Outcomes per agent run), or null if unreadable
  *   issues:     open factory:task issues [{id, labels}] (id from the marker)
  *   openPRs:    open onboarding PRs (branch factory/onboard/<code>) [code]
+ *   ledger:     what actually ran and merged, from the Actions and pulls APIs (not from outcomes.json):
+ *               {runs: [{run_id, workflow, title, conclusion, created_at}] completed agent runs, merged: [task]
+ *               tasks of merged agent PRs}, or null if unreadable
  * Returns {action: "onboard", code} | {action: "wait" | "stop", reason}.
+ *
+ * Fails closed: the stop rules are computed from outcomes.json, which the outcomes collector fills a
+ * few runs at a time. Unless it covers every agent run the ledger lists for a generated locale (and
+ * every review run, which names no task) and has the accepted PR of every merged task, missing runs
+ * would read as zero spend and no merges (#317 onboarded id on 0 AIC, 0/0 with fi done): wait instead.
  */
-function nextLanguage({ policy, onboarded, candidates, outcomes, issues, openPRs }) {
+function nextLanguage({ policy, onboarded, candidates, outcomes, issues, openPRs, ledger }) {
     if (!policy || !Array.isArray(policy.languages) || policy.languages.length === 0) return { action: "stop", reason: "no_onboarding_policy" };
     const stop = policy.stop || {};
+    if (!Array.isArray(issues) || !Array.isArray(openPRs)) return { action: "wait", reason: `inputs_unreadable:${!Array.isArray(issues) ? "issues" : "prs"}` };
     if (openPRs.length > 0) return { action: "wait", reason: `onboarding_pr_open:${openPRs.join(",")}` };
     const generated = new Set(onboarded);
     const codeOf = (task) => String(task).split("/")[0];
@@ -441,10 +450,14 @@ function nextLanguage({ policy, onboarded, candidates, outcomes, issues, openPRs
     const needsHuman = ours.filter((i) => i.labels.includes("needs-human")).length;
     if (needsHuman >= (stop.max_open_needs_human ?? 2)) return { action: "stop", reason: `needs_human_cluster:${needsHuman}` };
     if (!outcomes || !Array.isArray(outcomes.runs)) return { action: "wait", reason: "outcomes_unreadable" };
+    if (!ledger || !Array.isArray(ledger.runs) || !Array.isArray(ledger.merged)) return { action: "wait", reason: "ledger_unreadable" };
+    const behind = outcomesBehind(outcomes, ledger, generated);
+    if (behind.length > 0) return { action: "wait", reason: `outcomes_behind:${behind.length}`, behind: behind.slice(0, 20) };
     const runs = outcomes.runs.filter((r) => r && typeof r.task === "string" && generated.has(codeOf(r.task)) && !r.drill);
     // A run without a known cost means the spend is unknown, never zero.
     if (runs.some((r) => !Number.isFinite(r.aic))) return { action: "wait", reason: "spend_unknown" };
-    const spent = runs.reduce((n, r) => n + r.aic, 0);
+    const unattributed = unattributedReviews(outcomes, ledger, generated);
+    const spent = [...runs, ...unattributed].reduce((n, r) => n + r.aic, 0);
     if (!Number.isFinite(stop.budget_aic)) return { action: "stop", reason: "no_budget" };
     if (spent >= stop.budget_aic) return { action: "stop", reason: `budget_spent:${Math.round(spent)}/${stop.budget_aic}` };
     // First try: the task's only agent run is its first implement, and that PR was accepted zero-touch.
@@ -469,4 +482,53 @@ function nextLanguage({ policy, onboarded, candidates, outcomes, issues, openPRs
     return { action: "onboard", code, spent: Math.round(spent), first_try: `${firstTry}/${merged}` };
 }
 
+const LEDGER_TASK = /^(?:Implement|Repair|Triage) ([a-z0-9-]+\/[a-z0-9_-]+) /;
+
+/**
+ * What outcomes.json is missing for the decision: ledger runs of generated locales' tasks (and every
+ * review run since the first of those: its title names no task) that it hasn't recorded, or recorded
+ * without a cost after a failed evaluation, and merged
+ * tasks of generated locales without an accepted PR there. Runs that were skipped never ran an agent.
+ */
+function outcomesBehind(outcomes, ledger, generated) {
+    const codeOf = (task) => String(task).split("/")[0];
+    const recorded = new Map(outcomes.runs.filter((r) => r && Number.isSafeInteger(r.run_id)).map((r) => [r.run_id, r]));
+    const taskOf = (r) => (LEDGER_TASK.exec((r && r.title) || "") || [])[1];
+    const ours = ledger.runs.filter((r) => r && r.conclusion !== "skipped" && taskOf(r) && generated.has(codeOf(taskOf(r))));
+    // A review names no task; one that started before the first generated-locale agent run can't be ours.
+    const since = ours.map((r) => String(r.created_at || "")).sort()[0] ?? null;
+    const reviews = since === null ? [] : ledger.runs.filter((r) => r && r.workflow === "review" && r.conclusion !== "skipped" && !(String(r.created_at || "") < since));
+    const out = [];
+    for (const r of [...ours, ...reviews]) {
+        const o = recorded.get(r.run_id);
+        if (!o) out.push(`run:${r.run_id}`);
+        // Every covered run needs a known cost, evaluated or not (a missing acceptance is caught
+        // below, per merged task).
+        else if (!Number.isFinite(o.aic)) out.push(`run:${r.run_id}:${o.eval_failed ? "eval_failed" : "no_cost"}`);
+    }
+    const accepted = new Set(
+        outcomes.runs.filter((r) => r && typeof r.task === "string" && (r.items || []).some((i) => i.type === "create_pull_request" && i.outcome_status === "accepted")).map((r) => r.task),
+    );
+    for (const task of [...new Set(ledger.merged)].sort()) if (generated.has(codeOf(task)) && !accepted.has(task)) out.push(`merged:${task}`);
+    return out;
+}
+
+/**
+ * Covered review runs (see outcomesBehind) that outcomes.json attributes to no task: their cost
+ * can't be placed, so it counts toward the generated locales' spend (never dropped).
+ */
+function unattributedReviews(outcomes, ledger, generated) {
+    const codeOf = (task) => String(task).split("/")[0];
+    const recorded = new Map(outcomes.runs.filter((r) => r && Number.isSafeInteger(r.run_id)).map((r) => [r.run_id, r]));
+    const taskOf = (r) => (LEDGER_TASK.exec((r && r.title) || "") || [])[1];
+    const since = ledger.runs.filter((r) => r && r.conclusion !== "skipped" && taskOf(r) && generated.has(codeOf(taskOf(r)))).map((r) => String(r.created_at || "")).sort()[0] ?? null;
+    if (since === null) return [];
+    return ledger.runs
+        .filter((r) => r && r.workflow === "review" && r.conclusion !== "skipped" && !(String(r.created_at || "") < since))
+        .map((r) => recorded.get(r.run_id))
+        .filter((o) => o && typeof o.task !== "string");
+}
+
 module.exports.nextLanguage = nextLanguage;
+module.exports.outcomesBehind = outcomesBehind;
+module.exports.unattributedReviews = unattributedReviews;

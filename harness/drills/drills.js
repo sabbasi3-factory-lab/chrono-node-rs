@@ -130,6 +130,34 @@ const DRILLS = {
             : lib.fail("the daily cap didn't hold", JSON.stringify({ zero, alert, over }));
     },
 
+    /** Onboarding's stop rules fail closed: lagging or unreadable inputs never onboard (control: complete data does). */
+    "onboard-stop-rules": () => {
+        const policy = YAML.parse(fs.readFileSync(path.join(env("POLICIES_DIR"), "onboarding.yaml"), "utf8"));
+        const code = require("../lib/locales").generatedLocales(REPO)[0]?.code;
+        if (!code) return lib.fail("control: no generated locale on main to drill with");
+        // The live stop rules, with every upstream locale not onboarded yet as the language list: the
+        // control must be able to onboard even after the owner's list is done (then: no candidate, skip it).
+        const candidates = sh(process.execPath, ["onboard/onboard.js", "candidates"], { cwd: HARNESS }).out.split("\n").filter((c) => /^[a-z]{2}(-[a-z]{4})?$/.test(c));
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "drill-onboard-"));
+        fs.writeFileSync(path.join(dir, "policy.yaml"), YAML.stringify({ ...policy, languages: candidates.length ? candidates : policy.languages }));
+        const cases = lib.onboardCases(policy, code).filter((c) => !c.ok || candidates.length > 0);
+        const results = cases.map((c) => {
+            for (const [f, text] of Object.entries(c.files)) fs.writeFileSync(path.join(dir, `${f}.json`), text);
+            const args = ["policy.yaml", ...Object.keys(c.files).map((f) => `${f}.json`)].flatMap((f) => [`--${f.split(".")[0]}`, path.join(dir, f)]);
+            const r = sh(process.execPath, ["onboard/onboard.js", "next", ...args], { cwd: HARNESS });
+            let got = null;
+            try {
+                got = JSON.parse(r.out.trim().split("\n").pop());
+            } catch {}
+            return { ...c, files: undefined, got };
+        });
+        fs.rmSync(dir, { recursive: true, force: true });
+        const bad = results.filter((c) => !c.got || (c.got.action === "onboard") !== c.ok);
+        return bad.length === 0
+            ? lib.pass(`${code}: ${candidates.length ? "complete data onboards" : "control skipped (no candidate left)"}; ${results.filter((c) => !c.ok).length} lagging, unreadable or over-budget inputs don't (${results.filter((c) => !c.ok).map((c) => c.got.reason).join(", ")})`)
+            : lib.fail("the onboarding decision didn't fail closed", JSON.stringify(bad, null, 2));
+    },
+
     /** The independent audit verifier fails on a tampered copy of the real audit log (control: the real log passes). */
     "audit-tamper": async () => {
         const verifier = await import(path.join(env("FACTORY_GIT_DIR"), "verifier/verify.mjs"));

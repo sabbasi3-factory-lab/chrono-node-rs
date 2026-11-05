@@ -290,7 +290,9 @@ function drill(codes) {
 /**
  * The scheduled decision (lib.nextLanguage), from files the workflow fetched with a read-only token:
  * --policy (factory policies/onboarding.yaml, may be missing), --outcomes (outcomes.json, may be
- * missing), --issues (open factory:task issues), --prs (open PRs). Prints one JSON line.
+ * missing), --issues (open factory:task issues), --prs (open PRs), --runs (completed agent runs, Actions API: [{run_id, workflow, title, conclusion, created_at}]),
+ * --merged (merged agent PRs: [{title}]). All but --policy and --outcomes are required lists; one
+ * missing or unreadable makes the decision wait. Prints one JSON line.
  */
 function next() {
     const opt = (name) => {
@@ -300,12 +302,17 @@ function next() {
     const readOr = (file, parse, fallback) => (file && fs.existsSync(file) && fs.statSync(file).size > 0 ? parse(fs.readFileSync(file, "utf8")) : fallback);
     const policy = readOr(opt("--policy"), (t) => YAML.parse(t), null);
     const outcomes = readOr(opt("--outcomes"), JSON.parse, null);
-    const issues = readOr(opt("--issues"), JSON.parse, [])
-        .map((i) => ({ id: (/<!-- factory-task: ([a-z0-9/-]+) -->/.exec(i.body || "") || [])[1], labels: (i.labels || []).map((l) => l.name || l) }))
-        .filter((i) => i.id);
-    const openPRs = readOr(opt("--prs"), JSON.parse, [])
-        .map((p) => (/^factory\/onboard\/([a-z]{2}(?:-[a-z]{4})?)$/.exec(p.head?.ref || p.headRefName || "") || [])[1])
-        .filter(Boolean);
+    // Missing, empty or not a list = unreadable (null): the decision waits, never reads it as "none".
+    const list = (name) => readOr(opt(name), (t) => (Array.isArray(JSON.parse(t)) ? JSON.parse(t) : null), null);
+    const issues = list("--issues")
+        ?.map((i) => ({ id: (/<!-- factory-task: ([a-z0-9/-]+) -->/.exec(i.body || "") || [])[1], labels: (i.labels || []).map((l) => l.name || l) }))
+        .filter((i) => i.id) ?? null;
+    const openPRs = list("--prs")
+        ?.map((p) => (/^factory\/onboard\/([a-z]{2}(?:-[a-z]{4})?)$/.exec(p.head?.ref || p.headRefName || "") || [])[1])
+        .filter(Boolean) ?? null;
+    const ledgerRuns = list("--runs");
+    const merged = list("--merged")?.map((p) => (/^\[factory\] ([a-z0-9-]+\/[a-z0-9_-]+):/.exec(p.title || "") || [])[1]).filter(Boolean) ?? null;
+    const ledger = ledgerRuns && merged ? { runs: ledgerRuns, merged } : null;
     const decision = lib.nextLanguage({
         policy,
         onboarded: LOCALES.generatedLocales(REPO).map((l) => l.code),
@@ -313,6 +320,7 @@ function next() {
         outcomes,
         issues,
         openPRs,
+        ledger,
     });
     console.log(JSON.stringify(decision));
 }
@@ -324,7 +332,7 @@ function main() {
     if (cmd === "candidates") return console.log(candidates().join("\n"));
     if (cmd === "next") return next();
     if (cmd === "drill") return drill(process.argv.slice(3));
-    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --outcomes F --issues F --prs F");
+    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --outcomes F --issues F --prs F --runs F --merged F");
     process.exit(2);
 }
 
