@@ -4,11 +4,28 @@ version = "0.0.0"
 edition = "2021"
 rust-version = "1.85"
 license = "MIT"
-description = "Rust port of chrono-node: natural-language date parsing"
+description = "Behaviour-matched Rust port of chrono-node: natural-language date parsing, checked against chrono-node's own output"
 repository = "https://github.com/sabbasi3-factory-lab/chrono-node-rs"
+documentation = "https://docs.rs/chrono-node-rs"
+readme = "README.md"
+keywords = ["date", "time", "parser", "natural-language", "nlp"]
+categories = ["date-and-time", "parser-implementations", "text-processing"]
 publish = false
 build = "build.rs"
-exclude = ["upstream/", "harness/", "tests/golden/", "contracts/"]
+# An allowlist: the published crate is the library, its CLI, and the licence/attribution files.
+# Tests and benches need tests/golden/, which isn't shipped (nor upstream/, harness/, contracts/).
+include = [
+  "/src/**/*.rs",
+  "/src/locales/*/locale.json",
+  "/build.rs",
+  "/README.md",
+  "/PORTING.md",
+  "/LICENSE",
+  "/NOTICE",
+]
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [lib]
 name = "chrono_node"

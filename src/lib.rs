@@ -11,6 +11,11 @@
 //! The port follows upstream closely, file by file. The system time zone is always UTC: a
 //! reference without a time zone is read as UTC (see `PORTING.md`).
 
+// The README is the crates.io page: its usage example runs as a doc test.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
+
 pub mod calculation;
 pub mod common;
 pub mod core;

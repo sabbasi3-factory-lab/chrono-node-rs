@@ -1,6 +1,12 @@
 # chrono-node-rs
 
-A Rust port of [chrono-node](https://github.com/wanasit/chrono), the JavaScript library that finds dates and times in plain text ("tomorrow at 5pm", "next Friday at noon"). The port follows upstream closely, file by file, and must give the same answers.
+A behaviour-matched Rust port of **[chrono-node](https://github.com/wanasit/chrono)** by **Wanasit Tanakitrungruang**, the JavaScript library that finds dates and times in plain text ("tomorrow at 5pm", "next Friday at noon"). All credit for the parsing rules goes to chrono-node and its author; this crate is an independent port, not an official chrono-node release. chrono-node is MIT-licensed, and its copyright and licence notice are kept in [`NOTICE`](NOTICE), which ships with the crate.
+
+The port follows upstream closely, file by file, and is checked against chrono-node's own output:
+
+- **Golden tests**: chrono-node's own test cases, with outputs recorded by running the real chrono-node.
+- **Random-phrase comparison**: a harness runs generated phrases through both chrono-node and this crate and requires the same answers.
+- **Nightly monitor**: every night, fresh random phrases in every ported language are compared between `main` and chrono-node; any mismatch is filed as a bug with a reproducible seed.
 
 It ports a pinned upstream release: chrono-node `v2.10.3` (commit `d4fe7e3`). The copy is kept unmodified in [`upstream/`](upstream/); see [`upstream/PINNED.md`](upstream/PINNED.md).
 
@@ -17,6 +23,11 @@ As of 2026-11-04, 3 of chrono-node's 16 locales are ported, plus the shared code
 These counts change as each wave lands. The crate isn't published to crates.io yet.
 
 ## Usage
+
+```toml
+[dependencies]
+chrono-node-rs = "0.1"   # the library is imported as `chrono_node`; needs Rust 1.85 or later
+```
 
 ```rust
 use chrono_node::{configuration, parse, parse_date, JsDate, ParsingOption, ReferenceInput};
@@ -64,4 +75,4 @@ Each change is made by an AI agent through the [factory](https://github.com/sabb
 
 ## Licence
 
-MIT, see [`LICENSE`](LICENSE). Parts of `src/` are translations of chrono-node (MIT, © Wanasit Tanakitrungruang); see [`NOTICE`](NOTICE).
+MIT, see [`LICENSE`](LICENSE). Parts of `src/` are translations of chrono-node (MIT, Copyright (c) 2014 Wanasit Tanakitrungruang); its full licence notice is in [`NOTICE`](NOTICE), included in the published crate.
