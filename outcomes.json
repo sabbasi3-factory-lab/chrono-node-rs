@@ -1,7 +1,82 @@
 {
-  "generated_at": "2026-11-06T04:23:01Z",
+  "generated_at": "2026-11-06T04:45:02Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 42157106264,
+      "workflow": "implement",
+      "title": "Implement nl/time-unit-ago-format-parser #370 attempt 1",
+      "created_at": "2026-11-06T03:31:52Z",
+      "aic": 21.47381,
+      "task": "nl/time-unit-ago-format-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/370#issuecomment-6676212224",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/383",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T04:45:02Z",
+      "drill": false
+    },
+    {
+      "run_id": 42155367701,
+      "workflow": "implement",
+      "title": "Implement nl/weekday-parser #374 attempt 1",
+      "created_at": "2026-11-06T03:14:59Z",
+      "aic": 20.10894,
+      "task": "nl/weekday-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/374#issuecomment-6675966168",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/381",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T04:45:02Z",
+      "drill": false
+    },
+    {
+      "run_id": 42155360353,
+      "workflow": "implement",
+      "title": "Implement nl/merge-date-time-refiner #364 attempt 1",
+      "created_at": "2026-11-06T03:14:55Z",
+      "aic": 19.55651,
+      "task": "nl/merge-date-time-refiner",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/364#issuecomment-6675968037",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/382",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T04:45:02Z",
+      "drill": false
+    },
     {
       "run_id": 42155129209,
       "workflow": "implement",
@@ -3650,8 +3725,8 @@
     }
   ],
   "summary": {
-    "accepted": 135,
-    "pending": 113,
+    "accepted": 138,
+    "pending": 116,
     "rejected": 11,
     "unknown": 14
   }
