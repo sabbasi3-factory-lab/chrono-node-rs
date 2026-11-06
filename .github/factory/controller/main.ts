@@ -24,7 +24,7 @@ import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
 import { statusContext, syncProject } from './project.ts';
-import { readSpendToday, runSpendFields, spendSnapshotFields, type DispatchRecord } from './spend.ts';
+import { readSpendToday, runSpendFields, runSpendSources, spendSnapshotFields, type DispatchRecord } from './spend.ts';
 import { applyReopens, isRecorded, killSwitchEnabled, missingStrictGates, plan } from './planner.ts';
 import { loadPolicies, loadPoliciesFromDir, readFactoryVersion } from './policies.ts';
 import type { AuditEvent, Decision, GitHubClient, PendingEvent, Policies, Snapshot } from './types.ts';
@@ -295,7 +295,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     let recorded = 0;
     for (const f of [...(spend.finals ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.run_id - b.run_id)) {
       if (recorded >= RUN_SPEND_PER_POLL) break;
-      const ev = await audit.append({ type: 'run_spend', source_ids: [`run:${f.run_id}`, `status:${f.status}`, `aic:${f.aic}`], fields: runSpendFields(f), dry_run: false }, now);
+      const ev = await audit.append({ type: 'run_spend', source_ids: runSpendSources(f), fields: runSpendFields(f), dry_run: false }, now);
       if (ev) recorded++;
     }
   }

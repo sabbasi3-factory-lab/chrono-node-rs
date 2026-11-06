@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { crc32, deflateRawSync } from 'node:zlib';
 import { FakeGitHub } from '../fake.ts';
-import { attributedTask, jobInferred, readSpendToday, readZip, responseStats, runAIC, runSpendFields, spendSnapshotFields, type DispatchRecord, type LockVerifier } from '../spend.ts';
+import { attributedTask, jobInferred, readSpendToday, readZip, responseStats, runAIC, runSpendFields, runSpendSources, spendSnapshotFields, type DispatchRecord, type LockVerifier } from '../spend.ts';
 import { readFileSync } from 'node:fs';
 import { NOW, REPO } from './helpers.ts';
 
@@ -205,6 +205,24 @@ describe('spend collector: today\'s implement spend', () => {
     assert.equal((capped.finals ?? []).filter((f) => f.run_id !== 1).length, 1);
     const none = await readSpendToday(world(runs), REPO, NOW, CAPS);
     assert.deepEqual((none.finals ?? []).map((f) => f.run_id), [1]);
+  });
+
+  it('backfill rotates by read: runs that stay unreadable never starve the rest', async () => {
+    const bad = (id: number): FakeRun => ({ id, created: '2026-10-13T10:00:00Z', artifacts: [{ id: id * 10, name: 'usage' }, { id: id * 10 + 1, name: 'usage' }] });
+    const good: FakeRun = { id: 9, created: '2026-10-13T11:00:00Z', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(4) } };
+    const runs = [bad(2), bad(3), good];
+    const seen = new Set<number>();
+    for (let poll = 0; poll < 3; poll++) {
+      const res = await readSpendToday(world(runs), REPO, new Date(NOW.getTime() + poll * 300_000), CAPS, { backfill: { recorded: new Set(), days: 5, max: 1 } });
+      for (const f of res.finals ?? []) seen.add(f.run_id);
+    }
+    assert.deepEqual([...seen], [9], 'the readable run is reached within one rotation');
+  });
+
+  it('run_spend sources: a bounded run\'s corrected evidence is a new event', () => {
+    const f = { run_id: 7, workflow: 'implement' as const, task: 'en/a', created_at: '2026-10-16T08:00:00Z', status: 'bounded' as const, aic: 2600, reason: 'usage_file_missing' as const };
+    assert.notDeepEqual(runSpendSources(f), runSpendSources({ ...f, readable_aic: 22.5 }));
+    assert.notDeepEqual(runSpendSources({ ...f, observed_aic: 21 }), runSpendSources({ ...f, observed_aic: 46 }));
   });
 
   it('an unreadable run from yesterday makes only the per-task spend unknown (today\'s total stands)', async () => {

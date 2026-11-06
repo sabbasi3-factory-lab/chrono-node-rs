@@ -485,7 +485,7 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
     const isYesterday = created.startsWith(yesterday) || (rerun && started.startsWith(yesterday));
     if (!isToday && !isYesterday) {
       const bf = opts.backfill;
-      if (!bf || backfill.length >= bf.max || bf.recorded.has(id) || run.status !== 'completed' || rerun) continue;
+      if (!bf || bf.recorded.has(id) || run.status !== 'completed' || rerun) continue;
       if (!(created >= new Date(Date.parse(`${day}T00:00:00Z`) - bf.days * 86_400_000).toISOString())) continue;
       backfill.push(run);
       continue;
@@ -584,9 +584,14 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
     if (task) byTask[task] = round((byTask[task] ?? 0) + r.aic);
     else unattributed = round(unattributed + r.aic); // counts against every task
   }
-  // Older finished runs (finals only). Without a bound in force, a missing usage file is unreadable:
-  // nothing is recorded for that run (it's tried again next read).
-  for (const run of backfill) {
+  // Older finished runs (finals only), at most `max` per read. Without a bound in force, a missing
+  // usage file is unreadable: nothing is recorded for that run. The window rotates by read (one per
+  // 5 minutes, the controller's cadence), so runs that stay unreadable never starve the rest.
+  const maxBackfill = opts.backfill?.max ?? 0;
+  backfill.sort((a, b) => (a.id as number) - (b.id as number));
+  const offset = backfill.length > 0 ? Math.floor(now.getTime() / 300_000) % backfill.length : 0;
+  const picked = [...backfill.slice(offset), ...backfill.slice(0, offset)].slice(0, maxBackfill);
+  for (const run of picked) {
     const id = run.id as number;
     const reserve = reserveOf.get(run)!;
     const bound = bounding && !alert ? reserve + jobsOf.get(run)! * bounding.margin : reserve;
@@ -727,6 +732,11 @@ async function measureRun(client: GitHubClient, repo: string, run: Rec, id: numb
     }
     return `run ${id}'s spend could not be read (${(err as Error).message})`;
   }
+}
+
+/** The `run_spend` dedupe sources: every figure onboarding reads, so corrected evidence for a bounded run is a new event. */
+export function runSpendSources(f: FinalRunSpend): string[] {
+  return [`run:${f.run_id}`, `status:${f.status}`, `aic:${f.aic}`, `readable:${f.readable_aic ?? '-'}`, `observed:${f.observed_aic ?? '-'}`];
 }
 
 /** The `run_spend` audit event fields (one finished run). */
