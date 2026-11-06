@@ -1939,6 +1939,178 @@
         }
       ]
     },
+    "ru.casual": {
+      "parsers": [
+        {
+          "name": "RUTimeUnitCasualRelativeFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "RURelativeDateFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "RUMonthNameParser",
+          "flags": {}
+        },
+        {
+          "name": "RUCasualTimeParser",
+          "flags": {}
+        },
+        {
+          "name": "RUCasualDateParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "RUTimeUnitWithinFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "RUMonthNameLittleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "RUWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "RUTimeExpressionParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "RUTimeUnitAgoFormatParser",
+          "flags": {}
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "RUMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "RUMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": false
+          }
+        }
+      ]
+    },
+    "ru.strict": {
+      "parsers": [
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "RUTimeUnitWithinFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "RUMonthNameLittleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "RUWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "RUTimeExpressionParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "RUTimeUnitAgoFormatParser",
+          "flags": {}
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "RUMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "RUMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": true
+          }
+        }
+      ]
+    },
     "sv.casual": {
       "parsers": [
         {
