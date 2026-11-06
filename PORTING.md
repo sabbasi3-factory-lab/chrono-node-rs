@@ -88,9 +88,12 @@ cargo test                                                  # unit tests, config
 GOLDEN_AREAS=en/weekday cargo test --test golden -- --nocapture
 GOLDEN_AREAS=en/weekday GOLDEN_REQUIRE_ALL=1 cargo test --test golden   # what your contract requires
 cargo build --bin chrono-rs-json && (cd harness && npm ci && npm run build:upstream && npm run compare -- --phrases 3000)
+cargo build --bin chrono-rs-json && (cd harness && TZ=UTC node golden/frontier.js --complete)   # each ported step on every case
 ```
 
 The golden suite checks every case whose `requires` are all ported. When you add a parser, cases that need it move from *pending* to *checked*, and they must pass. CI also runs the comparison with a seed you can't see.
+
+CI also runs the **golden frontier** (`harness/golden/frontier.js`): it compares *your step's own output* with chrono-node's on every golden case, pending ones too (a refiner runs alone on chrono-node's input for its slot). If it names your step, your step is wrong on that case, even though the case is still pending: the failure shows the expected and actual output of that one step.
 
 ## 9. Lessons learned
 
@@ -105,5 +108,5 @@ The golden suite checks every case whose `requires` are all ported. When you add
 | 7 | JS `%` keeps the dividend's sign, like Rust's `%`. Use `rem_euclid` only where upstream does something different. | `parsers/weekday.rs` |
 | 8 | `endsWith`, `===` and dictionary lookups are case-sensitive in upstream even when the regex has the `i` flag. Keep them case-sensitive. | `parsers/time_expression.rs` |
 | 9 | Touch **only** the file in the contract's `scope`. The trusted `gates` check lists every violation: a protected path (even a moved or renamed file), an out-of-scope path, or a stale `Contract-SHA`. A failed `gates` run goes to a human; it is never repaired. | `harness/gates/scope.js` (#18) |
-| 10 | Upstream `clone()` drops tags; Rust's `Clone` keeps them. A range end built with `.clone()` carried the start's parser tag, an escaped defect found later by the held-out comparison. Use `js_clone()`. A golden case that would have caught it was **pending** (it also needs an unported refiner), so a step can merge with its decisive cases unchecked. | `core/components.rs` (#91) |
+| 10 | Upstream `clone()` drops tags; Rust's `Clone` keeps them. A range end built with `.clone()` carried the start's parser tag, an escaped defect found later by the held-out comparison. Use `js_clone()`. A golden case that would have caught it was **pending** (it also needs an unported refiner), so a step can merge with its decisive cases unchecked. The golden frontier now checks each step on pending cases too. | `core/components.rs` (#91) |
 | 11 | JS `/i` (no `u`) isn't Unicode case folding. Rust's `(?i)` let `ſ` match `s` and the Kelvin sign match `k`, so ` EſT` became EST; the reviewer agent caught it on the first auto-strict task. `JsRegex` now folds the JS way for every pattern; don't add case variants by hand. | `core/regex.rs` (#136) |

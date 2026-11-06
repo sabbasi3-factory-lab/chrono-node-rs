@@ -3,10 +3,11 @@
 
 use serde_json::{json, Map, Value};
 
+use super::components::Component;
 use super::components::{ComponentMap, ParsingComponents};
 use super::context::ParsingOption;
 use super::js_date::JsDate;
-use super::reference::{ParsingReference, ReferenceInput};
+use super::reference::{ParsingReference, ReferenceInput, ReferenceWithTimezone};
 use super::result::ParsingResult;
 use super::timezone::{TimezoneInput, TimezoneSpec};
 
@@ -46,6 +47,64 @@ pub fn result_to_json(text: &str, r: &ParsingResult) -> Value {
 
 pub fn results_to_json(text: &str, results: &[ParsingResult]) -> Value {
     Value::Array(results.iter().map(|r| result_to_json(text, r)).collect())
+}
+
+/// JavaScript string index (UTF-16 code units) -> byte offset, or `None` inside a character.
+pub fn byte_index(text: &str, utf16: usize) -> Option<usize> {
+    let mut units = 0;
+    for (b, ch) in text.char_indices() {
+        if units == utf16 {
+            return Some(b);
+        }
+        units += ch.len_utf16();
+        if units > utf16 {
+            return None;
+        }
+    }
+    (units == utf16).then_some(text.len())
+}
+
+fn component_map_from_json(v: Option<&Value>) -> Result<ComponentMap, String> {
+    let mut map = ComponentMap::new();
+    let obj = v.and_then(Value::as_object).ok_or("components must be an object")?;
+    for (k, v) in obj {
+        let c = Component::from_name(k).ok_or_else(|| format!("unknown component {k}"))?;
+        map.set(
+            c,
+            v.as_i64().ok_or_else(|| format!("component {k} must be an integer"))?,
+        );
+    }
+    Ok(map)
+}
+
+fn components_from_json(reference: ReferenceWithTimezone, v: &Value) -> Result<ParsingComponents, String> {
+    let tags = v
+        .get("tags")
+        .and_then(Value::as_array)
+        .ok_or("tags must be an array")?
+        .iter()
+        .map(|t| t.as_str().map(str::to_string).ok_or("tags must be strings"))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(ParsingComponents::from_parts(
+        reference,
+        component_map_from_json(v.get("known"))?,
+        component_map_from_json(v.get("implied"))?,
+        tags,
+    ))
+}
+
+/// The inverse of [`result_to_json`], for a result in the context of `text` and `reference`.
+/// Component key order isn't carried (it doesn't affect any output, only iteration order).
+pub fn result_from_json(text: &str, reference: ReferenceWithTimezone, v: &Value) -> Result<ParsingResult, String> {
+    let index = v.get("index").and_then(Value::as_u64).ok_or("missing index")? as usize;
+    let index = byte_index(text, index).ok_or_else(|| format!("index {index} isn't a character boundary"))?;
+    let matched = v.get("text").and_then(Value::as_str).ok_or("missing text")?;
+    let start = components_from_json(reference, v.get("start").ok_or("missing start")?)?;
+    let end = match v.get("end") {
+        None | Some(Value::Null) => None,
+        Some(e) => Some(components_from_json(reference, e)?),
+    };
+    Ok(ParsingResult::new(reference, index, matched, Some(start), end))
 }
 
 /// A parse request in the golden-case / harness shape.
@@ -131,6 +190,47 @@ mod tests {
     fn utf16_indexes() {
         let text = "😀 é now";
         assert_eq!(utf16_index(text, text.find("now").unwrap()), 5);
+    }
+
+    #[test]
+    fn byte_indexes_invert_utf16_indexes() {
+        let text = "😀 é now";
+        for (b, _) in text.char_indices().chain([(text.len(), ' ')]) {
+            assert_eq!(byte_index(text, utf16_index(text, b)), Some(b));
+        }
+        assert_eq!(byte_index(text, 1), None); // inside the surrogate pair
+        assert_eq!(byte_index(text, 99), None);
+    }
+
+    #[test]
+    fn results_round_trip_through_json() {
+        let text = "до 😀 завтра";
+        let reference = ReferenceWithTimezone::from_input(
+            &ReferenceInput::Date(JsDate::parse_iso("2012-08-10T12:00:00.000Z").unwrap()),
+            &Default::default(),
+            JsDate::parse_iso("2012-08-10T12:00:00.000Z").unwrap(),
+        );
+        let mut start = ParsingComponents::new(reference, &[(Component::Day, 11)]);
+        start.add_tag("casualReference/tomorrow");
+        let end = ParsingComponents::new(reference, &[(Component::Hour, 9)]);
+        let r = ParsingResult::new(
+            reference,
+            text.find("завтра").unwrap(),
+            "завтра",
+            Some(start),
+            Some(end),
+        );
+        let v = result_to_json(text, &r);
+        // Component key order isn't carried (JSON objects here are sorted); everything else is.
+        let back = result_from_json(text, reference, &v).unwrap();
+        assert_eq!(result_to_json(text, &back), v);
+        assert_eq!((back.index, back.start.tags()), (r.index, r.start.tags()));
+        assert!(result_from_json(
+            text,
+            reference,
+            &json!({ "index": 4, "text": "x", "start": v["start"] })
+        )
+        .is_err());
     }
 
     #[test]

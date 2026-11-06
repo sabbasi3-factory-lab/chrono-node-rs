@@ -134,6 +134,22 @@ pub struct ParsingComponents {
 }
 
 impl ParsingComponents {
+    /// Components rebuilt from their parts (the harness feeds chrono-node's results to one refiner,
+    /// `chrono-rs-json --trace` with `isolate`).
+    pub fn from_parts(
+        reference: ReferenceWithTimezone,
+        known: ComponentMap,
+        implied: ComponentMap,
+        tags: Vec<String>,
+    ) -> ParsingComponents {
+        ParsingComponents {
+            reference,
+            known,
+            implied,
+            tags,
+        }
+    }
+
     /// `new ParsingComponents(reference, knownComponents)`.
     pub fn new(reference: ReferenceWithTimezone, known: &[(Component, i64)]) -> ParsingComponents {
         let mut c = ParsingComponents {

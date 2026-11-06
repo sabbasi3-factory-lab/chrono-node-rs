@@ -11,7 +11,7 @@
     "golden:check": "node golden/generate.js --check",
     "build:upstream": "tsc -p tsconfig.upstream.json",
     "compare": "node compare/compare.js",
-    "test:gates": "node --test \"gates/test/*.test.js\" \"feedback/test/*.test.js\" \"steward/test/*.test.js\" \"review/test/*.test.js\" \"onboard/test/*.test.js\" \"security/test/*.test.js\" \"drills/test/*.test.js\"",
+    "test:gates": "node --test \"gates/test/*.test.js\" \"feedback/test/*.test.js\" \"steward/test/*.test.js\" \"review/test/*.test.js\" \"onboard/test/*.test.js\" \"security/test/*.test.js\" \"drills/test/*.test.js\" \"golden/test/*.test.js\"",
     "onboard": "node onboard/onboard.js"
   },
   "devDependencies": {
