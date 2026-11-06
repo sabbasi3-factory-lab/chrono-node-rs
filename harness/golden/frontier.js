@@ -167,7 +167,11 @@ function main() {
     const rust = opt("--rust") || path.join(REPO, "target/debug/chrono-rs-json");
     const { chronoCore, configs } = loadUpstream();
     const registered = JSON.parse(run(rust, ["--registered"], ""));
-    const cases = goldenCases().filter((c) => configs[c.config] && registered[c.config]);
+    // Every case: a configuration missing on either side is an error, never a silently skipped case.
+    const all = goldenCases();
+    const errors = all.filter((c) => !configs[c.config] || !registered[c.config]).map((c) => `${c.id}: configuration ${c.config} missing in ${configs[c.config] ? "Rust" : "chrono-node"}`);
+    if (all.length === 0) errors.push("no golden cases found");
+    const cases = all.filter((c) => configs[c.config] && registered[c.config]);
     const traces = cases.map((c) => {
         const ref = c.reference.kind === "none" ? new Date(c.reference.instant) : toUpstreamReference(c.reference);
         return jsTrace(chronoCore, configs[c.config], c.text, ref, { ...(c.options || {}) });
@@ -177,7 +181,6 @@ function main() {
     for (const line of run(rust, ["--trace"], requests.map((r) => JSON.stringify(r)).join("\n") + "\n").split("\n")) if (line.trim()) out.set(JSON.parse(line).id, JSON.parse(line));
     const tasks = tasksByStep();
     const divergences = [];
-    const errors = [];
     const pendingBy = new Map();
     let pending = 0;
     for (const [i, c] of cases.entries()) {
@@ -204,14 +207,14 @@ function main() {
     }
     const complete = completeLocales(registered);
     const incomplete = complete.filter((m) => (pendingBy.get(m) || []).length > 0).map((m) => ({ locale: m, pending: pendingBy.get(m) }));
-    const lines = [`golden frontier: ${cases.length} cases (${pending} pending), ${divergences.length} with a diverging ported step, ${errors.length} errors`];
+    const lines = [`golden frontier: ${all.length} cases (${pending} pending), ${divergences.length} with a diverging ported step, ${errors.length} errors`];
     for (const d of divergences.slice(0, 30)) lines.push(`- ${d.id} ${JSON.stringify(d.text)} (${d.config}${d.pending ? ", pending" : ""}): ${d.kind} ${d.step} differs from chrono-node${d.task ? ` (task ${d.task})` : ""}\n    expected ${JSON.stringify(d.expected)}\n    actual   ${JSON.stringify(d.actual)}`);
     for (const e of errors.slice(0, 30)) lines.push(`- error: ${e}`);
     if (process.argv.includes("--complete")) {
         lines.push(`languages with every task step ported: ${complete.join(", ") || "none"}`);
         for (const x of incomplete) lines.push(`- ${x.locale}: ${x.pending.length} case(s) still pending, e.g. ${x.pending.slice(0, 5).map((p) => `${p.id} (needs ${p.missing.join(", ")})`).join("; ")}`);
     }
-    if (opt("--report")) fs.writeFileSync(opt("--report"), JSON.stringify({ cases: cases.length, pending, divergences, errors, complete, incomplete }, null, 1) + "\n");
+    if (opt("--report")) fs.writeFileSync(opt("--report"), JSON.stringify({ cases: all.length, pending, divergences, errors, complete, incomplete }, null, 1) + "\n");
     if (process.argv.includes("--all")) for (const [g, list] of pendingBy) lines.push(`- pending in ${g}: ${list.length} (e.g. ${list.slice(0, 3).map((p) => `${p.id} needs ${p.missing.join(", ")}`).join("; ")})`);
     const failed = divergences.length > 0 || errors.length > 0 || (process.argv.includes("--complete") && incomplete.length > 0) || (process.argv.includes("--all") && pending > 0);
     console.log(lines.join("\n"));

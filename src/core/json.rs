@@ -99,6 +99,11 @@ pub fn result_from_json(text: &str, reference: ReferenceWithTimezone, v: &Value)
     let index = v.get("index").and_then(Value::as_u64).ok_or("missing index")? as usize;
     let index = byte_index(text, index).ok_or_else(|| format!("index {index} isn't a character boundary"))?;
     let matched = v.get("text").and_then(Value::as_str).ok_or("missing text")?;
+    // Refiners slice the source at the result's end: it must be the source's own text there.
+    let end = index.checked_add(matched.len()).ok_or("text too long")?;
+    if text.get(index..end) != Some(matched) {
+        return Err(format!("text {matched:?} isn't the source text at index {index}"));
+    }
     let start = components_from_json(reference, v.get("start").ok_or("missing start")?)?;
     let end = match v.get("end") {
         None | Some(Value::Null) => None,
@@ -231,6 +236,11 @@ mod tests {
             &json!({ "index": 4, "text": "x", "start": v["start"] })
         )
         .is_err());
+        // Matched text past the source's end, or ending inside a character: an error, not a panic.
+        let at = |index: usize, t: &str| json!({ "index": index, "text": t, "start": v["start"], "end": null });
+        assert!(result_from_json("a", reference, &at(0, "aa")).is_err());
+        assert!(result_from_json("éa", reference, &at(0, "e")).is_err());
+        assert!(result_from_json(text, reference, &at(9, "завтр")).is_err());
     }
 
     #[test]
