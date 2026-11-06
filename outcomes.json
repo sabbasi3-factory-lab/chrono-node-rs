@@ -1,7 +1,82 @@
 {
-  "generated_at": "2026-11-06T03:53:50Z",
+  "generated_at": "2026-11-06T04:08:19Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 42152862193,
+      "workflow": "implement",
+      "title": "Implement nl/casual-date-parser #358 attempt 1",
+      "created_at": "2026-11-06T02:50:34Z",
+      "aic": 21.05663,
+      "task": "nl/casual-date-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/358#issuecomment-6675621530",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/376",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T04:08:19Z",
+      "drill": false
+    },
+    {
+      "run_id": 42152853705,
+      "workflow": "implement",
+      "title": "Implement nl/time-expression-parser #369 attempt 1",
+      "created_at": "2026-11-06T02:50:29Z",
+      "aic": 22.5691,
+      "task": "nl/time-expression-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/369#issuecomment-6675608065",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/375",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T04:08:19Z",
+      "drill": false
+    },
+    {
+      "run_id": 42152845083,
+      "workflow": "implement",
+      "title": "Implement nl/constants #362 attempt 1",
+      "created_at": "2026-11-06T02:50:24Z",
+      "aic": 43.67522,
+      "task": "nl/constants",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/362#issuecomment-6675631343",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/377",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T04:08:19Z",
+      "drill": false
+    },
     {
       "run_id": 42084495832,
       "workflow": "implement",
@@ -3500,8 +3575,8 @@
     }
   ],
   "summary": {
-    "accepted": 129,
-    "pending": 107,
+    "accepted": 132,
+    "pending": 110,
     "rejected": 11,
     "unknown": 14
   }
