@@ -429,6 +429,16 @@ status, aic}]`, `runs_total`) with **`dry_run: false` in both modes** (it's a me
 decision), deduped on the total and its sources, so it's only re-recorded when something changed. The
 planner uses the fresh measurement directly; fixture mode uses the snapshot's value.
 
+Each finished run (today's or yesterday's: `measured`, `no_inference` or `bounded`, never `reserved`)
+also gets one `run_spend` event (`run_id`, `workflow`, `task` or null, `created_at`, `status`, `aic`,
+and for a bounded run `reason`, `readable_aic`, `observed_aic`), real in both modes and deduped on the
+run, its status and figure (a re-run's new figure is a new event; the newest counts). Unlike the
+snapshot (today's runs, at most 50 listed), it records a run still in flight at midnight, and every
+run. Finished runs from the previous 5 days with no `run_spend` yet (created before these were
+recorded) are measured too, at most 5 per poll, for this record only (never today's total or a
+task's spend). At most 25 new `run_spend` events per poll; the rest follow. Language onboarding's
+stop rules read these (`harness/onboard`); the planner doesn't.
+
 ## Modes: dry-run and live
 
 **Dry-run** (default, and whenever `FACTORY_ENABLED` isn't exactly `"true"`, including unset, `TRUE`, `1`):

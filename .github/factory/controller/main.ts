@@ -24,13 +24,15 @@ import { heartbeatDue, heartbeatEvent } from './heartbeat.ts';
 import { deriveState } from './history.ts';
 import { OBSERVE_WINDOW_HOURS, observe } from './observe.ts';
 import { statusContext, syncProject } from './project.ts';
-import { readSpendToday, spendSnapshotFields, type DispatchRecord } from './spend.ts';
+import { readSpendToday, runSpendFields, runSpendSources, spendSnapshotFields, type DispatchRecord } from './spend.ts';
 import { applyReopens, isRecorded, killSwitchEnabled, missingStrictGates, plan } from './planner.ts';
 import { loadPolicies, loadPoliciesFromDir, readFactoryVersion } from './policies.ts';
 import type { AuditEvent, Decision, GitHubClient, PendingEvent, Policies, Snapshot } from './types.ts';
 
 export const FACTORY_VERSION_FILE = new URL('../factory-version', import.meta.url);
 export const FIXTURE_POLICIES_DIR = new URL('./test/fixtures/policies/', import.meta.url);
+/** New `run_spend` events per poll at most (4 audit writes each); the rest are recorded next poll. */
+export const RUN_SPEND_PER_POLL = 25;
 
 export interface RunEnv {
   FACTORY_ENABLED?: string | undefined;
@@ -233,6 +235,8 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         return typeof res.data === 'string' && lockCapsMismatch({ ...EMPTY_LOCKS, [wf]: res.data }, policies.budgets.per_run, [wf]) === null;
       },
       dispatches: dispatchRecords(audit.events),
+      // Older finished runs without a run_spend yet (5 days: inside the audit log's 7 loaded days).
+      backfill: { recorded: new Set(audit.events.filter((e) => e.type === 'run_spend' && typeof e.payload.run_id === 'number').map((e) => e.payload.run_id as number)), days: 5, max: 5 },
     });
     snapshot.task_spend = spend.tasks;
     if (spend.aic === null) {
@@ -284,6 +288,15 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       // event only when the total or its sources change (dedupe on them).
       const sources = spend.runs.map((r) => `run:${r.run_id}:${r.status}:${r.aic}`);
       await audit.append({ type: 'spend_snapshot', source_ids: [`day:${day}`, `aic:${spend.aic}`, ...sources], fields: spendSnapshotFields(day, spend), dry_run: false }, now);
+    }
+    // Each finished run's own cost, once (a re-run's new figure is a new event): onboarding's stop
+    // rules read these (harness/onboard). A measurement, real in both modes. At most
+    // RUN_SPEND_PER_POLL new events per poll (4 writes each), oldest first; the rest next poll.
+    let recorded = 0;
+    for (const f of [...(spend.finals ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.run_id - b.run_id)) {
+      if (recorded >= RUN_SPEND_PER_POLL) break;
+      const ev = await audit.append({ type: 'run_spend', source_ids: runSpendSources(f), fields: runSpendFields(f), dry_run: false }, now);
+      if (ev) recorded++;
     }
   }
 

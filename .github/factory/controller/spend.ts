@@ -168,11 +168,44 @@ export interface SpendOptions {
   verifyLock?: LockVerifier | null;
   /** The controller's recorded dispatches (per-task attribution of unreadable runs). */
   dispatches?: readonly DispatchRecord[];
+  /**
+   * Finished runs older than yesterday with no `run_spend` on record yet (for example, created before
+   * those were recorded): measured for `finals` only (never today's total or a task's spend), up to
+   * `max` per read, created within `days` days (keep it under the audit log's loaded window so
+   * `recorded` sees what was already written).
+   */
+  backfill?: { recorded: ReadonlySet<number>; days: number; max: number } | null;
 }
 
+/**
+ * A finished run's spend (today's or yesterday's: measured, no inference, or counted at its bound),
+ * as its `run_spend` audit event records it. Unlike `spend_snapshot` (today's runs, at most 50), it
+ * covers a run that was still in flight at midnight, and every run, so its final cost is on record
+ * (onboarding's stop rules read it). A later re-run's new figure is a new event: the newest counts.
+ */
+export interface FinalRunSpend {
+  run_id: number;
+  workflow: CappedWorkflow;
+  /** From the run's name (taskOfRun); null for a run that names none (review, improve). */
+  task: string | null;
+  created_at: string;
+  status: 'measured' | 'no_inference' | 'bounded';
+  aic: number;
+  /** Bounded runs: why, and the evidence beside the bound (RunSpend's readable_aic and observed_aic). */
+  reason?: UsageMissingCode | 'rerun';
+  readable_aic?: number;
+  observed_aic?: number;
+}
+
+const finalExtras = (r: RunSpend): Pick<FinalRunSpend, 'reason' | 'readable_aic' | 'observed_aic'> => ({
+  ...(r.reason ? { reason: r.reason } : {}),
+  ...(r.readable_aic !== undefined ? { readable_aic: r.readable_aic } : {}),
+  ...(r.observed_aic !== undefined ? { observed_aic: r.observed_aic } : {}),
+});
+
 export type SpendResult =
-  | { aic: number; runs: RunSpend[]; tasks: TaskSpend | null; alert: BoundAlert | null }
-  | { aic: null; runs: RunSpend[]; reason: string; tasks: null; alert: BoundAlert | null; /** today's runs that couldn't be read */ unreadable_runs?: number; /** when the earliest of them ended (or started, if still running) */ unreadable_since?: string };
+  | { aic: number; runs: RunSpend[]; tasks: TaskSpend | null; alert: BoundAlert | null; finals?: FinalRunSpend[] }
+  | { aic: null; runs: RunSpend[]; reason: string; tasks: null; alert: BoundAlert | null; /** today's runs that couldn't be read */ unreadable_runs?: number; /** when the earliest of them ended (or started, if still running) */ unreadable_since?: string; finals?: FinalRunSpend[] };
 
 export interface SpendCaps {
   /** budgets.yaml per_run.implement */
@@ -440,6 +473,7 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   // Measure everything first: one readable run that breaks an assumption turns bounding off for
   // all of them.
   const measured: { run: Rec; isToday: boolean; bound: number; r: RunSpend | string }[] = [];
+  const backfill: Rec[] = [];
   const verifiedLocks = new Map<string, boolean>();
   for (const run of list) {
     const id = run.id;
@@ -449,7 +483,13 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
     const rerun = typeof run.run_attempt === 'number' && run.run_attempt > 1;
     const isToday = created.startsWith(day) || (rerun && started.startsWith(day));
     const isYesterday = created.startsWith(yesterday) || (rerun && started.startsWith(yesterday));
-    if (!isToday && !isYesterday) continue;
+    if (!isToday && !isYesterday) {
+      const bf = opts.backfill;
+      if (!bf || bf.recorded.has(id) || run.status !== 'completed' || rerun) continue;
+      if (!(created >= new Date(Date.parse(`${day}T00:00:00Z`) - bf.days * 86_400_000).toISOString())) continue;
+      backfill.push(run);
+      continue;
+    }
     const reserve = reserveOf.get(run)!;
     const bound = bounding ? reserve + jobsOf.get(run)! * bounding.margin : reserve;
     // The bound holds only for a run whose own commit's workflow enforces the policy's caps.
@@ -507,6 +547,8 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
   let firstUnreadable: string | null = null;
   let unreadableToday = 0;
   let unreadableSince: string | undefined;
+  const finals: FinalRunSpend[] = [];
+  const workflowOf = new Map(Object.entries(WORKFLOW_FILES).map(([wf, file]) => [file, wf as CappedWorkflow]));
   for (const { run, isToday, r: measuredRun } of measured) {
     let r = measuredRun;
     if (alert && typeof r !== 'string' && r.status === 'bounded') {
@@ -533,13 +575,35 @@ export async function readSpendToday(client: GitHubClient, repo: string, now: Da
       continue;
     }
     if (isToday) runs.push(r);
+    const created = typeof run.created_at === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(run.created_at) ? run.created_at : null;
+    if (r.status !== 'reserved' && created) {
+      finals.push({ run_id: r.run_id, workflow: workflowOf.get(fileOf.get(run)!)!, task: taskOfRun(run), created_at: created, status: r.status, aic: r.aic, ...finalExtras(r) });
+    }
     if (TASKLESS_FILES.has(fileOf.get(run)!)) continue;
     const task = taskOfRun(run);
     if (task) byTask[task] = round((byTask[task] ?? 0) + r.aic);
     else unattributed = round(unattributed + r.aic); // counts against every task
   }
-  if (firstUnreadable !== null) return { aic: null, runs, reason: firstUnreadable, tasks: null, alert, unreadable_runs: unreadableToday, ...(unreadableSince ? { unreadable_since: unreadableSince } : {}) };
-  return { aic: round(runs.reduce((s, r) => s + r.aic, 0)), runs, tasks: taskUnknown ? null : { by_task: byTask, unattributed, unknown_tasks: [...unknownTasks].sort() }, alert };
+  // Older finished runs (finals only), at most `max` per read. Without a bound in force, a missing
+  // usage file is unreadable: nothing is recorded for that run. The window rotates by read (one per
+  // 5 minutes, the controller's cadence), so runs that stay unreadable never starve the rest.
+  const maxBackfill = opts.backfill?.max ?? 0;
+  backfill.sort((a, b) => (a.id as number) - (b.id as number));
+  const offset = backfill.length > 0 ? Math.floor(now.getTime() / 300_000) % backfill.length : 0;
+  const picked = [...backfill.slice(offset), ...backfill.slice(0, offset)].slice(0, maxBackfill);
+  for (const run of picked) {
+    const id = run.id as number;
+    const reserve = reserveOf.get(run)!;
+    const bound = bounding && !alert ? reserve + jobsOf.get(run)! * bounding.margin : reserve;
+    const r = await measureRun(client, repo, run, id, bound, bounding !== null && !alert, async () => {
+      if (!bounding || alert || !verifyLock || typeof run.head_sha !== 'string' || !/^[0-9a-f]{40}$/.test(run.head_sha)) return false;
+      return verifyLock(fileOf.get(run)!, run.head_sha).catch(() => false);
+    });
+    if (typeof r === 'string' || r.status === 'reserved') continue;
+    finals.push({ run_id: r.run_id, workflow: workflowOf.get(fileOf.get(run)!)!, task: taskOfRun(run), created_at: String(run.created_at), status: r.status, aic: r.aic, ...finalExtras(r) });
+  }
+  if (firstUnreadable !== null) return { aic: null, runs, reason: firstUnreadable, tasks: null, alert, unreadable_runs: unreadableToday, ...(unreadableSince ? { unreadable_since: unreadableSince } : {}), finals };
+  return { aic: round(runs.reduce((s, r) => s + r.aic, 0)), runs, tasks: taskUnknown ? null : { by_task: byTask, unattributed, unknown_tasks: [...unknownTasks].sort() }, alert, finals };
 }
 
 /** The `agent` artifact's own agent_usage.json, for logging only; undefined if unreadable. */
@@ -668,6 +732,26 @@ async function measureRun(client: GitHubClient, repo: string, run: Rec, id: numb
     }
     return `run ${id}'s spend could not be read (${(err as Error).message})`;
   }
+}
+
+/** The `run_spend` dedupe sources: every figure onboarding reads, so corrected evidence for a bounded run is a new event. */
+export function runSpendSources(f: FinalRunSpend): string[] {
+  return [`run:${f.run_id}`, `status:${f.status}`, `aic:${f.aic}`, `readable:${f.readable_aic ?? '-'}`, `observed:${f.observed_aic ?? '-'}`];
+}
+
+/** The `run_spend` audit event fields (one finished run). */
+export function runSpendFields(f: FinalRunSpend): JsonObject {
+  return {
+    run_id: f.run_id,
+    workflow: f.workflow,
+    task: f.task,
+    created_at: f.created_at,
+    status: f.status,
+    aic: f.aic,
+    ...(f.reason ? { reason: f.reason } : {}),
+    ...(f.readable_aic !== undefined ? { readable_aic: f.readable_aic } : {}),
+    ...(f.observed_aic !== undefined ? { observed_aic: f.observed_aic } : {}),
+  };
 }
 
 /** The `spend_snapshot` audit event fields (sources listed by run id, at most 50). */

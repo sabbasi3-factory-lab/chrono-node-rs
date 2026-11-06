@@ -98,23 +98,45 @@ function shouldRun({ now, lastPassAt, random, slotsPerDay = 4 }) {
  * control with complete data (min_sample merged first-try tasks, every run recorded) and faults
  * that must never onboard. `ok` cases must decide "onboard"; the rest must not.
  */
-function onboardCases(policy, code) {
+/**
+ * The onboarding decision's inputs for the drill (onboard.js next): `code`'s min_sample drill tasks,
+ * each one implement run with its cost on record, merged zero-touch; `contracts`: every generated
+ * contract id on main, each with a closed task issue. The control onboards; every other case doesn't.
+ */
+function onboardCases(policy, code, contracts = []) {
     const n = Math.max(1, policy.stop.min_sample ?? 5);
     const tasks = Array.from({ length: n }, (_, i) => `${code}/drill-step-${i}`);
     const at = (i) => `2026-01-01T00:${String(i).padStart(2, "0")}:00Z`;
     const ledgerRuns = tasks.map((t, i) => ({ run_id: 1000 + i, workflow: "implement", title: `Implement ${t} #${i + 1} attempt 1`, conclusion: "success", created_at: at(i) }));
-    const merged = tasks.map((t) => ({ title: `[factory] ${t}: port it` }));
-    const outcomes = { runs: tasks.map((t, i) => ({ run_id: 1000 + i, task: t, workflow: "implement", aic: 1, created_at: at(i), items: [{ type: "create_pull_request", outcome_status: "accepted", zero_touch: true }] })) };
-    const files = { outcomes: JSON.stringify(outcomes), issues: "[]", prs: "[]", runs: JSON.stringify(ledgerRuns), merged: JSON.stringify(merged) };
-    return [
+    const agentCommit = { commit: { author: { email: "1+sabbasi3-factory-agent[bot]@users.noreply.github.com", user: null } } };
+    const pr = (t, i, touched = false) => ({
+        number: 2000 + i,
+        title: `[factory] ${t}: port it`,
+        createdAt: at(i + 30),
+        comments: { nodes: touched ? [{ author: { __typename: "User", login: "drill-person" } }] : [] },
+        reviews: { nodes: [] },
+        commits: { nodes: [agentCommit] },
+    });
+    const merged = tasks.map((t, i) => pr(t, i));
+    const spend = (i, aic = 1) => JSON.stringify({ type: "run_spend", payload: { dry_run: false, run_id: 1000 + i, aic, status: "measured" } });
+    const audit = tasks.map((_, i) => spend(i)).join("\n") + "\n";
+    const issues = [...contracts, ...tasks].map((id) => ({ body: `<!-- factory-task: ${id} -->`, state: "closed", labels: ["factory:task"] }));
+    const merges = [...new Set(contracts.map((id) => id.split("/")[0]))].map((c) => ({ head: { ref: `factory/onboard/${c}` }, merged_at: "2026-01-01T00:00:00Z" }));
+    const files = { issues: JSON.stringify(issues), prs: "[]", "onboard-merges": JSON.stringify(merges), runs: JSON.stringify(ledgerRuns), merged: JSON.stringify(merged), audit };
+    const cases = [
         { name: "control: complete data", files, ok: true },
-        { name: "outcomes.json without the locale's runs (#317)", files: { ...files, outcomes: JSON.stringify({ runs: [] }) }, ok: false },
-        { name: "outcomes.json missing one run", files: { ...files, outcomes: JSON.stringify({ runs: outcomes.runs.slice(1) }) }, ok: false },
-        { name: "outcomes.json empty", files: { ...files, outcomes: "" }, ok: false },
+        { name: "audit log without the locale's run costs (#317)", files: { ...files, audit: "\n" }, ok: false },
+        { name: "audit log missing one run's cost", files: { ...files, audit: tasks.slice(1).map((_, i) => spend(i + 1)).join("\n") + "\n" }, ok: false },
+        { name: "audit log unreadable (empty file)", files: { ...files, audit: "" }, ok: false },
         { name: "issues unreadable (empty file)", files: { ...files, issues: "" }, ok: false },
         { name: "run ledger unreadable", files: { ...files, runs: "" }, ok: false },
-        { name: "spend at the budget", files: { ...files, outcomes: JSON.stringify({ runs: outcomes.runs.map((r, i) => (i === 0 ? { ...r, aic: policy.stop.budget_aic } : r)) }) }, ok: false },
+        { name: "spend at the budget", files: { ...files, audit: [spend(0, policy.stop.budget_aic), ...tasks.slice(1).map((_, i) => spend(i + 1))].join("\n") + "\n" }, ok: false },
+        { name: "a person touched every merged PR (first-try rate)", files: { ...files, merged: JSON.stringify(tasks.map((t, i) => pr(t, i, true))) }, ok: false },
     ];
+    if (contracts.length > 0) {
+        cases.push({ name: "a generated contract without its task issue, past the grace period", files: { ...files, issues: JSON.stringify(issues.slice(1)) }, ok: false });
+    }
+    return cases;
 }
 
 module.exports = { pass, fail, onboardCases, plantGoldenMismatch, seedFor, compareSummary, pickContract, scopeCases, controllerReasons, tamperPayload, truncateHalf, shouldRun };

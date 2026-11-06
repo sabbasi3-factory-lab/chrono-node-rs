@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { crc32, deflateRawSync } from 'node:zlib';
 import { FakeGitHub } from '../fake.ts';
-import { attributedTask, jobInferred, readSpendToday, readZip, responseStats, runAIC, spendSnapshotFields, type DispatchRecord, type LockVerifier } from '../spend.ts';
+import { attributedTask, jobInferred, readSpendToday, readZip, responseStats, runAIC, runSpendFields, runSpendSources, spendSnapshotFields, type DispatchRecord, type LockVerifier } from '../spend.ts';
 import { readFileSync } from 'node:fs';
 import { NOW, REPO } from './helpers.ts';
 
@@ -158,6 +158,71 @@ describe('spend collector: today\'s implement spend', () => {
     );
     assert.equal(res.aic, 1437, 'today: 30 + 1400 + 7');
     assert.deepEqual(res.tasks, { by_task: { 'en/a': 35, 'en/b': 1400 }, unattributed: 7, unknown_tasks: [] });
+  });
+
+  it('finals: every finished run of today and yesterday (a run in flight at midnight included), never a reserved one', async () => {
+    const res = await readSpendToday(
+      world([
+        { id: 1, title: 'Implement en/a #3 attempt 1', artifacts: [{ id: 10, name: 'usage' }], zips: { 10: usageZip(30) } },
+        { id: 2, title: 'Implement en/a #3 attempt 1', created: '2026-10-15T23:58:00Z', artifacts: [{ id: 20, name: 'usage' }], zips: { 20: usageZip(5) } },
+        { id: 3, title: 'Implement en/b #4 attempt 1', status: 'in_progress' },
+        { id: 4, title: 'Implement one factory task', agent: 'skipped' },
+        { id: 5, created: '2026-10-15T20:00:00Z', artifacts: [{ id: 50, name: 'usage' }, { id: 51, name: 'usage' }] },
+      ]),
+      REPO,
+      NOW,
+      CAPS,
+    );
+    assert.deepEqual(
+      [...(res.finals ?? [])].sort((a, b) => a.run_id - b.run_id),
+      [
+        { run_id: 1, workflow: 'implement', task: 'en/a', created_at: '2026-10-16T08:00:00Z', status: 'measured', aic: 30 },
+        { run_id: 2, workflow: 'implement', task: 'en/a', created_at: '2026-10-15T23:58:00Z', status: 'measured', aic: 5 },
+        { run_id: 4, workflow: 'implement', task: null, created_at: '2026-10-16T08:00:00Z', status: 'no_inference', aic: 0 },
+      ],
+      'run 3 is still reserved and run 5 is unreadable: neither is final',
+    );
+    assert.deepEqual(runSpendFields(res.finals!.find((f) => f.run_id === 2)!), { run_id: 2, workflow: 'implement', task: 'en/a', created_at: '2026-10-15T23:58:00Z', status: 'measured', aic: 5 });
+  });
+
+  it('backfill: older finished runs without a run_spend go to finals only, up to max, within days, never twice', async () => {
+    const runs: FakeRun[] = [
+      { id: 1, title: 'Implement en/a #3 attempt 1', artifacts: [{ id: 10, name: 'usage' }], zips: { 10: usageZip(30) } },
+      { id: 2, title: 'Implement en/b #4 attempt 1', created: '2026-10-13T23:58:00Z', artifacts: [{ id: 20, name: 'usage' }], zips: { 20: usageZip(5) } },
+      { id: 3, title: 'Implement en/c #5 attempt 1', created: '2026-10-13T10:00:00Z', artifacts: [{ id: 30, name: 'usage' }], zips: { 30: usageZip(6) } },
+      { id: 4, title: 'Implement en/d #6 attempt 1', created: '2026-10-13T09:00:00Z', status: 'in_progress' },
+      { id: 5, title: 'Implement en/e #7 attempt 1', created: '2026-10-05T09:00:00Z', artifacts: [{ id: 50, name: 'usage' }], zips: { 50: usageZip(7) } },
+    ];
+    const res = await readSpendToday(world(runs), REPO, NOW, CAPS, { backfill: { recorded: new Set([3]), days: 5, max: 5 } });
+    assert.deepEqual(today(res), { aic: 30, runs: [{ run_id: 1, status: 'measured', aic: 30 }] }, 'today\'s total is unchanged');
+    assert.deepEqual(res.tasks?.by_task, { 'en/a': 30 }, 'never a task\'s spend');
+    assert.deepEqual(
+      (res.finals ?? []).map((f) => [f.run_id, f.task, f.aic]).sort(),
+      [[1, 'en/a', 30], [2, 'en/b', 5]],
+      'run 3 is on record, run 4 is in flight, run 5 is too old',
+    );
+    const capped = await readSpendToday(world(runs), REPO, NOW, CAPS, { backfill: { recorded: new Set(), days: 5, max: 1 } });
+    assert.equal((capped.finals ?? []).filter((f) => f.run_id !== 1).length, 1);
+    const none = await readSpendToday(world(runs), REPO, NOW, CAPS);
+    assert.deepEqual((none.finals ?? []).map((f) => f.run_id), [1]);
+  });
+
+  it('backfill rotates by read: runs that stay unreadable never starve the rest', async () => {
+    const bad = (id: number): FakeRun => ({ id, created: '2026-10-13T10:00:00Z', artifacts: [{ id: id * 10, name: 'usage' }, { id: id * 10 + 1, name: 'usage' }] });
+    const good: FakeRun = { id: 9, created: '2026-10-13T11:00:00Z', artifacts: [{ id: 90, name: 'usage' }], zips: { 90: usageZip(4) } };
+    const runs = [bad(2), bad(3), good];
+    const seen = new Set<number>();
+    for (let poll = 0; poll < 3; poll++) {
+      const res = await readSpendToday(world(runs), REPO, new Date(NOW.getTime() + poll * 300_000), CAPS, { backfill: { recorded: new Set(), days: 5, max: 1 } });
+      for (const f of res.finals ?? []) seen.add(f.run_id);
+    }
+    assert.deepEqual([...seen], [9], 'the readable run is reached within one rotation');
+  });
+
+  it('run_spend sources: a bounded run\'s corrected evidence is a new event', () => {
+    const f = { run_id: 7, workflow: 'implement' as const, task: 'en/a', created_at: '2026-10-16T08:00:00Z', status: 'bounded' as const, aic: 2600, reason: 'usage_file_missing' as const };
+    assert.notDeepEqual(runSpendSources(f), runSpendSources({ ...f, readable_aic: 22.5 }));
+    assert.notDeepEqual(runSpendSources({ ...f, observed_aic: 21 }), runSpendSources({ ...f, observed_aic: 46 }));
   });
 
   it('an unreadable run from yesterday makes only the per-task spend unknown (today\'s total stands)', async () => {

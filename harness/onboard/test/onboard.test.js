@@ -158,38 +158,71 @@ test("configuration.rs: slots in order with flags, rustfmt-stable long lines", (
 });
 
 const policy = { languages: ["fi", "id"], max_languages_in_flight: 1, stop: { budget_aic: 1000, min_first_try_merge_rate: 0.8, min_sample: 2, max_open_needs_human: 2 } };
-const run = (task, workflow, aic, accepted, zero = true) => ({ task, workflow, aic, items: [{ type: "create_pull_request", outcome_status: accepted ? "accepted" : "pending", zero_touch: zero }] });
+const NOW = "2026-11-06T12:00:00Z";
+const L = (run_id, title, created_at, conclusion = "success", workflow = title.split(" ")[0].toLowerCase()) => ({ run_id, workflow, title, conclusion, created_at });
+const M = (task, number, created_at, zero_touch = true) => ({ task, number, created_at, zero_touch });
+const spend = (run_id, aic, extra = {}) => ({ type: "run_spend", payload: { dry_run: false, run_id, aic, status: "measured", ...extra } });
+const costsOf = (...events) => lib.runCosts(events);
+// fi done: two tasks, each one implement run, merged zero-touch, 10 AIC each.
+const fiDone = () => ({
+    policy,
+    onboarded: ["fi"],
+    candidates: ["id"],
+    issues: [{ id: "fi/a", state: "closed", labels: [] }, { id: "fi/b", state: "closed", labels: [] }],
+    openPRs: [],
+    contracts: ["fi/a", "fi/b"],
+    onboardMerges: [{ code: "fi", merged_at: "2026-11-04T19:00:00Z" }],
+    ledger: { runs: [L(20, "Implement fi/a #1 attempt 1", "2026-11-04T20:00:00Z"), L(21, "Implement fi/b #2 attempt 1", "2026-11-04T20:05:00Z")], merged: [M("fi/a", 30, "2026-11-04T20:30:00Z"), M("fi/b", 31, "2026-11-04T20:35:00Z")] },
+    costs: costsOf(spend(20, 10), spend(21, 10)),
+    now: NOW,
+});
 
 test("next language: policy order, one at a time, waits on open PRs and in-flight tasks", () => {
-    const base = { policy, onboarded: [], candidates: ["ar", "fi", "id"], outcomes: { runs: [] }, issues: [], openPRs: [], ledger: { runs: [], merged: [] } };
+    const base = { policy, onboarded: [], candidates: ["ar", "fi", "id"], issues: [], openPRs: [], contracts: [], onboardMerges: [], ledger: { runs: [], merged: [] }, costs: new Map(), now: NOW };
     assert.deepStrictEqual(lib.nextLanguage(base), { action: "onboard", code: "fi", spent: 0, first_try: "0/0" });
     assert.strictEqual(lib.nextLanguage({ ...base, openPRs: ["fi"] }).action, "wait");
-    const inFlight = { ...base, onboarded: ["fi"], candidates: ["ar", "id"], issues: [{ id: "fi/weekday-parser", labels: [] }] };
+    const done = fiDone();
+    assert.deepStrictEqual(lib.nextLanguage(done), { action: "onboard", code: "id", spent: 20, first_try: "2/2" });
+    const inFlight = { ...done, issues: [...done.issues.slice(1), { id: "fi/a", state: "open", labels: [] }] };
     assert.deepStrictEqual(lib.nextLanguage(inFlight), { action: "wait", reason: "in_flight:fi" });
-    assert.strictEqual(lib.nextLanguage({ ...inFlight, issues: [] }).code, "id");
+    // A missing state counts as open.
+    assert.strictEqual(lib.nextLanguage({ ...done, issues: [...done.issues, { id: "fi/c", labels: [] }] }).reason, "in_flight:fi");
     assert.deepStrictEqual(lib.nextLanguage({ ...base, candidates: ["ar"] }), { action: "stop", reason: "all_onboarded" });
 });
 
-test("next language: stop rules (budget, first-try rate, needs-human cluster) and fail closed", () => {
-    const base = { policy, onboarded: ["fi"], candidates: ["id"], issues: [], openPRs: [], ledger: { runs: [], merged: [] } };
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, policy: null, outcomes: { runs: [] } }), { action: "stop", reason: "no_onboarding_policy" });
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: null }), { action: "wait", reason: "outcomes_unreadable" });
-    const spent = { runs: [run("fi/a", "implement", 600, true), run("fi/b", "implement", 450, true), run("sv/x", "implement", 5000, true)] };
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: spent }), { action: "stop", reason: "budget_spent:1050/1000" });
-    const repaired = { runs: [run("fi/a", "implement", 10, true), run("fi/b", "implement", 10, true), run("fi/b", "repair", 10, true)] };
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: repaired }), { action: "stop", reason: "first_try_rate:1/2" });
-    const good = { runs: [run("fi/a", "implement", 10, true), run("fi/b", "implement", 10, true)] };
-    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: good }).code, "id");
-    const nh = [{ id: "fi/a", labels: ["needs-human"] }, { id: "fi/b", labels: ["needs-human"] }];
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: good, issues: nh }), { action: "stop", reason: "needs_human_cluster:2" });
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: good, policy: { ...policy, stop: {} } }), { action: "stop", reason: "no_budget" });
-    // A run without a known cost: the spend is unknown, so wait (never count it as zero).
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: { runs: [...good.runs, { ...run("fi/c", "implement", 0, false), aic: null }] } }), { action: "wait", reason: "spend_unknown" });
+test("next language: a contract without its task issue is in flight; past the grace period it stops (alert)", () => {
+    const done = fiDone();
+    const unissued = { ...done, issues: done.issues.slice(1) };
+    // Just merged: the issues jobs are still running.
+    assert.deepStrictEqual(lib.nextLanguage({ ...unissued, now: "2026-11-04T20:00:00Z" }), { action: "wait", reason: "task_issues_pending:fi" });
+    // Past the grace period, or no record of the onboarding merge: stop.
+    assert.deepStrictEqual(lib.nextLanguage(unissued), { action: "stop", reason: "task_issues_missing:fi" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...unissued, onboardMerges: [], now: "2026-11-04T20:00:00Z" }), { action: "stop", reason: "task_issues_missing:fi" });
+    // Every issue gone (none created at all) is the same.
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, issues: [] }), { action: "stop", reason: "task_issues_missing:fi" });
+    // Unreadable inputs wait.
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, contracts: null }), { action: "wait", reason: "inputs_unreadable:contracts" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, onboardMerges: null }), { action: "wait", reason: "inputs_unreadable:onboard_merges" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, issues: null }), { action: "wait", reason: "inputs_unreadable:issues" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, openPRs: undefined }), { action: "wait", reason: "inputs_unreadable:prs" });
+    // Other locales' contracts (hand-ported, not generated) are not this rule's.
+    assert.strictEqual(lib.nextLanguage({ ...done, contracts: [...done.contracts, "en/x"] }).code, "id");
 });
 
-test("next language fails closed when outcomes.json lags the ledger (#317: id onboarded on 0 AIC, 0/0 with fi done)", () => {
-    const L = (run_id, title, created_at, conclusion = "success", workflow = title.split(" ")[0].toLowerCase()) => ({ run_id, workflow, title, conclusion, created_at });
-    const O = (run_id, task, workflow, aic, accepted, created_at, extra = {}) => ({ run_id, task, workflow, aic, created_at, items: accepted ? [{ type: "create_pull_request", outcome_status: "accepted", zero_touch: true }] : [], ...extra });
+test("next language: stop rules (budget, first-try rate, needs-human cluster)", () => {
+    const done = fiDone();
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, policy: null }), { action: "stop", reason: "no_onboarding_policy" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, costs: costsOf(spend(20, 600), spend(21, 450)) }), { action: "stop", reason: "budget_spent:1050/1000" });
+    const repaired = { ...done, ledger: { ...done.ledger, runs: [...done.ledger.runs, L(22, "Repair fi/b #2 attempt 2", "2026-11-04T20:40:00Z")] }, costs: costsOf(spend(20, 10), spend(21, 10), spend(22, 10)) };
+    assert.deepStrictEqual(lib.nextLanguage(repaired), { action: "stop", reason: "first_try_rate:1/2" });
+    const touched = { ...done, ledger: { ...done.ledger, merged: [M("fi/a", 30, "2026-11-04T20:30:00Z"), M("fi/b", 31, "2026-11-04T20:35:00Z", false)] } };
+    assert.deepStrictEqual(lib.nextLanguage(touched), { action: "stop", reason: "first_try_rate:1/2" });
+    const nh = [{ id: "fi/a", state: "open", labels: ["needs-human"] }, { id: "fi/b", state: "open", labels: ["needs-human"] }];
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, issues: nh }), { action: "stop", reason: "needs_human_cluster:2" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, policy: { ...policy, stop: {} } }), { action: "stop", reason: "no_budget" });
+});
+
+test("next language fails closed when the records lag the ledger (#317: id onboarded on 0 AIC, 0/0 with fi done)", () => {
     const ledgerRuns = [
         L(10, "Review one factory PR", "2026-10-27T10:00:00Z"), // before any generated-locale run: not ours
         L(11, "Implement sv/weekday-parser #9 attempt 1", "2026-10-28T10:00:00Z"), // not a generated locale
@@ -199,38 +232,62 @@ test("next language fails closed when outcomes.json lags the ledger (#317: id on
         L(23, "Review one factory PR", "2026-11-04T21:00:00Z"),
         L(24, "Implement fi/c #3 attempt 1", "2026-11-04T23:10:00Z", "skipped"),
     ];
-    const ledger = { runs: ledgerRuns, merged: ["fi/a", "fi/b", "sv/weekday-parser"] };
-    const full = { runs: [O(20, "fi/a", "implement", 10, true, "2026-11-04T20:00:00Z"), O(21, "fi/b", "implement", 10, false, "2026-11-04T20:05:00Z"), O(22, "fi/b", "implement", 10, true, "2026-11-04T23:00:00Z"), O(23, "fi/a", "review", 5, false, "2026-11-04T21:00:00Z")] };
-    const base = { policy, onboarded: ["fi"], candidates: ["id"], issues: [], openPRs: [], ledger };
+    const merged = [M("fi/a", 30, "2026-11-04T20:30:00Z"), M("fi/b", 31, "2026-11-04T23:20:00Z"), M("sv/weekday-parser", 5, "2026-10-28T11:00:00Z")];
+    const full = costsOf(spend(20, 10), spend(21, 10), spend(22, 10), spend(23, 5));
+    const base = { ...fiDone(), ledger: { runs: ledgerRuns, merged } };
     // Complete: the real numbers (spend 35, first try 1/2) stop it.
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full }), { action: "stop", reason: "first_try_rate:1/2" });
-    // The incident: outcomes.json has none of fi's runs. Before: onboard on 0 / 0/0. Now: wait.
-    const empty = lib.nextLanguage({ ...base, outcomes: { runs: [] } });
-    assert.strictEqual(empty.action, "wait");
-    assert.strictEqual(empty.reason, "outcomes_behind:6");
-    assert.deepStrictEqual(empty.behind, ["run:20", "run:21", "run:22", "run:23", "merged:fi/a", "merged:fi/b"]);
-    // One run (or one merged task's acceptance) missing is enough to wait.
-    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: { runs: full.runs.filter((r) => r.run_id !== 21) } }).reason, "outcomes_behind:1");
-    const pending = { runs: full.runs.map((r) => (r.run_id === 22 ? { ...r, items: [{ type: "create_pull_request", outcome_status: "pending" }] } : r)) };
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: pending }).behind, ["merged:fi/b"]);
-    // A failed evaluation is behind only when the run's cost is unknown.
-    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: { runs: full.runs.map((r) => (r.run_id === 23 ? { ...r, eval_failed: true } : r)) } }).reason, "first_try_rate:1/2");
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: { runs: full.runs.map((r) => (r.run_id === 23 ? { ...r, eval_failed: true, aic: null } : r)) } }).behind, ["run:23:eval_failed"]);
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, costs: full }), { action: "stop", reason: "first_try_rate:1/2" });
+    // No cost on record for any of fi's runs: wait, never onboard on 0 AIC.
+    const empty = lib.nextLanguage({ ...base, costs: new Map() });
+    assert.deepStrictEqual([empty.action, empty.reason, empty.behind], ["wait", "records_behind:4", ["run:20", "run:21", "run:22", "run:23"]]);
+    // One run missing is enough to wait.
+    assert.strictEqual(lib.nextLanguage({ ...base, costs: costsOf(spend(20, 10), spend(22, 10), spend(23, 5)) }).reason, "records_behind:1");
+    // A merged task whose zero-touch verdict is unknown (a list was truncated) waits too.
+    const unknown = { ...base, costs: full, ledger: { runs: ledgerRuns, merged: [merged[0], { ...merged[1], zero_touch: null }] } };
+    assert.deepStrictEqual(lib.nextLanguage(unknown).behind, ["merged:fi/b"]);
     // Unreadable inputs wait; they never read as "nothing".
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, ledger: null }), { action: "wait", reason: "ledger_unreadable" });
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, ledger: { runs: ledgerRuns } }), { action: "wait", reason: "ledger_unreadable" });
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, issues: null }), { action: "wait", reason: "inputs_unreadable:issues" });
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: full, openPRs: undefined }), { action: "wait", reason: "inputs_unreadable:prs" });
-    // Every covered run needs a known cost, even when evaluated (#337 review).
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: { runs: full.runs.map((r) => (r.run_id === 23 ? { ...r, aic: null } : r)) } }).behind, ["run:23:no_cost"]);
-    // A covered review attributed to no task still counts toward the spend (#337 review).
-    const unattributedBig = { runs: full.runs.map((r) => (r.run_id === 23 ? { ...r, task: null, aic: 2000 } : r)) };
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes: unattributedBig }), { action: "stop", reason: "budget_spent:2030/1000" });
-    // A review before the first generated-locale run is never ours, attributed or not.
-    const old = { runs: [...full.runs, O(10, null, "review", 5000, false, "2026-10-27T10:00:00Z")] };
-    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: old }).reason, "first_try_rate:1/2");
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, costs: full, ledger: null }), { action: "wait", reason: "ledger_unreadable" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, costs: full, ledger: { runs: ledgerRuns } }), { action: "wait", reason: "ledger_unreadable" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, costs: null }), { action: "wait", reason: "costs_unreadable" });
+    // A review since the first generated-locale run counts toward the spend (it names no task).
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, costs: costsOf(spend(20, 10), spend(21, 10), spend(22, 10), spend(23, 2000)) }), { action: "stop", reason: "budget_spent:2030/1000" });
     // No generated locale yet: nothing to cover.
-    assert.strictEqual(lib.nextLanguage({ ...base, onboarded: [], candidates: ["fi", "id"], outcomes: { runs: [] } }).code, "fi");
+    assert.strictEqual(lib.nextLanguage({ ...base, onboarded: [], candidates: ["fi", "id"], costs: new Map() }).code, "fi");
+});
+
+test("runCosts: newest run_spend wins; snapshot entries only for runs without one; bounded runs at their evidence", () => {
+    const snap = (runs, dry_run = false) => ({ type: "spend_snapshot", payload: { dry_run, runs } });
+    const c = lib.runCosts([
+        snap([{ run_id: 1, status: "reserved", aic: 2600 }, { run_id: 2, status: "reserved", aic: 2600 }, { run_id: 3, status: "measured", aic: 7 }]),
+        spend(1, 30),
+        spend(1, 31),
+        snap([{ run_id: 2, status: "bounded", aic: 2600, readable_aic: 22.5, observed_aic: 21.3 }]),
+        spend(4, 2600, { status: "bounded", reason: "usage_file_missing", observed_aic: 46.5 }),
+        spend(5, 2600, { status: "bounded", reason: "usage_file_missing" }),
+        spend(6, 99, { dry_run: true }),
+        snap([{ run_id: 7, status: "reserved", aic: 2600 }]),
+    ]);
+    assert.deepStrictEqual(
+        [...c].map(([id, x]) => [id, x.aic, x.source]).sort((a, b) => a[0] - b[0]),
+        [[1, 31, "run_spend"], [2, 22.5, "spend_snapshot"], [3, 7, "spend_snapshot"], [4, 46.5, "run_spend"], [5, 2600, "run_spend"], [7, 2600, "spend_snapshot"]],
+    );
+});
+
+test("zeroTouch: gh-aw's verdict from a merged PR's comments, reviews and commits", () => {
+    const bot = { __typename: "Bot", login: "copilot-pull-request-reviewer" };
+    const person = { __typename: "User", login: "sabbasi3" };
+    const agentCommit = { commit: { author: { email: "1+sabbasi3-factory-agent[bot]@users.noreply.github.com", user: null } } };
+    const pr = (over = {}) => ({ comments: { nodes: [{ author: bot }] }, reviews: { nodes: [{ author: bot }] }, commits: { nodes: [agentCommit] }, ...over });
+    assert.strictEqual(lib.zeroTouch(pr()), true);
+    assert.strictEqual(lib.zeroTouch(pr({ comments: { nodes: [{ author: person }] } })), false);
+    assert.strictEqual(lib.zeroTouch(pr({ reviews: { nodes: [{ author: person }] } })), false);
+    assert.strictEqual(lib.zeroTouch(pr({ commits: { nodes: [agentCommit, { commit: { author: { email: "me@example.com", user: { login: "sabbasi3" } } } }] } })), false);
+    // An unknown author is a person (stricter); a deleted account too.
+    assert.strictEqual(lib.zeroTouch(pr({ commits: { nodes: [{ commit: { author: { email: "x@example.com", user: null } } }] } })), false);
+    assert.strictEqual(lib.zeroTouch(pr({ comments: { nodes: [{ author: null }] } })), false);
+    // A truncated or missing list: can't tell.
+    assert.strictEqual(lib.zeroTouch(pr({ comments: { pageInfo: { hasNextPage: true }, nodes: [] } })), null);
+    assert.strictEqual(lib.zeroTouch(pr({ commits: undefined })), null);
 });
 
 test("next CLI: a missing or empty input file waits (never 'none')", () => {
@@ -241,39 +298,41 @@ test("next CLI: a missing or empty input file waits (never 'none')", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "next-"));
     const w = (f, t) => fs.writeFileSync(path.join(dir, f), t);
     w("policy.yaml", "languages: [zz]\nstop: {budget_aic: 10}\n");
-    w("outcomes.json", JSON.stringify({ runs: [] }));
-    for (const f of ["issues", "prs", "runs", "merged"]) w(`${f}.json`, "[]");
+    w("audit.jsonl", "\n");
+    for (const f of ["issues", "prs", "onboard-merges", "runs", "merged"]) w(`${f}.json`, "[]");
     const next = (over = {}) => {
-        const args = ["policy.yaml", "outcomes.json", "issues.json", "prs.json", "runs.json", "merged.json"].flatMap((f) => [`--${f.split(".")[0]}`, path.join(dir, over[f] ?? f)]);
+        const args = ["policy.yaml", "issues.json", "prs.json", "onboard-merges.json", "runs.json", "merged.json", "audit.jsonl"].flatMap((f) => [`--${f.replace(/\.(json|jsonl|yaml)$/, "")}`, path.join(dir, over[f] ?? f)]);
         const r = spawnSync(process.execPath, [path.join(__dirname, "../onboard.js"), "next", ...args], { encoding: "utf8" });
         return JSON.parse(r.stdout);
     };
-    assert.notStrictEqual(next().reason, "ledger_unreadable");
+    assert.ok(!/unreadable/.test(next().reason), next().reason);
     w("empty", "");
     w("object.json", "{}");
     assert.deepStrictEqual(next({ "issues.json": "empty" }), { action: "wait", reason: "inputs_unreadable:issues" });
     assert.deepStrictEqual(next({ "prs.json": "absent.json" }), { action: "wait", reason: "inputs_unreadable:prs" });
+    assert.deepStrictEqual(next({ "onboard-merges.json": "empty" }).reason, "inputs_unreadable:onboard_merges");
     assert.deepStrictEqual(next({ "runs.json": "empty" }), { action: "wait", reason: "ledger_unreadable" });
     assert.deepStrictEqual(next({ "merged.json": "object.json" }), { action: "wait", reason: "ledger_unreadable" });
+    assert.deepStrictEqual(next({ "audit.jsonl": "empty" }), { action: "wait", reason: "costs_unreadable" });
     fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test("next language: a recorded infra incident excuses the failed attempts before it (first-try rate only)", () => {
-    // The ledger is empty here: coverage is tested above; this is the first-try arithmetic.
-    const base = { policy, onboarded: ["fi"], candidates: ["id"], issues: [], openPRs: [], ledger: { runs: [], merged: [] } };
-    const at = (r, created_at) => ({ ...r, created_at });
-    const failed = (task, created_at) => ({ task, workflow: "implement", aic: 10, created_at, items: [] });
     // fi/b: attempt 1 broke on a factory defect (no PR), attempt 2 after the re-drive merged zero-touch.
-    const outcomes = { runs: [at(run("fi/a", "implement", 10, true), "2026-11-04T20:00:00Z"), failed("fi/b", "2026-11-04T20:23:00Z"), at(run("fi/b", "implement", 10, true), "2026-11-04T23:28:00Z")] };
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes }), { action: "stop", reason: "first_try_rate:1/2" });
+    const done = fiDone();
+    const runs = [L(20, "Implement fi/a #1 attempt 1", "2026-11-04T20:00:00Z"), L(21, "Implement fi/b #2 attempt 1", "2026-11-04T20:23:00Z", "failure"), L(22, "Implement fi/b #2 attempt 2", "2026-11-04T23:28:00Z")];
+    const merged = [M("fi/a", 30, "2026-11-04T20:30:00Z"), M("fi/b", 31, "2026-11-04T23:40:00Z")];
+    const base = { ...done, ledger: { runs, merged }, costs: costsOf(spend(20, 10), spend(21, 10), spend(22, 10)) };
+    assert.deepStrictEqual(lib.nextLanguage(base), { action: "stop", reason: "first_try_rate:1/2" });
     const incidents = [{ task: "fi/b", labeled_at: "2026-11-04T23:25:00Z" }];
-    assert.deepStrictEqual(lib.nextLanguage({ ...base, outcomes, incidents }), { action: "onboard", code: "id", spent: 30, first_try: "2/2" });
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, incidents }), { action: "onboard", code: "id", spent: 30, first_try: "2/2" });
     // Narrow: an incident on another task, or recorded before the failed attempt, excuses nothing.
-    assert.strictEqual(lib.nextLanguage({ ...base, outcomes, incidents: [{ task: "fi/a", labeled_at: "2026-11-04T23:25:00Z" }] }).reason, "first_try_rate:1/2");
-    assert.strictEqual(lib.nextLanguage({ ...base, outcomes, incidents: [{ task: "fi/b", labeled_at: "2026-11-04T20:00:00Z" }] }).reason, "first_try_rate:1/2");
-    // Never excuses a repair, or a later implement run; spend always counts every run.
-    const repaired = { runs: [...outcomes.runs, at(run("fi/b", "repair", 10, true), "2026-11-04T23:40:00Z")] };
-    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: repaired, incidents }).reason, "first_try_rate:1/2");
-    const spent = { runs: [at(run("fi/a", "implement", 10, true), "2026-11-04T20:00:00Z"), { ...failed("fi/b", "2026-11-04T20:23:00Z"), aic: 995 }, at(run("fi/b", "implement", 10, true), "2026-11-04T23:28:00Z")] };
-    assert.strictEqual(lib.nextLanguage({ ...base, outcomes: spent, incidents }).reason, "budget_spent:1015/1000");
+    assert.strictEqual(lib.nextLanguage({ ...base, incidents: [{ task: "fi/a", labeled_at: "2026-11-04T23:25:00Z" }] }).reason, "first_try_rate:1/2");
+    assert.strictEqual(lib.nextLanguage({ ...base, incidents: [{ task: "fi/b", labeled_at: "2026-11-04T20:00:00Z" }] }).reason, "first_try_rate:1/2");
+    // Never excuses the attempt whose PR merged: an incident after it leaves that one run counted.
+    assert.strictEqual(lib.nextLanguage({ ...base, incidents: [{ task: "fi/b", labeled_at: "2026-11-05T01:00:00Z" }] }).first_try, "2/2");
+    // Never excuses a repair; spend always counts every run.
+    const repaired = { ...base, ledger: { runs: [...runs, L(23, "Repair fi/b #2 attempt 3", "2026-11-04T23:35:00Z")], merged }, costs: costsOf(spend(20, 10), spend(21, 10), spend(22, 10), spend(23, 10)) };
+    assert.strictEqual(lib.nextLanguage({ ...repaired, incidents }).reason, "first_try_rate:1/2");
+    assert.strictEqual(lib.nextLanguage({ ...base, costs: costsOf(spend(20, 10), spend(21, 995), spend(22, 10)), incidents }).reason, "budget_spent:1015/1000");
 });

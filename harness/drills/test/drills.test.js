@@ -55,8 +55,9 @@ test("compare summary and daily seed", () => {
 });
 
 test("onboard cases: one complete control, faults that each break exactly one input", () => {
-    const cases = lib.onboardCases({ stop: { min_sample: 3, budget_aic: 50 } }, "fi");
-    assert.deepStrictEqual(cases.map((c) => c.ok), [true, false, false, false, false, false, false]);
+    const cases = lib.onboardCases({ stop: { min_sample: 3, budget_aic: 50 } }, "fi", ["fi/constants", "id/constants"]);
+    assert.deepStrictEqual(cases.map((c) => c.ok), [true, false, false, false, false, false, false, false, false]);
+    assert.strictEqual(lib.onboardCases({ stop: { min_sample: 3, budget_aic: 50 } }, "fi").length, 8, "no contract: no missing-issue case");
     const control = cases[0].files;
     assert.strictEqual(JSON.parse(control.runs).length, 3);
     assert.ok(JSON.parse(control.runs).every((r) => /^Implement fi\/drill-step-\d #\d attempt 1$/.test(r.title)));
