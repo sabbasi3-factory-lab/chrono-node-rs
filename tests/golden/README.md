@@ -67,3 +67,19 @@ The generator re-runs each call step by step:
 - a **refiner** is listed if the result list differed after it ran
 
 A parser that found nothing, or a refiner that changed nothing, can't affect the output. So if the Rust crate registers every listed parser and refiner, it must produce exactly `results`. The Rust golden runner checks every such case and reports the rest as **pending**. As parsers and refiners are ported, cases move from pending to checked automatically, and a regression in any checked case fails CI.
+
+### Pending cases are still checked step by step (golden frontier)
+
+A pending case can't check the whole output, but it can check each **ported step** on it. `harness/golden/frontier.js` traces every case in chrono-node and in Rust (`chrono-rs-json --trace`) and compares:
+
+- each ported parser's own results;
+- each ported refiner run **alone on chrono-node's input for its slot** (`isolate`), so a refiner behind an unported step is still checked.
+
+The earliest step that differs is blamed, with its task (from the contracts' `upstream_class`). CI fails on any blame, so a defective step fails its **own** PR instead of surfacing later in another task's PR, when its case's last required step lands (#397). If every step matches alone but a fully ported case's end results differ, the blame is `chain`: state the JSON shape doesn't carry between steps, for a person to look at.
+
+`--complete` also fails if a generated locale whose task steps are all ported still has pending cases: a language counts as done only with 0 pending. `release.yml` runs `--complete --all`: a release has no pending case at all.
+
+```sh
+cargo build --bin chrono-rs-json && cd harness && npm ci && npm run build:upstream
+TZ=UTC node golden/frontier.js --complete [--all] [--report frontier.json]
+```

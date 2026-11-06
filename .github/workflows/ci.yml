@@ -155,6 +155,17 @@ jobs:
         working-directory: harness
         run: node onboard/onboard.js check
 
+      # Per-step check of every golden case, pending ones included (golden/frontier.js): each ported
+      # step's own output must match chrono-node's, so a step can't merge with a defect that only a
+      # still-pending case exposes (#397), and a failure names the step and task to blame. The
+      # completion part: a generated language whose task steps are all ported has no pending case.
+      - name: Golden frontier (every ported step on every case; finished languages have no pending case)
+        working-directory: harness
+        env:
+          TZ: UTC
+        run: node golden/frontier.js --rust ../target/debug/chrono-rs-json --complete | tee -a "$GITHUB_STEP_SUMMARY"
+        shell: bash -eo pipefail {0}
+
       # The skeleton drill: onboard every candidate language in a throwaway copy and fail if a
       # contract scope file's directory isn't generated (agents can't mkdir). Only when the PR
       # changes what onboarding is generated from; about 10 s per language.

@@ -75,6 +75,21 @@ jobs:
       - name: Fetch locked dependencies
         run: cargo fetch --locked
 
+      # A release ships only whole languages: no golden case may still be pending (a step it needs
+      # unported), and every ported step matches chrono-node on every case (harness/golden/frontier.js).
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: No pending golden case; every ported step matches chrono-node
+        shell: bash -eo pipefail {0}
+        env:
+          TZ: UTC
+        run: |
+          cargo build --locked --bin chrono-rs-json
+          cd harness && npm ci --ignore-scripts --no-audit --no-fund && npm run build:upstream
+          node golden/frontier.js --rust ../target/debug/chrono-rs-json --complete --all | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Next version (0.x) and semver check against the last release
         id: version
         env:

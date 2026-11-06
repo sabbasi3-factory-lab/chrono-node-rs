@@ -62,6 +62,8 @@ pub struct Chrono {
     pub missing: Vec<&'static str>,
 }
 
+/// One step's name and its results (a parser's raw output, or the results after a refiner).
+pub type StepTrace = (&'static str, Vec<ParsingResult>);
 impl Chrono {
     /// `parse(text, ref, option)`, with "now" taken from the system clock.
     pub fn parse(&self, text: &str, reference: &ReferenceInput, option: &ParsingOption) -> Vec<ParsingResult> {
@@ -87,6 +89,47 @@ impl Chrono {
             results = r.refiner.refine(&context, results);
         }
         results
+    }
+
+    /// `parse_with_now`, also returning each step's output (the harness's per-step comparison with
+    /// chrono-node, `harness/golden/frontier.js`): every parser's own results, then the results
+    /// after each refiner. Same order and semantics as `parse_with_now`.
+    pub fn trace_with_now(
+        &self,
+        text: &str,
+        reference: &ReferenceInput,
+        option: &ParsingOption,
+        now: JsDate,
+    ) -> (Vec<StepTrace>, Vec<StepTrace>) {
+        let context = ParsingContext::new(text, reference, option.clone(), now);
+        let mut parsers = Vec::new();
+        let mut results = Vec::new();
+        for p in &self.parsers {
+            let found = execute_parser(&context, p.parser.as_ref());
+            results.extend(found.iter().cloned());
+            parsers.push((p.name, found));
+        }
+        results.sort_by_key(|r| r.index);
+        let mut refiners = Vec::new();
+        for r in &self.refiners {
+            results = r.refiner.refine(&context, results);
+            refiners.push((r.name, results.clone()));
+        }
+        (parsers, refiners)
+    }
+
+    /// The `occurrence`-th refiner named `step` (0-based) run alone on `input`, or `None` if it isn't
+    /// ported. The harness feeds it chrono-node's input for that slot, so each refiner is checked on
+    /// every case even while an earlier step is unported (`harness/golden/frontier.js`).
+    pub fn refine_isolated(
+        &self,
+        context: &ParsingContext,
+        step: &str,
+        occurrence: usize,
+        input: Vec<ParsingResult>,
+    ) -> Option<Vec<ParsingResult>> {
+        let r = self.refiners.iter().filter(|r| r.name == step).nth(occurrence)?;
+        Some(r.refiner.refine(context, input))
     }
 
     /// `parseDate(text, ref, option)`.
