@@ -1,0 +1,431 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/uk/uk_month.test.ts",
+  "cases": [
+    {
+      "id": "uk/month#01",
+      "text": "Вересень 2012",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Вересень 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "uk/month#02",
+      "text": "верес 2012",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "верес 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "uk/month#03",
+      "text": "верес. 2012",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "верес. 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "uk/month#04",
+      "text": "верес-2012",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "верес-2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "uk/month#05",
+      "text": "в січні",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "в січні",
+          "start": {
+            "known": {
+              "month": 1
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Only expression"
+    },
+    {
+      "id": "uk/month#06",
+      "text": "в січ",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "в січ",
+          "start": {
+            "known": {
+              "month": 1
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Only expression"
+    },
+    {
+      "id": "uk/month#07",
+      "text": "травень",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "травень",
+          "start": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-05-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Only expression"
+    },
+    {
+      "id": "uk/month#08",
+      "text": "Це було у вересні 2012 перед новим роком",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "у вересні 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month expression in context"
+    },
+    {
+      "id": "uk/month#09",
+      "text": "сер 96",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "сер 96",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 1996
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1996-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - year 90's parsing"
+    },
+    {
+      "id": "uk/month#10",
+      "text": "96 сер 96",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "сер 96",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 1996
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1996-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - year 90's parsing"
+    }
+  ]
+}

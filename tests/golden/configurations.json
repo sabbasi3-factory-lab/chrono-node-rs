@@ -2242,6 +2242,186 @@
           }
         }
       ]
+    },
+    "uk.casual": {
+      "parsers": [
+        {
+          "name": "UKTimeUnitCasualRelativeFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "UKRelativeDateFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "UKMonthNameParser",
+          "flags": {}
+        },
+        {
+          "name": "UKCasualTimeParser",
+          "flags": {}
+        },
+        {
+          "name": "UKCasualDateParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "UKTimeUnitWithinFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "UKMonthNameLittleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "UKWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "UKTimeExpressionParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "UKTimeUnitAgoFormatParser",
+          "flags": {}
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UKMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UKMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": false
+          }
+        }
+      ]
+    },
+    "uk.strict": {
+      "parsers": [
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "UKTimeUnitWithinFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "UKMonthNameLittleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "UKWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "UKTimeExpressionParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "UKTimeUnitAgoFormatParser",
+          "flags": {}
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UKMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UKMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": true
+          }
+        }
+      ]
     }
   }
 }

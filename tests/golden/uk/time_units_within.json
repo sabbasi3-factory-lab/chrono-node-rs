@@ -1,0 +1,124 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/uk/uk_time_units_within.test.ts",
+  "cases": [
+    {
+      "id": "uk/time_units_within#1",
+      "text": "буде зроблено протягом хвилини",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 14,
+          "text": "протягом хвилини",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 1,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T00:01:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "uk/time_units_within#2",
+      "text": "буде виконано на протязі 2 годин.",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 14,
+          "text": "на протязі 2 годин",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 2,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T02:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - The normal within expression"
+    },
+    {
+      "id": "uk/time_units_within#3",
+      "text": "купив 5 годинників",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Within expression respects the word boundary"
+    }
+  ]
+}

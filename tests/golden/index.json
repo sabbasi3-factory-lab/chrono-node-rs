@@ -574,6 +574,60 @@
       "cases": 8,
       "skipped": 0,
       "skipped_by_reason": {}
+    },
+    "uk/casual": {
+      "source": "upstream/test/uk/uk_casual.test.ts",
+      "cases": 26,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "uk/month": {
+      "source": "upstream/test/uk/uk_month.test.ts",
+      "cases": 10,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "uk/month_name_little_endian": {
+      "source": "upstream/test/uk/uk_month_name_little_endian.test.ts",
+      "cases": 23,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "uk/relative": {
+      "source": "upstream/test/uk/uk_relative.test.ts",
+      "cases": 11,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "uk/time_exp": {
+      "source": "upstream/test/uk/uk_time_exp.test.ts",
+      "cases": 25,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "uk/time_units_ago": {
+      "source": "upstream/test/uk/uk_time_units_ago.test.ts",
+      "cases": 9,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "uk/time_units_casual_relative": {
+      "source": "upstream/test/uk/uk_time_units_casual_relative.test.ts",
+      "cases": 17,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "uk/time_units_within": {
+      "source": "upstream/test/uk/uk_time_units_within.test.ts",
+      "cases": 3,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "uk/weekday": {
+      "source": "upstream/test/uk/uk_weekday.test.ts",
+      "cases": 7,
+      "skipped": 0,
+      "skipped_by_reason": {}
     }
   }
 }
