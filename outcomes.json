@@ -1,7 +1,82 @@
 {
-  "generated_at": "2026-11-06T04:08:19Z",
+  "generated_at": "2026-11-06T04:23:01Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 42155129209,
+      "workflow": "implement",
+      "title": "Implement nl/time-unit-within-format-parser #373 attempt 1",
+      "created_at": "2026-11-06T03:12:40Z",
+      "aic": 20.16194,
+      "task": "nl/time-unit-within-format-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/373#issuecomment-6675934443",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/379",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T04:23:01Z",
+      "drill": false
+    },
+    {
+      "run_id": 42155121082,
+      "workflow": "implement",
+      "title": "Implement nl/casual-date-time-parser #359 attempt 1",
+      "created_at": "2026-11-06T03:12:36Z",
+      "aic": 21.89652,
+      "task": "nl/casual-date-time-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/359#issuecomment-6675939071",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/380",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T04:23:01Z",
+      "drill": false
+    },
+    {
+      "run_id": 42153106264,
+      "workflow": "implement",
+      "title": "Implement nl/slash-month-format-parser #368 attempt 1",
+      "created_at": "2026-11-06T02:52:58Z",
+      "aic": 19.8619,
+      "task": "nl/slash-month-format-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/368#issuecomment-6675642374",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/378",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T04:23:01Z",
+      "drill": false
+    },
     {
       "run_id": 42152862193,
       "workflow": "implement",
@@ -3575,8 +3650,8 @@
     }
   ],
   "summary": {
-    "accepted": 132,
-    "pending": 110,
+    "accepted": 135,
+    "pending": 113,
     "rejected": 11,
     "unknown": 14
   }
