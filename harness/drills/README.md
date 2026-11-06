@@ -22,6 +22,16 @@ slot, and always when the last passing drill run is more than 7 days old. `drill
 Every drill is a **dry run**: nothing is written to GitHub. A failure in live mode
 (`FACTORY_ENABLED=true`) opens or comments on one `factory:alert` issue.
 
+**Agentic workflow canary** (`canary.js`, `.github/workflows/agentic-canary.yml`, live only). It
+dispatches each AI workflow the controller uses (implement, repair, review, triage) for the sentinel
+task `drill/activation-canary`, which has no contract. gh-aw's activation must succeed, and the
+workflow's own validation must then refuse the task before inference, so nothing is spent. It runs
+daily and on every main change to an agentic workflow or lock; a failure raises a `factory:alert`.
+It exists because #393's reviewer failed in activation (a stale lock, E009) the first time an
+auto-strict task needed it. `drill/` runs are excluded from outcomes' rates and the factory review.
+CI's `checks` job also recompiles the factory's agentic workflows with the pinned gh-aw and fails on
+any lock diff, so a stale lock can't merge.
+
 **Results.** Each `drills` run is recorded in the audit log by the controller (a `check_result`
 event, `workflow: drills`). A failed run shows on the dashboard's recent activity as "drills failed".
 The per-drill detail is the run's summary and its `drill-results` artifact (kept 90 days).

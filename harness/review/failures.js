@@ -299,6 +299,9 @@ function failuresMd(failures, reliability) {
  * since `since`, classified; the needs-human issues' pre-triage verdicts; the infra-incident label.
  * Bounded: at most `maxRuns` runs (newest first) and one comment page per issue.
  */
+/** A run whose title names a `drill/` task (`Implement drill/x #1 attempt 1`, `Review drill/x PR #1`). */
+const isDrillRun = (title) => /^(?:Implement|Repair|Review|Triage) drill\//.test(title || "");
+
 async function fetchFailureData({ gh, repo, since, workflows, events, maxRuns = 60 }) {
     const day = since.slice(0, 10);
     const failed = [];
@@ -310,7 +313,8 @@ async function fetchFailureData({ gh, repo, since, workflows, events, maxRuns = 
             console.log(`::warning::${name} runs unreadable (${e.message}): its failures are missing from the data`);
             continue;
         }
-        for (const r of list.workflow_runs || []) if (r.created_at >= since) failed.push({ workflow: name, run_id: r.id, url: r.html_url, title: r.display_title, created_at: r.created_at, factorySteps });
+        // Runs for a `drill/` task (the agentic canary, harness/drills/canary.js) fail on purpose.
+        for (const r of list.workflow_runs || []) if (r.created_at >= since && !isDrillRun(r.display_title)) failed.push({ workflow: name, run_id: r.id, url: r.html_url, title: r.display_title, created_at: r.created_at, factorySteps });
     }
     failed.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
     if (failed.length > maxRuns) console.log(`::warning::${failed.length} failed runs; classifying the newest ${maxRuns}`);
@@ -354,4 +358,4 @@ async function fetchFailureData({ gh, repo, since, workflows, events, maxRuns = 
     return { runs, triage, labeled };
 }
 
-module.exports = { REASON_CLASS, RECUR_AT, factoryStepNames, eventRunId, frontmatterOf, classifyRun, triageVerdict, attribute, attributeFailures, platformReliability, failuresMd, fetchFailureData };
+module.exports = { isDrillRun, REASON_CLASS, RECUR_AT, factoryStepNames, eventRunId, frontmatterOf, classifyRun, triageVerdict, attribute, attributeFailures, platformReliability, failuresMd, fetchFailureData };
