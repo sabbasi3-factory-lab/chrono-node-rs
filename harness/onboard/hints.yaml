@@ -1,0 +1,85 @@
+# Hand-reviewed inputs for onboard.js where the generator alone can't find golden coverage (human tier).
+# The generator verifies each entry against the pinned chrono-node every time it renders a locale, so a
+# stale entry fails `onboard.js check` (CI) and the `onboard-unreachable` drill.
+#
+# seeds: candidate inputs for a step that no upstream test and no generated phrase exercises. Only the
+#   text is hand-written; a seed is kept only if the pinned chrono-node trace shows the step changing
+#   the result, and its expected output is recorded from chrono-node like any golden case. Tried after
+#   the generated phrase stream, so they never change another locale's coverage.
+#
+# unreachable: a step that no input can exercise in the pinned upstream, with the evidence. The
+#   generator re-checks it on every render: the probe corpus (every prefix + word + suffix, in every
+#   listed config and option set) and the generated phrase stream must never trace the step, and a
+#   `shadowed_by` step must still come first in each config's chain with the step an unchanged
+#   subclass of it. The step is still ported: its task's acceptance is the unit cases below, each
+#   recorded by running the upstream step alone on the given input (`parsers`: the config's own
+#   parser results for the text; otherwise the listed results), plus the differential comparison.
+version: 1
+seeds:
+  ITMergeRelativeAfterDateRefiner:
+    - { config: it.casual, text: "13/02/2020 +2 settimane", reference: "2024-03-06T12:00:00.000Z" }
+    - { config: it.casual, text: "martedì prossimo +10 giorni", reference: "2024-03-06T12:00:00.000Z" }
+    - { config: it.casual, text: "15 marzo 2021 -3 giorni", reference: "2024-03-06T12:00:00.000Z" }
+    - { config: it.casual, text: "domani +1 ora", reference: "2024-03-06T12:00:00.000Z" }
+unreachable:
+  ITUnlikelyFormatFilter:
+    reason: >-
+      Its only removing branch needs a result whose text is "secondo" or ends with "il secondo". No
+      Italian parser emits one: every time-unit pattern needs a number before the unit ("un secondo",
+      "1 secondo") and the ordinal parsers need a month after "secondo". The probe corpus below
+      (1,728 texts with both configs and both option sets) never reaches it.
+    probe:
+      configs: [it.casual, it.strict]
+      options: [{}, { forwardDate: true }]
+      prefixes: ["x ", "x il ", "x un ", "x un'", "x mezzo ", "x 1 ", "x tra il ", "x entro il ", "x prossimo ", "x il prossimo ", "x +", "x -", "x dopo il ", "x alle 5 il ", "x 5 agosto il ", "x per il ", "x in ", "x fra "]
+      words: ["secondo", "SECONDO", "il secondo"]
+      suffixes: ["", " poi", " giorno", " di agosto", " alle 5", " prossimo", " fa", "."]
+    cases:
+      - test: drops_il_secondo_inside_longer_text
+        config: it.casual
+        text: "arrivo il secondo poi"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: [{ index: 7, text: "il secondo", known: { day: 2 } }]
+      - test: drops_bare_secondo_inside_longer_text
+        config: it.casual
+        text: "aspetta secondo me"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: [{ index: 8, text: "secondo", known: { day: 2 } }]
+      - test: keeps_a_result_that_is_the_whole_text
+        config: it.casual
+        text: "il secondo"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: [{ index: 0, text: "il secondo", known: { day: 2 } }]
+      - test: keeps_other_results
+        config: it.casual
+        text: "ci vediamo domani"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: parsers
+  VIMergeWeekdayComponentRefiner:
+    reason: >-
+      It subclasses the common MergeWeekdayComponentRefiner without overriding anything, and
+      includeCommonConfiguration puts that common refiner earlier in the same chain. Every pair it
+      could merge ("thứ Hai, 12/7/2014") is already merged when it runs, so it never changes a result.
+    shadowed_by: MergeWeekdayComponentRefiner
+    probe:
+      configs: [vi.casual, vi.strict]
+      options: [{}]
+      prefixes: ["", "x "]
+      words: ["thứ Hai", "Thứ Ba", "thứ sáu", "Chủ Nhật"]
+      suffixes: [", 12/7/2014", " 12/7/2014", " ngày 13 tháng 1 năm 2012", " 25/12", " 12 tháng 7"]
+    cases:
+      - test: merges_weekday_into_a_following_slash_date
+        config: vi.casual
+        text: "thứ Hai, 12/7/2014"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: parsers
+      - test: merges_weekday_into_a_following_month_date
+        config: vi.casual
+        text: "thứ hai 12 tháng 7"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: parsers
+      - test: keeps_a_weekday_alone
+        config: vi.casual
+        text: "hẹn thứ sáu nhé"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: parsers

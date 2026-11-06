@@ -27,6 +27,8 @@ factory work:
   kind of input, so JS quirks such as `parseYear("15min") = 2015` get pinned).
 - **a shared base** (support task): a requirement; the steps that use it depend on it and their golden cases check it.
 - **steps**: golden cases, as before.
+- **a step no input reaches** (declared in `hints.yaml`, see below): unit cases recorded by running
+  the upstream step alone on given inputs, plus the differential comparison; no golden case.
 
 Shared-infrastructure gaps (like the JS regex `u` flag in #208) surface the same way they did by
 hand: the task's golden cases fail, and the task goes to `needs-human` with the failure signature.
@@ -35,7 +37,10 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
 
 `add` refuses a locale, with the reason, when:
 - a configuration uses a step that's neither one of the locale's files nor already in the task map;
-- a step has no golden case and no generated phrase reaches it (today `it`: `ITMergeRelativeAfterDateRefiner`, `ITUnlikelyFormatFilter`; `vi`: `VIMergeWeekdayComponentRefiner`): a hand decision;
+- a step has no golden case, no generated phrase reaches it and `hints.yaml` neither has a seed that
+  reaches it nor declares it unreachable: a hand decision;
+- a `hints.yaml` entry is stale: a step declared unreachable that an upstream test, a generated
+  phrase or its probe corpus reaches, or whose `shadowed_by` no longer runs first;
 - two tasks would write the same Rust file;
 - a contract scope file's directory isn't generated (checked after the contracts are written).
 
@@ -94,6 +99,23 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
 
 Kill switch: unless `FACTORY_ENABLED` is exactly `"true"`, nothing is written.
 
+## Hand-reviewed hints (`hints.yaml`, human tier)
+
+Where the generated phrase stream can't find coverage, a person adds evidence once, and the
+generator re-checks it against the pinned chrono-node on every render:
+- **seeds**: hand-written input texts for a step. A seed is kept only if the trace shows the step
+  changing the result, and its expected output is recorded from chrono-node like any golden case.
+  It's tried after the phrase stream, so other locales' coverage never changes. (`it`:
+  `ITMergeRelativeAfterDateRefiner`. The stream never writes `<date> +2 settimane`.)
+- **unreachable**: a step no input can exercise in the pinned upstream, with the reason and a probe
+  corpus that must never reach it; `shadowed_by` adds the chain argument (an unchanged subclass of a
+  step that runs first). The step is still ported: its contract's acceptance is the recorded unit
+  cases. (`it`: `ITUnlikelyFormatFilter`, which needs a result text no Italian parser emits; `vi`:
+  `VIMergeWeekdayComponentRefiner`, which the common `MergeWeekdayComponentRefiner` shadows.)
+
+`onboard.js hints-check` re-checks every entry, and the `onboard-hints` drill checks that broken
+copies fail.
+
 ## Commands
 
 ```sh
@@ -105,6 +127,7 @@ node onboard/onboard.js drill [code...]   # onboard each (default: every candida
                                           # fail if a contract scope file's directory isn't generated,
                                           # or onboard.yml's artifact would drop the skeleton's .gitkeep files
 node onboard/onboard.js next --policy P --issues I --prs R --onboard-merges O --runs U --merged M --audit A   # the decision (A: audit jsonl)
+node onboard/onboard.js hints-check      # hints.yaml still holds against the pinned chrono-node
 node onboard/summary.js fi                # the onboarding PR's body
 node --test onboard/test/*.test.js        # unit tests (also in npm run test:gates)
 ```

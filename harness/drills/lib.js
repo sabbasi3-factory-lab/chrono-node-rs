@@ -94,11 +94,6 @@ function shouldRun({ now, lastPassAt, random, slotsPerDay = 4 }) {
 }
 
 /**
- * The onboarding decision's inputs (onboard.js next files), for one generated locale `code`: a
- * control with complete data (min_sample merged first-try tasks, every run recorded) and faults
- * that must never onboard. `ok` cases must decide "onboard"; the rest must not.
- */
-/**
  * The onboarding decision's inputs for the drill (onboard.js next): `code`'s min_sample drill tasks,
  * each one implement run with its cost on record, merged zero-touch; `contracts`: every generated
  * contract id on main, each with a closed task issue. The control onboards; every other case doesn't.
