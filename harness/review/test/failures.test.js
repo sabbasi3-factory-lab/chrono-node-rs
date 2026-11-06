@@ -157,3 +157,9 @@ test("review #349: each hand-off gets the triage verdict between it and the issu
     const out = f.attributeFailures({ events, incidentEvents: [], labeled: new Set(), runs: new Map(), triage });
     assert.deepStrictEqual(out.map((x) => [x.triage.class, x.attribution]), [["port-bug", "agent"], ["shared-infra-gap", "factory"]]);
 });
+
+test("isDrillRun: the agentic canary's runs (drill/ tasks) are not failures to attribute", () => {
+    const { WORKFLOWS } = require("../../drills/canary");
+    for (const w of Object.values(WORKFLOWS)) assert.strictEqual(f.isDrillRun(w.title), true, w.title);
+    for (const t of ["Implement ru/weekday-parser #393 attempt 1", "Review ru/x PR #408", "Factory review", "", null]) assert.strictEqual(f.isDrillRun(t), false, String(t));
+});

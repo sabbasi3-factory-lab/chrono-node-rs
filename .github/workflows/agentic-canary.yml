@@ -1,0 +1,109 @@
+# Agentic workflow canary: plain code, no AI, no model call. Proves that each AI workflow the
+# controller dispatches (implement, repair, review, triage) still activates, before a real task needs
+# it. #393's review run 42171900921 failed in gh-aw's activation job (E009 CONFIG_HASH_MISMATCH: the
+# lock was stale) the first time an auto-strict task needed a reviewer, 10 days after the last review.
+#
+# Dispatches each one for the sentinel task `drill/activation-canary` (no contract): activation must
+# succeed, and the workflow's own validation must then refuse the dispatch before the agent's
+# inference (harness/drills/canary.js). gh-aw's threat detection still runs on the empty output:
+# about 10 AIC per run, ~40 AIC a day for the four, inside the normal spend accounting. Runs daily, and on every main change to an agentic
+# workflow or its lock. Live only (it dispatches): unless FACTORY_ENABLED is exactly "true", it
+# does nothing. A failure opens (or comments on) one factory:alert issue.
+# Human tier: changes need the owner's review.
+name: agentic-canary
+
+on:
+  schedule:
+    - cron: "23 5 * * *"
+  push:
+    branches: [main]
+    paths: [".github/workflows/*.md", ".github/workflows/*.lock.yml", ".github/aw/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agentic-canary
+  cancel-in-progress: false
+
+jobs:
+  canary:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions: { contents: read }
+    env:
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+    outputs:
+      live: ${{ steps.mode.outputs.live }}
+    steps:
+      # Exactly "true", case-sensitive, as the controller reads it.
+      - name: Mode
+        id: mode
+        run: |
+          if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"
+          else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would dispatch the agentic workflow canary"; fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.mode.outputs.live == 'true'
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: harness/drills
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.mode.outputs.live == 'true'
+        with:
+          node-version: 24
+
+      - name: Create controller App token
+        if: steps.mode.outputs.live == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-actions: write
+
+      # canary.js loads no third-party module (Node built-ins only): no npm install next to the token.
+      - name: Dispatch and check (implement, repair, review, triage)
+        if: steps.mode.outputs.live == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -o pipefail
+          node harness/drills/canary.js run --out "$RUNNER_TEMP/canary.json" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  alert:
+    needs: canary
+    if: failure() && needs.canary.outputs.live == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      R: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Create controller App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-issues: write
+
+      - name: Raise the alert
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          marker="<!-- factory-agentic-canary-failed -->"
+          open=$(gh api "repos/$R/issues?labels=factory:alert&state=open&per_page=100" --jq "[.[] | select(.body | contains(\"$marker\"))] | .[0].number // empty")
+          body=$(printf '%s\n' "$marker" "**Agentic workflow canary failed** (plain code, no AI)." "" \
+            "An AI workflow the controller dispatches no longer activates (or no longer refuses an invalid dispatch before inference). A real task dispatched to it would fail and go to needs-human." \
+            "Run: ${RUN_URL} (per-workflow result in its summary). Close this once fixed and a canary run passes.")
+          if [ -n "$open" ]; then gh issue comment "$open" --repo "$R" --body "$body"
+          else gh issue create --repo "$R" --title "Agentic workflow canary failed" --label factory:alert --body "$body"; fi

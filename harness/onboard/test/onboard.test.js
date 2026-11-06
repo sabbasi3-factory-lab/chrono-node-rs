@@ -251,6 +251,9 @@ test("next language fails closed when the records lag the ledger (#317: id onboa
     assert.deepStrictEqual(lib.nextLanguage({ ...base, costs: null }), { action: "wait", reason: "costs_unreadable" });
     // A review since the first generated-locale run counts toward the spend (it names no task).
     assert.deepStrictEqual(lib.nextLanguage({ ...base, costs: costsOf(spend(20, 10), spend(21, 10), spend(22, 10), spend(23, 2000)) }), { action: "stop", reason: "budget_spent:2030/1000" });
+    // The agentic canary's review runs (`Review drill/…`) are never ours.
+    const canary = { ...base, ledger: { runs: [...ledgerRuns, L(25, "Review drill/activation-canary PR #1", "2026-11-05T05:23:00Z", "failure")], merged } };
+    assert.deepStrictEqual(lib.nextLanguage({ ...canary, costs: full }), { action: "stop", reason: "first_try_rate:1/2" });
     // No generated locale yet: nothing to cover.
     assert.strictEqual(lib.nextLanguage({ ...base, onboarded: [], candidates: ["fi", "id"], costs: new Map() }).code, "fi");
 });

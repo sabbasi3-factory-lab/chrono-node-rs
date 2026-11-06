@@ -528,7 +528,8 @@ function coveredRuns(ledger, generated) {
     const taskOf = (r) => (LEDGER_TASK.exec((r && r.title) || "") || [])[1];
     const ours = ledger.runs.filter((r) => r && r.conclusion !== "skipped" && taskOf(r) && generated.has(codeOf(taskOf(r))));
     const since = ours.map((r) => String(r.created_at || "")).sort()[0] ?? null;
-    const reviews = since === null ? [] : ledger.runs.filter((r) => r && r.workflow === "review" && r.conclusion !== "skipped" && !(String(r.created_at || "") < since));
+    // A review names no task in a way the ledger reads, except the canary's `Review drill/…` runs: not ours.
+    const reviews = since === null ? [] : ledger.runs.filter((r) => r && r.workflow === "review" && r.conclusion !== "skipped" && !/^Review drill\//.test(r.title || "") && !(String(r.created_at || "") < since));
     return [...ours.map((r) => ({ run_id: r.run_id, workflow: r.workflow, task: taskOf(r), created_at: r.created_at })), ...reviews.map((r) => ({ run_id: r.run_id, workflow: "review", task: null, created_at: r.created_at }))];
 }
 
