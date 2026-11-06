@@ -1,7 +1,69 @@
 {
-  "generated_at": "2026-11-06T01:47:52Z",
+  "generated_at": "2026-11-06T02:58:01Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 42059094465,
+      "workflow": "implement",
+      "title": "Implement id/time-unit-ago-format-parser #328 attempt 1",
+      "created_at": "2026-11-05T15:50:44Z",
+      "aic": 20.48479,
+      "task": "id/time-unit-ago-format-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/328#issuecomment-6662609485",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/336",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T02:58:01Z",
+      "drill": false
+    },
+    {
+      "run_id": 42059078901,
+      "workflow": "implement",
+      "title": "Implement id/month-name-parser #325 attempt 1",
+      "created_at": "2026-11-05T15:50:38Z",
+      "aic": 22.60586,
+      "task": "id/month-name-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/325#issuecomment-6662601172",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/335",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T02:58:01Z",
+      "drill": false
+    },
+    {
+      "run_id": 42057503725,
+      "workflow": "implement",
+      "title": "Implement id/casual-date-parser #318 attempt 1",
+      "created_at": "2026-11-05T15:41:20Z",
+      "aic": 21.31962,
+      "task": "id/casual-date-parser",
+      "items": [],
+      "eval_failed": true,
+      "evaluated_at": "2026-11-06T02:58:01Z",
+      "drill": false
+    },
     {
       "run_id": 42053831281,
       "workflow": "implement",
@@ -3213,8 +3275,8 @@
     }
   ],
   "summary": {
-    "accepted": 118,
-    "pending": 96,
+    "accepted": 120,
+    "pending": 98,
     "rejected": 11,
     "unknown": 14
   }
