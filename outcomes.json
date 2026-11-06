@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-06T18:47:27Z",
+  "generated_at": "2026-11-06T19:05:48Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
     {
@@ -4241,8 +4241,8 @@
       "aic": null,
       "task": null,
       "items": [],
-      "eval_failed": true,
-      "evaluated_at": "2026-11-04T18:46:45Z",
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T19:05:48Z",
       "drill": false
     },
     {
@@ -4260,8 +4260,27 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
-      "evaluated_at": "2026-11-04T18:46:45Z",
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T19:05:48Z",
+      "drill": false
+    },
+    {
+      "run_id": 42275739213,
+      "workflow": "triage",
+      "title": "Triage ru/merge-date-range-refiner #397",
+      "created_at": "2026-11-06T19:00:12Z",
+      "aic": 9.87645,
+      "task": "ru/merge-date-range-refiner",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/397#issuecomment-6693070422",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T19:05:48Z",
       "drill": false
     },
     {
@@ -4393,7 +4412,7 @@
   ],
   "summary": {
     "accepted": 160,
-    "pending": 139,
+    "pending": 140,
     "rejected": 12,
     "unknown": 15
   }
