@@ -1,7 +1,19 @@
 {
-  "generated_at": "2026-11-06T08:47:05Z",
+  "generated_at": "2026-11-06T15:56:50Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 42247286329,
+      "workflow": "implement",
+      "title": "Implement drill/activation-canary #1 attempt 1",
+      "created_at": "2026-11-06T15:53:49Z",
+      "aic": 10.79266,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T15:56:50Z",
+      "drill": true
+    },
     {
       "run_id": 42169677671,
       "workflow": "implement",
@@ -3104,8 +3116,8 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
-      "evaluated_at": "2026-11-04T18:46:45Z",
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T15:56:50Z",
       "drill": false
     },
     {
@@ -3710,8 +3722,8 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
-      "evaluated_at": "2026-11-04T18:46:45Z",
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T15:56:50Z",
       "drill": true
     },
     {
