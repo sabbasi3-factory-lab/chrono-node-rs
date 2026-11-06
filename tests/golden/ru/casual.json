@@ -1,0 +1,1138 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/ru/ru_casual.test.ts",
+  "cases": [
+    {
+      "id": "ru/casual#01",
+      "text": "Дедлайн сегодня",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "сегодня",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-10T17:10:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#02",
+      "text": "Дедлайн завтра",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "завтра",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-11T17:10:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#03",
+      "text": "Дедлайн послезавтра",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "послезавтра",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-12T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#04",
+      "text": "Дедлайн послепослезавтра",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "послепослезавтра",
+          "start": {
+            "known": {
+              "day": 13,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-13T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#05",
+      "text": "Дедлайн вчера",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "вчера",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-09T17:10:00.000Z",
+            "tags": [
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#06",
+      "text": "Дедлайн позавчера",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "позавчера",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-08T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#07",
+      "text": "Дедлайн позапозавчера",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "позапозавчера",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-07T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#08",
+      "text": "Дедлайн сейчас",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "сейчас",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 8,
+              "meridiem": 0,
+              "millisecond": 11,
+              "minute": 9,
+              "month": 8,
+              "second": 10,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T08:09:10.011Z",
+            "tags": [
+              "casualReference/now"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#09",
+      "text": "Дедлайн утром",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "утром",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#10",
+      "text": "Дедлайн этим утром",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "этим утром",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#11",
+      "text": "Дедлайн в полдень",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "в полдень",
+          "start": {
+            "known": {
+              "hour": 12
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/noon"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#12",
+      "text": "Дедлайн прошлым вечером",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "прошлым вечером",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#13",
+      "text": "Дедлайн вечером",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "вечером",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#14",
+      "text": "Дедлайн прошлой ночью",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "прошлой ночью",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#15",
+      "text": "Дедлайн прошлой ночью",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T02:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "прошлой ночью",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T00:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#16",
+      "text": "Дедлайн сегодня ночью",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T02:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser",
+          "RUCasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "сегодня ночью",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#17",
+      "text": "Дедлайн этой ночью",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T02:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "этой ночью",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#18",
+      "text": "Дедлайн ночью",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T02:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "ночью",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#19",
+      "text": "Дедлайн в полночь",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T02:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "в полночь",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "ru/casual#20",
+      "text": "Дедлайн вчера вечером",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser",
+          "RUCasualTimeParser"
+        ],
+        "refiners": [
+          "RUMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "вчера вечером",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "ru/casual#21",
+      "text": "Дедлайн завтра утром",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-09-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser",
+          "RUCasualTimeParser"
+        ],
+        "refiners": [
+          "RUMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "завтра утром",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-11T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "ru/casual#22",
+      "text": "Событие с сегодня и до послезавтра",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser"
+        ],
+        "refiners": [
+          "RUMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "с сегодня и до послезавтра",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-04T12:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 6,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-06T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual date range"
+    },
+    {
+      "id": "ru/casual#23",
+      "text": "Событие сегодня-завтра",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "RUCasualDateParser"
+        ],
+        "refiners": [
+          "RUMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "сегодня-завтра",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T12:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual date range"
+    },
+    {
+      "id": "ru/casual#24",
+      "text": "несегодня",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "ru/casual#25",
+      "text": "зявтра",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "ru/casual#26",
+      "text": "вчеера",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "ru/casual#27",
+      "text": "январ",
+      "config": "ru.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    }
+  ]
+}
