@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-06T07:17:09Z",
+  "generated_at": "2026-11-06T08:47:05Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
     {
@@ -3129,8 +3129,8 @@
           "zero_touch": null
         }
       ],
-      "eval_failed": true,
-      "evaluated_at": "2026-11-04T18:46:45Z",
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T08:47:05Z",
       "drill": false
     },
     {
@@ -3727,6 +3727,18 @@
       "drill": true
     },
     {
+      "run_id": 42171900921,
+      "workflow": "review",
+      "title": "Review ru/abstract-parser-with-word-boundary-checking PR #408",
+      "created_at": "2026-11-06T06:02:00Z",
+      "aic": 0,
+      "task": "ru/abstract-parser-with-word-boundary-checking",
+      "items": [],
+      "eval_failed": true,
+      "evaluated_at": "2026-11-06T08:47:05Z",
+      "drill": false
+    },
+    {
       "run_id": 40603377444,
       "workflow": "review",
       "title": "Review one factory PR",
@@ -3929,6 +3941,25 @@
       "drill": false
     },
     {
+      "run_id": 42179255758,
+      "workflow": "triage",
+      "title": "Triage ru/abstract-parser-with-word-boundary-checking #393",
+      "created_at": "2026-11-06T07:11:41Z",
+      "aic": 9.41163,
+      "task": "ru/abstract-parser-with-word-boundary-checking",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/393#issuecomment-6679452566",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T08:47:05Z",
+      "drill": false
+    },
+    {
       "run_id": 42056585959,
       "workflow": "triage",
       "title": "Triage id/time-expression-parser #327",
@@ -4026,7 +4057,7 @@
   ],
   "summary": {
     "accepted": 149,
-    "pending": 129,
+    "pending": 130,
     "rejected": 11,
     "unknown": 14
   }
