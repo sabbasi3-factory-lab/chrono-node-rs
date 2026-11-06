@@ -7,9 +7,14 @@
 # constants and every step stays agent work, gated like any task. See harness/onboard/README.md.
 #
 # - decide:   which language, if any. workflow_dispatch with a code (someone with write access) =
-#             that language; the daily schedule asks `onboard.js next`: the next language of the
-#             owner's list in factory policies/onboarding.yaml (pinned version), one at a time, and
-#             stops on the policy's stop rules (spend, first-try merge rate, needs-human cluster).
+#             that language. Otherwise `onboard.js next`: the next language of the owner's list in
+#             factory policies/onboarding.yaml (pinned version), one at a time, and stops on the
+#             policy's stop rules (spend, first-try merge rate, needs-human cluster), computed from the
+#             controller's audit log (each run's cost: run_spend), the Actions run ledger and the merged
+#             agent PRs (gh-aw's zero-touch rule), all current: nothing waits for a collector. Runs when
+#             a task issue closes (the last one of a language starts the next at once) and hourly as a
+#             fallback. A language is in flight while it has open task issues, or a contract without
+#             one (past a grace period that stops and alerts: its issues were never created).
 # - generate: runs the generator on main (read-only token) and checks the exact file set.
 # - apply:    (live) the controller App opens the PR on factory/onboard/<code>. Human tier: CI
 #             regenerates every file byte for byte (golden:check, onboard.js check, seed.js
@@ -24,11 +29,14 @@ name: onboard
 
 on:
   schedule:
-    - cron: "41 6 * * *"
+    - cron: "41 * * * *"
+  # A task closing (the controller's task_done) may be its language's last: decide at once.
+  issues:
+    types: [closed]
   workflow_dispatch:
     inputs:
       code:
-        description: "Upstream locale to onboard now (fi, id, nl, ru, uk, ar, zh-hans, zh-hant, ...); empty = the scheduled decision"
+        description: "Upstream locale to onboard now (fi, id, nl, ru, uk, ar, zh-hans, zh-hant, ...); empty = the policy's decision"
         type: string
         default: ""
   push:
@@ -44,7 +52,8 @@ concurrency:
 
 jobs:
   decide:
-    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name != 'push'
+    # Issue events only for factory task issues (no other issue can finish a language).
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && github.event_name != 'push' && (github.event_name != 'issues' || contains(github.event.issue.labels.*.name, 'factory:task'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: { contents: read, issues: read, pull-requests: read, actions: read }
@@ -74,27 +83,42 @@ jobs:
           d="$RUNNER_TEMP/onboard"; mkdir -p "$d"
           version=$(cat .github/factory/factory-version)
           [[ "$version" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad factory-version"; exit 1; }
-          # The owner's language list and stop rules. Missing = no scheduled onboarding.
+          # The owner's language list and stop rules. Missing = no onboarding.
           curl -fsSL "https://raw.githubusercontent.com/sabbasi3-factory-lab/factory/${version}/policies/onboarding.yaml" -o "$d/policy.yaml" || : > "$d/policy.yaml"
-          # gh-aw Outcomes (outcomes.yml): spend and first-try merges per task. Missing = wait.
-          gh api "repos/$R/contents/outcomes.json?ref=outcomes" -H "Accept: application/vnd.github.raw" > "$d/outcomes.json" 2>/dev/null || : > "$d/outcomes.json"
-          gh api --paginate "repos/$R/issues?labels=factory:task&state=open&per_page=100" --jq '[.[] | select(.pull_request == null) | {body, labels: [.labels[].name]}]' | jq -s 'add // []' > "$d/issues.json"
+          # Task issues of every state (in flight: open ones; done: every contract has one).
+          gh api --paginate "repos/$R/issues?labels=factory:task&state=all&per_page=100" --jq '[.[] | select(.pull_request == null) | {body, state, labels: [.labels[].name]}]' | jq -s 'add // []' > "$d/issues.json"
           gh api --paginate "repos/$R/pulls?state=open&per_page=100" --jq '[.[] | {head: {ref: .head.ref}}]' | jq -s 'add // []' > "$d/prs.json"
-          # The ledger outcomes.json must cover (it lags: a few runs per collector run). From the
-          # Actions and pulls APIs; a failed read fails this step (pipefail), so nothing onboards.
+          # Closed PRs: merged onboarding PRs (the task-issue grace period).
+          gh api --paginate "repos/$R/pulls?state=closed&per_page=100" \
+            --jq '[.[] | select(.merged_at != null and (.head.ref | startswith("factory/onboard/"))) | {head: {ref: .head.ref}, merged_at}]' | jq -s 'add // []' > "$d/onboard-merges.json"
+          # The run ledger (Actions API). A failed read fails this step (pipefail), so nothing onboards.
           for w in implement repair review triage; do
             gh api --paginate "repos/$R/actions/workflows/$w.lock.yml/runs?status=completed&created=>=2026-10-01&per_page=100" \
               --jq '.workflow_runs[] | {run_id: .id, workflow: "'"$w"'", title: .display_title, conclusion, created_at}'
           done | jq -s . > "$d/runs.json"
-          gh api --paginate "repos/$R/pulls?state=closed&per_page=100" \
-            --jq '[.[] | select(.merged_at != null and .user.login == "sabbasi3-factory-agent[bot]") | {title}]' | jq -s 'add // []' > "$d/merged.json"
-          # Infra-incident records (a person's factory:infra-incident label, recorded by the controller as
-          # human_action/infra_incident): the first-try rate doesn't count attempts the factory broke.
-          # Unreadable = none (the rate then counts every attempt: stricter, never looser).
-          : > "$d/incidents.jsonl"
-          for f in $(gh api "repos/$R/git/trees/audit?recursive=1" --jq '.tree[] | select(.type == "blob" and (.path | test("^audit/[0-9]{4}/[0-9]{2}/[0-9]{2}\\.jsonl$"))) | .path' 2>/dev/null); do
-            gh api "repos/$R/contents/$f?ref=audit" -H "Accept: application/vnd.github.raw" 2>/dev/null \
-              | jq -c 'select(.type == "human_action" and .payload.action == "infra_incident")' >> "$d/incidents.jsonl" || true
+          # Merged agent PRs with who touched them (gh-aw's zero_touch: no person's comment, review or commit).
+          gh api graphql --paginate -F q="repo:$R is:pr is:merged author:app/sabbasi3-factory-agent" -f query='
+            query($q: String!, $endCursor: String) {
+              search(query: $q, type: ISSUE, first: 50, after: $endCursor) {
+                pageInfo { hasNextPage endCursor }
+                nodes { ... on PullRequest {
+                  number title createdAt
+                  comments(first: 100) { pageInfo { hasNextPage } nodes { author { __typename login } } }
+                  reviews(first: 100) { pageInfo { hasNextPage } nodes { author { __typename login } } }
+                  commits(first: 100) { pageInfo { hasNextPage } nodes { commit { author { email user { login } } } } }
+                } }
+              }
+            }' --jq '.data.search.nodes' | jq -s 'add // []' > "$d/merged.json"
+          # The controller's audit log (protected `audit` branch): each run's cost (run_spend, and
+          # spend_snapshot for runs from before those were recorded) and the infra-incident records
+          # (a person's factory:infra-incident label: the first-try rate doesn't count attempts the
+          # factory broke). A day file that can't be read fails this step: costs never read as "none".
+          files=$(gh api "repos/$R/git/trees/audit?recursive=1" --jq '.tree[] | select(.type == "blob" and (.path | test("^audit/[0-9]{4}/[0-9]{2}/[0-9]{2}\\.jsonl$"))) | .path')
+          [ -n "$files" ] || { echo "::error::no audit day files"; exit 1; }
+          : > "$d/audit.jsonl"
+          for f in $files; do
+            gh api "repos/$R/contents/$f?ref=audit" -H "Accept: application/vnd.github.raw" \
+              | jq -c 'select(.type == "run_spend" or .type == "spend_snapshot" or (.type == "human_action" and .payload.action == "infra_incident"))' >> "$d/audit.jsonl"
           done
 
       - name: Decision
@@ -111,7 +135,7 @@ jobs:
             fi
             decision=$(jq -nc --arg c "$CODE" '{action: "onboard", code: $c, reason: "dispatched"}')
           else
-            decision=$(node onboard/onboard.js next --policy "$d/policy.yaml" --outcomes "$d/outcomes.json" --issues "$d/issues.json" --prs "$d/prs.json" --runs "$d/runs.json" --merged "$d/merged.json" --incidents "$d/incidents.jsonl")
+            decision=$(node onboard/onboard.js next --policy "$d/policy.yaml" --issues "$d/issues.json" --prs "$d/prs.json" --onboard-merges "$d/onboard-merges.json" --runs "$d/runs.json" --merged "$d/merged.json" --audit "$d/audit.jsonl")
           fi
           echo "$decision"
           echo "decision: \`$decision\`" >> "$GITHUB_STEP_SUMMARY"
@@ -376,6 +400,6 @@ jobs:
           open=$(gh api "repos/$R/issues?labels=factory:alert&state=open&per_page=100" --jq "[.[] | select(.body | contains(\"$marker\"))] | length")
           [ "$open" = "0" ] || { echo "already raised"; exit 0; }
           body=$(printf '%s\n' "$marker" "**Language onboarding stopped** (plain code, no AI): \`${REASON}\`." "" \
-            "The scheduled onboarding opens no new language until this clears. The stop rules and the language list are in factory \`policies/onboarding.yaml\`; loosening them is the owner's decision." \
+            "Onboarding opens no new language until this clears. The stop rules and the language list are in factory \`policies/onboarding.yaml\`; loosening them is the owner's decision." \
             "Close this issue once handled; it reopens as a new one if the rule fires again.")
           gh issue create --repo "$R" --title "Onboarding stopped: ${kind}" --label factory:alert --body "$body"

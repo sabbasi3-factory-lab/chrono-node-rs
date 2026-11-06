@@ -15,7 +15,7 @@ slot, and always when the last passing drill run is more than 7 days old. `drill
 | `scope-reject` | an agent PR for a real contract on main touching `src/core/chrono.rs`; one touching `.github/workflows/ci.yml`; one with a stale `Contract-SHA` | `gates/scope.js` rejects each, with its reason (live `protected_from_agents`) | the in-scope change passes |
 | `kill-switch` | `FACTORY_ENABLED` unset, `""`, `"TRUE"`, `"1"` | the controller (fixture mode, live policies) dispatches nothing; `kill_switch` holds | with `true` it would dispatch |
 | `over-cap` | spend today at the live `factory_per_day.max_aic`, and at `alert_at_pct` | paused (no dispatch) at the cap; owner alert at the threshold | 0 AIC dispatches |
-| `onboard-stop-rules` | `onboard.js next` inputs (live `onboarding.yaml`): `outcomes.json` without the locale's runs (#317), missing one run, or empty; issues or the run ledger unreadable; spend at the budget | the decision doesn't onboard (waits or stops) | complete data: it onboards |
+| `onboard-stop-rules` | `onboard.js next` inputs (live `onboarding.yaml`): the audit log without the locale's run costs (#317), missing one, or empty; issues or the run ledger unreadable; spend at the budget; a person touched every merged PR; a generated contract without its task issue past the grace period | the decision doesn't onboard (waits or stops) | complete data: it onboards |
 | `audit-tamper` | the real audit log with one payload byte changed; truncated to half | the factory's audit verifier (pinned) fails both | the real log verifies against the anchors |
 
 Every drill is a **dry run**: nothing is written to GitHub. A failure in live mode

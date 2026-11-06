@@ -140,7 +140,11 @@ const DRILLS = {
         const candidates = sh(process.execPath, ["onboard/onboard.js", "candidates"], { cwd: HARNESS }).out.split("\n").filter((c) => /^[a-z]{2}(-[a-z]{4})?$/.test(c));
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), "drill-onboard-"));
         fs.writeFileSync(path.join(dir, "policy.yaml"), YAML.stringify({ ...policy, languages: candidates.length ? candidates : policy.languages }));
-        const cases = lib.onboardCases(policy, code).filter((c) => !c.ok || candidates.length > 0);
+        // Every generated contract on main, each with a (closed) task issue in the control.
+        const contracts = require("../lib/locales")
+            .generatedLocales(REPO)
+            .flatMap((l) => (fs.existsSync(path.join(REPO, "contracts", l.code)) ? fs.readdirSync(path.join(REPO, "contracts", l.code)).filter((f) => f.endsWith(".yaml") && !f.startsWith("fix-")).map((f) => `${l.code}/${f.slice(0, -5)}`) : []));
+        const cases = lib.onboardCases(policy, code, contracts).filter((c) => !c.ok || candidates.length > 0);
         const results = cases.map((c) => {
             for (const [f, text] of Object.entries(c.files)) fs.writeFileSync(path.join(dir, `${f}.json`), text);
             const args = ["policy.yaml", ...Object.keys(c.files).map((f) => `${f}.json`)].flatMap((f) => [`--${f.split(".")[0]}`, path.join(dir, f)]);

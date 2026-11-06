@@ -288,12 +288,14 @@ function drill(codes) {
 }
 
 /**
- * The scheduled decision (lib.nextLanguage), from files the workflow fetched with a read-only token:
- * --policy (factory policies/onboarding.yaml, may be missing), --outcomes (outcomes.json, may be
- * missing), --issues (open factory:task issues), --prs (open PRs), --runs (completed agent runs, Actions API: [{run_id, workflow, title, conclusion, created_at}]),
- * --merged (merged agent PRs: [{title}]). All but --policy and --outcomes are required lists; one
- * missing or unreadable makes the decision wait. --incidents (the audit log's events, jsonl; may be
- * missing: then nothing is excused). Prints one JSON line.
+ * The onboarding decision (lib.nextLanguage), from files the workflow fetched with a read-only token:
+ * --policy (factory policies/onboarding.yaml; missing = no onboarding), --issues (factory:task issues,
+ * every state), --prs (open PRs), --onboard-merges (merged onboarding PRs: [{head: {ref}, merged_at}]),
+ * --runs (completed agent runs, Actions API: [{run_id, workflow, title, conclusion, created_at}]),
+ * --merged (merged agent PRs, GraphQL nodes: [{number, title, createdAt, comments, reviews, commits}])
+ * and --audit (the controller's audit events, jsonl: run_spend, spend_snapshot and infra-incident
+ * records). The task contracts come from this checkout. Every input is required: one missing or
+ * unreadable makes the decision wait. Prints one JSON line.
  */
 function next() {
     const opt = (name) => {
@@ -302,33 +304,52 @@ function next() {
     };
     const readOr = (file, parse, fallback) => (file && fs.existsSync(file) && fs.statSync(file).size > 0 ? parse(fs.readFileSync(file, "utf8")) : fallback);
     const policy = readOr(opt("--policy"), (t) => YAML.parse(t), null);
-    const outcomes = readOr(opt("--outcomes"), JSON.parse, null);
     // Missing, empty or not a list = unreadable (null): the decision waits, never reads it as "none".
     const list = (name) => readOr(opt(name), (t) => (Array.isArray(JSON.parse(t)) ? JSON.parse(t) : null), null);
     const issues = list("--issues")
-        ?.map((i) => ({ id: (/<!-- factory-task: ([a-z0-9/-]+) -->/.exec(i.body || "") || [])[1], labels: (i.labels || []).map((l) => l.name || l) }))
+        ?.map((i) => ({ id: (/<!-- factory-task: ([a-z0-9/-]+) -->/.exec(i.body || "") || [])[1], state: i.state, labels: (i.labels || []).map((l) => l.name || l) }))
         .filter((i) => i.id) ?? null;
     const openPRs = list("--prs")
         ?.map((p) => (/^factory\/onboard\/([a-z]{2}(?:-[a-z]{4})?)$/.exec(p.head?.ref || p.headRefName || "") || [])[1])
         .filter(Boolean) ?? null;
+    const onboardMerges = list("--onboard-merges")
+        ?.map((p) => ({ code: (/^factory\/onboard\/([a-z]{2}(?:-[a-z]{4})?)$/.exec(p.head?.ref || "") || [])[1], merged_at: p.merged_at }))
+        .filter((m) => m.code && m.merged_at) ?? null;
     const ledgerRuns = list("--runs");
-    const merged = list("--merged")?.map((p) => (/^\[factory\] ([a-z0-9-]+\/[a-z0-9_-]+):/.exec(p.title || "") || [])[1]).filter(Boolean) ?? null;
+    const merged = list("--merged")
+        ?.map((p) => ({ task: (/^\[factory\] ([a-z0-9-]+\/[a-z0-9_-]+):/.exec(p.title || "") || [])[1], number: p.number, created_at: p.createdAt, zero_touch: lib.zeroTouch(p) }))
+        .filter((m) => m.task) ?? null;
     const ledger = ledgerRuns && merged ? { runs: ledgerRuns, merged } : null;
-    // Infra-incident records (the audit log's human_action infra_incident events, jsonl). Missing = none.
-    const incidents = readOr(opt("--incidents"), (t) => t.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l)), [])
+    const events = readOr(opt("--audit"), (t) => t.split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l)), null);
+    const costs = events ? lib.runCosts(events) : null;
+    const incidents = (events || [])
         .filter((e) => e && e.type === "human_action" && e.payload && e.payload.action === "infra_incident")
         .map((e) => ({ task: e.payload.task, labeled_at: e.payload.labeled_at }));
     const decision = lib.nextLanguage({
         policy,
         onboarded: LOCALES.generatedLocales(REPO).map((l) => l.code),
         candidates: candidates(),
-        outcomes,
         issues,
         openPRs,
+        contracts: generatedContractIds(),
+        onboardMerges,
         ledger,
+        costs,
         incidents,
+        now: process.env.ONBOARD_NOW || new Date().toISOString(),
     });
     console.log(JSON.stringify(decision));
+}
+
+/** Generated locales' task contract ids on this checkout (fix contracts excluded: the intake owns them). */
+function generatedContractIds() {
+    const ids = [];
+    for (const l of LOCALES.generatedLocales(REPO)) {
+        const dir = path.join(REPO, "contracts", l.code);
+        if (!fs.existsSync(dir)) continue;
+        for (const f of fs.readdirSync(dir).sort()) if (f.endsWith(".yaml") && !f.startsWith("fix-")) ids.push(`${l.code}/${f.slice(0, -5)}`);
+    }
+    return ids;
 }
 
 function main() {
@@ -338,7 +359,7 @@ function main() {
     if (cmd === "candidates") return console.log(candidates().join("\n"));
     if (cmd === "next") return next();
     if (cmd === "drill") return drill(process.argv.slice(3));
-    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --outcomes F --issues F --prs F --runs F --merged F [--incidents F]");
+    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --issues F --prs F --onboard-merges F --runs F --merged F --audit F");
     process.exit(2);
 }
 

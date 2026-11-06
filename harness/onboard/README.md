@@ -51,28 +51,41 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
 
 ## The pipeline (`.github/workflows/onboard.yml`)
 
-1. **decide**: a dispatch with a code (someone with write access), or the daily schedule:
-   `onboard.js next` takes the next language from factory `policies/onboarding.yaml` (the owner's list),
-   one at a time (no open onboarding PR, no generated locale with open tasks beyond
-   `max_languages_in_flight`), and stops on the policy's stop rules: AI credits spent on generated
-   locales' tasks (gh-aw Outcomes) reach `budget_aic`; first-try merge rate below
+1. **decide**: a dispatch with a code (someone with write access), or the policy's decision, run
+   when a factory task issue closes (the last task of a language starts the next one at once) and
+   hourly as a fallback. `onboard.js next` takes the next language from factory
+   `policies/onboarding.yaml` (the owner's list), one at a time (no open onboarding PR, no generated
+   locale in flight beyond `max_languages_in_flight`), and stops on the policy's stop rules: AI
+   credits spent on generated locales' tasks reach `budget_aic`; first-try merge rate below
    `min_first_try_merge_rate` after `min_sample` merged tasks; `max_open_needs_human` open
-   needs-human tasks. No policy, unreadable outcomes or no budget = no onboarding (fail closed).
-   **Coverage.** The spend and first-try rules read `outcomes.json`, which the outcomes collector
-   fills a few runs per invocation, so it lags. The decision also reads the ledger of what ran and
-   merged: completed agent runs from the Actions API and merged agent PRs. It waits
-   (`outcomes_behind:N`) until `outcomes.json` has every ledger run of a generated locale's task
-   (and every review run since the first of those), each with a cost, and an accepted PR for every
-   merged task. A covered review that outcomes attributes to no task counts toward the spend. A missing or unreadable input (issues, PRs, runs, merged) also waits, never reads
-   as "none". The `onboard-stop-rules` fire drill checks this. (#317 onboarded `id` on 0 AIC and
-   0/0 first-try because `outcomes.json` had none of `fi`'s runs yet.)
+   needs-human tasks. No policy or no budget = no onboarding (fail closed).
+   **In flight.** A generated locale is in flight while it has open task issues, and also while
+   any of its contracts has no task issue (`task_issues_pending`): the issues jobs below haven't
+   finished. Two hours after its onboarding PR merged (or with no record of that merge) that stops
+   (`task_issues_missing`, an alert): the next language never starts on top of a half-issued one.
+   **Data: current records, no collector.** Spend: each run's full cost (agent, threat detection,
+   evals) from the controller's audit log: its `run_spend` event, written once the run has finished
+   (`.github/factory/controller/spend.ts`); for runs from before those, its newest `spend_snapshot`
+   entry (an in-flight reservation, an overestimate). A run counted at its bound because a usage
+   file was missing counts at the larger of its readable usage files and its agent's own figure
+   (what gh-aw Outcomes reports; never less than the rule read before), else at its bound. First
+   try: one implement run, no repair, and the merged PR zero-touch by gh-aw's rule (no comment,
+   review or commit by a person; GraphQL on the merged agent PRs). **Coverage.** The ledger of what
+   ran and merged comes from the Actions API and GraphQL. The decision waits (`records_behind:N`)
+   until the audit log has a cost for every ledger run of a generated locale's task (and every
+   review run since the first of those, which counts toward the spend: a review names no task) and
+   every merged task's zero-touch verdict is known. A missing or unreadable input (issues, PRs,
+   onboarding merges, contracts, runs, merged PRs, audit log) also waits, never reads as "none".
+   The `onboard-stop-rules` fire drill checks this. (#317 onboarded `id` on 0 AIC and 0/0
+   first-try because the data it read had none of `fi`'s runs yet.) `outcomes.json` stays for the
+   dashboard only.
    **Infra incidents.** When a factory defect (not agent work) broke a task's attempts, a person
    adds `factory:infra-incident` to the task issue (open or closed) and comments `Infra incident:
    <ref> <reason>`, where `<ref>` is the fixing PR or incident issue (`#303`). The controller records
    it in the audit log (`human_action`, `action: infra_incident`: issue, task, actor, time, ref and
    the comment's URL); a bot or App adding the label, or a comment without a ref, records nothing.
-   For the first-try rate only, that task's implement attempts started before the record that
-   opened no accepted PR aren't counted. Spend counts every run, and the threshold is unchanged.
+   For the first-try rate only, that task's implement attempts started before the record, other
+   than the one whose PR merged, aren't counted. Spend counts every run, and the threshold is unchanged.
 2. **generate**: the generator on main with a read-only token, then the exact file set is checked.
 3. **apply** (live): the controller App opens `factory/onboard/<code>`. Human tier.
 4. **issues** (live, after merge): task issues with "blocked by" links (`issues.js`, no third-party
@@ -91,7 +104,7 @@ node onboard/onboard.js check --write     # after a generator change: re-render 
 node onboard/onboard.js drill [code...]   # onboard each (default: every candidate) in a throwaway copy;
                                           # fail if a contract scope file's directory isn't generated,
                                           # or onboard.yml's artifact would drop the skeleton's .gitkeep files
-node onboard/onboard.js next --policy P --outcomes O --issues I --prs R --runs U --merged M [--incidents A]   # the scheduled decision (A: audit jsonl)
+node onboard/onboard.js next --policy P --issues I --prs R --onboard-merges O --runs U --merged M --audit A   # the decision (A: audit jsonl)
 node onboard/summary.js fi                # the onboarding PR's body
 node --test onboard/test/*.test.js        # unit tests (also in npm run test:gates)
 ```

@@ -7,7 +7,7 @@ import { assertAllowedRequest, COMMENT_MARKER, ENQUEUE_MUTATION, PROJECT_STATUS_
 import { AUDIT_BRANCH, splitLines, verify } from '../audit.ts';
 import { decisionEvent, describe as describeDecision, execute, executeLive, isLive, liveDecision, pendingHandoffs } from '../executor.ts';
 import { FakeGitHub, type RecordedCall } from '../fake.ts';
-import { logWaits, parseArgs, run, type RunDeps } from '../main.ts';
+import { logWaits, parseArgs, run, RUN_SPEND_PER_POLL, type RunDeps } from '../main.ts';
 import { IMPLEMENTED_STRICT_GATES } from '../planner.ts';
 import { deriveState } from '../history.ts';
 import { readInfraIncident, readInfraIncidents, readReopenedAt, readRepairRuns, readReviewChecks, REVIEWER_APP_ID } from '../github.ts';
@@ -100,7 +100,7 @@ describe('main: dry-run enforcement', () => {
       assertOnlyReadsAndAuditWrites(gh.calls);
       for (const c of gh.calls) assert.doesNotThrow(() => assertAllowedRequest(REPO, c.method, c.path, c.body, 'dry-run'));
       // Every event is dry-run except the spend measurement, which is a fact in both modes.
-      for (const e of result.appended) assert.equal(e.payload.dry_run, e.type !== 'spend_snapshot', e.type);
+      for (const e of result.appended) assert.equal(e.payload.dry_run, !['spend_snapshot', 'run_spend'].includes(e.type), e.type);
       const writes = gh.calls.filter((c) => c.method !== 'GET' && c.path !== '/graphql');
       // Exactly 4 Git Data calls per event (blob, tree, commit, ref).
       assert.equal(writes.length, result.appended.length * 4);
@@ -134,7 +134,7 @@ describe('main: dry-run enforcement', () => {
     const cr = result.appended.find((e) => e.type === 'check_result')!;
     assert.equal(cr.payload.heldout_seed, '9007199254740993');
     for (const e of result.appended) {
-      assert.equal(e.payload.dry_run, e.type !== 'spend_snapshot');
+      assert.equal(e.payload.dry_run, !['spend_snapshot', 'run_spend'].includes(e.type));
       assert.equal(e.payload.factory_version, FV);
       assert.match(String(e.payload.dedupe_key), /^sha256:[0-9a-f]{64}$/);
     }
@@ -767,6 +767,34 @@ describe('spend collector in the run', () => {
     assert.equal(result.snapshot.factory_aic_today, 21000);
     assert.ok(result.decisions.some((d) => d.type === 'budget_pause'));
     assert.ok(!result.decisions.some((d) => d.type === 'dispatched'));
+  });
+});
+
+describe('run_spend in the run', () => {
+  it('records each finished run once (real in both modes), at most RUN_SPEND_PER_POLL per poll, oldest first', async () => {
+    const gh = fakeWorld();
+    const r = `/repos/${REPO}`;
+    const runs = Array.from({ length: RUN_SPEND_PER_POLL + 5 }, (_, i) => ({
+      id: 950 + i,
+      run_attempt: 1,
+      status: 'completed',
+      created_at: `2026-10-16T0${Math.floor(i / 10)}:${String(i % 10).padStart(2, '0')}:00Z`,
+      display_title: `Implement en/a${i} #${i + 1} attempt 1`,
+    }));
+    gh.routes.unshift(
+      { method: 'GET', path: new RegExp(`^${r}/actions/workflows/implement\\.lock\\.yml/runs$`), handler: () => ({ data: { workflow_runs: runs } }) },
+      { method: 'GET', path: new RegExp(`^${r}/actions/runs/9[5-9][0-9]/attempts/1/jobs$`), handler: () => ({ data: { jobs: [{ name: 'agent', steps: [{ name: 'Execute GitHub Copilot CLI', conclusion: 'skipped' }] }] } }) },
+    );
+    const first = await run(deps(gh, { policies: noMargin }));
+    const recorded = first.appended.filter((e) => e.type === 'run_spend');
+    assert.equal(recorded.length, RUN_SPEND_PER_POLL);
+    assert.deepEqual(recorded.map((e) => e.payload.run_id), runs.slice(0, RUN_SPEND_PER_POLL).map((x) => x.id), 'oldest first');
+    const e = recorded[0]!.payload;
+    assert.deepEqual([e.dry_run, e.workflow, e.task, e.status, e.aic, e.created_at], [false, 'implement', 'en/a0', 'no_inference', 0, '2026-10-16T00:00:00Z']);
+    const second = await run(deps(gh, { policies: noMargin, now: new Date(NOW.getTime() + 5 * 60_000) }));
+    assert.deepEqual(second.appended.filter((x) => x.type === 'run_spend').map((x) => x.payload.run_id), runs.slice(RUN_SPEND_PER_POLL).map((x) => x.id));
+    const third = await run(deps(gh, { policies: noMargin, now: new Date(NOW.getTime() + 10 * 60_000) }));
+    assert.ok(!third.appended.some((x) => x.type === 'run_spend'), 'never recorded twice');
   });
 });
 
