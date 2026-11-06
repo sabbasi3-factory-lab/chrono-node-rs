@@ -1,0 +1,572 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/nl/nl_weekday.test.ts",
+  "cases": [
+    {
+      "id": "nl/weekday#01",
+      "text": "maandag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "maandag",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 6,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/weekday#02",
+      "text": "maandag (forward dates only)",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "NLWeekdayParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "maandag",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/weekday#03",
+      "text": "donderdag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "donderdag",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 9,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/weekday#04",
+      "text": "zondag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "zondag",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 12,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/weekday#05",
+      "text": "De deadline is vorige vrijdag...",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "vorige vrijdag",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 3,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/weekday#06",
+      "text": "De deadline is vorige vrijdag...",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-12T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "vorige vrijdag",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/weekday#07",
+      "text": "Laten we een meeting hebben op volgende week vrijdag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-04-16T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLRelativeDateFormatParser",
+          "NLWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 28,
+          "text": "op volgende week vrijdag",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 24,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2015
+            },
+            "date": "2015-04-24T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/weekday#08",
+      "text": "Ik plan een vrije dag op volgende week dinsdag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-04-18T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLRelativeDateFormatParser",
+          "NLWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 22,
+          "text": "op volgende week dinsdag",
+          "start": {
+            "known": {
+              "weekday": 2
+            },
+            "implied": {
+              "day": 21,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2015
+            },
+            "date": "2015-04-21T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/weekday#09",
+      "text": "Laten we op dinsdag ochtend afspreken",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-04-18T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualTimeParser",
+          "NLWeekdayParser"
+        ],
+        "refiners": [
+          "NLMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "op dinsdag ochtend",
+          "start": {
+            "known": {
+              "weekday": 2
+            },
+            "implied": {
+              "day": 21,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 4,
+              "second": 0,
+              "year": 2015
+            },
+            "date": "2015-04-21T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday With Casual Time"
+    },
+    {
+      "id": "nl/weekday#10",
+      "text": "zondag, 7 december 2014",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameMiddleEndianParser",
+          "NLMonthNameParser",
+          "NLWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "zondag, 7 december 2014",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 12,
+              "weekday": 0,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-12-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Overlap"
+    },
+    {
+      "id": "nl/weekday#11",
+      "text": "zondag 7/12/2014",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLSlashMonthFormatParser",
+          "NLWeekdayParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "zondag 7/12/2014",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 12,
+              "weekday": 0,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-12-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Overlap"
+    },
+    {
+      "id": "nl/weekday#12",
+      "text": "deze vrijdag tot deze maandag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-08-04T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "NLWeekdayParser"
+        ],
+        "refiners": [
+          "NLMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "deze vrijdag tot deze maandag",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 5,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-08-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 8,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-08-08T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    }
+  ]
+}

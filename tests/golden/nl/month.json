@@ -1,0 +1,713 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/nl/nl_month.test.ts",
+  "cases": [
+    {
+      "id": "nl/month#01",
+      "text": "september 2012",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "september 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "nl/month#02",
+      "text": "sept 2012",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "sept 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "nl/month#03",
+      "text": "sep 2012",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "sep 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "nl/month#04",
+      "text": "sep. 2012",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "sep. 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "nl/month#05",
+      "text": "sep-2012",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "sep-2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "nl/month#06",
+      "text": "mrt 2012",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "mrt 2012",
+          "start": {
+            "known": {
+              "month": 3,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-03-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Year expression"
+    },
+    {
+      "id": "nl/month#07",
+      "text": "In januari",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "januari",
+          "start": {
+            "known": {
+              "month": 1
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Only expression"
+    },
+    {
+      "id": "nl/month#08",
+      "text": "in jan",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "jan",
+          "start": {
+            "known": {
+              "month": 1
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Only expression"
+    },
+    {
+      "id": "nl/month#09",
+      "text": "mei",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "mei",
+          "start": {
+            "known": {
+              "month": 5
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-05-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month-Only expression"
+    },
+    {
+      "id": "nl/month#10",
+      "text": "The date is sep 2012 is the date",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 12,
+          "text": "sep 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month expression in context"
+    },
+    {
+      "id": "nl/month#11",
+      "text": "By Angie ja november 2019",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 12,
+          "text": "november 2019",
+          "start": {
+            "known": {
+              "month": 11,
+              "year": 2019
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2019-11-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month expression in context"
+    },
+    {
+      "id": "nl/month#12",
+      "text": "Op 23 MRT. 2022",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameMiddleEndianParser",
+          "NLMonthNameParser",
+          "NLTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "23 MRT. 2022",
+          "start": {
+            "known": {
+              "day": 23,
+              "month": 3,
+              "year": 2022
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2022-03-23T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month expression in context"
+    },
+    {
+      "id": "nl/month#13",
+      "text": "9/2012",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "9/2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month slash expression"
+    },
+    {
+      "id": "nl/month#14",
+      "text": "09/2012",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLSlashMonthFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "09/2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month slash expression"
+    },
+    {
+      "id": "nl/month#15",
+      "text": "aug 96",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "aug 96",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 1996
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1996-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - year 90's parsing"
+    },
+    {
+      "id": "nl/month#16",
+      "text": "96 aug 96",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLMonthNameParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "aug 96",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 1996
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1996-08-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - year 90's parsing"
+    }
+  ]
+}

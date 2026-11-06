@@ -1,0 +1,622 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/nl/nl_time_units_casual_relative.test.ts",
+  "cases": [
+    {
+      "id": "nl/time_units_casual_relative#01",
+      "text": "komende 2 weken",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "komende 2 weken",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-10-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "nl/time_units_casual_relative#02",
+      "text": "komende 2 dagen",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "komende 2 dagen",
+          "start": {
+            "known": {
+              "day": 3,
+              "month": 10,
+              "weekday": 1,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-10-03T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "nl/time_units_casual_relative#03",
+      "text": "komende 2 jaar",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "komende 2 jaar",
+          "start": {
+            "known": {
+              "year": 2018
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2018-10-01T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "nl/time_units_casual_relative#04",
+      "text": "komende 2 weken 3 dagen",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "komende 2 weken 3 dagen",
+          "start": {
+            "known": {
+              "day": 18,
+              "month": 10,
+              "weekday": 2,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-10-18T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "nl/time_units_casual_relative#05",
+      "text": "afgelopen 2 weken",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "afgelopen 2 weken",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-09-17T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Negative time units"
+    },
+    {
+      "id": "nl/time_units_casual_relative#06",
+      "text": "afgelopen twee weken",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "afgelopen twee weken",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-09-17T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Negative time units"
+    },
+    {
+      "id": "nl/time_units_casual_relative#07",
+      "text": "afgelopen 2 dagen",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "afgelopen 2 dagen",
+          "start": {
+            "known": {
+              "day": 29,
+              "month": 9,
+              "weekday": 4,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-09-29T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Negative time units"
+    },
+    {
+      "id": "nl/time_units_casual_relative#08",
+      "text": "+2 maanden 5 dagen",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+2 maanden 5 dagen",
+          "start": {
+            "known": {
+              "day": 6,
+              "month": 12,
+              "weekday": 2,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-12-06T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Negative time units"
+    },
+    {
+      "id": "nl/time_units_casual_relative#09",
+      "text": "+15 minuten",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+15 minuten",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 29,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-07-10T12:29:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus '+' sign"
+    },
+    {
+      "id": "nl/time_units_casual_relative#10",
+      "text": "+15min",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+15min",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 29,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-07-10T12:29:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus '+' sign"
+    },
+    {
+      "id": "nl/time_units_casual_relative#11",
+      "text": "+1 dag 2 uur",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+1 dag 2 uur",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-07-11T14:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus '+' sign"
+    },
+    {
+      "id": "nl/time_units_casual_relative#12",
+      "text": "-3jr",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "-3jr",
+          "start": {
+            "known": {
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-07-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Minus '-' sign"
+    },
+    {
+      "id": "nl/time_units_casual_relative#13",
+      "text": "-2u5min",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "-2u5min",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 9,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 55,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T09:55:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Minus '-' sign"
+    }
+  ]
+}

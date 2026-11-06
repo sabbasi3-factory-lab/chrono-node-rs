@@ -1,0 +1,1071 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/nl/nl_time_units_ago.test.ts",
+  "cases": [
+    {
+      "id": "nl/time_units_ago#01",
+      "text": "5 dagen geleden, hebben we wat gedaan",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 dagen geleden",
+          "start": {
+            "known": {
+              "day": 5,
+              "month": 8,
+              "weekday": 0,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-05T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#02",
+      "text": "10 dagen geleden, hebben we wat gedaan",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 dagen geleden",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 7,
+              "weekday": 2,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-07-31T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#03",
+      "text": "15 minuten geleden",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 minuten geleden",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 59,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T11:59:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#04",
+      "text": "15 minuten eerder",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 minuten eerder",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 59,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T11:59:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#05",
+      "text": "15 minuten voor",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 minuten voor",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 59,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T11:59:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#06",
+      "text": "   12 uur geleden",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "12 uur geleden",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T00:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#07",
+      "text": "1u geleden",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1u geleden",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T11:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#08",
+      "text": "   half uur geleden",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "half uur geleden",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 44,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T11:44:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#09",
+      "text": "12 uur geleden deed ik iets",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12 uur geleden",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T00:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#10",
+      "text": "12 seconden geleden deed ik iets",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "12 seconden geleden",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 13,
+              "month": 8,
+              "second": 48,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:13:48.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#11",
+      "text": "drie seconden geleden deed ik iets",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "drie seconden geleden",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 13,
+              "month": 8,
+              "second": 57,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:13:57.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#12",
+      "text": "5 dagen geleden, hebben we iets gedaan",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 dagen geleden",
+          "start": {
+            "known": {
+              "day": 5,
+              "month": 8,
+              "weekday": 0,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-05T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#13",
+      "text": "Een dag geleden, hebben we wat gedaan",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Een dag geleden",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "weekday": 4,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-09T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#14",
+      "text": "een minuut geleden",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "een minuut geleden",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 13,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T12:13:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/time_units_ago#15",
+      "text": "5 maanden geleden, hebben we iets gedaan",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-10-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 maanden geleden",
+          "start": {
+            "known": {
+              "month": 5,
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-05-10T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (Casual)"
+    },
+    {
+      "id": "nl/time_units_ago#16",
+      "text": "5 jaar geleden,  hebben we iets gedaan",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 jaar geleden",
+          "start": {
+            "known": {
+              "year": 2007
+            },
+            "implied": {
+              "day": 10,
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2007-08-10T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (Casual)"
+    },
+    {
+      "id": "nl/time_units_ago#17",
+      "text": "een week geleden, hebben we iets gedaan",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-03T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "een week geleden",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 5
+            },
+            "date": "2012-07-27T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (Casual)"
+    },
+    {
+      "id": "nl/time_units_ago#18",
+      "text": "paar dagen geleden, hebben we iets gedaan",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "paar dagen geleden",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 7,
+              "weekday": 2,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-07-31T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression (Casual)"
+    },
+    {
+      "id": "nl/time_units_ago#19",
+      "text": "15 uur 29 minuten geleden",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T22:30:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 uur 29 minuten geleden",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 7,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 1,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T07:01:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Nested time ago"
+    },
+    {
+      "id": "nl/time_units_ago#20",
+      "text": "1 dag 21 uur geleden ",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T22:30:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeExpressionParser",
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 dag 21 uur geleden",
+          "start": {
+            "known": {
+              "day": 9,
+              "hour": 1,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 30,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-09T01:30:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Nested time ago"
+    },
+    {
+      "id": "nl/time_units_ago#21",
+      "text": "3 min 49 sec geleden ",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T22:30:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "3 min 49 sec geleden",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 26,
+              "month": 8,
+              "second": 11,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T22:26:11.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Nested time ago"
+    },
+    {
+      "id": "nl/time_units_ago#22",
+      "text": "15 uur 29 min",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ENTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "nl/time_units_ago#23",
+      "text": "een paar uur",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "nl/time_units_ago#24",
+      "text": "5 dagen",
+      "config": "en.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    }
+  ]
+}

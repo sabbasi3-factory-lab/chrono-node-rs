@@ -1,0 +1,1751 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/nl/nl_casual.test.ts",
+  "cases": [
+    {
+      "id": "nl/casual#01",
+      "text": "De deadline is nu",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "nu",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 8,
+              "meridiem": 0,
+              "millisecond": 11,
+              "minute": 9,
+              "month": 8,
+              "second": 10,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T08:09:10.011Z",
+            "tags": [
+              "casualReference/now"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/casual#02",
+      "text": "De deadline is vandaag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:12:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "vandaag",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 14,
+              "millisecond": 0,
+              "minute": 12,
+              "second": 0
+            },
+            "date": "2012-08-10T14:12:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/casual#03",
+      "text": "De deadline is morgen",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "morgen",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-11T17:10:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/casual#04",
+      "text": "De deadline is morgen",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T01:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "morgen",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T01:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/casual#05",
+      "text": "De deadline was gisteren",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "gisteren",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": [
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/casual#06",
+      "text": "De Deadline was deze ochtend",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "deze ochtend",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/casual#07",
+      "text": "De Deadline was deze namiddag ",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "deze namiddag",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/casual#08",
+      "text": "De Deadline was deze avond ",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "deze avond",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/casual#09",
+      "text": "De deadline is vanavond",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "vanavond",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T20:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/casual#10",
+      "text": "The Deadline is om middernacht ",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T01:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 19,
+          "text": "middernacht",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "nl/casual#11",
+      "text": "De deadline is vandaag om 17:00",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser",
+          "NLTimeExpressionParser"
+        ],
+        "refiners": [
+          "NLMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "vandaag om 17:00",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T17:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "nl/casual#12",
+      "text": "gisterenochtend",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "gisterenochtend",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T06:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual combined datetime expressions"
+    },
+    {
+      "id": "nl/casual#13",
+      "text": "gisterenmiddag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "gisterenmiddag",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual combined datetime expressions"
+    },
+    {
+      "id": "nl/casual#14",
+      "text": "gisterenavond",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "gisterenavond",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T20:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual combined datetime expressions"
+    },
+    {
+      "id": "nl/casual#15",
+      "text": "vanochtend",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vanochtend",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual combined datetime expressions"
+    },
+    {
+      "id": "nl/casual#16",
+      "text": "vanmiddag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vanmiddag",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual combined datetime expressions"
+    },
+    {
+      "id": "nl/casual#17",
+      "text": "vanavond",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vanavond",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T20:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual combined datetime expressions"
+    },
+    {
+      "id": "nl/casual#18",
+      "text": "morgenochtend",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "morgenochtend",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T06:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual combined datetime expressions"
+    },
+    {
+      "id": "nl/casual#19",
+      "text": "morgenmiddag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "morgenmiddag",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual combined datetime expressions"
+    },
+    {
+      "id": "nl/casual#20",
+      "text": "morgenavond",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "morgenavond",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T20:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual combined datetime expressions"
+    },
+    {
+      "id": "nl/casual#21",
+      "text": "Het evenement is vandaag - volgende vrijdag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser",
+          "NLWeekdayParser"
+        ],
+        "refiners": [
+          "NLMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 17,
+          "text": "vandaag - volgende vrijdag",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-04T12:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual date range"
+    },
+    {
+      "id": "nl/casual#22",
+      "text": "Het evenement is vandaag - volgende vrijdag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser",
+          "NLWeekdayParser"
+        ],
+        "refiners": [
+          "NLMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 17,
+          "text": "vandaag - volgende vrijdag",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 17,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-17T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual date range"
+    },
+    {
+      "id": "nl/casual#23",
+      "text": "jaarlijks verlof vanaf vandaag tot morgennamiddag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser",
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": [
+          "NLMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 23,
+          "text": "vandaag tot morgennamiddag",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-04T12:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 5,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-05T15:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual time implication"
+    },
+    {
+      "id": "nl/casual#24",
+      "text": "jaarlijks verlof vanaf deze ochtend tot morgen",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser",
+          "NLCasualTimeParser"
+        ],
+        "refiners": [
+          "NLMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 23,
+          "text": "deze ochtend tot morgen",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-04T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 5,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-05T12:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual time implication"
+    },
+    {
+      "id": "nl/casual#25",
+      "text": "vanavond",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vanavond",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T20:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#26",
+      "text": "middag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "middag",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-01-01T12:00:00.000Z",
+            "tags": [
+              "casualReference/noon"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#27",
+      "text": "vanavond 22:00",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser",
+          "NLTimeExpressionParser"
+        ],
+        "refiners": [
+          "NLMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vanavond 22:00",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T22:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#28",
+      "text": "vanavond om 21:00",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser",
+          "NLTimeExpressionParser"
+        ],
+        "refiners": [
+          "NLMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "vanavond om 21:00",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 21,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T21:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#29",
+      "text": "morgen voor 16:00",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser",
+          "NLTimeExpressionParser"
+        ],
+        "refiners": [
+          "NLMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "morgen voor 16:00",
+          "start": {
+            "known": {
+              "day": 2,
+              "hour": 16,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-01-02T16:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#30",
+      "text": "morgen na 16:00",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateParser",
+          "NLTimeExpressionParser"
+        ],
+        "refiners": [
+          "NLMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "morgen na 16:00",
+          "start": {
+            "known": {
+              "day": 2,
+              "hour": 16,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-01-02T16:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#31",
+      "text": "donderdag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "donderdag",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 9,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#32",
+      "text": "deze avond",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "deze avond",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-10-01T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#33",
+      "text": "gisterennamiddag",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "gisterennamiddag",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-09-30T15:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#34",
+      "text": "morgenochtend",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualDateTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "morgenochtend",
+          "start": {
+            "known": {
+              "day": 2,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-10-02T06:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#35",
+      "text": "deze namiddag om 15:00",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "NLCasualTimeParser",
+          "NLTimeExpressionParser"
+        ],
+        "refiners": [
+          "NLMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "deze namiddag om 15:00",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2016-10-01T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "nl/casual#36",
+      "text": "notoday",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "nl/casual#37",
+      "text": "tdtmr",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "nl/casual#38",
+      "text": "xyesterday",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "nl/casual#39",
+      "text": "nowhere",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "nl/casual#40",
+      "text": "noway",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "nl/casual#41",
+      "text": "knowledge",
+      "config": "nl.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    }
+  ]
+}

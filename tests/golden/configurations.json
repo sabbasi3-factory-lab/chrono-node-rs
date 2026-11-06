@@ -1579,6 +1579,222 @@
         }
       ]
     },
+    "nl.casual": {
+      "parsers": [
+        {
+          "name": "NLTimeUnitCasualRelativeFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "NLRelativeDateFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "NLMonthNameParser",
+          "flags": {}
+        },
+        {
+          "name": "NLCasualDateTimeParser",
+          "flags": {}
+        },
+        {
+          "name": "NLCasualTimeParser",
+          "flags": {}
+        },
+        {
+          "name": "NLCasualDateParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "NLTimeUnitWithinFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "NLMonthNameMiddleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "NLMonthNameParser",
+          "flags": {}
+        },
+        {
+          "name": "NLWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "NLCasualYearMonthDayParser",
+          "flags": {}
+        },
+        {
+          "name": "NLSlashMonthFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "NLTimeExpressionParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "NLTimeUnitAgoFormatParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "NLTimeUnitLaterFormatParser",
+          "flags": {
+            "strictMode": false
+          }
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "NLMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "NLMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": false
+          }
+        }
+      ]
+    },
+    "nl.strict": {
+      "parsers": [
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "NLTimeUnitWithinFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "NLMonthNameMiddleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "NLMonthNameParser",
+          "flags": {}
+        },
+        {
+          "name": "NLWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "NLCasualYearMonthDayParser",
+          "flags": {}
+        },
+        {
+          "name": "NLSlashMonthFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "NLTimeExpressionParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "NLTimeUnitAgoFormatParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "NLTimeUnitLaterFormatParser",
+          "flags": {
+            "strictMode": true
+          }
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "NLMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "NLMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": true
+          }
+        }
+      ]
+    },
     "pt.casual": {
       "parsers": [
         {
