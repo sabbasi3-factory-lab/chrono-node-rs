@@ -49,6 +49,7 @@ Run the workflow with `dry_run: true` (the default). `prepare` runs end to end a
 Check locally (stamp a scratch copy, never commit it):
 
 ```sh
+cargo fetch --locked                      # stamp.sh updates Cargo.lock offline
 cp Cargo.toml Cargo.toml.bak && VERSION=0.1.0 bash .github/factory/release/stamp.sh
 cargo package --list --allow-dirty        # only the files above
 cargo publish --dry-run --locked --allow-dirty
@@ -91,6 +92,7 @@ Alternative (no token in GitHub at all): publish 0.1.0 by hand from your machine
 
 ```sh
 git fetch --tags && git checkout v0.1.0
+cargo fetch --locked                                   # stamp.sh updates Cargo.lock offline
 VERSION=0.1.0 bash .github/factory/release/stamp.sh   # stamps Cargo.toml and Cargo.lock locally
 cargo login            # paste a publish-new token for chrono-node-rs, then revoke it afterwards
 cargo publish --locked --allow-dirty
