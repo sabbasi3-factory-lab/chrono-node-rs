@@ -25,7 +25,8 @@ Every drill is a **dry run**: nothing is written to GitHub. A failure in live mo
 **Agentic workflow canary** (`canary.js`, `.github/workflows/agentic-canary.yml`, live only). It
 dispatches each AI workflow the controller uses (implement, repair, review, triage) for the sentinel
 task `drill/activation-canary`, which has no contract. gh-aw's activation must succeed, and the
-workflow's own validation must then refuse the task before inference, so nothing is spent. It runs
+workflow's own validation must then refuse the task before the agent's inference. gh-aw's threat
+detection still runs on the empty output (~10 AIC per run, ~40 AIC a day). It runs
 daily and on every main change to an agentic workflow or lock; a failure raises a `factory:alert`.
 It exists because #393's reviewer failed in activation (a stale lock, E009) the first time an
 auto-strict task needed it. `drill/` runs are excluded from outcomes' rates and the factory review.

@@ -39,6 +39,12 @@ test("verdict: healthy only when activation passed and the agent stopped at its 
     assert.deepStrictEqual(verdict(stale, V), { ok: false, why: 'activation failure at "Check workflow lock file"' });
     assert.match(verdict([ok[0], agent("Checkout")], V).why, /before its validation step/);
     assert.match(verdict([ok[0], { name: "agent", conclusion: "success", steps: [] }], V).why, /didn't refuse/);
-    assert.match(verdict([ok[0], agent(V, "success")], V).why, /inference step success/);
+    assert.match(verdict([ok[0], agent(V, "success")], V).why, /inference ran in agent/);
+    // Run 41662949515 (v1.0.1 smoke): agent refused, threat detection still ran inference. Expected, reported.
+    const detection = { name: "detection", conclusion: "success", steps: [{ name: "Execute threat detection with AWF", conclusion: "success" }] };
+    assert.deepStrictEqual([verdict([...ok, detection], V).ok, verdict([...ok, detection], V).detection_inference], [true, true]);
+    assert.strictEqual(verdict(ok, V).detection_inference, false);
+    // Inference in any other job is not.
+    assert.match(verdict([...ok, { name: "safe_outputs", conclusion: "success", steps: [{ name: "Execute something", conclusion: "success" }] }], V).why, /inference ran in safe_outputs/);
     assert.match(verdict([], V).why, /no activation job/);
 });

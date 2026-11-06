@@ -6,7 +6,9 @@
 // sentinel task `drill/activation-canary`, which has no contract. gh-aw's activation job (lock file
 // and frontmatter hash check, secrets, App token) must succeed; the workflow's own pre-inference
 // validation step must then refuse the dispatch (no contract on main, or the kill switch when
-// FACTORY_ENABLED is off), so the agent never runs and nothing is spent. Anything else (activation
+// FACTORY_ENABLED is off), so the agent never runs. gh-aw's threat detection job still runs on the
+// empty output (`if: always()` in v1.0.1): about 10 AIC per run (run 41662949515: 10.6), so about
+// 40 AIC a day for the four, counted by the spend collector like any run. Anything else (activation
 // failing, as on #393's review run 42171900921 with E009 CONFIG_HASH_MISMATCH) fails the canary,
 // before a real task needs that workflow.
 //
@@ -45,9 +47,12 @@ function verdict(jobs, validateStep) {
     const failed = firstFailed(agent);
     if (!failed) return { ok: false, why: `agent job ${agent.conclusion} without a failed step (the validation didn't refuse the sentinel task)` };
     if (failed.name !== validateStep) return { ok: false, why: `agent job failed at "${failed.name}", before its validation step` };
-    const exec = (agent.steps || []).find((s) => /^Execute /.test(s.name));
-    if (exec && exec.conclusion !== "skipped" && exec.conclusion !== null) return { ok: false, why: `inference step ${exec.conclusion}` };
-    return { ok: true, why: `activation ok; refused at "${failed.name}"` };
+    // Inference in any job: the agent's must never run; threat detection's is expected (reported).
+    const ran = (jobs || []).flatMap((j) => (j.steps || []).filter((s) => /^Execute /.test(s.name) && s.conclusion !== "skipped" && s.conclusion !== null).map((s) => ({ job: j.name, step: s.name, conclusion: s.conclusion })));
+    const unexpected = ran.filter((r) => r.job !== "detection");
+    if (unexpected.length > 0) return { ok: false, why: `inference ran in ${unexpected.map((r) => `${r.job} ("${r.step}": ${r.conclusion})`).join(", ")}` };
+    const detection = ran.some((r) => r.job === "detection");
+    return { ok: true, why: `activation ok; refused at "${failed.name}"${detection ? "; threat detection ran (expected, ~10 AIC)" : ""}`, detection_inference: detection };
 }
 
 async function api(method, path, body) {
