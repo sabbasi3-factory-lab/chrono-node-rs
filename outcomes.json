@@ -1,7 +1,57 @@
 {
-  "generated_at": "2026-11-06T16:50:49Z",
+  "generated_at": "2026-11-06T17:22:20Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 42254836914,
+      "workflow": "implement",
+      "title": "Implement ru/time-unit-casual-relative-format-parser #404 attempt 1",
+      "created_at": "2026-11-06T16:42:13Z",
+      "aic": 21.8878,
+      "task": "ru/time-unit-casual-relative-format-parser",
+      "items": [
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/417",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        },
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/404#issuecomment-6690290304",
+          "outcome_status": "pending",
+          "zero_touch": null
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T17:22:20Z",
+      "drill": false
+    },
+    {
+      "run_id": 42254821715,
+      "workflow": "implement",
+      "title": "Implement ru/casual-time-parser #395 attempt 1",
+      "created_at": "2026-11-06T16:42:07Z",
+      "aic": 24.08746,
+      "task": "ru/casual-time-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/395#issuecomment-6690271921",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/416",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-06T17:22:20Z",
+      "drill": false
+    },
     {
       "run_id": 42254805481,
       "workflow": "implement",
@@ -19,12 +69,12 @@
         {
           "type": "create_pull_request",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/415",
-          "outcome_status": "pending",
-          "zero_touch": null
+          "outcome_status": "accepted",
+          "zero_touch": true
         }
       ],
       "eval_failed": false,
-      "evaluated_at": "2026-11-06T16:50:49Z",
+      "evaluated_at": "2026-11-06T17:22:20Z",
       "drill": false
     },
     {
@@ -4173,8 +4223,8 @@
     }
   ],
   "summary": {
-    "accepted": 151,
-    "pending": 131,
+    "accepted": 154,
+    "pending": 132,
     "rejected": 12,
     "unknown": 15
   }
