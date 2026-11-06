@@ -162,6 +162,43 @@ const DRILLS = {
             : lib.fail("the onboarding decision didn't fail closed", JSON.stringify(bad, null, 2));
     },
 
+    /** hints.yaml still holds against the pinned chrono-node; broken copies fail (a reachable step declared unreachable, an empty probe corpus, a dead seed). */
+    "onboard-hints": () => {
+        const hintsFile = path.join(HARNESS, "onboard/hints.yaml");
+        const real = YAML.parse(fs.readFileSync(hintsFile, "utf8"));
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "drill-hints-"));
+        const check = (h) => {
+            const f = path.join(dir, "hints.yaml");
+            fs.writeFileSync(f, YAML.stringify(h));
+            const r = sh(process.execPath, ["onboard/onboard.js", "hints-check", "--hints", f], { cwd: HARNESS });
+            try {
+                return JSON.parse(r.out.trim().split("\n").pop());
+            } catch {
+                return { ok: false, problems: [`no result: ${r.out.slice(-300)}`] };
+            }
+        };
+        const control = check(real);
+        const broken = [];
+        const seeded = Object.entries(real.seeds || {})[0];
+        if (seeded) {
+            const [step, seeds] = seeded;
+            const cfg = seeds[0].config;
+            broken.push([`${step} declared unreachable (its seed reaches it)`, { unreachable: { [step]: { reason: "drill", probe: { configs: [cfg], options: [{}], words: [seeds[0].text] } } } }]);
+            broken.push([`a seed for ${step} that reaches nothing`, { seeds: { [step]: [{ ...seeds[0], text: "nothing here" }] } }]);
+        }
+        const declared = Object.entries(real.unreachable || {})[0];
+        if (declared) {
+            const [step, e] = declared;
+            broken.push([`${step} with an empty probe corpus`, { unreachable: { [step]: { ...e, probe: { ...e.probe, tokens: [] } } } }]);
+        }
+        const missed = broken.filter(([, h]) => check(h).ok).map(([name]) => name);
+        fs.rmSync(dir, { recursive: true, force: true });
+        if (!control.ok) return lib.fail("control: hints.yaml doesn't hold against the pinned chrono-node", control.problems.join("\n"));
+        return missed.length === 0 && broken.length > 0
+            ? lib.pass(`${control.checked} hints hold; ${broken.length} broken copies fail`)
+            : lib.fail(`the hints check accepted: ${missed.join(", ") || "(no broken copies built)"}`);
+    },
+
     /** The independent audit verifier fails on a tampered copy of the real audit log (control: the real log passes). */
     "audit-tamper": async () => {
         const verifier = await import(path.join(env("FACTORY_GIT_DIR"), "verifier/verify.mjs"));

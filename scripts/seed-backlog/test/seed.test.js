@@ -221,3 +221,22 @@ test("support tasks: one file directly in their locale's directory, with unit ca
     const needsOther = lib.mergeTaskmaps(taskmap, [["xx.yaml", { ...fragment, tasks: [fragment.tasks[0], { ...fragment.tasks[1], needs: ["en/a-parser"] }, fragment.tasks[2]] }]]);
     assert.match(lib.validate({ taskmap: needsOther, upstreamFiles: genFiles, configurations: genConfigs }).join("\n"), /not another task of its locale/);
 });
+
+test("unreachable steps (harness/onboard/hints.yaml): unit acceptance and no golden; misdeclared ones fail", () => {
+    const unit = { requirement: "port it", cases: [{ test: "keeps_it", kind: "refine", expect: { results: [] } }] };
+    const f = { ...fragment, tasks: [...fragment.tasks, { id: "xx/f-filter", locale: "xx", step: "XXF", source: "locales/xx/refiners/XXF.ts", rust: "src/locales/xx/refiners/f.rs", area: "xx-refiners", unreachable: "no parser emits it", unit }] };
+    const files = new Map([...genFiles, ["upstream/src/locales/xx/refiners/XXF.ts", "export default class XXF {}"]]);
+    const configs = { ...genConfigs, "xx.casual": { ...genConfigs["xx.casual"], refiners: [...genConfigs["xx.casual"].refiners, { name: "XXF" }] } };
+    const merged = lib.mergeTaskmaps(taskmap, [["xx.yaml", f]]);
+    assert.deepStrictEqual(lib.validate({ taskmap: merged, upstreamFiles: files, configurations: configs }), []);
+    const c = lib.buildContracts({ taskmap: merged, pin, tiers: TIERS, cases: genCases }).find((x) => x.id === "xx/f-filter");
+    assert.deepStrictEqual(c.acceptance.map((a) => Object.keys(a)[0]), ["differential", "clippy", "public_api", "unit"]);
+    assert.deepStrictEqual([c.golden_cases, c.depends_on, c.tier], [0, [], "auto"]);
+    assert.match(lib.planIssues([c], "o/r")[0].body, /No input reaches this step/);
+    // Declared unreachable while a golden case needs it: the declaration is stale.
+    assert.throws(() => lib.buildContracts({ taskmap: merged, pin, tiers: TIERS, cases: [...genCases, { group: "xx", area: "xx/f", requires: ["XXF"] }] }), /declared unreachable, but 1 golden case/);
+    // Without unit cases (or reason) it's rejected.
+    const bad = (t) => lib.validate({ taskmap: lib.mergeTaskmaps(taskmap, [["xx.yaml", { ...f, tasks: [...fragment.tasks, t] }]]), upstreamFiles: files, configurations: configs }).join("\n");
+    assert.match(bad({ ...f.tasks[3], unit: undefined }), /unreachable must be a reason/);
+    assert.match(bad({ ...f.tasks[3], unreachable: " " }), /unreachable must be a reason/);
+});

@@ -89,6 +89,11 @@ function validate({ taskmap, upstreamFiles, configurations }) {
         // file name, as harness/lib/serialize.js names it).
         else if (!new RegExp(`class\\s+${t.class || t.step}\\b`).test(text)) problems.push(`${t.id}: ${src} has no class ${t.class || t.step}`);
         if (!t.area || !/^[a-z0-9-]+$/.test(t.area)) problems.push(`${t.id}: bad area`);
+        // A step no input reaches in the pinned upstream (harness/onboard/hints.yaml, re-checked on every
+        // render): its acceptance is unit cases recorded from the step itself, never golden data.
+        if (t.unreachable !== undefined && (typeof t.unreachable !== "string" || !t.unreachable.trim() || t.unit === undefined || !t.locale)) {
+            problems.push(`${t.id}: unreachable must be a reason, on a generated locale's task with unit cases`);
+        }
         if (t.unit !== undefined) {
             const u = t.unit;
             // `test` is the #[test] fn the gates check for, so it must be a unique snake_case name.
@@ -225,6 +230,28 @@ function buildContracts({ taskmap, pin, tiers, cases }) {
         .map((t) => {
             if (t.kind === "support") return supportContract(t, { taskmap, pin, tiers, priority: priority.get(t.id), depends: deps.get(t.id) });
             const f = facts.get(t.step);
+            if (t.unreachable !== undefined) {
+                if (f.count !== 0) throw new Error(`${t.id}: declared unreachable, but ${f.count} golden case(s) need ${t.step}`);
+                return {
+                    id: t.id,
+                    title: `Port ${t.step}`,
+                    tier: tierFor([t.rust], tiers),
+                    area: t.area,
+                    priority: priority.get(t.id),
+                    source: `${taskmap.upstream_root}/${t.source}`,
+                    source_sha: pin.commit,
+                    upstream_class: t.step,
+                    scope: [t.rust],
+                    depends_on: deps.get(t.id),
+                    acceptance: [
+                        { differential: { phrases: d.phrases, seed: d.seed, match: `chrono-node@${pin.commit.slice(0, 7)}` } },
+                        { clippy: taskmap.acceptance.clippy },
+                        { public_api: taskmap.acceptance.public_api },
+                        { unit: t.unit },
+                    ],
+                    golden_cases: 0,
+                };
+            }
             if (f.count === 0) throw new Error(`${t.id}: no golden case needs ${t.step}`);
             return {
                 id: t.id,
@@ -365,7 +392,11 @@ function planIssues(contracts, repo) {
         body: [
             MARKER(c.id),
             `Port \`${c.upstream_class}\` from \`${c.source}\` (chrono-node @ \`${c.source_sha.slice(0, 7)}\`).`,
-            ...(c.golden_cases === 0 ? ["", "A support file of a generated locale: no golden case of its own; its acceptance is the contract's unit cases, and the steps that import it depend on it."] : []),
+            ...(c.golden_cases === 0
+                ? /\/(parsers|refiners)\//.test(c.scope[0] || "")
+                    ? ["", "No input reaches this step in the pinned chrono-node (`harness/onboard/hints.yaml` has the evidence), so it has no golden case: its acceptance is the contract's unit cases, recorded by running the upstream step alone."]
+                    : ["", "A support file of a generated locale: no golden case of its own; its acceptance is the contract's unit cases, and the steps that import it depend on it."]
+                : []),
             "",
             `- Contract: [\`contracts/${c.id}.yaml\`](https://github.com/${repo}/blob/main/contracts/${c.id}.yaml)`,
             `- Scope: ${c.scope.map((s) => `\`${s}\``).join(", ")}`,

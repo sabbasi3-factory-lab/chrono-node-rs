@@ -1,0 +1,67 @@
+# Hand-reviewed inputs for onboard.js where the generator alone can't find golden coverage (human tier).
+# The generator verifies each entry against the pinned chrono-node every time it renders a locale, so a
+# stale entry fails `onboard.js check` (CI) and the `onboard-unreachable` drill.
+#
+# seeds: candidate inputs for a step that no upstream test and no generated phrase exercises. Only the
+#   text is hand-written; a seed is kept only if the pinned chrono-node trace shows the step changing
+#   the result, and its expected output is recorded from chrono-node like any golden case. Tried after
+#   the generated phrase stream, so they never change another locale's coverage.
+#
+# unreachable: a step that no input can exercise in the pinned upstream, with the evidence. The
+#   generator re-checks it on every render: no text of the probe corpus (every sequence of 1 to
+#   max_tokens tokens, in every frame, config and option set) and no generated phrase may trace the
+#   step, and no upstream test may exercise it. The step is still ported: its task's acceptance is the
+#   unit cases below, each recorded by running the upstream step alone on the given input
+#   (`parsers`: the config's own parser results for the text; otherwise the listed results), plus the
+#   differential comparison.
+version: 1
+seeds:
+  ITMergeRelativeAfterDateRefiner:
+    - { config: it.casual, text: "13/02/2020 +2 settimane", reference: "2024-03-06T12:00:00.000Z" }
+    - { config: it.casual, text: "martedì prossimo +10 giorni", reference: "2024-03-06T12:00:00.000Z" }
+    - { config: it.casual, text: "15 marzo 2021 -3 giorni", reference: "2024-03-06T12:00:00.000Z" }
+    - { config: it.casual, text: "domani +1 ora", reference: "2024-03-06T12:00:00.000Z" }
+  # Two weekdays before a date: the common MergeWeekdayComponentRefiner merges only the second (it
+  # doesn't revisit an earlier result), and this VI subclass, later in the chain, merges the first.
+  VIMergeWeekdayComponentRefiner:
+    - { config: vi.casual, text: "thứ Hai, Thứ Ba, 12/7/2014", reference: "2024-03-06T12:00:00.000Z" }
+    - { config: vi.casual, text: "Chủ Nhật, thứ sáu 25/12", reference: "2024-03-06T12:00:00.000Z" }
+    - { config: vi.strict, text: "thứ hai, thứ ba ngày 13 tháng 1 năm 2012", reference: "2024-03-06T12:00:00.000Z" }
+unreachable:
+  ITUnlikelyFormatFilter:
+    reason: >-
+      It only drops a result whose text is "secondo" or ends with "il secondo" (not the whole text). A
+      result's text ends with a parser match (merges append the later part), and no Italian pattern
+      can end a match that way: every time-unit pattern needs a number before the unit ("un secondo")
+      and no number or dictionary word ends in "il"; the patterns with an optional "il" put a modifier
+      or a month after it (ITTimeUnitCasualRelativeFormatParser, ITRelativeDateFormatParser,
+      ITMonthNameLittleEndianParser); and ITMonthNameMiddleEndianParser's ordinal follows a month, and
+      no month ends in "il". The probe corpus below (every 1-3 token sequence of 33 tokens, alone and
+      inside a sentence, both configs, with and without forwardDate: 296,472 traces) never reaches it.
+    probe:
+      configs: [it.casual, it.strict]
+      options: [{}, { forwardDate: true }]
+      frames: ["{}", "vado {} poi"]
+      max_tokens: 3
+      tokens: ["il", "secondo", "il secondo", "Il Secondo", "secondi", "seconda", "2°", "al", "-", ",", "e", "1", "2", "2012", "un", "+", "prossimo", "tra", "entro", "alle", "5", "dopo", "fa", "di", "giorni", "domani", "agosto", "aprile", "april", "lunedì", "venerdì", "fine settimana", "mezzo"]
+    cases:
+      - test: drops_il_secondo_inside_longer_text
+        config: it.casual
+        text: "arrivo il secondo poi"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: [{ index: 7, text: "il secondo", known: { day: 2 } }]
+      - test: drops_bare_secondo_inside_longer_text
+        config: it.casual
+        text: "aspetta secondo me"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: [{ index: 8, text: "secondo", known: { day: 2 } }]
+      - test: keeps_a_result_that_is_the_whole_text
+        config: it.casual
+        text: "il secondo"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: [{ index: 0, text: "il secondo", known: { day: 2 } }]
+      - test: keeps_other_results
+        config: it.casual
+        text: "ci vediamo domani"
+        reference: "2024-03-06T12:00:00.000Z"
+        input: parsers

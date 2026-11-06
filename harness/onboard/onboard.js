@@ -26,6 +26,8 @@
 // golden cases (steps) and by unit cases recorded from chrono-node here (constants).
 // Fails closed: a locale whose configurations use a step that's neither one of its own files nor
 // already in the task map is refused, with the reason.
+// Everything recorded here (unit cases from chrono-node) is recorded in UTC, as CI and the golden generator run.
+process.env.TZ = "UTC";
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
@@ -78,36 +80,149 @@ const goldenTexts = (module) => [...new Set(upstreamCases(module).map((c) => c.t
 const COVERAGE_PER_STEP = 3;
 const COVERAGE_SEARCH = 20000;
 
+/** Hand-reviewed seeds and unreachable steps (hints.yaml); verified against chrono-node on every render. */
+const hints = () => YAML.parse(read("harness/onboard/hints.yaml")) || {};
+
 /**
  * Coverage requests for the locale's steps that no upstream test exercises: the first
  * COVERAGE_PER_STEP requests of a fixed phrase stream (the comparison's golden-text phrases, seeded
- * by the module name) whose chrono-node trace needs the step. null if every step is covered.
+ * by the module name) whose chrono-node trace needs the step, then hints.yaml seeds whose trace needs
+ * it. A step none reaches is refused unless hints.yaml declares it unreachable and the evidence still
+ * holds (unreachableProblems). Returns {coverage (null if every step is covered), unreachable: [step]}.
  */
 function coverageInput(manifest, configs, fragment) {
     const S = require("../lib/serialize");
     const { trace } = require("../lib/trace");
     const phrases = require("../compare/phrases");
+    const H = hints();
     const covered = new Set(upstreamCases(manifest.module).flatMap((c) => [...c.requires.parsers, ...c.requires.refiners]));
     const missing = fragment.tasks.filter((t) => t.step && !covered.has(t.step)).map((t) => t.step).sort();
-    if (missing.length === 0) return null;
+    for (const step of Object.keys(H.unreachable || {})) {
+        if (fragment.tasks.some((t) => t.step === step) && covered.has(step)) throw new Error(`hints.yaml: ${step} is declared unreachable, but an upstream test exercises it: remove it`);
+    }
+    if (missing.length === 0) return { coverage: null, unreachable: [] };
     S.registerUpstreamAliases((p) => require(path.join(BUILD, p)));
     const chronoModule = require(path.join(BUILD, "chrono"));
     const L = require(path.join(BUILD, manifest.upstream));
     const g = { module: manifest.module, configs: Object.keys(configs).sort(), texts: goldenTexts(manifest.module) };
     const r = phrases.prng(phrases.fnv1a(`coverage:${manifest.module}`));
     const found = new Map(missing.map((s) => [s, []]));
-    for (let i = 0; i < COVERAGE_SEARCH && [...found.values()].some((l) => l.length < COVERAGE_PER_STEP); i++) {
-        const { id, ...req } = phrases.goldenTextRequest(r, g, i);
-        const ref = req.reference.kind === "date" ? new Date(req.reference.instant) : { instant: new Date(req.reference.instant), timezone: req.reference.timezone_input ?? undefined };
-        const t = trace(chronoModule, L[manifest.configs[req.config]], req.text, ref, { ...req.options });
+    const record = (req, t) => {
         for (const step of [...t.parsers, ...t.refiners]) {
             const list = found.get(step);
             if (list && list.length < COVERAGE_PER_STEP && !list.some((x) => x.text === req.text && x.config === req.config)) list.push({ step, ...req });
         }
+    };
+    for (let i = 0; i < COVERAGE_SEARCH && [...found.values()].some((l) => l.length < COVERAGE_PER_STEP); i++) {
+        const { id, ...req } = phrases.goldenTextRequest(r, g, i);
+        const ref = req.reference.kind === "date" ? new Date(req.reference.instant) : { instant: new Date(req.reference.instant), timezone: req.reference.timezone_input ?? undefined };
+        record(req, trace(chronoModule, L[manifest.configs[req.config]], req.text, ref, { ...req.options }));
     }
-    const empty = [...found].filter(([, l]) => l.length === 0).map(([s]) => s);
+    for (const step of missing) {
+        for (const seed of (H.seeds || {})[step] || []) {
+            if (found.get(step).length >= COVERAGE_PER_STEP) break;
+            if (!manifest.configs[seed.config]) throw new Error(`hints.yaml: seed for ${step} names config ${seed.config}, not one of ${manifest.code}'s`);
+            const req = { text: seed.text, config: seed.config, reference: { kind: "date", instant: seed.reference, timezone_input: null }, system_timezone: "UTC", options: seed.options || {} };
+            const t = trace(chronoModule, L[manifest.configs[seed.config]], req.text, new Date(seed.reference), { ...req.options });
+            if ([...t.parsers, ...t.refiners].includes(step)) record(req, { parsers: [], refiners: [step] });
+        }
+    }
+    const unreachable = [];
+    const empty = [];
+    for (const [step, list] of found) {
+        const declared = (H.unreachable || {})[step];
+        if (list.length > 0 && declared) throw new Error(`hints.yaml: ${step} is declared unreachable, but "${list[0].text}" (${list[0].config}) exercises it: remove it`);
+        if (list.length > 0) continue;
+        if (!declared) {
+            empty.push(step);
+            continue;
+        }
+        const problems = unreachableProblems(manifest, step, declared);
+        if (problems.length > 0) throw new Error(`hints.yaml: ${step}'s unreachable evidence no longer holds:\n  ${problems.join("\n  ")}`);
+        unreachable.push(step);
+    }
     if (empty.length > 0) throw new Error(`cannot onboard ${manifest.code}: no upstream test and no generated phrase exercises ${empty.join(", ")} (a hand decision)`);
-    return { generator: lib.GENERATOR, module: manifest.module, requests: [...found.values()].flat() };
+    const requests = [...found.values()].flat();
+    return { coverage: requests.length ? { generator: lib.GENERATOR, module: manifest.module, requests } : null, unreachable };
+}
+
+/** Every probe text of an unreachable entry: each sequence of 1..max_tokens tokens (space-joined), in each frame. */
+function probeTexts(probe) {
+    const tokens = probe.tokens || [];
+    const max = Math.min(probe.max_tokens ?? 1, 4);
+    let seqs = tokens.map((t) => [t]);
+    const all = [...seqs];
+    for (let n = 2; n <= max; n++) {
+        seqs = seqs.flatMap((s) => tokens.map((t) => [...s, t]));
+        all.push(...seqs);
+    }
+    return (probe.frames || ["{}"]).flatMap((f) => all.map((s) => f.replace("{}", s.join(" "))));
+}
+
+/**
+ * Re-checks a hints.yaml unreachable entry against the pinned chrono-node: no probe text traces the
+ * step in any listed config and option set. Returns the problems (none = the evidence holds).
+ */
+function unreachableProblems(manifest, step, entry) {
+    const S = require("../lib/serialize");
+    const { trace } = require("../lib/trace");
+    S.registerUpstreamAliases((p) => require(path.join(BUILD, p)));
+    const chronoModule = require(path.join(BUILD, "chrono"));
+    const L = require(path.join(BUILD, manifest.upstream));
+    const problems = [];
+    const p = entry.probe || {};
+    if (typeof entry.reason !== "string" || !entry.reason.trim()) problems.push("no reason");
+    const texts = probeTexts(p);
+    if (!Array.isArray(p.configs) || p.configs.length === 0 || texts.length === 0) return [...problems, "no probe corpus"];
+    for (const cfg of p.configs) {
+        if (!manifest.configs[cfg]) {
+            problems.push(`probe config ${cfg} is not one of ${manifest.code}'s`);
+            continue;
+        }
+        const chrono = L[manifest.configs[cfg]];
+        for (const options of p.options || [{}]) {
+            for (const text of texts) {
+                const t = trace(chronoModule, chrono, text, new Date("2024-03-06T12:00:00.000Z"), { ...options });
+                if ([...t.parsers, ...t.refiners].includes(step)) problems.push(`${cfg} ${JSON.stringify(options)} reaches it: ${JSON.stringify(text)}`);
+                if (problems.length >= 5) return problems;
+            }
+        }
+    }
+    return problems;
+}
+
+/**
+ * The unit acceptance of a step hints.yaml declares unreachable: each case recorded by running the
+ * upstream step alone on its input (`parsers`: the config's own parser results for the text; else
+ * the listed results), in a context for the case's text, reference and options.
+ */
+function unreachableUnit(manifest, task, entry) {
+    const S = require("../lib/serialize");
+    S.registerUpstreamAliases((p) => require(path.join(BUILD, p)));
+    const { Chrono, ParsingContext } = require(path.join(BUILD, "chrono"));
+    const R = require(path.join(BUILD, "results"));
+    const L = require(path.join(BUILD, manifest.upstream));
+    const cases = (entry.cases || []).map((c) => {
+        if (!manifest.configs[c.config]) throw new Error(`hints.yaml: ${task.step} case ${c.test} names config ${c.config}, not one of ${manifest.code}'s`);
+        const chrono = L[manifest.configs[c.config]];
+        const options = c.options || {};
+        const ctx = new ParsingContext(c.text, new Date(c.reference), options);
+        const input =
+            c.input === "parsers"
+                ? chrono.parsers.flatMap((p) => Chrono.executeParser(ctx, p)).sort((a, b) => a.index - b.index)
+                : c.input.map((x) => new R.ParsingResult(ctx.reference, x.index, x.text, new R.ParsingComponents(ctx.reference, x.known)));
+        const step = chrono.refiners.find((x) => S.stepName(x) === task.step);
+        if (!step) throw new Error(`hints.yaml: ${task.step} is not in ${c.config}'s refiners`);
+        const before = S.serializeResults(input);
+        const out = step.refine(ctx, input);
+        return { test: c.test, kind: "refine", config: c.config, text: c.text, reference: c.reference, ...(Object.keys(options).length ? { options } : {}), input: before, expect: { results: S.serializeResults(out) } };
+    });
+    return {
+        requirement:
+            `Port upstream \`${task.source}\` into this one file, as PORTING.md says. No input reaches this step in the pinned chrono-node (\`harness/onboard/hints.yaml\`: ${entry.reason.replace(/\s+/g, " ").trim()}), so it has no golden case. ` +
+            "Add one in-file `#[cfg(test)]` test per case, named the case's `test` (CI checks the names); the cases were recorded from the pinned chrono-node: `refine`: in a context for `text` with `reference` (and `options`), run this step alone on `input` (results serialized as in the golden files: `index` in UTF-16 code units, `known` components given, the rest implied) and the output must equal `expect.results`.",
+        cases,
+    };
 }
 
 const renderCoverage = (input) => JSON.stringify(input, null, 2) + "\n";
@@ -135,7 +250,13 @@ function render(manifest) {
         constants,
         goldenTexts: goldenTexts(manifest.module),
     });
-    const coverage = coverageInput(manifest, configs, fragment);
+    const { coverage, unreachable } = coverageInput(manifest, configs, fragment);
+    for (const step of unreachable) {
+        const t = fragment.tasks.find((x) => x.step === step);
+        const entry = hints().unreachable[step];
+        t.unreachable = entry.reason.replace(/\s+/g, " ").trim();
+        t.unit = unreachableUnit(manifest, t, entry);
+    }
     return new Map([
         ...(coverage ? [[`harness/golden/coverage/${manifest.module}.json`, renderCoverage(coverage)]] : []),
         [`src/locales/${manifest.module}/${LOCALES.MANIFEST}`, lib.renderManifest(manifest)],
@@ -352,6 +473,50 @@ function generatedContractIds() {
     return ids;
 }
 
+/**
+ * `hints-check [--hints F]`: every hints.yaml entry still holds against the pinned chrono-node. A
+ * seed traces its step (at least one per step); an unreachable step's evidence holds
+ * (unreachableProblems). Prints one JSON line {ok, checked, problems}; exits 1 on a problem. (A
+ * generated phrase that reaches a declared-unreachable step fails `check` for an onboarded locale.)
+ */
+function hintsCheck() {
+    requireBuild();
+    const i = process.argv.indexOf("--hints");
+    const H = i > 0 ? YAML.parse(fs.readFileSync(process.argv[i + 1], "utf8")) || {} : hints();
+    const S = require("../lib/serialize");
+    const { trace } = require("../lib/trace");
+    S.registerUpstreamAliases((p) => require(path.join(BUILD, p)));
+    const chronoModule = require(path.join(BUILD, "chrono"));
+    const manifestOf = (config) => {
+        const code = config.split(".")[0].replace("_", "-");
+        if (!upstreamCodes().includes(code)) throw new Error(`hints.yaml: ${config} names no upstream locale`);
+        return lib.manifestFor(code, Object.keys(require(path.join(BUILD, `locales/${code.replace("-", "/")}`))));
+    };
+    const problems = [];
+    let checked = 0;
+    for (const [step, seeds] of Object.entries(H.seeds || {})) {
+        checked++;
+        const hit = seeds.some((seed) => {
+            const m = manifestOf(seed.config);
+            const L = require(path.join(BUILD, m.upstream));
+            const t = trace(chronoModule, L[m.configs[seed.config]], seed.text, new Date(seed.reference), { ...(seed.options || {}) });
+            return [...t.parsers, ...t.refiners].includes(step);
+        });
+        if (!hit) problems.push(`seeds: no seed for ${step} reaches it`);
+    }
+    for (const [step, entry] of Object.entries(H.unreachable || {})) {
+        checked++;
+        const configs = (entry.probe && entry.probe.configs) || [];
+        if (configs.length === 0) {
+            problems.push(`unreachable ${step}: no probe configs`);
+            continue;
+        }
+        for (const p of unreachableProblems(manifestOf(configs[0]), step, entry)) problems.push(`unreachable ${step}: ${p}`);
+    }
+    console.log(JSON.stringify({ ok: problems.length === 0, checked, problems }));
+    if (problems.length > 0) process.exitCode = 1;
+}
+
 function main() {
     const [cmd, arg] = process.argv.slice(2);
     if (cmd === "add" && arg) return add(arg);
@@ -359,7 +524,8 @@ function main() {
     if (cmd === "candidates") return console.log(candidates().join("\n"));
     if (cmd === "next") return next();
     if (cmd === "drill") return drill(process.argv.slice(3));
-    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --issues F --prs F --onboard-merges F --runs F --merged F --audit F");
+    if (cmd === "hints-check") return hintsCheck();
+    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --issues F --prs F --onboard-merges F --runs F --merged F --audit F | hints-check [--hints F]");
     process.exit(2);
 }
 
