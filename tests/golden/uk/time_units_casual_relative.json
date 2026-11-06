@@ -1,0 +1,802 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/uk/uk_time_units_casual_relative.test.ts",
+  "cases": [
+    {
+      "id": "uk/time_units_casual_relative#01",
+      "text": "наступні 2 тижні",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "наступні 2 тижні",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-10-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#02",
+      "text": "наступні 2 дні",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "наступні 2 дні",
+          "start": {
+            "known": {
+              "day": 3,
+              "month": 10,
+              "weekday": 1,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-10-03T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#03",
+      "text": "наступні два роки",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "наступні два роки",
+          "start": {
+            "known": {
+              "year": 2018
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2018-10-01T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#04",
+      "text": "наступні 2 тижні 3 дні",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "наступні 2 тижні 3 дні",
+          "start": {
+            "known": {
+              "day": 18,
+              "month": 10,
+              "weekday": 2,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-10-18T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#05",
+      "text": "через декілька хвилин",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "через декілька хвилин",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 2,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T12:02:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#06",
+      "text": "через півгодини",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "через півгодини",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 30,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T12:30:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#07",
+      "text": "через 2 години",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "через 2 години",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2016
+            },
+            "implied": {},
+            "date": "2016-10-01T14:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#08",
+      "text": "через три місяці",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "через три місяці",
+          "start": {
+            "known": {
+              "month": 1,
+              "year": 2017
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2017-01-01T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#09",
+      "text": "через тиждень",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "через тиждень",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-10-08T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#10",
+      "text": "через місяць",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "через місяць",
+          "start": {
+            "known": {
+              "month": 11,
+              "year": 2016
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-11-01T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#11",
+      "text": "через рік",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2020-11-22T12:11:32.006Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "через рік",
+          "start": {
+            "known": {
+              "year": 2021
+            },
+            "implied": {
+              "day": 22,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 6,
+              "minute": 11,
+              "month": 11,
+              "second": 32,
+              "timezoneOffset": 0
+            },
+            "date": "2021-11-22T12:11:32.006Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Positive time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#12",
+      "text": "минулі 2 тижні",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "минулі 2 тижні",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 6
+            },
+            "date": "2016-09-17T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Negative time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#13",
+      "text": "минулі два дні",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "минулі два дні",
+          "start": {
+            "known": {
+              "day": 29,
+              "month": 9,
+              "weekday": 4,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2016-09-29T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Negative time units"
+    },
+    {
+      "id": "uk/time_units_casual_relative#14",
+      "text": "+15 хвилин",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeExpressionParser",
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+15 хвилин",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 29,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-07-10T12:29:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus '+' sign"
+    },
+    {
+      "id": "uk/time_units_casual_relative#15",
+      "text": "+15хв",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+15хв",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 29,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-07-10T12:29:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus '+' sign"
+    },
+    {
+      "id": "uk/time_units_casual_relative#16",
+      "text": "+1 день 2 години",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "+1 день 2 години",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-07-11T14:14:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Plus '+' sign"
+    },
+    {
+      "id": "uk/time_units_casual_relative#17",
+      "text": "-3 роки",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-07-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "-3 роки",
+          "start": {
+            "known": {
+              "year": 2012
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 14,
+              "month": 7,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-07-10T12:14:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Minus '-' sign"
+    }
+  ]
+}

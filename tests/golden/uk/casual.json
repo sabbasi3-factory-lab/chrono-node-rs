@@ -1,0 +1,1096 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/uk/uk_casual.test.ts",
+  "cases": [
+    {
+      "id": "uk/casual#01",
+      "text": "Дедлайн сьогодні",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "сьогодні",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-10T17:10:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#02",
+      "text": "Дедлайн завтра",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "завтра",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-11T17:10:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#03",
+      "text": "Дедлайн післязавтра",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "післязавтра",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-12T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#04",
+      "text": "Дедлайн післяпіслязавтра",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "післяпіслязавтра",
+          "start": {
+            "known": {
+              "day": 13,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-13T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#05",
+      "text": "Дедлайн вчора",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "вчора",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-09T17:10:00.000Z",
+            "tags": [
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#06",
+      "text": "Дедлайн позавчора",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "позавчора",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-08T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#07",
+      "text": "Дедлайн позапозавчора",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "позапозавчора",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-07T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#08",
+      "text": "Дедлайн зараз",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "зараз",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 8,
+              "meridiem": 0,
+              "millisecond": 11,
+              "minute": 9,
+              "month": 8,
+              "second": 10,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T08:09:10.011Z",
+            "tags": [
+              "casualReference/now"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#09",
+      "text": "Дедлайн вранці",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "вранці",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#10",
+      "text": "Дедлайн цього ранку",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "цього ранку",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#11",
+      "text": "Дедлайн опівдні",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "опівдні",
+          "start": {
+            "known": {
+              "hour": 12
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/noon"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#12",
+      "text": "Дедлайн минулого вечора",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "минулого вечора",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#13",
+      "text": "Дедлайн ввечері",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "ввечері",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#14",
+      "text": "Дедлайн минулої ночі",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "минулої ночі",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#15",
+      "text": "Дедлайн сьогодні вночі",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T02:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser",
+          "UKCasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "сьогодні вночі",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#16",
+      "text": "Дедлайн цієї ночі",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T02:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "цієї ночі",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#17",
+      "text": "Дедлайн вночі",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T02:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "вночі",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#18",
+      "text": "Дедлайн опівночі",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T02:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "опівночі",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "uk/casual#19",
+      "text": "Дедлайн вчора ввечері",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser",
+          "UKCasualTimeParser"
+        ],
+        "refiners": [
+          "UKMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "вчора ввечері",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "uk/casual#20",
+      "text": "Дедлайн завтра вранці",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-09-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser",
+          "UKCasualTimeParser"
+        ],
+        "refiners": [
+          "UKMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "завтра вранці",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-11T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "uk/casual#21",
+      "text": "Подія від сьогодні і до післязавтра",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser"
+        ],
+        "refiners": [
+          "UKMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 6,
+          "text": "від сьогодні і до післязавтра",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-04T12:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 6,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-06T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual date range"
+    },
+    {
+      "id": "uk/casual#22",
+      "text": "Подія сьогодні-завтра",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "UKCasualDateParser"
+        ],
+        "refiners": [
+          "UKMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 6,
+          "text": "сьогодні-завтра",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T12:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual date range"
+    },
+    {
+      "id": "uk/casual#23",
+      "text": "несьогодні",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "uk/casual#24",
+      "text": "звтра",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "uk/casual#25",
+      "text": "ввчора",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "uk/casual#26",
+      "text": "січен",
+      "config": "uk.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    }
+  ]
+}
