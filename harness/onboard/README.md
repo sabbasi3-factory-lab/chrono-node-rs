@@ -40,7 +40,7 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
 - a step has no golden case, no generated phrase reaches it and `hints.yaml` neither has a seed that
   reaches it nor declares it unreachable: a hand decision;
 - a `hints.yaml` entry is stale: a step declared unreachable that an upstream test, a generated
-  phrase or its probe corpus reaches, or whose `shadowed_by` no longer runs first;
+  phrase or its probe corpus reaches;
 - two tasks would write the same Rust file;
 - a contract scope file's directory isn't generated (checked after the contracts are written).
 
@@ -107,11 +107,14 @@ generator re-checks it against the pinned chrono-node on every render:
   changing the result, and its expected output is recorded from chrono-node like any golden case.
   It's tried after the phrase stream, so other locales' coverage never changes. (`it`:
   `ITMergeRelativeAfterDateRefiner`. The stream never writes `<date> +2 settimane`.)
-- **unreachable**: a step no input can exercise in the pinned upstream, with the reason and a probe
-  corpus that must never reach it; `shadowed_by` adds the chain argument (an unchanged subclass of a
-  step that runs first). The step is still ported: its contract's acceptance is the recorded unit
-  cases. (`it`: `ITUnlikelyFormatFilter`, which needs a result text no Italian parser emits; `vi`:
-  `VIMergeWeekdayComponentRefiner`, which the common `MergeWeekdayComponentRefiner` shadows.)
+- **unreachable**: a step no input can exercise in the pinned upstream, with the reason (an argument
+  from the patterns) and an adversarial probe corpus that must never reach it: every sequence of up
+  to `max_tokens` tokens, in each frame. The step is still ported: its contract's acceptance is the
+  recorded unit cases. (`it`: `ITUnlikelyFormatFilter`, which needs a result text no Italian pattern
+  can end with; 296,472 traces.)
+- Seeds also cover `vi`'s `VIMergeWeekdayComponentRefiner`: with two weekdays before a date, the
+  common `MergeWeekdayComponentRefiner` merges only the second, and the VI subclass then merges the
+  first (it was first declared unreachable by a chain-order argument that was wrong; #357 review).
 
 `onboard.js hints-check` re-checks every entry, and the `onboard-hints` drill checks that broken
 copies fail.

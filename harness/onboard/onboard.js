@@ -146,10 +146,22 @@ function coverageInput(manifest, configs, fragment) {
     return { coverage: requests.length ? { generator: lib.GENERATOR, module: manifest.module, requests } : null, unreachable };
 }
 
+/** Every probe text of an unreachable entry: each sequence of 1..max_tokens tokens (space-joined), in each frame. */
+function probeTexts(probe) {
+    const tokens = probe.tokens || [];
+    const max = Math.min(probe.max_tokens ?? 1, 4);
+    let seqs = tokens.map((t) => [t]);
+    const all = [...seqs];
+    for (let n = 2; n <= max; n++) {
+        seqs = seqs.flatMap((s) => tokens.map((t) => [...s, t]));
+        all.push(...seqs);
+    }
+    return (probe.frames || ["{}"]).flatMap((f) => all.map((s) => f.replace("{}", s.join(" "))));
+}
+
 /**
- * Re-checks a hints.yaml unreachable entry against the pinned chrono-node: no text of its probe
- * corpus traces the step in any listed config and option set, and a `shadowed_by` step comes first
- * in each config's chain, with the step an unchanged subclass of it. Returns the problems (none = holds).
+ * Re-checks a hints.yaml unreachable entry against the pinned chrono-node: no probe text traces the
+ * step in any listed config and option set. Returns the problems (none = the evidence holds).
  */
 function unreachableProblems(manifest, step, entry) {
     const S = require("../lib/serialize");
@@ -160,39 +172,23 @@ function unreachableProblems(manifest, step, entry) {
     const problems = [];
     const p = entry.probe || {};
     if (typeof entry.reason !== "string" || !entry.reason.trim()) problems.push("no reason");
-    if (!Array.isArray(p.configs) || p.configs.length === 0 || !Array.isArray(p.words) || p.words.length === 0) problems.push("no probe corpus");
-    let probes = 0;
-    for (const cfg of p.configs || []) {
+    const texts = probeTexts(p);
+    if (!Array.isArray(p.configs) || p.configs.length === 0 || texts.length === 0) return [...problems, "no probe corpus"];
+    for (const cfg of p.configs) {
         if (!manifest.configs[cfg]) {
             problems.push(`probe config ${cfg} is not one of ${manifest.code}'s`);
             continue;
         }
         const chrono = L[manifest.configs[cfg]];
-        if (entry.shadowed_by) {
-            const names = chrono.refiners.map((x) => S.stepName(x));
-            const i = names.indexOf(step);
-            const j = names.indexOf(entry.shadowed_by);
-            if (i < 0 || j < 0 || j > i) problems.push(`${cfg}: ${entry.shadowed_by} doesn't run before ${step}`);
-            else {
-                const cls = chrono.refiners[i].constructor;
-                const own = Object.getOwnPropertyNames(cls.prototype).filter((k) => k !== "constructor");
-                if (Object.getPrototypeOf(cls) !== chrono.refiners[j].constructor || own.length > 0) problems.push(`${cfg}: ${step} is no longer an unchanged subclass of ${entry.shadowed_by}`);
-            }
-        }
         for (const options of p.options || [{}]) {
-            for (const pre of p.prefixes || [""]) {
-                for (const word of p.words || []) {
-                    for (const post of p.suffixes || [""]) {
-                        const text = pre + word + post;
-                        probes++;
-                        const t = trace(chronoModule, chrono, text, new Date("2024-03-06T12:00:00.000Z"), { ...options });
-                        if ([...t.parsers, ...t.refiners].includes(step)) problems.push(`${cfg} ${JSON.stringify(options)} reaches it: ${JSON.stringify(text)}`);
-                    }
-                }
+            for (const text of texts) {
+                const t = trace(chronoModule, chrono, text, new Date("2024-03-06T12:00:00.000Z"), { ...options });
+                if ([...t.parsers, ...t.refiners].includes(step)) problems.push(`${cfg} ${JSON.stringify(options)} reaches it: ${JSON.stringify(text)}`);
+                if (problems.length >= 5) return problems;
             }
         }
     }
-    return problems.length ? problems : probes > 0 ? [] : ["the probe corpus is empty"];
+    return problems;
 }
 
 /**
@@ -221,10 +217,9 @@ function unreachableUnit(manifest, task, entry) {
         const out = step.refine(ctx, input);
         return { test: c.test, kind: "refine", config: c.config, text: c.text, reference: c.reference, ...(Object.keys(options).length ? { options } : {}), input: before, expect: { results: S.serializeResults(out) } };
     });
-    const shadow = entry.shadowed_by ? ` Upstream subclasses the common \`${entry.shadowed_by}\` unchanged: reuse its Rust port (a type alias or newtype), don't copy it.` : "";
     return {
         requirement:
-            `Port upstream \`${task.source}\` into this one file, as PORTING.md says. No input reaches this step in the pinned chrono-node (\`harness/onboard/hints.yaml\`: ${entry.reason.replace(/\s+/g, " ").trim()}), so it has no golden case.${shadow} ` +
+            `Port upstream \`${task.source}\` into this one file, as PORTING.md says. No input reaches this step in the pinned chrono-node (\`harness/onboard/hints.yaml\`: ${entry.reason.replace(/\s+/g, " ").trim()}), so it has no golden case. ` +
             "Add one in-file `#[cfg(test)]` test per case, named the case's `test` (CI checks the names); the cases were recorded from the pinned chrono-node: `refine`: in a context for `text` with `reference` (and `options`), run this step alone on `input` (results serialized as in the golden files: `index` in UTF-16 code units, `known` components given, the rest implied) and the output must equal `expect.results`.",
         cases,
     };

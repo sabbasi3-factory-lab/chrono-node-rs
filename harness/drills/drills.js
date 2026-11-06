@@ -162,7 +162,7 @@ const DRILLS = {
             : lib.fail("the onboarding decision didn't fail closed", JSON.stringify(bad, null, 2));
     },
 
-    /** hints.yaml still holds against the pinned chrono-node; broken copies fail (a reachable step declared unreachable, a wrong shadow, a dead seed). */
+    /** hints.yaml still holds against the pinned chrono-node; broken copies fail (a reachable step declared unreachable, an empty probe corpus, a dead seed). */
     "onboard-hints": () => {
         const hintsFile = path.join(HARNESS, "onboard/hints.yaml");
         const real = YAML.parse(fs.readFileSync(hintsFile, "utf8"));
@@ -186,10 +186,10 @@ const DRILLS = {
             broken.push([`${step} declared unreachable (its seed reaches it)`, { unreachable: { [step]: { reason: "drill", probe: { configs: [cfg], options: [{}], words: [seeds[0].text] } } } }]);
             broken.push([`a seed for ${step} that reaches nothing`, { seeds: { [step]: [{ ...seeds[0], text: "nothing here" }] } }]);
         }
-        const shadowed = Object.entries(real.unreachable || {}).find(([, e]) => e.shadowed_by);
-        if (shadowed) {
-            const [step, e] = shadowed;
-            broken.push([`${step} shadowed by a refiner that runs after it`, { unreachable: { [step]: { ...e, shadowed_by: "OverlapRemovalRefiner", probe: { ...e.probe, configs: e.probe.configs.slice(0, 1) } } } }]);
+        const declared = Object.entries(real.unreachable || {})[0];
+        if (declared) {
+            const [step, e] = declared;
+            broken.push([`${step} with an empty probe corpus`, { unreachable: { [step]: { ...e, probe: { ...e.probe, tokens: [] } } } }]);
         }
         const missed = broken.filter(([, h]) => check(h).ok).map(([name]) => name);
         fs.rmSync(dir, { recursive: true, force: true });
