@@ -1,0 +1,11 @@
+{
+  "generator": "harness/onboard/onboard.js",
+  "code": "nl",
+  "module": "nl",
+  "upstream": "locales/nl",
+  "tests": "test/nl",
+  "configs": {
+    "nl.casual": "casual",
+    "nl.strict": "strict"
+  }
+}

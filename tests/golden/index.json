@@ -407,6 +407,72 @@
       "skipped": 0,
       "skipped_by_reason": {}
     },
+    "nl/casual": {
+      "source": "upstream/test/nl/nl_casual.test.ts",
+      "cases": 41,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "nl/month": {
+      "source": "upstream/test/nl/nl_month.test.ts",
+      "cases": 16,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "nl/month_name_little_endian": {
+      "source": "upstream/test/nl/nl_month_name_little_endian.test.ts",
+      "cases": 28,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "nl/relative": {
+      "source": "upstream/test/nl/nl_relative.test.ts",
+      "cases": 19,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "nl/slash": {
+      "source": "upstream/test/nl/nl_slash.test.ts",
+      "cases": 27,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "nl/time_exp": {
+      "source": "upstream/test/nl/nl_time_exp.test.ts",
+      "cases": 8,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "nl/time_units_ago": {
+      "source": "upstream/test/nl/nl_time_units_ago.test.ts",
+      "cases": 24,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "nl/time_units_casual_relative": {
+      "source": "upstream/test/nl/nl_time_units_casual_relative.test.ts",
+      "cases": 13,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "nl/time_units_later": {
+      "source": "upstream/test/nl/nl_time_units_later.test.ts",
+      "cases": 20,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "nl/time_units_within": {
+      "source": "upstream/test/nl/nl_time_units_within.test.ts",
+      "cases": 22,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "nl/weekday": {
+      "source": "upstream/test/nl/nl_weekday.test.ts",
+      "cases": 12,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
     "pt/casual": {
       "source": "upstream/test/pt/pt_casual.test.ts",
       "cases": 21,
