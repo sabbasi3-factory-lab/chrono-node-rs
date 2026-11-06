@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { FACTORY_REPO, loadPolicies, parseFactoryVersion, parsePolicies, policyUrl, POLICY_NAMES, readFactoryVersion, type PolicyTexts } from '../policies.ts';
 
-const SHA = 'bb565d88e3aa82aae01dd20b36084d5e4efa05a8';
+const SHA = '7f2086f0329ab867a7ee90b595515e20f6567b68';
 const dir = new URL('./fixtures/policies/', import.meta.url);
 
 async function texts(): Promise<PolicyTexts> {
