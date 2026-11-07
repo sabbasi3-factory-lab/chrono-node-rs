@@ -5,6 +5,182 @@
     "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
   },
   "configurations": {
+    "ar.casual": {
+      "parsers": [
+        {
+          "name": "ARRelativeDateFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ARMonthNameParser",
+          "flags": {}
+        },
+        {
+          "name": "ARCasualTimeParser",
+          "flags": {}
+        },
+        {
+          "name": "ARCasualDateParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "ARTimeUnitWithinFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ARMonthNameLittleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "ARWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "ARTimeExpressionParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "ARTimeUnitAgoFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ARTimeUnitLaterFormatParser",
+          "flags": {}
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ARMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ARMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": false
+          }
+        }
+      ]
+    },
+    "ar.strict": {
+      "parsers": [
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "ARTimeUnitWithinFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ARMonthNameLittleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "ARWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "ARTimeExpressionParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "ARTimeUnitAgoFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ARTimeUnitLaterFormatParser",
+          "flags": {}
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ARMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ARMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": true
+          }
+        }
+      ]
+    },
     "de.casual": {
       "parsers": [
         {

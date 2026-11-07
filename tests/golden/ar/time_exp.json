@@ -1,0 +1,339 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/ar/ar_time_exp.test.ts",
+  "cases": [
+    {
+      "id": "ar/time_exp#1",
+      "text": "الساعة 5:30 مساءً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "الساعة 5:30 مساءً",
+          "start": {
+            "known": {
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T17:30:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Time Expressions"
+    },
+    {
+      "id": "ar/time_exp#2",
+      "text": "8:15 صباحاً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8:15 صباحاً",
+          "start": {
+            "known": {
+              "hour": 8,
+              "meridiem": 0,
+              "minute": 15
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:15:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Time Expressions"
+    },
+    {
+      "id": "ar/time_exp#3",
+      "text": "الساعة ٨:٣٠ مساءً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "الساعة ٨:٣٠ مساءً",
+          "start": {
+            "known": {
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T20:30:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Time Expressions"
+    },
+    {
+      "id": "ar/time_exp#4",
+      "text": "5:30 م",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5:30 م",
+          "start": {
+            "known": {
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T17:30:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Time Expressions"
+    },
+    {
+      "id": "ar/time_exp#5",
+      "text": "8:00 ص",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8:00 ص",
+          "start": {
+            "known": {
+              "hour": 8,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Time Expressions"
+    },
+    {
+      "id": "ar/time_exp#6",
+      "text": "في تمام 6:00",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "في تمام 6:00",
+          "start": {
+            "known": {
+              "hour": 6,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Time Expressions"
+    },
+    {
+      "id": "ar/time_exp#7",
+      "text": "من 2:00 إلى 4:00 مساءً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "من 2:00 إلى 4:00 مساءً",
+          "start": {
+            "known": {
+              "hour": 14,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T14:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 16,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T16:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Arabic Time Range"
+    }
+  ]
+}

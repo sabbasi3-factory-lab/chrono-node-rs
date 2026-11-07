@@ -1,0 +1,226 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/ar/ar_weekday.test.ts",
+  "cases": [
+    {
+      "id": "ar/weekday#1",
+      "text": "الموعد يوم الجمعة",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "يوم الجمعة",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 11,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-11T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Expressions"
+    },
+    {
+      "id": "ar/weekday#2",
+      "text": "الجمعة القادم",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "الجمعة القادم",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 18,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-18T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Expressions"
+    },
+    {
+      "id": "ar/weekday#3",
+      "text": "الخميس الماضي",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "الخميس الماضي",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 3,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Expressions"
+    },
+    {
+      "id": "ar/weekday#4",
+      "text": "هذا الأحد",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "هذا الأحد",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Expressions"
+    },
+    {
+      "id": "ar/weekday#5",
+      "text": "يوم الإثنين القادم",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-08-09T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "يوم الإثنين القادم",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 14,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-08-14T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Expressions"
+    }
+  ]
+}

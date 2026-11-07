@@ -1,0 +1,1179 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/ar/ar_time_units.test.ts",
+  "cases": [
+    {
+      "id": "ar/time_units#01",
+      "text": "منذ 3 أيام",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "منذ 3 أيام",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 6,
+              "weekday": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-06-12T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Past Time Units (منذ / قبل / مضت)"
+    },
+    {
+      "id": "ar/time_units#02",
+      "text": "قبل ساعتين",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "قبل ساعتين",
+          "start": {
+            "known": {
+              "day": 15,
+              "hour": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-06-15T10:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Past Time Units (منذ / قبل / مضت)"
+    },
+    {
+      "id": "ar/time_units#03",
+      "text": "منذ يومين",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "منذ يومين",
+          "start": {
+            "known": {
+              "day": 13,
+              "month": 6,
+              "weekday": 2,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-06-13T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Past Time Units (منذ / قبل / مضت)"
+    },
+    {
+      "id": "ar/time_units#04",
+      "text": "قبل 5 دقائق",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "قبل 5 دقائق",
+          "start": {
+            "known": {
+              "day": 15,
+              "hour": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 55,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-06-15T11:55:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Past Time Units (منذ / قبل / مضت)"
+    },
+    {
+      "id": "ar/time_units#05",
+      "text": "3 أيام مضت",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "3 أيام مضت",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 6,
+              "weekday": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-06-12T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Past Time Units (منذ / قبل / مضت)"
+    },
+    {
+      "id": "ar/time_units#06",
+      "text": "بعد 3 أيام",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "بعد 3 أيام",
+          "start": {
+            "known": {
+              "day": 18,
+              "month": 6,
+              "weekday": 0,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-06-18T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Future Time Units (بعد)"
+    },
+    {
+      "id": "ar/time_units#07",
+      "text": "بعد ساعتين",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "بعد ساعتين",
+          "start": {
+            "known": {
+              "day": 15,
+              "hour": 14,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-06-15T14:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Future Time Units (بعد)"
+    },
+    {
+      "id": "ar/time_units#08",
+      "text": "بعد يومين",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "بعد يومين",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 6,
+              "weekday": 6,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-06-17T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Future Time Units (بعد)"
+    },
+    {
+      "id": "ar/time_units#09",
+      "text": "منذ أسبوعين",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "منذ أسبوعين",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 6,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 4
+            },
+            "date": "2023-06-01T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Future Time Units (بعد)"
+    },
+    {
+      "id": "ar/time_units#10",
+      "text": "بعد شهرين",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "بعد شهرين",
+          "start": {
+            "known": {
+              "month": 8,
+              "year": 2023
+            },
+            "implied": {
+              "day": 15,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-08-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Future Time Units (بعد)"
+    },
+    {
+      "id": "ar/time_units#11",
+      "text": "منذ سنتين",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "منذ سنتين",
+          "start": {
+            "known": {
+              "year": 2021
+            },
+            "implied": {
+              "day": 15,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2021-06-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Future Time Units (بعد)"
+    },
+    {
+      "id": "ar/time_units#12",
+      "text": "خلال 3 ساعات",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "خلال 3 ساعات",
+          "start": {
+            "known": {
+              "day": 15,
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-06-15T15:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Within Time Units (خلال / في غضون)"
+    },
+    {
+      "id": "ar/time_units#13",
+      "text": "في غضون يومين",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "في غضون يومين",
+          "start": {
+            "known": {
+              "day": 17,
+              "month": 6,
+              "weekday": 6,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-06-17T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Within Time Units (خلال / في غضون)"
+    },
+    {
+      "id": "ar/time_units#14",
+      "text": "الشهر القادم",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "الشهر القادم",
+          "start": {
+            "known": {
+              "month": 7,
+              "year": 2023
+            },
+            "implied": {
+              "day": 15,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-07-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Relative Date Expressions (الشهر القادم / الأسبوع الماضي)"
+    },
+    {
+      "id": "ar/time_units#15",
+      "text": "الشهر الماضي",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "الشهر الماضي",
+          "start": {
+            "known": {
+              "month": 5,
+              "year": 2023
+            },
+            "implied": {
+              "day": 15,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-05-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Relative Date Expressions (الشهر القادم / الأسبوع الماضي)"
+    },
+    {
+      "id": "ar/time_units#16",
+      "text": "السنة القادمة",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARRelativeDateFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "السنة القادمة",
+          "start": {
+            "known": {
+              "year": 2024
+            },
+            "implied": {
+              "day": 15,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2024-06-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Relative Date Expressions (الشهر القادم / الأسبوع الماضي)"
+    },
+    {
+      "id": "ar/time_units#17",
+      "text": "منذ ثماني ساعات",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "منذ ثماني ساعات",
+          "start": {
+            "known": {
+              "day": 15,
+              "hour": 4,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-06-15T04:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Feminine Counts (ثماني)"
+    },
+    {
+      "id": "ar/time_units#18",
+      "text": "بعد 15 يوماً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeExpressionParser",
+          "ARTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "بعد 15 يوماً",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 6,
+              "weekday": 5,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-06-30T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Accusative Units (11-99)"
+    },
+    {
+      "id": "ar/time_units#19",
+      "text": "بعد 15 يوما",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeExpressionParser",
+          "ARTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "بعد 15 يوما",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 6,
+              "weekday": 5,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2023-06-30T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Accusative Units (11-99)"
+    },
+    {
+      "id": "ar/time_units#20",
+      "text": "بعد 11 شهراً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeExpressionParser",
+          "ARTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "بعد 11 شهراً",
+          "start": {
+            "known": {
+              "month": 5,
+              "year": 2024
+            },
+            "implied": {
+              "day": 15,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2024-05-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Accusative Units (11-99)"
+    },
+    {
+      "id": "ar/time_units#21",
+      "text": "منذ 25 عاماً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "منذ 25 عاماً",
+          "start": {
+            "known": {
+              "year": 1998
+            },
+            "implied": {
+              "day": 15,
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "1998-06-15T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Accusative Units (11-99)"
+    },
+    {
+      "id": "ar/time_units#22",
+      "text": "بعد يومان و3 ساعات",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "بعد يومان و3 ساعات",
+          "start": {
+            "known": {
+              "day": 17,
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-06-17T15:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Compound Durations with و"
+    },
+    {
+      "id": "ar/time_units#23",
+      "text": "بعد ساعة ونصف",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitLaterFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "بعد ساعة ونصف",
+          "start": {
+            "known": {
+              "day": 15,
+              "hour": 13,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 30,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-06-15T13:30:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Compound Durations with و"
+    },
+    {
+      "id": "ar/time_units#24",
+      "text": "منذ ساعتين ونصف",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "منذ ساعتين ونصف",
+          "start": {
+            "known": {
+              "day": 15,
+              "hour": 9,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 30,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-06-15T09:30:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Compound Durations with و"
+    },
+    {
+      "id": "ar/time_units#25",
+      "text": "خلال يوم ونصف",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeUnitWithinFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "خلال يوم ونصف",
+          "start": {
+            "known": {
+              "day": 17,
+              "hour": 0,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 6,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-06-17T00:00:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Compound Durations with و"
+    }
+  ]
+}

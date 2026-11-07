@@ -1,0 +1,384 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/ar/ar_negative_cases.test.ts",
+  "cases": [
+    {
+      "id": "ar/negative_cases#01",
+      "text": "32 يناير 2023",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - invalid day rejected"
+    },
+    {
+      "id": "ar/negative_cases#02",
+      "text": "32/13/2020",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - invalid slash date rejected"
+    },
+    {
+      "id": "ar/negative_cases#03",
+      "text": "01012345678",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - phone numbers not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#04",
+      "text": "+966501234567",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - phone numbers not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#05",
+      "text": "3",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - bare numbers and percentages not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#06",
+      "text": "11",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - bare numbers and percentages not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#07",
+      "text": "0.5",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - bare numbers and percentages not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#08",
+      "text": "35.49",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - bare numbers and percentages not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#09",
+      "text": "12.53%",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - bare numbers and percentages not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#10",
+      "text": "1500 جنيه",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - currency and measurements not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#11",
+      "text": "500 ريال",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - currency and measurements not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#12",
+      "text": "$1,194.09",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - currency and measurements not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#13",
+      "text": "6.5 كيلو جرام",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - currency and measurements not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#14",
+      "text": "1.1.3",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - version numbers not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#15",
+      "text": "1.10.30",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [],
+      "upstream_test": "Test - version numbers not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#16",
+      "text": "1-2",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - hyphenated number ranges not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#17",
+      "text": "1-2-3",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - hyphenated number ranges not parsed as dates"
+    },
+    {
+      "id": "ar/negative_cases#18",
+      "text": "الساعة 25:00",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - impossible time rejected"
+    },
+    {
+      "id": "ar/negative_cases#19",
+      "text": "الساعة 7:65",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-06-15T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - impossible time rejected"
+    }
+  ]
+}
