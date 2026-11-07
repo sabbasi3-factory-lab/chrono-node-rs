@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-07T04:31:10Z",
+  "generated_at": "2026-11-07T05:17:59Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
     {
@@ -19,12 +19,12 @@
         {
           "type": "create_pull_request",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/455",
-          "outcome_status": "pending",
-          "zero_touch": null
+          "outcome_status": "accepted",
+          "zero_touch": true
         }
       ],
       "eval_failed": false,
-      "evaluated_at": "2026-11-07T04:31:10Z",
+      "evaluated_at": "2026-11-07T05:17:59Z",
       "drill": false
     },
     {
@@ -3080,7 +3080,7 @@
         }
       ],
       "eval_failed": false,
-      "evaluated_at": "2026-11-04T18:46:45Z",
+      "evaluated_at": "2026-11-07T05:17:59Z",
       "drill": false
     },
     {
@@ -3105,7 +3105,7 @@
         }
       ],
       "eval_failed": false,
-      "evaluated_at": "2026-11-04T18:46:45Z",
+      "evaluated_at": "2026-11-07T05:17:59Z",
       "drill": false
     },
     {
@@ -4830,8 +4830,8 @@
     }
   ],
   "summary": {
-    "accepted": 174,
-    "pending": 157,
+    "accepted": 175,
+    "pending": 156,
     "rejected": 12,
     "unknown": 17
   }
