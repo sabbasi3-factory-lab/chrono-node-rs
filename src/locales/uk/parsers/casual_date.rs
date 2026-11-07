@@ -30,7 +30,7 @@ impl WordBoundaryParser for UkCasualDateParser {
     }
 
     fn inner_extract(&self, context: &ParsingContext, m: &mut RegexMatch) -> Extracted {
-        let lower_text = m.text().to_lowercase();
+        let lower_text = m.get(1).unwrap_or("").to_lowercase();
         let reference = context.reference;
         let component = match lower_text.as_str() {
             "сьогодні" => references::today(reference),
