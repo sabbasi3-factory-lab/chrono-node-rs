@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-07T11:53:12Z",
+  "generated_at": "2026-11-07T14:20:56Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
     {
@@ -2942,7 +2942,7 @@
         }
       ],
       "eval_failed": false,
-      "evaluated_at": "2026-11-04T18:46:45Z",
+      "evaluated_at": "2026-11-07T14:20:56Z",
       "drill": false
     },
     {
@@ -4252,6 +4252,18 @@
       "drill": false
     },
     {
+      "run_id": 42369845379,
+      "workflow": "repair",
+      "title": "Repair drill/activation-canary #1 attempt 2",
+      "created_at": "2026-11-07T11:50:11Z",
+      "aic": 11.02082,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-07T14:20:56Z",
+      "drill": true
+    },
+    {
       "run_id": 42326508498,
       "workflow": "repair",
       "title": "Repair uk/casual-date-parser #429 attempt 2",
@@ -4504,6 +4516,18 @@
       "items": [],
       "eval_failed": false,
       "evaluated_at": "2026-11-04T18:46:45Z",
+      "drill": true
+    },
+    {
+      "run_id": 42369845089,
+      "workflow": "review",
+      "title": "Review drill/activation-canary PR #1",
+      "created_at": "2026-11-07T11:50:11Z",
+      "aic": 5.27422,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-07T14:20:56Z",
       "drill": true
     },
     {
