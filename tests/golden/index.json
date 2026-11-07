@@ -7,6 +7,48 @@
   "system_timezone": "UTC",
   "default_reference": "2012-08-10T12:00:00.000Z",
   "files": {
+    "ar/casual": {
+      "source": "upstream/test/ar/ar_casual.test.ts",
+      "cases": 21,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "ar/coverage": {
+      "source": "harness/golden/coverage/ar.json",
+      "cases": 3,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "ar/month": {
+      "source": "upstream/test/ar/ar_month.test.ts",
+      "cases": 8,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "ar/negative_cases": {
+      "source": "upstream/test/ar/ar_negative_cases.test.ts",
+      "cases": 19,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "ar/time_exp": {
+      "source": "upstream/test/ar/ar_time_exp.test.ts",
+      "cases": 7,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "ar/time_units": {
+      "source": "upstream/test/ar/ar_time_units.test.ts",
+      "cases": 25,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "ar/weekday": {
+      "source": "upstream/test/ar/ar_weekday.test.ts",
+      "cases": 5,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
     "core/calculation_duration": {
       "source": "upstream/test/calculation_duration.test.ts",
       "cases": 0,

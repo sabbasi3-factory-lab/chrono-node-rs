@@ -1,0 +1,207 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "harness/golden/coverage/ar.json",
+  "cases": [
+    {
+      "id": "ar/coverage#1",
+      "text": " بعد ساعتين - بعد يومان و3 ساعات",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2006-12-31T13:37:36.000Z",
+        "timezone_input": "MT",
+        "timezone_offset": -420
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ARTimeUnitLaterFormatParser"
+        ],
+        "refiners": [
+          "ARMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "بعد ساعتين - بعد يومان و3 ساعات",
+          "start": {
+            "known": {
+              "day": 31,
+              "hour": 8,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 37,
+              "month": 12,
+              "second": 36,
+              "timezoneOffset": -420,
+              "year": 2006
+            },
+            "implied": {},
+            "date": "2006-12-31T15:37:36.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 2,
+              "hour": 9,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 37,
+              "month": 1,
+              "second": 36,
+              "timezoneOffset": -420,
+              "year": 2007
+            },
+            "implied": {},
+            "date": "2007-01-02T16:37:36.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "ar/coverage#1 ARMergeDateRangeRefiner"
+    },
+    {
+      "id": "ar/coverage#2",
+      "text": "(كانون الأول 2024-خلال يوم ونصف)",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2040-01-27T23:27:31.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARMonthNameParser",
+          "ARTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "ARMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "كانون الأول 2024-خلال يوم ونصف",
+          "start": {
+            "known": {
+              "month": 12,
+              "year": 2024
+            },
+            "implied": {
+              "day": 29,
+              "hour": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 27,
+              "second": 31,
+              "timezoneOffset": 0
+            },
+            "date": "2024-12-29T11:27:31.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 29,
+              "hour": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 27,
+              "month": 1,
+              "second": 31,
+              "timezoneOffset": 0,
+              "year": 2040
+            },
+            "implied": {},
+            "date": "2040-01-29T11:27:31.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "ar/coverage#2 ARMergeDateRangeRefiner"
+    },
+    {
+      "id": "ar/coverage#3",
+      "text": "- نلتقي بعد الظهر – غداً -",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2026-08-25T09:23:18.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser",
+          "ARCasualTimeParser"
+        ],
+        "refiners": [
+          "ARMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "بعد الظهر – غداً",
+          "start": {
+            "known": {
+              "day": 26,
+              "month": 8,
+              "year": 2026
+            },
+            "implied": {
+              "hour": 9,
+              "millisecond": 0,
+              "minute": 23,
+              "second": 18
+            },
+            "date": "2026-08-26T09:23:18.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": {
+            "known": {},
+            "implied": {
+              "day": 26,
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2026
+            },
+            "date": "2026-08-26T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "ar/coverage#3 ARMergeDateRangeRefiner"
+    }
+  ]
+}

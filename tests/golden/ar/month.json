@@ -1,0 +1,377 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/ar/ar_month.test.ts",
+  "cases": [
+    {
+      "id": "ar/month#1",
+      "text": "15 يناير 2023",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARMonthNameLittleEndianParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 يناير 2023",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-01-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Month Names and Dates"
+    },
+    {
+      "id": "ar/month#2",
+      "text": "١٥ يناير ٢٠٢٣",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARMonthNameLittleEndianParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "١٥ يناير ٢٠٢٣",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-01-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Month Names and Dates"
+    },
+    {
+      "id": "ar/month#3",
+      "text": "15 كانون الثاني 2023",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARMonthNameLittleEndianParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 كانون الثاني 2023",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-01-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Month Names and Dates"
+    },
+    {
+      "id": "ar/month#4",
+      "text": "25 شباط 2024",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARMonthNameLittleEndianParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "25 شباط 2024",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 2,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-02-25T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Month Names and Dates"
+    },
+    {
+      "id": "ar/month#5",
+      "text": "في 15 من مارس 2022",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARMonthNameLittleEndianParser",
+          "ARMonthNameParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "في 15 من مارس 2022",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 3,
+              "year": 2022
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2022-03-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Month Names and Dates"
+    },
+    {
+      "id": "ar/month#6",
+      "text": "يناير 2025",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "يناير 2025",
+          "start": {
+            "known": {
+              "month": 1,
+              "year": 2025
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2025-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Month Names and Dates"
+    },
+    {
+      "id": "ar/month#7",
+      "text": "كانون الأول 2024",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "كانون الأول 2024",
+          "start": {
+            "known": {
+              "month": 12,
+              "year": 2024
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2024-12-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Arabic Month Names and Dates"
+    },
+    {
+      "id": "ar/month#8",
+      "text": "من 15 إلى 20 يناير 2023",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARMonthNameLittleEndianParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "من 15 إلى 20 يناير 2023",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-01-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 20,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-01-20T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Arabic Month Date Ranges"
+    }
+  ]
+}

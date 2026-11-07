@@ -1,0 +1,926 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/ar/ar_casual.test.ts",
+  "cases": [
+    {
+      "id": "ar/casual#01",
+      "text": "الموعد اليوم",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "اليوم",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2023-01-10T17:10:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Date Expressions"
+    },
+    {
+      "id": "ar/casual#02",
+      "text": "الموعد غداً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "غداً",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2023-01-11T17:10:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Date Expressions"
+    },
+    {
+      "id": "ar/casual#03",
+      "text": "الموعد غدا",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "غدا",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2023-01-11T17:10:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Date Expressions"
+    },
+    {
+      "id": "ar/casual#04",
+      "text": "الموعد بعد غد",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "بعد غد",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2023-01-12T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Date Expressions"
+    },
+    {
+      "id": "ar/casual#05",
+      "text": "الموعد أمس",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "أمس",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2023-01-09T17:10:00.000Z",
+            "tags": [
+              "casualReference/yesterday"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Date Expressions"
+    },
+    {
+      "id": "ar/casual#06",
+      "text": "الموعد أول أمس",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "أول أمس",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2023-01-08T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Date Expressions"
+    },
+    {
+      "id": "ar/casual#07",
+      "text": "الموعد أول من أمس",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "أول من أمس",
+          "start": {
+            "known": {
+              "day": 8,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2023-01-08T17:10:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Date Expressions"
+    },
+    {
+      "id": "ar/casual#08",
+      "text": "الموعد الآن",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T08:09:10.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "الآن",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 8,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 9,
+              "month": 1,
+              "second": 10,
+              "timezoneOffset": 0,
+              "year": 2023
+            },
+            "implied": {},
+            "date": "2023-01-10T08:09:10.000Z",
+            "tags": [
+              "casualReference/now"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Date Expressions"
+    },
+    {
+      "id": "ar/casual#09",
+      "text": "الاجتماع هذا الصباح",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "هذا الصباح",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-01-10T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Time Expressions"
+    },
+    {
+      "id": "ar/casual#10",
+      "text": "نلتقي عند الظهر",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 10,
+          "text": "الظهر",
+          "start": {
+            "known": {
+              "hour": 12
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-01-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/noon"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Time Expressions"
+    },
+    {
+      "id": "ar/casual#11",
+      "text": "نلتقي بعد الظهر",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 6,
+          "text": "بعد الظهر",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-01-10T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Time Expressions"
+    },
+    {
+      "id": "ar/casual#12",
+      "text": "نلتقي هذا المساء",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 6,
+          "text": "هذا المساء",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-01-10T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Time Expressions"
+    },
+    {
+      "id": "ar/casual#13",
+      "text": "نلتقي عند منتصف الليل",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 10,
+          "text": "منتصف الليل",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 11,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0,
+              "weekday": 3,
+              "year": 2023
+            },
+            "date": "2023-01-11T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Casual Time Expressions"
+    },
+    {
+      "id": "ar/casual#14",
+      "text": "غداً الساعة 5 مساءً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser",
+          "ARCasualTimeParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "ARMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "غداً الساعة 5 مساءً",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2023-01-11T17:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Casual Date and Time"
+    },
+    {
+      "id": "ar/casual#15",
+      "text": "غداً ليلاً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser",
+          "ARCasualTimeParser"
+        ],
+        "refiners": [
+          "ARMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "غداً ليلاً",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-01-11T22:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Casual Date and Time"
+    },
+    {
+      "id": "ar/casual#16",
+      "text": "15 يناير ليلاً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser",
+          "ARMonthNameLittleEndianParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "ARMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 يناير ليلاً",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 1
+            },
+            "implied": {
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2023
+            },
+            "date": "2023-01-15T22:00:00.000Z",
+            "tags": [
+              "casualReference/evening"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Casual Date and Time"
+    },
+    {
+      "id": "ar/casual#17",
+      "text": "هذه الليلة",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "هذه الليلة",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-01-10T22:00:00.000Z",
+            "tags": [
+              "casualReference/tonight"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Casual Date and Time"
+    },
+    {
+      "id": "ar/casual#18",
+      "text": "غداً",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "غداً",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-01-11T12:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Shortcuts (parse & parseDate)"
+    },
+    {
+      "id": "ar/casual#19",
+      "text": "اليوم",
+      "config": "ar.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "اليوم",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-01-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/today"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Strict Mode vs Casual Mode"
+    },
+    {
+      "id": "ar/casual#20",
+      "text": "اليوم",
+      "config": "ar.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Strict Mode vs Casual Mode"
+    },
+    {
+      "id": "ar/casual#21",
+      "text": "15 يناير 2023",
+      "config": "ar.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2023-01-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ARMonthNameLittleEndianParser",
+          "ARTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 يناير 2023",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 1,
+              "year": 2023
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2023-01-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Strict Mode vs Casual Mode"
+    }
+  ]
+}
