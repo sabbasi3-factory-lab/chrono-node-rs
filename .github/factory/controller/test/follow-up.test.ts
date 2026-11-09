@@ -122,8 +122,25 @@ describe('follow-up poll (cron runs every 2–8 h here)', () => {
     assert.match(wait, /github\.event_name == 'workflow_dispatch' && inputs\.chain != ''/);
     assert.doesNotMatch(yml.slice(0, yml.indexOf('\njobs:')), /\nconcurrency:/, 'no workflow-level concurrency (it would hold the wait in the group)');
     const ctrl = yml.slice(yml.indexOf('\n  controller:'));
-    assert.match(ctrl, /needs: wait/);
+    assert.match(ctrl, /needs: \[wait, relevance\]/);
     assert.match(ctrl, /group: factory-controller\n\s+cancel-in-progress: false/);
     assert.match(ctrl, /FACTORY_CHAIN: \$\{\{ inputs\.chain \}\}/);
+  });
+
+  it('the workflow: relevance decides PR-driven events outside the group (a failed decision polls); polls are spaced 5 min', async () => {
+    const yml = await readFile(new URL('../../../workflows/controller.yml', import.meta.url), 'utf8');
+    const rel = yml.slice(yml.indexOf('\n  relevance:'), yml.indexOf('\n  # A follow-up poll'));
+    assert.match(rel, /github\.event_name == 'pull_request_target' \|\| github\.event_name == 'workflow_run'/);
+    assert.match(rel, /permissions: \{ contents: read, pull-requests: read \}/);
+    assert.match(rel, /GH_TOKEN: \$\{\{ github\.token \}\}/);
+    assert.match(rel, /node \.github\/factory\/controller\/relevance\.ts "\$GITHUB_EVENT_NAME" "\$GITHUB_EVENT_PATH"/);
+    // Only the read-only workflow token: no App token, no secrets, outside the group.
+    assert.doesNotMatch(rel, /concurrency|secrets|app-token|create-github-app-token/i);
+    const ctrl = yml.slice(yml.indexOf('\n  controller:'));
+    assert.match(ctrl, /needs\.relevance\.outputs\.poll != 'false'/);
+    const space = ctrl.slice(ctrl.indexOf('Space polls (5 min)'));
+    assert.match(space, /if: \$\{\{ always\(\) \}\}/);
+    assert.match(space, /\$\{POLL_START:-0\} \+ 300/);
+    assert.match(ctrl, /echo "POLL_START=\$\(date \+%s\)"/);
   });
 });

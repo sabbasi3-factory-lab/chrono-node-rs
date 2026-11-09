@@ -1,5 +1,6 @@
 # Factory watchdog (plain code, no AI): raise one factory:alert per kind of stall (a needs-human over
-# 6 h, a `ci` checks job over 60 min, a green factory PR not merging, a task without progress). It runs
+# 6 h, a `ci` checks job over 60 min, a green factory PR not merging, a task without progress, 5 or
+# more controller runs failed in a row). It runs
 # from Actions, so a stall is caught even when nobody is watching (harness/watchdog/watchdog.js).
 # Triggers: GitHub throttles this repo's cron to one run every few hours (the 15-min schedule had never
 # fired), so it also runs after each controller run, at most once per 10 min; the cron stays a fallback.
