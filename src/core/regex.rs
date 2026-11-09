@@ -24,7 +24,7 @@
 //! does. `v` (unicode sets) is not supported.
 
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::{LazyLock, Mutex};
 
 use fancy_regex::Regex;
 
@@ -79,6 +79,9 @@ const WORD_BOUNDARY: &str = r"(?:(?<=[A-Za-z0-9_])(?![A-Za-z0-9_])|(?<![A-Za-z0-
 const NOT_WORD_BOUNDARY: &str = r"(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_]))";
 const META: &str = r"\.+*?()|[]{}^$#&-~";
 
+const COMPILED_CAP: usize = 4096;
+static COMPILED: LazyLock<Mutex<HashMap<(String, String), JsRegex>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+
 /// A compiled JS regular expression.
 #[derive(Clone, Debug)]
 pub struct JsRegex {
@@ -123,14 +126,27 @@ impl JsRegex {
         JsRegex::try_new(source, flags).unwrap_or_else(|e| panic!("invalid JS regex /{source}/{flags}: {e}"))
     }
 
+    /// Compiled once per `(source, flags)` in the process: upstream builds `new RegExp(...)` inside
+    /// methods called on every parse (`innerPattern()`), and a ported step that does the same must not
+    /// recompile a Unicode case-insensitive pattern each time (ru/uk ran ~30x slower than other locales).
     pub fn try_new(source: &str, flags: &str) -> Result<JsRegex, String> {
+        let key = (source.to_string(), flags.to_string());
+        if let Some(hit) = COMPILED.lock().unwrap_or_else(|e| e.into_inner()).get(&key) {
+            return Ok(hit.clone());
+        }
         let translated = translate(source, flags)?;
         let re = Regex::new(&translated).map_err(|e| format!("{e} (translated: {translated})"))?;
-        Ok(JsRegex {
-            source: source.to_string(),
-            flags: flags.to_string(),
+        let compiled = JsRegex {
+            source: key.0.clone(),
+            flags: key.1.clone(),
             re,
-        })
+        };
+        let mut cache = COMPILED.lock().unwrap_or_else(|e| e.into_inner());
+        // Patterns come from the ported code (finite); the cap only guards against unbounded growth.
+        if cache.len() < COMPILED_CAP {
+            cache.insert(key, compiled.clone());
+        }
+        Ok(compiled)
     }
 
     /// `regex.source`: the original JS pattern text.
@@ -550,6 +566,25 @@ pub fn translate(source: &str, flags: &str) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn compiled_once_per_source_and_flags() {
+        let src = r"(?:с|со)?\s*(сегодня|завтра)(?=[^\p{L}\p{N}_]|$)";
+        let a = JsRegex::new(src, "iu");
+        let b = JsRegex::new(src, "iu");
+        assert!(COMPILED
+            .lock()
+            .unwrap()
+            .contains_key(&(src.to_string(), "iu".to_string())));
+        assert_eq!((a.source(), a.flags()), (b.source(), b.flags()));
+        assert_eq!(
+            b.exec("с Завтра").map(|m| m.groups),
+            Some(vec![Some("с Завтра".into()), Some("Завтра".into())])
+        );
+        // Other flags are a different regex.
+        assert!(JsRegex::new(src, "u").exec("с Завтра").is_none());
+        assert!(JsRegex::try_new("(", "").is_err());
+    }
 
     fn m(src: &str, flags: &str, text: &str) -> Option<(usize, Vec<Option<String>>)> {
         JsRegex::new(src, flags).exec(text).map(|m| (m.index, m.groups))
