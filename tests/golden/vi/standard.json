@@ -1,0 +1,351 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/vi/vi_standard.test.ts",
+  "cases": [
+    {
+      "id": "vi/standard#1",
+      "text": "Ngày 30 tháng 4 năm 1975 là ngày giải phóng.",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Ngày 30 tháng 4 năm 1975",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 4,
+              "year": 1975
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1975-04-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - ngày D tháng M năm YYYY (full with ngày prefix)"
+    },
+    {
+      "id": "vi/standard#2",
+      "text": "Hiệp định được ký ngày 27 tháng 1 năm 1973.",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 18,
+          "text": "ngày 27 tháng 1 năm 1973",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 1,
+              "year": 1973
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1973-01-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - ngày D tháng M năm YYYY (full with ngày prefix)"
+    },
+    {
+      "id": "vi/standard#3",
+      "text": "ngày 2 tháng 9 năm 1945",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "ngày 2 tháng 9 năm 1945",
+          "start": {
+            "known": {
+              "day": 2,
+              "month": 9,
+              "year": 1945
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1945-09-02T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - ngày D tháng M năm YYYY (full with ngày prefix)"
+    },
+    {
+      "id": "vi/standard#4",
+      "text": "7 tháng 5 năm 1954 là ngày chấm dứt trận Điện Biên Phủ.",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "7 tháng 5 năm 1954",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 5,
+              "year": 1954
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1954-05-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - D tháng M năm YYYY (no ngày prefix)"
+    },
+    {
+      "id": "vi/standard#5",
+      "text": "1 tháng 1 năm 1863",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1 tháng 1 năm 1863",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 1,
+              "year": 1863
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1863-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - D tháng M năm YYYY (no ngày prefix)"
+    },
+    {
+      "id": "vi/standard#6",
+      "text": "ngày 15 tháng 3",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "ngày 15 tháng 3",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 3
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-03-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date without year implies closest year"
+    },
+    {
+      "id": "vi/standard#7",
+      "text": "Sự kiện ngày 30 tháng 4 năm 1975 quan trọng.",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "ngày 30 tháng 4 năm 1975",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 4,
+              "year": 1975
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1975-04-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - index position is correct"
+    },
+    {
+      "id": "vi/standard#8",
+      "text": "ngày 1 tháng 13",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - negative: invalid month rejected"
+    }
+  ]
+}
