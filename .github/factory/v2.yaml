@@ -6,16 +6,20 @@ version: 1
 # pinned factory version (the router checks), so v1 never works on it. Pilot: Italian.
 languages: [it]
 # AI Credits for all v2 agent runs since `since` (every job: agent, threat detection, evals; from
-# gh aw logs). The router starts a run only if the spend so far plus that run's agent cap fits.
-budget_aic: 1000
+# gh aw logs). The router starts a run only if the spend so far plus every AI job of that run at its
+# cap fits (a port reserves 500 + 400 + 500, a repair 300 + 400). 2800 is one port and max_repairs
+# repairs at their caps, so the worst case of one language is bounded. Pilot: the coordinator also
+# stops and reports once measured spend passes 1000.
+budget_aic: 2800
 since: "2026-11-09"
-# The agent job's gh-aw max-ai-credits per workflow (keep in step with the workflows' frontmatter;
-# factory policies/budgets.yaml per_run.implement and per_run.repair). A run still in progress counts
-# at its cap plus threat_detection.
+# gh-aw max-ai-credits of each AI job (keep in step with the workflows' frontmatter; factory
+# policies/budgets.yaml per_run.implement, per_run.repair, per_run.threat_detection). gh-aw v1.0.1's
+# evals job (v2-port only) inherits the agent's cap. A run still in progress counts at all of them.
 caps:
   port: 500
   repair: 300
   threat_detection: 400
+  evals: 500
 # Repairs after the first run (factory policies/limits.yaml task.max_repairs); the same failure
 # signature twice in a row also stops (stop_on_repeated_signature). Then needs-human.
 max_repairs: 2

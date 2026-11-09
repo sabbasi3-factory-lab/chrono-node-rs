@@ -96,14 +96,18 @@ function usageTotal(texts) {
     return sum;
 }
 
+/** Every AI job of one run at its cap: the agent, threat detection, and (v2-port only) evals. */
+const reserveFor = (kind, caps) => (kind === "repair" ? caps.repair : caps.port + caps.evals) + caps.threat_detection;
+
 /**
  * Spend of all v2 runs: a completed run counts every job's recorded usage (agent, threat detection,
- * evals); one that made model calls but has no usage counts at its caps, as does a run in progress.
+ * evals); one that made model calls but has no usage counts at its caps (reserveFor), as does a run
+ * in progress.
  *   logs: `gh aw logs --json` output; usageOf(run) => number | null; active: [{id, path}] queued or in
  *   progress (from the Actions API); caps: v2.yaml caps. Returns {spent, runs: [{run_id, aic, how}]}.
  */
 function spendOf({ logs, usageOf, active, caps }) {
-    const bound = (p) => (/v2-repair/.test(p || "") ? caps.repair : caps.port) + caps.threat_detection;
+    const bound = (p) => reserveFor(/v2-repair/.test(p || "") ? "repair" : "port", caps);
     const runs = [];
     const seen = new Set();
     for (const r of (logs && logs.runs) || []) {
@@ -137,7 +141,8 @@ function startDecision({ enabled, unit, config, external, contracts, issue, open
     }
     if (issue && issue.state !== "open") return { ok: false, reason: `issue #${issue.number} is closed` };
     if (openPr) return { ok: false, reason: `PR #${openPr} is already open for ${unit}` };
-    if (spent + config.caps.port > config.budget_aic) return { ok: false, reason: `budget: ${spent} AIC spent + ${config.caps.port} for the run > ${config.budget_aic}` };
+    const need = reserveFor("port", config.caps);
+    if (spent + need > config.budget_aic) return { ok: false, reason: `budget: ${spent} AIC spent + ${need} reserved for the run > ${config.budget_aic}` };
     return { ok: true };
 }
 
@@ -160,7 +165,8 @@ function repairDecision({ enabled, event, conclusion, headIsCurrent, gates, sign
     if (repairs.length >= config.max_repairs) return { action: "needs_human", reason: `ci failed (${signature}) after ${repairs.length} repairs (max_repairs ${config.max_repairs})` };
     const last = repairs[repairs.length - 1];
     if (last && last.signature === signature) return { action: "needs_human", reason: `ci failed again with the same signature as before the last repair (${signature})` };
-    if (spent + config.caps.repair > config.budget_aic) return { action: "needs_human", reason: `budget: ${spent} AIC spent + ${config.caps.repair} for a repair > ${config.budget_aic}` };
+    const need = reserveFor("repair", config.caps);
+    if (spent + need > config.budget_aic) return { action: "needs_human", reason: `budget: ${spent} AIC spent + ${need} reserved for a repair > ${config.budget_aic}` };
     return { action: "repair", reason: `ci failed (${signature})`, attempt: repairs.length + 2 };
 }
 
@@ -183,7 +189,7 @@ const json = (name) => JSON.parse(process.env[name] || "null");
 function loadConfig() {
     const c = json("V2_CONFIG");
     const caps = c && c.caps;
-    if (!c || !Array.isArray(c.languages) || !Number.isFinite(c.budget_aic) || !Number.isInteger(c.max_repairs) || !caps || ![caps.port, caps.repair, caps.threat_detection].every(Number.isFinite)) {
+    if (!c || !Array.isArray(c.languages) || !Number.isFinite(c.budget_aic) || !Number.isInteger(c.max_repairs) || !caps || ![caps.port, caps.repair, caps.threat_detection, caps.evals].every(Number.isFinite)) {
         throw new Error("V2_CONFIG (.github/factory/v2.yaml) is malformed");
     }
     return c;
@@ -338,7 +344,7 @@ async function repair() {
     }
 }
 
-module.exports = { trailer, closesIssue, history, failureSignature, usageTotal, spendOf, startDecision, repairDecision, marker, issueMarker, unitOfIssue };
+module.exports = { reserveFor, trailer, closesIssue, history, failureSignature, usageTotal, spendOf, startDecision, repairDecision, marker, issueMarker, unitOfIssue };
 
 if (require.main === module) {
     const [mode, arg] = process.argv.slice(2);

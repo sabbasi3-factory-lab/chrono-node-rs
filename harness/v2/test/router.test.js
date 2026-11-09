@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert");
 const r = require("../router");
 
-const CONFIG = { languages: ["it"], budget_aic: 1000, caps: { port: 500, repair: 300, threat_detection: 400 }, max_repairs: 2 };
+const CONFIG = { languages: ["it"], budget_aic: 2800, caps: { port: 500, repair: 300, threat_detection: 400, evals: 500 }, max_repairs: 2 };
 const CONTRACTS = { it: { sha: "a".repeat(40), tiers: ["auto", "auto"] } };
 const start = (over = {}) => r.startDecision({ enabled: true, unit: "it", config: CONFIG, external: ["vi", "it"], contracts: CONTRACTS, issue: null, openPr: null, spent: 0, ...over });
 const decide = (over = {}) =>
@@ -46,9 +46,9 @@ test("spend: measured usage of every job; missing usage and runs in progress at 
     const s = r.spendOf({ logs, usageOf: (x) => usage[x.run_id], active: [{ id: 4, path: "x" }, { id: 5, path: ".github/workflows/v2-port.lock.yml" }], caps: CONFIG.caps });
     assert.deepStrictEqual(
         s.runs.map((x) => [x.run_id, x.aic]),
-        [[1, 212], [2, 700], [3, 0], [4, 700], [5, 900]]
+        [[1, 212], [2, 700], [3, 0], [4, 700], [5, 1400]]
     );
-    assert.strictEqual(s.spent, 2512);
+    assert.strictEqual(s.spent, 3012);
     assert.throws(() => r.usageTotal(['{"ai_credits_this_response": -1}']), /malformed/);
     assert.strictEqual(r.usageTotal([]), null);
 });
@@ -63,8 +63,9 @@ test("start: every guard fails closed with its reason", () => {
     assert.match(why({ contracts: { it: { sha: "a", tiers: ["auto", "auto-strict"] } } }), /auto-strict stays on v1/);
     assert.match(why({ issue: { number: 9, state: "closed" } }), /closed/);
     assert.match(why({ openPr: 12 }), /PR #12 is already open/);
-    assert.match(why({ spent: 501 }), /budget: 501 AIC spent \+ 500/);
-    assert.deepStrictEqual(start({ spent: 500 }), { ok: true });
+    // Every AI job of the run is reserved at its cap: agent 500 + threat detection 400 + evals 500.
+    assert.match(why({ spent: 1401 }), /budget: 1401 AIC spent \+ 1400 reserved/);
+    assert.deepStrictEqual(start({ spent: 1400 }), { ok: true });
 });
 
 test("repair: at most max_repairs, never the same failure twice, within budget", () => {
@@ -73,8 +74,9 @@ test("repair: at most max_repairs, never the same failure twice, within budget",
     assert.match(decide({ past: [{ event: "repair", signature: "step:clippy" }] }).reason, /same signature/);
     const two = [{ event: "repair", signature: "a" }, { event: "repair", signature: "b" }];
     assert.deepStrictEqual([decide({ past: two }).action, /after 2 repairs/.test(decide({ past: two }).reason)], ["needs_human", true]);
-    assert.match(decide({ spent: 701 }).reason, /budget/);
-    assert.strictEqual(decide({ spent: 700 }).action, "repair");
+    // A repair reserves its agent 300 + threat detection 400.
+    assert.match(decide({ spent: 2101 }).reason, /budget: 2101 AIC spent \+ 700 reserved/);
+    assert.strictEqual(decide({ spent: 2100 }).action, "repair");
 });
 
 test("repair: gates, merge queue, stale heads, green runs, labels and the kill switch", () => {
