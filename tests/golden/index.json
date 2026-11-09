@@ -670,6 +670,108 @@
       "cases": 7,
       "skipped": 0,
       "skipped_by_reason": {}
+    },
+    "vi/casual": {
+      "source": "upstream/test/vi/vi_casual.test.ts",
+      "cases": 10,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/casual_time": {
+      "source": "upstream/test/vi/vi_casual_time.test.ts",
+      "cases": 11,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/coverage": {
+      "source": "harness/golden/coverage/vi.json",
+      "cases": 3,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/date_range": {
+      "source": "upstream/test/vi/vi_date_range.test.ts",
+      "cases": 5,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/forward_date": {
+      "source": "upstream/test/vi/vi_forward_date.test.ts",
+      "cases": 5,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/month_year": {
+      "source": "upstream/test/vi/vi_month_year.test.ts",
+      "cases": 6,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/negative_cases": {
+      "source": "upstream/test/vi/vi_negative_cases.test.ts",
+      "cases": 21,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/slash": {
+      "source": "upstream/test/vi/vi_slash.test.ts",
+      "cases": 4,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/standard": {
+      "source": "upstream/test/vi/vi_standard.test.ts",
+      "cases": 8,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/strict": {
+      "source": "upstream/test/vi/vi_strict.test.ts",
+      "cases": 19,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/time_exp": {
+      "source": "upstream/test/vi/vi_time_exp.test.ts",
+      "cases": 15,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/time_units_ago": {
+      "source": "upstream/test/vi/vi_time_units_ago.test.ts",
+      "cases": 8,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/time_units_casual_relative": {
+      "source": "upstream/test/vi/vi_time_units_casual_relative.test.ts",
+      "cases": 7,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/time_units_later": {
+      "source": "upstream/test/vi/vi_time_units_later.test.ts",
+      "cases": 6,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/time_units_within": {
+      "source": "upstream/test/vi/vi_time_units_within.test.ts",
+      "cases": 3,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/weekday": {
+      "source": "upstream/test/vi/vi_weekday.test.ts",
+      "cases": 14,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "vi/year": {
+      "source": "upstream/test/vi/vi_year.test.ts",
+      "cases": 7,
+      "skipped": 0,
+      "skipped_by_reason": {}
     }
   }
 }

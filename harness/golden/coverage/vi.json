@@ -1,0 +1,42 @@
+{
+  "generator": "harness/onboard/onboard.js",
+  "module": "vi",
+  "requests": [
+    {
+      "step": "VIMergeWeekdayComponentRefiner",
+      "text": "thứ Hai, Thứ Ba, 12/7/2014",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-03-06T12:00:00.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "VIMergeWeekdayComponentRefiner",
+      "text": "Chủ Nhật, thứ sáu 25/12",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-03-06T12:00:00.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "VIMergeWeekdayComponentRefiner",
+      "text": "thứ hai, thứ ba ngày 13 tháng 1 năm 2012",
+      "config": "vi.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-03-06T12:00:00.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    }
+  ]
+}

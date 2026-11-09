@@ -1,0 +1,316 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/vi/vi_date_range.test.ts",
+  "cases": [
+    {
+      "id": "vi/date_range#1",
+      "text": "từ ngày 5 tháng 8 đến ngày 10 tháng 8 năm 2012",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "VIMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 3,
+          "text": "ngày 5 tháng 8 đến ngày 10 tháng 8 năm 2012",
+          "start": {
+            "known": {
+              "day": 5,
+              "month": 8
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - từ ngày X đến ngày Y (đến connector)"
+    },
+    {
+      "id": "vi/date_range#2",
+      "text": "ngày 1 tháng 4 – ngày 30 tháng 4 năm 2000",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "VIMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "ngày 1 tháng 4 – ngày 30 tháng 4 năm 2000",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 4
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2000
+            },
+            "date": "2000-04-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 30,
+              "month": 4,
+              "year": 2000
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2000-04-30T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - em dash separator (–)"
+    },
+    {
+      "id": "vi/date_range#3",
+      "text": "ngày 3 tháng 9 - ngày 5 tháng 9 năm 1945",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "VIMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "ngày 3 tháng 9 - ngày 5 tháng 9 năm 1945",
+          "start": {
+            "known": {
+              "day": 3,
+              "month": 9
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 1945
+            },
+            "date": "1945-09-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 5,
+              "month": 9,
+              "year": 1945
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1945-09-05T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - hyphen separator (-)"
+    },
+    {
+      "id": "vi/date_range#4",
+      "text": "tháng 3 tới tháng 5 năm 1975",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VITimeUnitCasualRelativeFormatParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "VIMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "tháng 3 tới tháng 5 năm 1975",
+          "start": {
+            "known": {
+              "month": 3
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 1975
+            },
+            "date": "1975-03-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "month": 5,
+              "year": 1975
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1975-05-01T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - tới connector"
+    },
+    {
+      "id": "vi/date_range#5",
+      "text": "ngày 1 tháng 1 đến ngày 31 tháng 12 năm 2020",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "VIMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "ngày 1 tháng 1 đến ngày 31 tháng 12 năm 2020",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 1
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2020
+            },
+            "date": "2020-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 31,
+              "month": 12,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2020-12-31T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - start is before end"
+    }
+  ]
+}

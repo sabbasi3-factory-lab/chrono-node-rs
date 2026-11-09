@@ -1,0 +1,11 @@
+{
+  "generator": "harness/onboard/onboard.js",
+  "code": "vi",
+  "module": "vi",
+  "upstream": "locales/vi",
+  "tests": "test/vi",
+  "configs": {
+    "vi.casual": "casual",
+    "vi.strict": "strict"
+  }
+}

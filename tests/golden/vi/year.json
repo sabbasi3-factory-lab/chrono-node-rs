@@ -1,0 +1,286 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/vi/vi_year.test.ts",
+  "cases": [
+    {
+      "id": "vi/year#1",
+      "text": "Việt Nam thống nhất vào năm 1976.",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIYearParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 24,
+          "text": "năm 1976",
+          "start": {
+            "known": {
+              "year": 1976
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0
+            },
+            "date": "1976-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - năm YYYY"
+    },
+    {
+      "id": "vi/year#2",
+      "text": "Cách mạng năm 1789.",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIYearParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 10,
+          "text": "năm 1789",
+          "start": {
+            "known": {
+              "year": 1789
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0
+            },
+            "date": "1789-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - năm YYYY"
+    },
+    {
+      "id": "vi/year#3",
+      "text": "Năm 179 TCN, triều Điệt bị diệt.",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIYearParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Năm 179 TCN",
+          "start": {
+            "known": {
+              "year": -179
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0
+            },
+            "date": "-000179-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - năm BC (TCN)"
+    },
+    {
+      "id": "vi/year#4",
+      "text": "Văn minh có từ năm 3000 TCN.",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIYearParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 15,
+          "text": "năm 3000 TCN",
+          "start": {
+            "known": {
+              "year": -3000
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0
+            },
+            "date": "-003000-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - năm BC (TCN)"
+    },
+    {
+      "id": "vi/year#5",
+      "text": "năm 938 là năm độc lập.",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIYearParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "năm 938",
+          "start": {
+            "known": {
+              "year": 938
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 1,
+              "second": 0
+            },
+            "date": "0938-01-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - 3-digit year"
+    },
+    {
+      "id": "vi/year#6",
+      "text": "ngày 2 tháng 9 năm 1945",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "VIMonthYearParser",
+          "VIStandardParser",
+          "VIYearParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "ngày 2 tháng 9 năm 1945",
+          "start": {
+            "known": {
+              "day": 2,
+              "month": 9,
+              "year": 1945
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1945-09-02T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - year with month and day"
+    },
+    {
+      "id": "vi/year#7",
+      "text": "Có 1975 người tham gia.",
+      "config": "vi.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - negative: bare 4-digit number not a year"
+    }
+  ]
+}

@@ -2598,6 +2598,218 @@
           }
         }
       ]
+    },
+    "vi.casual": {
+      "parsers": [
+        {
+          "name": "VITimeUnitCasualRelativeFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "VICasualDateParser",
+          "flags": {}
+        },
+        {
+          "name": "VICasualTimeParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "VIStandardParser",
+          "flags": {}
+        },
+        {
+          "name": "VIMonthYearParser",
+          "flags": {}
+        },
+        {
+          "name": "VIYearParser",
+          "flags": {}
+        },
+        {
+          "name": "VIWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "VITimeExpressionParser",
+          "flags": {}
+        },
+        {
+          "name": "VITimeUnitAgoFormatParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "VITimeUnitLaterFormatParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "VITimeUnitWithinFormatParser",
+          "flags": {
+            "strictMode": false
+          }
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "VIMergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "VIMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "VIMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": false
+          }
+        }
+      ]
+    },
+    "vi.strict": {
+      "parsers": [
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "VIStandardParser",
+          "flags": {}
+        },
+        {
+          "name": "VIMonthYearParser",
+          "flags": {}
+        },
+        {
+          "name": "VIYearParser",
+          "flags": {}
+        },
+        {
+          "name": "VIWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "VITimeExpressionParser",
+          "flags": {}
+        },
+        {
+          "name": "VITimeUnitAgoFormatParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "VITimeUnitLaterFormatParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "VITimeUnitWithinFormatParser",
+          "flags": {
+            "strictMode": true
+          }
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "VIMergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "VIMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "VIMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": true
+          }
+        }
+      ]
     }
   }
 }
