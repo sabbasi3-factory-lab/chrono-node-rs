@@ -1,6 +1,8 @@
-# Factory watchdog (plain code, no AI): every 15 min, raise one factory:alert for a needs-human
-# waiting over 6 h, or a `ci` checks job over 60 min (its limit is 90). It runs from Actions, so a
-# stall is caught even when nobody is watching (harness/watchdog/watchdog.js has the rules).
+# Factory watchdog (plain code, no AI): raise one factory:alert per kind of stall (a needs-human over
+# 6 h, a `ci` checks job over 60 min, a green factory PR not merging, a task without progress). It runs
+# from Actions, so a stall is caught even when nobody is watching (harness/watchdog/watchdog.js).
+# Triggers: GitHub throttles this repo's cron to one run every few hours (the 15-min schedule had never
+# fired), so it also runs after each controller run, at most once per 10 min; the cron stays a fallback.
 # Kill switch: unless FACTORY_ENABLED is exactly "true", it only reports (nothing is written).
 # Human tier: changes need the owner's review.
 name: watchdog
@@ -8,6 +10,10 @@ name: watchdog
 on:
   schedule:
     - cron: "7,22,37,52 * * * *"
+  # The controller polls about every 13 min (its follow-up chain), so this follows it.
+  workflow_run:
+    workflows: ["controller"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -26,17 +32,35 @@ jobs:
     outputs:
       raise: ${{ steps.plan.outputs.raise }}
     steps:
+      # After a controller run: skip if a watchdog run already finished in the last 10 min (the
+      # controller also runs on many events; one check per 10 min is enough, and saves API calls).
+      - name: Rate limit (workflow_run only)
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          R: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          if [ "$EVENT" != "workflow_run" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          since=$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%SZ)
+          recent=$(gh api "repos/$R/actions/workflows/watchdog.yml/runs?status=success&per_page=10" --jq "[.workflow_runs[] | select(.id != $RUN_ID and .updated_at >= \"$since\")] | length")
+          if [ "$recent" = "0" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "a watchdog run finished in the last 10 min: skipped"; fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.gate.outputs.go == 'true'
         with:
           ref: main
           persist-credentials: false
           sparse-checkout: harness/watchdog
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.gate.outputs.go == 'true'
         with:
           node-version: 24
 
       - name: Findings (read-only)
+        if: steps.gate.outputs.go == 'true'
         id: plan
         shell: bash -eo pipefail {0}
         env:
