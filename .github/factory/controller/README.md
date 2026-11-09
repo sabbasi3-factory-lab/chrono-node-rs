@@ -205,6 +205,8 @@ In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the
 | `needs_human` | `missing_failure_signature` | failed run whose signature can't be derived from the `checks` job's step results (fail closed) | `label:needs-human` |
 | `needs_human` | `task_budget_exhausted` | the task's spend (spend collector, today and yesterday: measured runs plus reservations, attributed by run name; runs naming no task count against every task) plus this repair's cap (`per_run.repair + per_run.threat_detection`) would exceed `budgets.per_task.max_aic` | `label:needs-human` |
 | `needs_human` | `task_budget_unknown` | a repair is due but the task's spend can't be read: no repair is paid for | `label:needs-human` |
+| `needs_human` | `ci_cancelled` | the newest `ci` run on the PR head was `cancelled` (job time limit, lost runner, manual cancel) and nothing newer started within 15 min: acted on at once instead of waiting for `task_timeout` | `label:needs-human` |
+| `wait` | `ci_cancelled_grace` | that cancelled run ended less than 15 min ago (a re-run or new push may replace it) | none |
 | `needs_human` | `ci_not_repairable` | the newest `ci` run on the PR head ended `timed_out` or `startup_failure`: only a plain `failure` is repaired | `label:needs-human` |
 | `needs_human` | `task_timeout` | picked > `max_wall_clock_hours` ago and not merged | `label:needs-human` |
 | `needs_human` | `pick_time_unknown` | issue has `factory:picked` but no pick time in the history window, so it could never time out (fail closed) | `label:needs-human` |

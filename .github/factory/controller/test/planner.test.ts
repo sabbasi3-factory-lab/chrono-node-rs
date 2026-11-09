@@ -379,12 +379,25 @@ describe('planner: failures', () => {
     assert.deepEqual(d.source_ids, ['500/attempts/1', 'PR_21']);
   });
 
-  it('repairs only a plain failure; timed_out/startup_failure go to a person; ignores success/cancelled', () => {
+  it('repairs only a plain failure; timed_out/startup_failure go to a person; a success merges', () => {
     // Only a plain failure is repaired; timed_out and startup_failure go to a person (no attempt spent).
     for (const c of ['timed_out', 'startup_failure']) assert.deepEqual(reasons(run(failingPrWorld('x', undefined, c))), ['ci_not_repairable'], c);
     // A green auto-tier PR goes to the merge stage instead (here it waits: its Contract-SHA is a prefix).
     assert.deepEqual(run(failingPrWorld('x', undefined, 'success')).map((d) => `${d.type}/${d.reason}`), ['wait/merge_not_ready']);
-    assert.deepEqual(run(failingPrWorld('x', undefined, 'cancelled')), []);
+  });
+
+  it('a cancelled ci run on the head: waits out the grace, then a person at once (ci_cancelled), not task_timeout', () => {
+    // checkRun's updated_at is 11:10, NOW is 12:00: past the 15-min grace.
+    const d = find(run(failingPrWorld('x', undefined, 'cancelled')), 'ci_cancelled');
+    assert.deepEqual([d.type, d.effect, d.run_id], ['needs_human', 'label:needs-human', 500]);
+    // Within the grace (ended 5 min ago): wait, nothing else.
+    const w = failingPrWorld('x', undefined, 'cancelled');
+    w.check_runs = w.check_runs.map((r) => (r.run_id === 500 ? { ...r, updated_at: '2026-10-16T11:55:00Z' } : r));
+    assert.deepEqual(run(w).map((x) => `${x.type}/${x.reason}`), ['wait/ci_cancelled_grace']);
+    // A newer run for the same head (re-run) replaces it: still going → nothing to act on.
+    const rerun = failingPrWorld('x', undefined, 'cancelled');
+    rerun.check_runs.push(checkRun(501, { head_sha: rerun.pulls[0]!.head_sha, pull_requests: [21], status: 'in_progress', conclusion: null }));
+    assert.deepEqual(run(rerun), []);
   });
 
   it('sends the same signature twice to needs_human (repeated_signature)', () => {
