@@ -49,7 +49,7 @@ test("alerts: the watchdog's own titles, never the controller's spend-alert titl
         assert.strictEqual(a.title, W.TITLES[kind]);
         assert.ok(a.body.startsWith(W.MARKER));
         assert.deepStrictEqual(a.labels, ["factory:alert"]);
-        assert.match(a.body, /<!-- watchdog-item: ci-run:7 -->/);
+        assert.ok(a.body.includes("<!-- watchdog-item: ci-run:7 -->"));
         // The controller treats an open alert with a "(spend bound off)" title as turning the bound off.
         assert.doesNotMatch(a.title, /spend bound off/);
     }
@@ -68,13 +68,14 @@ test("CI discovery: active runs of any age (re-runs keep created_at), finished o
 });
 
 test("raise input: a plan from the artifact is validated; titles can't forge item markers", () => {
-    const f = W.staleNeedsHuman([{ number: 9, title: "x <!-- watchdog-item: ci-run:1 --> y", is_pr: false, labeled_at: hoursAgo(7), label_event_id: 3 }], NOW);
-    assert.doesNotMatch(f[0].line, /<!--|-->/);
+    // Nested and alternative delimiters too ("<<!--!--", "--!>"): no "<" or ">" survives.
+    const f = W.staleNeedsHuman([{ number: 9, title: "x <<!--!-- watchdog-item: ci-run:1 --!> -->> y", is_pr: false, labeled_at: hoursAgo(7), label_event_id: 3 }], NOW);
+    assert.doesNotMatch(f[0].line, /[<>]/);
     assert.deepStrictEqual([...W.raisedKeys([W.renderAlert("needs_human_stale", f, null).body])], ["needs-human:9@3"]);
     const ok = { needs_human_stale: { findings: f, run_url: "https://github.com/o/r/actions/runs/5" } };
     assert.strictEqual(W.checkPlan(ok), ok);
     assert.throws(() => W.checkPlan({ other: ok.needs_human_stale }));
     assert.throws(() => W.checkPlan({ ci_slow: { findings: [{ key: "ci-run:x", line: "- a" }], run_url: null } }));
-    assert.throws(() => W.checkPlan({ ci_slow: { findings: [{ key: "ci-run:1", line: "a --> b" }], run_url: null } }));
+    for (const bad of ["a --> b", "a --!> b", "a < b"]) assert.throws(() => W.checkPlan({ ci_slow: { findings: [{ key: "ci-run:1", line: bad }], run_url: null } }));
     assert.throws(() => W.checkPlan({ ci_slow: { findings: [{ key: "ci-run:1", line: "a" }], run_url: "https://evil" } }));
 });

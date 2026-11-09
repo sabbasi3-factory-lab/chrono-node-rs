@@ -32,8 +32,9 @@ const TITLES = {
  *   items: [{number, title, is_pr, labeled_at, label_event_id}] (labeled_at: the latest
  *          `labeled needs-human` event)
  */
-/** Untrusted text (titles) for one alert line: no HTML comment delimiters (they'd forge item markers). */
-const clean = (s) => String(s).replace(/<!--|-->/g, "").replace(/\s+/g, " ").slice(0, 90);
+/** Untrusted text (titles, branch names) for one alert line: no `<` or `>` at all, so it can't open
+ *  or close an HTML comment (and forge an item marker) or inject markup. */
+const clean = (s) => String(s).replace(/[<>]/g, "").replace(/\s+/g, " ").slice(0, 90);
 
 function staleNeedsHuman(items, now) {
     const limit = NEEDS_HUMAN_HOURS * 3600_000;
@@ -167,7 +168,7 @@ function checkPlan(p) {
     for (const [kind, v] of Object.entries(p)) {
         if (!TITLES[kind] || !Array.isArray(v.findings) || v.findings.length === 0) throw new Error(`refusing a malformed ${kind} plan`);
         for (const f of v.findings) {
-            if (!KEY_RE.test(f.key || "") || typeof f.line !== "string" || f.line.length > 400 || /<!--|-->/.test(f.line)) throw new Error(`refusing a malformed ${kind} finding`);
+            if (!KEY_RE.test(f.key || "") || typeof f.line !== "string" || f.line.length > 400 || /[<>]/.test(f.line)) throw new Error(`refusing a malformed ${kind} finding`);
         }
         if (v.run_url !== null && !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/actions\/runs\/[0-9]+$/.test(v.run_url)) throw new Error("refusing a malformed run url");
     }
