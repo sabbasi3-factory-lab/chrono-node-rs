@@ -75,7 +75,8 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
    contracts are locale-local (area `<code>-…`, scope under the locale's own paths), so tasks of
    different languages never hold each other's area lock.
    **External locales.** The policy's `external_locales` (vi since the owner's decision of
-   2026-11-09: ported outside the factory, as an A/B against it) may be generated on main: their
+   2026-11-09: ported outside the factory, as an A/B against it; it since the owner's decision of
+   2026-11-09: the factory v2 pilot) may be generated on main: their
    oracle, golden cases and code, which CI checks like any locale (goldens, frontier, comparison).
    The factory never runs them: no decision picks one (nor a dispatch: `candidates --policy`), no
    task issue is created (`issues.js --policy`; an unreadable policy creates none), the controller

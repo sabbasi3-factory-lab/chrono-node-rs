@@ -393,8 +393,11 @@ test("issues: with vi generated on main and external, no vi task issue is planne
     };
     gen("ar");
     gen("vi");
+    gen("it");
     const { generatedIds } = require("../issues");
     const policy = fs.readFileSync(path.join(__dirname, "fixtures", "onboarding-external.yaml"), "utf8");
+    // The pinned policy: vi (A/B) and it (the factory v2 pilot) are both external, so neither gets issues.
+    assert.deepStrictEqual(EXT.parseExternal(policy), ["vi", "it"]);
     assert.deepStrictEqual(generatedIds(root, new Set(EXT.parseExternal(policy))), ["ar/constants", "ar/weekday-parser"]);
     // Without the exclusion vi would be planned: the policy is what keeps it out.
     assert.deepStrictEqual(generatedIds(root, new Set()).filter((id) => id.startsWith("vi/")), ["vi/constants", "vi/weekday-parser"]);
@@ -420,6 +423,13 @@ test("next language: an external locale is never returned, and never counted in 
         costs: costsOf(spend(20, 10), spend(21, 10), spend(40, 5000), spend(41, 5000)),
     };
     assert.deepStrictEqual(lib.nextLanguage(viOnMain), { action: "onboard", code: "id", spent: 20, first_try: "2/2" });
+    // The pinned policy itself: it (factory v2 pilot) is neither listed nor picked, even as the only
+    // candidate left, and zh-hant is the last language v1 onboards.
+    const YAML = require("yaml");
+    const pinned = YAML.parse(fs.readFileSync(path.join(__dirname, "fixtures", "onboarding-external.yaml"), "utf8"));
+    assert.ok(!pinned.languages.includes("it") && pinned.external_locales.includes("it"));
+    assert.strictEqual(pinned.languages[pinned.languages.length - 1], "zh-hant");
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, policy: { ...pinned, languages: ["fi", "it"] }, candidates: ["it"] }), { action: "stop", reason: "all_onboarded" });
     // Malformed external_locales: fail closed.
     assert.deepStrictEqual(lib.nextLanguage({ ...done, policy: { ...ext, external_locales: "vi" } }), { action: "stop", reason: "no_onboarding_policy" });
 });
