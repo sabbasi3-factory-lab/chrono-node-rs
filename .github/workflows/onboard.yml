@@ -30,9 +30,13 @@ name: onboard
 on:
   schedule:
     - cron: "41 * * * *"
-  # A task closing (the controller's task_done) may be its language's last: decide at once.
+  # A task closing (the controller's task_done) may be its language's last: decide at once. A task
+  # issue opening (the issues-create job, after an onboarding PR merged) ends that language's
+  # task_issues_pending wait: with several languages in flight the next one can onboard at once,
+  # instead of waiting for a task to close or for the hourly cron (throttled to every few hours here).
+  # The concurrency group keeps one decision running and one pending, so a burst of issues is 2 runs.
   issues:
-    types: [closed]
+    types: [closed, opened]
   workflow_dispatch:
     inputs:
       code:

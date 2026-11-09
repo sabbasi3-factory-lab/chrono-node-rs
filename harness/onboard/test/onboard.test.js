@@ -190,6 +190,30 @@ test("next language: policy order, one at a time, waits on open PRs and in-fligh
     assert.deepStrictEqual(lib.nextLanguage({ ...base, candidates: ["ar"] }), { action: "stop", reason: "all_onboarded" });
 });
 
+test("next language: several in flight (max_languages_in_flight 5, owner 2026-11-09): onboards the next while others run", () => {
+    const multi = { ...policy, languages: ["fi", "id", "nl", "ru"], max_languages_in_flight: 5 };
+    const done = fiDone();
+    const fiOpen = { ...done, policy: multi, candidates: ["id", "nl", "ru"], issues: [...done.issues.slice(1), { id: "fi/a", state: "open", labels: [] }] };
+    // fi in flight: id onboards on this decision (one language per decision, policy order).
+    assert.strictEqual(lib.nextLanguage(fiOpen).code, "id");
+    // The next decision, with id's onboarding PR still open: wait for it (onboarding PRs go one at a time).
+    assert.deepStrictEqual(lib.nextLanguage({ ...fiOpen, openPRs: ["id"] }), { action: "wait", reason: "onboarding_pr_open:id" });
+    // id merged, its issues not created yet: wait (pending), whatever else is in flight.
+    const idMerged = { ...fiOpen, onboarded: ["fi", "id"], candidates: ["nl", "ru"], contracts: [...done.contracts, "id/a"], onboardMerges: [...done.onboardMerges, { code: "id", merged_at: "2026-11-06T11:30:00Z" }] };
+    assert.deepStrictEqual(lib.nextLanguage(idMerged), { action: "wait", reason: "task_issues_pending:id" });
+    // id's issues exist: fi and id in flight, nl onboards on the following decision.
+    const both = { ...idMerged, issues: [...idMerged.issues, { id: "id/a", state: "open", labels: [] }] };
+    assert.strictEqual(lib.nextLanguage(both).code, "nl");
+    // A missing issue in one language past its grace still stops everything (alert), as with one in flight.
+    assert.deepStrictEqual(lib.nextLanguage({ ...idMerged, now: "2026-11-06T14:00:00Z" }), { action: "stop", reason: "task_issues_missing:id" });
+    // The limit still binds when reached, naming every language in flight.
+    const two = { ...both, policy: { ...multi, max_languages_in_flight: 2 } };
+    assert.deepStrictEqual(lib.nextLanguage(two), { action: "wait", reason: "in_flight:fi,id" });
+    // The stop rules aggregate across every language in flight (one needs-human each is a cluster of 2).
+    const nh = { ...both, issues: [{ id: "fi/a", state: "open", labels: ["needs-human"] }, { id: "fi/b", state: "closed", labels: [] }, { id: "id/a", state: "open", labels: ["needs-human"] }] };
+    assert.deepStrictEqual(lib.nextLanguage(nh), { action: "stop", reason: "needs_human_cluster:2" });
+});
+
 test("next language: a contract without its task issue is in flight; past the grace period it stops (alert)", () => {
     const done = fiDone();
     const unissued = { ...done, issues: done.issues.slice(1) };
