@@ -46,6 +46,31 @@ permissions:
   checks: read
 
 jobs:
+  # PR-driven events (a PR, or a ci/gates run on one) poll only for branches factory automation owns
+  # (relevance.ts: the factory's branch prefixes and Apps). Each poll spends the App's hourly API
+  # quota, which ran out most hours on 2026-11-09 (people's and the external locale's PRs each started
+  # full polls). Decided here, outside the concurrency group, so a skipped event never takes the one
+  # pending slot from a relevant one. A failed decision polls (output empty).
+  relevance:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && (github.event_name == 'pull_request_target' || github.event_name == 'workflow_run')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: read }
+    outputs:
+      poll: ${{ steps.r.outputs.poll }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: .github/factory/controller/relevance.ts
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - id: r
+        run: node .github/factory/controller/relevance.ts "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH"
+
   # A follow-up poll the controller dispatched (cron here runs every 2–8 h, follow-up.ts) starts about
   # 10 min later. The wait is its own job, outside the controller's concurrency group, so it never
   # delays an event-triggered poll. Nothing else runs here: no checkout, no token, no permissions.
@@ -59,10 +84,10 @@ jobs:
         run: sleep 600
 
   controller:
-    needs: wait
+    needs: [wait, relevance]
     # Issue events only for factory task issues (other issues can't change what the controller does).
     # Runs after the wait, or when there was none (skipped); not if the wait failed or was cancelled.
-    if: ${{ !cancelled() && needs.wait.result != 'failure' && github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && (github.event_name != 'issues' || contains(github.event.issue.labels.*.name, 'factory:task')) }}
+    if: ${{ !cancelled() && needs.wait.result != 'failure' && needs.relevance.outputs.poll != 'false' && github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && (github.event_name != 'issues' || contains(github.event.issue.labels.*.name, 'factory:task')) }}
     concurrency:
       group: factory-controller
       cancel-in-progress: false
@@ -72,6 +97,9 @@ jobs:
       run:
         working-directory: .github/factory/controller
     steps:
+      - name: Poll start
+        run: echo "POLL_START=$(date +%s)" >> "$GITHUB_ENV"
+
       - name: Check out main (never PR code)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -133,3 +161,15 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           FACTORY_CHAIN: ${{ inputs.chain }}
+
+      # At most one poll per 5 min: hold the concurrency group until 5 min after this poll started.
+      # Events meanwhile collapse into the group's single pending run (cancel-in-progress false keeps
+      # the newest), so a burst of merges costs two polls, not one each. Every trigger still polls
+      # (nothing is skipped here); scheduled and follow-up polls hold too, so the cap is 12 an hour
+      # whatever mix of triggers fires. Public repo: runner minutes are free.
+      - name: Space polls (5 min)
+        if: ${{ always() }}
+        working-directory: .
+        run: |
+          left=$(( ${POLL_START:-0} + 300 - $(date +%s) ))
+          if [ "$left" -gt 0 ]; then echo "holding the controller group ${left}s"; sleep "$left"; fi

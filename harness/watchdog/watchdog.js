@@ -10,7 +10,10 @@
 //     - a factory PR whose `ci` passed on its head over 2 h ago, not in the merge queue or merged
 //       (#477: green, but the controller held it on a stale task_timeout; or its gates never ran);
 //     - a picked task issue with no controller progress event for over 6 h (from the audit branch:
-//       events naming the task, its issue or its PRs; measurements and advisory triage don't count).
+//       events naming the task, its issue or its PRs; measurements and advisory triage don't count);
+//   - a failing controller: 5 or more controller runs failed in a row (cancelled runs and runs whose
+//     poll relevance skipped don't break the streak); on 2026-11-09 74 runs failed (HTTP 403, the
+//     App's hourly API quota) and nothing alerted.
 // Each finding is raised once: one factory:alert issue lists the new findings, and a finding already
 // listed in any watchdog alert (open or closed) is not raised again. The titles are not the
 // controller's spend-alert titles, so these alerts don't turn the spend bound off.
@@ -31,6 +34,7 @@ const GREEN_STALL_HOURS = 2;
 /** The audit is read back at most this far (a stall older than this keeps its key from the floor). */
 const AUDIT_MAX_DAYS = 30;
 const NO_PROGRESS_HOURS = 6;
+const CONTROLLER_FAIL_STREAK = 5;
 /** Audit event types that aren't progress: measurements, heartbeats, and advisory triage. */
 const PASSIVE_EVENTS = new Set(["heartbeat", "spend_snapshot", "run_spend", "triage_dispatched", "alert", "dispatch_state"]);
 const TITLES = {
@@ -38,6 +42,7 @@ const TITLES = {
     ci_slow: `Factory watchdog: CI checks job over ${CHECKS_WARN_MINUTES} min`,
     pr_green_stalled: `Factory watchdog: green factory PR not merging for over ${GREEN_STALL_HOURS} h`,
     task_no_progress: `Factory watchdog: in-flight task with no controller progress for over ${NO_PROGRESS_HOURS} h`,
+    controller_failing: `Factory watchdog: ${CONTROLLER_FAIL_STREAK} or more controller runs failed in a row`,
 };
 
 /**
@@ -150,6 +155,24 @@ function candidateRuns(runs, now, lookbackMs = CI_LOOKBACK_HOURS * 3600_000) {
     });
 }
 
+/**
+ * The controller's current failure streak, newest first. Pure.
+ *   runs: [{id, conclusion, created_at, html_url, polled}] newest first (completed runs only);
+ *   polled: false for a `success` run whose controller job didn't run (relevance skipped the event).
+ * Cancelled and skipped runs, and runs that didn't poll, neither count nor break it. One finding per
+ * streak, keyed by its first failed run (it stays the same while the streak grows: raised once).
+ */
+function controllerFailStreak(runs) {
+    const failed = [];
+    for (const r of runs) {
+        if (r.conclusion === "failure" || r.conclusion === "timed_out" || r.conclusion === "startup_failure") failed.push(r);
+        else if (r.conclusion === "success" && r.polled !== false) break;
+    }
+    if (failed.length < CONTROLLER_FAIL_STREAK) return [];
+    const first = failed[failed.length - 1];
+    return [{ key: `controller-fail:${first.id}`, line: `- ${failed.length} controller runs failed in a row since ${first.created_at} (newest ${failed[0].created_at}, run ${failed[0].id})` }];
+}
+
 /** The alert issue for one kind of finding. Pure. */
 function renderAlert(kind, findings, runUrl) {
     const what =
@@ -158,6 +181,7 @@ function renderAlert(kind, findings, runUrl) {
             ci_slow: `A \`checks\` job past ${CHECKS_WARN_MINUTES} min is close to its 90-min limit; a cancelled run stalls its task (\`ci_cancelled\`). Look for what got slower (per-step times in the run).`,
             pr_green_stalled: `These factory PRs passed \`ci\` over ${GREEN_STALL_HOURS} h ago but aren't in the merge queue, and nothing labels them needs-human. Check the controller's decision for the task (its summary) and the PR's \`gates\` run.`,
             task_no_progress: `These tasks are picked, but the controller recorded nothing for them for over ${NO_PROGRESS_HOURS} h, and nothing labels them needs-human. Check the controller's decision for each (its summary) and its implement run.`,
+            controller_failing: `The controller fails closed, so nothing is decided while this lasts. Read the newest run's \`Run controller\` step: \`API rate limit spent\` means the App's hourly quota ran out (its \`rate:\` log lines show each poll's cost); anything else is a defect or an outage.`,
         }[kind];
     const body = [
         MARKER,
@@ -218,6 +242,7 @@ async function plan() {
     const { prs, prsByTask } = await factoryPrs();
     const picked = await pickedIssues();
     const events = await auditEvents(now, picked.map((i) => i.since));
+    const controllerRuns = await controllerRunsNewestFirst();
     const alerts = (await pages(`/repos/${REPO}/issues?state=all&labels=factory:alert`)).filter((i) => (i.body || "").startsWith(MARKER)).map((i) => i.body);
     const out = {};
     for (const [kind, findings] of [
@@ -225,6 +250,7 @@ async function plan() {
         ["ci_slow", slowChecks(jobs, now)],
         ["pr_green_stalled", greenStalled(prs, now)],
         ["task_no_progress", noProgress(picked, events, prsByTask, now)],
+        ["controller_failing", controllerFailStreak(controllerRuns)],
     ]) {
         const fresh = unraised(findings, alerts);
         console.log(`${kind}: ${findings.length} finding(s), ${fresh.length} new`);
@@ -232,6 +258,24 @@ async function plan() {
         if (fresh.length > 0) out[kind] = { findings: fresh, run_url: process.env.RUN_URL || null };
     }
     fs.writeFileSync(opt("--out"), JSON.stringify(out, null, 1) + "\n");
+}
+
+/** The controller's newest completed runs, newest first. A `success` from a PR-driven event may be a
+ *  run whose controller job relevance skipped: its jobs are read (until the first real poll) so it
+ *  isn't mistaken for one. */
+async function controllerRunsNewestFirst() {
+    const d = await gh("GET", `/repos/${REPO}/actions/workflows/controller.yml/runs?status=completed&per_page=50`);
+    const runs = (d.workflow_runs || []).map((r) => ({ id: r.id, conclusion: r.conclusion, created_at: r.created_at, event: r.event }));
+    runs.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+    for (const r of runs) {
+        if (r.conclusion !== "success") continue;
+        if (r.event === "pull_request_target" || r.event === "workflow_run") {
+            const jobs = (await gh("GET", `/repos/${REPO}/actions/runs/${r.id}/jobs`)).jobs || [];
+            r.polled = jobs.some((j) => j.name === "controller" && j.conclusion === "success");
+        }
+        if (r.polled !== false) break;
+    }
+    return runs;
 }
 
 /** Open factory PRs (head `factory/…`) with their queue state, newest ci run on the head, and gates. */
@@ -322,7 +366,7 @@ async function recent() {
     process.exitCode = recentlyEvaluated(runs, self, now) ? 0 : 1;
 }
 
-const KEY_RE = /^(needs-human:[0-9]+@[0-9]+|ci-run:[0-9]+|pr-green:[0-9]+@[0-9a-f]{7,40}|no-progress:[0-9]+@[0-9]+)$/;
+const KEY_RE = /^(needs-human:[0-9]+@[0-9]+|ci-run:[0-9]+|pr-green:[0-9]+@[0-9a-f]{7,40}|no-progress:[0-9]+@[0-9]+|controller-fail:[0-9]+)$/;
 
 /** The planned findings, validated (the plan comes from another job's artifact). Pure. */
 function checkPlan(p) {
@@ -372,4 +416,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { recentlyEvaluated, staleNeedsHuman, slowChecks, greenStalled, noProgress, taskOf, auditDays, PASSIVE_EVENTS, unraised, raisedKeys, candidateRuns, checkPlan, renderAlert, TITLES, MARKER, NEEDS_HUMAN_HOURS, CHECKS_WARN_MINUTES };
+module.exports = { controllerFailStreak, CONTROLLER_FAIL_STREAK, recentlyEvaluated, staleNeedsHuman, slowChecks, greenStalled, noProgress, taskOf, auditDays, PASSIVE_EVENTS, unraised, raisedKeys, candidateRuns, checkPlan, renderAlert, TITLES, MARKER, NEEDS_HUMAN_HOURS, CHECKS_WARN_MINUTES };

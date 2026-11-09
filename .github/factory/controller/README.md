@@ -65,6 +65,28 @@ prints the canonical lines that would be appended.
 In CI (`.github/workflows/controller.yml`), `node main.ts` needs `GH_TOKEN` (the controller App token),
 `GITHUB_REPOSITORY`, `GITHUB_RUN_ID`, `GITHUB_EVENT_NAME` and, optionally, `FACTORY_ENABLED`.
 
+### API quota (since 2026-11-09)
+
+Every poll spends the controller App's hourly REST quota. On 2026-11-09 polls ran 30–80 times an hour
+(every PR, `ci` and `gates` event started one), the quota ran out most hours, and 74 runs failed with
+HTTP 403. Three limits keep polls within it:
+
+- **Relevance** (`relevance.ts`, the workflow's `relevance` job, outside the concurrency group): a
+  `pull_request_target` event, or a `workflow_run` of a PR, polls only when the PR's head branch is one
+  factory automation owns (`factory/onboard/`, `factory/intake/`, `factory/deps/`, `factory/upstream/`,
+  `factory/revert-`, task and repair branches under `factory/`, `gh-readonly-queue/`) or a factory App
+  opened it. People's branches (`sabbasi/*`, an external locale's session) don't. `push` to main,
+  `merge_group`, `issues`, `schedule`, `workflow_dispatch` and non-PR `workflow_run`s always poll; a
+  malformed payload or a failed decision polls too.
+- **Spacing**: each poll holds the concurrency group until 5 min after it started, so events in between
+  collapse into the single pending run: at most 12 polls an hour, whatever the triggers.
+- **Reserve** (`rateReserveSkip`): before reading anything, an event-triggered poll reads `GET /rate_limit`
+  (free) and stops with `rate_reserve: …` when fewer than `RATE_RESERVE` (1000) calls are left, instead
+  of failing partway. Scheduled and follow-up polls always run. Each poll logs `rate:` lines with its
+  cost, and a 403 from a spent quota says `API rate limit spent; resets …`.
+
+The watchdog raises `controller_failing` when 5 or more controller runs fail in a row.
+
 ## Audit log format (DESIGN §11)
 
 - **Location:** the `audit` branch, files `audit/YYYY/MM/DD.jsonl` (UTC date of the event).
@@ -542,6 +564,7 @@ and is redone next poll, but never fails the run.
 | `project.ts` | Project #1 "Factory status" sync (desired status, read, exact update) |
 | `github.ts` | fetch client with write guard, pagination, GraphQL, snapshot reader, CI log parsing |
 | `policies.ts` | pinned policy loader and validation |
+| `relevance.ts` | which PR-driven events poll (factory-owned branches and Apps); dependency-free, run before `npm ci` |
 | `fake.ts` | in-memory GitHub fake (tests and `--fixture`) |
 | `main.ts` | entrypoint |
 

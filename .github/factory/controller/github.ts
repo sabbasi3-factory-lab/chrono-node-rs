@@ -375,7 +375,11 @@ export function createClient(token: string, repo: string, fetchFn: FetchFn = fet
       }
       if (!res.ok) {
         await res.body?.cancel();
-        throw new GitHubApiError(res.status, `${method} ${path.split('?')[0]}: HTTP ${res.status}`);
+        // A spent hourly quota answers 403/429 with x-ratelimit-remaining: 0: say so (and when it resets).
+        const reset = Number(res.headers.get('x-ratelimit-reset'));
+        const spent = (res.status === 403 || res.status === 429) && res.headers.get('x-ratelimit-remaining') === '0';
+        const why = spent ? ` (API rate limit spent${Number.isFinite(reset) && reset > 0 ? `; resets ${new Date(reset * 1000).toISOString()}` : ''})` : '';
+        throw new GitHubApiError(res.status, `${method} ${path.split('?')[0]}: HTTP ${res.status}${why}`);
       }
       let data: unknown = null;
       if (raw) data = await res.text();
@@ -384,6 +388,38 @@ export function createClient(token: string, repo: string, fetchFn: FetchFn = fet
       return { status: res.status, data, next: nextPathFromLink(res.headers.get('link')) };
     },
   };
+}
+
+/** The token's core REST quota (`GET /rate_limit` itself doesn't count against it). */
+export interface RateLimit {
+  limit: number;
+  remaining: number;
+  used: number;
+  /** Epoch seconds. */
+  reset: number;
+}
+
+export async function readRateLimit(client: GitHubClient): Promise<RateLimit> {
+  const core = (((await client.request('GET', '/rate_limit')).data ?? {}) as { resources?: { core?: Record<string, unknown> } }).resources?.core ?? {};
+  const n = (k: string): number => {
+    const v = core[k];
+    if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) throw new Error(`rate_limit: bad ${k}`);
+    return v;
+  };
+  return { limit: n('limit'), remaining: n('remaining'), used: n('used'), reset: n('reset') };
+}
+
+/** Calls an event poll leaves for the rest of the hour (agents' safe outputs, the onboard and steward
+ *  App jobs, and the scheduled and follow-up polls, which always run). */
+export const RATE_RESERVE = 1000;
+/** Triggers that always poll, whatever the quota (they're the factory's own cadence). */
+const CADENCE_TRIGGERS = new Set(['schedule', 'workflow_dispatch', 'local']);
+
+/** Skip an event-triggered poll when the quota is below the reserve: a poll that starts then fails
+ *  partway (HTTP 403) after spending what's left. Pure. */
+export function rateReserveSkip(trigger: string, rl: RateLimit, reserve: number = RATE_RESERVE): string | null {
+  if (CADENCE_TRIGGERS.has(trigger) || rl.remaining >= reserve) return null;
+  return `rate_reserve: ${rl.remaining} of ${rl.limit} API calls left (reserve ${reserve}); this ${trigger} poll is skipped until the quota resets at ${new Date(rl.reset * 1000).toISOString()}`;
 }
 
 export async function paginate<T>(

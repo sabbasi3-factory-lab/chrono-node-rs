@@ -15,7 +15,7 @@ import { AuditLog, AuditValidationError, dedupeKey, isoSeconds } from './audit.t
 import { canonicalize } from './canonical.ts';
 import { decisionEvent, describe, execute, executeLive, isLive, liveDecision, pendingHandoffs } from './executor.ts';
 import { FakeGitHub } from './fake.ts';
-import { ALERT_TITLE, ALERT_TITLES, COMMENT_MARKER, createClient, LABEL_ALERT, paginate, readSnapshot, REVIEWER_APP_ID, type AlertCode, type RecordedCheck } from './github.ts';
+import { ALERT_TITLE, ALERT_TITLES, COMMENT_MARKER, createClient, LABEL_ALERT, paginate, rateReserveSkip, readRateLimit, readSnapshot, REVIEWER_APP_ID, type AlertCode, type RateLimit, type RecordedCheck } from './github.ts';
 import { CAPPED_WORKFLOWS, lockCapsMismatch, type CappedWorkflow } from './caps.ts';
 import { dispatchStatus, shouldRecord } from './dispatch-state.ts';
 import { followUp, parseChain } from './follow-up.ts';
@@ -468,7 +468,32 @@ async function cli(): Promise<void> {
     };
   }
 
+  // The App's hourly quota (logged before and after, so each poll's cost is visible in its log).
+  // An event poll below the reserve stops here, before spending anything (rateReserveSkip).
+  // Unreadable quota: poll anyway (a skipped poll is the only thing this can cause).
+  const quota = async (): Promise<RateLimit | null> => readRateLimit(deps.client).catch((err: unknown) => {
+    log(`rate: unreadable (${err instanceof Error ? err.message : String(err)})`);
+    return null;
+  });
+  const before = args.fixture ? null : await quota();
+  if (before) {
+    log(`rate: ${before.remaining} of ${before.limit} API calls left before this poll (resets ${new Date(before.reset * 1000).toISOString()})`);
+    const skip = rateReserveSkip(trigger(deps.env), before);
+    if (skip) {
+      log(skip);
+      const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+      if (summaryFile) await appendFile(summaryFile, `## Factory controller\n\n${skip}\n`);
+      return;
+    }
+  }
   const result = await run(deps);
+  if (before) {
+    const after = await quota();
+    if (after) {
+      const cost = after.reset === before.reset ? `${before.remaining - after.remaining}` : 'n/a (the window reset during the poll)';
+      log(`rate: this poll used ${cost} API calls; ${after.remaining} of ${after.limit} left (used ${after.used} this window)`);
+    }
+  }
   if (args.print) {
     console.log('--- events that would be appended to the audit branch ---');
     for (const e of result.appended) console.log(canonicalize(e));
