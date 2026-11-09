@@ -43,8 +43,10 @@ test lock wasn't enforced. v2 aims for that speed with the lock.
 - **Required CI and merge queue.** The `main` ruleset is unchanged (`checks`, `gates`, CodeQL, merge queue, squash).
 - **Spend caps and budget.** Per run: `v2-port` 500 AIC, `v2-repair` 300, threat detection 400 (factory
   `budgets.yaml` `per_run`). Per day: `v2-port` 1000, `v2-repair` 600 (gh-aw `max-daily-ai-credits`). Total: the router
-  starts a run only if the measured spend of all v2 runs (`gh aw logs`, every job's usage) plus the next run's agent cap
-  fits `budget_aic` in `v2.yaml` (1000 for the pilot). A run still in progress counts at its caps.
+  starts a run only if the measured spend of all v2 runs (`gh aw logs`, every job's usage) plus every AI job of the
+  next run at its cap (a port 500 + 400 + 500 for evals, a repair 300 + 400) fits `budget_aic` in `v2.yaml`: 2800, one
+  port and two repairs at their caps. A run still in progress counts at its caps. In the pilot, the coordinator also
+  stops and reports once measured spend passes 1000 AIC.
 - **Kill switch.** `FACTORY_ENABLED` must be `"true"` for the router to act and for `v2-port` and `v2-repair` to start.
 - **Audit trail.** gh-aw logs and Outcomes for every agent run; the router comments each decision (start, repair,
   stop) and its reason on the language's issue.
