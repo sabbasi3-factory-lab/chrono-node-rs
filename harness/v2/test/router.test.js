@@ -33,24 +33,42 @@ test("failure signature: first failed step, else the job conclusion", () => {
     assert.strictEqual(r.failureSignature(undefined), "job:missing");
 });
 
-test("spend: measured usage of every job; missing usage and runs in progress at caps", () => {
+test("run usage: every job that made model calls needs a complete file; missing records fail closed", () => {
+    const line = (v, total) => JSON.stringify({ ai_credits_this_response: v, ...(total === undefined ? {} : { ai_credits_total: total }) });
+    const files = { agent: `${line(199.5, 199.5)}\n${line(0.5, 200)}\n`, detection: `${line(12)}\n` };
+    assert.strictEqual(r.runUsage(files, ["agent", "detection"]), 212);
+    assert.strictEqual(r.runUsage(files, ["agent", "detection", "evals"]), null, "evals ran but recorded nothing");
+    assert.strictEqual(r.runUsage({ ...files, evals: "" }, ["agent", "detection", "evals"]), null, "an empty file is incomplete");
+    assert.throws(() => r.runUsage({ agent: line(50, 900) }, ["agent"]), /records are missing/);
+    assert.throws(() => r.runUsage({ agent: line(-1) }, ["agent"]), /malformed/);
+});
+
+test("spend: measured usage of every job; incomplete usage and runs in progress at caps", () => {
     const logs = {
         runs: [
-            { run_id: 1, status: "completed", workflow_path: ".github/workflows/v2-port.lock.yml", aic: 200 },
-            { run_id: 2, status: "completed", workflow_path: ".github/workflows/v2-repair.lock.yml", aic: 50 },
-            { run_id: 3, status: "completed", workflow_path: ".github/workflows/v2-port.lock.yml", aic: 0, token_usage: 0, turns: 0 },
+            { run_id: 1, status: "completed", workflow_path: ".github/workflows/v2-port.lock.yml" },
+            { run_id: 2, status: "completed", workflow_path: ".github/workflows/v2-repair.lock.yml" },
+            { run_id: 3, status: "completed", workflow_path: ".github/workflows/v2-port.lock.yml" },
             { run_id: 4, status: "in_progress", workflow_path: ".github/workflows/v2-repair.lock.yml" },
+            { run_id: 6, status: "completed", workflow_path: ".github/workflows/v2-repair.lock.yml" },
         ],
     };
-    const usage = { 1: r.usageTotal(['{"ai_credits_this_response": 199.5}\n{"ai_credits_this_response": 0.5}\n', '{"ai_credits_this_response": 12}\n']), 2: null, 3: null };
-    const s = r.spendOf({ logs, usageOf: (x) => usage[x.run_id], active: [{ id: 4, path: "x" }, { id: 5, path: ".github/workflows/v2-port.lock.yml" }], caps: CONFIG.caps });
+    const u = (v) => JSON.stringify({ ai_credits_this_response: v });
+    const files = { 1: { agent: u(200), detection: u(12) }, 2: { agent: u(40) }, 3: {}, 6: { agent: u(900) } };
+    const inferred = { 1: ["agent", "detection"], 2: ["agent", "detection"], 3: [], 6: ["agent", "detection"] };
+    const s = r.spendOf({ logs, filesOf: (x) => files[x.run_id], inferredOf: (x) => inferred[x.run_id], active: [{ id: 4, path: "x" }, { id: 5, path: ".github/workflows/v2-port.lock.yml" }], caps: CONFIG.caps });
     assert.deepStrictEqual(
-        s.runs.map((x) => [x.run_id, x.aic]),
-        [[1, 212], [2, 700], [3, 0], [4, 700], [5, 1400]]
+        s.runs.map((x) => [x.run_id, x.aic, x.how]),
+        [
+            [1, 212, "measured"],
+            [2, 700, "usage incomplete: at caps"],
+            [3, 0, "measured"],
+            [4, 700, "in progress: at caps"],
+            [6, 900, "usage incomplete: at caps"],
+            [5, 1400, "in progress: at caps"],
+        ]
     );
-    assert.strictEqual(s.spent, 3012);
-    assert.throws(() => r.usageTotal(['{"ai_credits_this_response": -1}']), /malformed/);
-    assert.strictEqual(r.usageTotal([]), null);
+    assert.strictEqual(s.spent, 3912);
 });
 
 test("start: every guard fails closed with its reason", () => {
@@ -79,9 +97,13 @@ test("repair: at most max_repairs, never the same failure twice, within budget",
     assert.strictEqual(decide({ spent: 2100 }).action, "repair");
 });
 
-test("repair: gates, merge queue, stale heads, green runs, labels and the kill switch", () => {
+test("repair: gates first, merge queue, stale heads, green runs, labels and the kill switch", () => {
     assert.strictEqual(decide({ gates: "failure" }).action, "needs_human");
     assert.strictEqual(decide({ gates: "failure", conclusion: "success" }).action, "needs_human");
+    assert.strictEqual(decide({ gates: "failure", conclusion: null }).action, "needs_human", "gates fails while ci still runs");
+    assert.strictEqual(decide({ gates: "cancelled" }).action, "needs_human");
+    assert.deepStrictEqual(decide({ gates: null }), { action: "none", reason: "ci failed; waiting for gates on this head" });
+    assert.strictEqual(decide({ conclusion: null }).action, "none");
     assert.deepStrictEqual(decide({ conclusion: "success" }).action, "none");
     assert.strictEqual(decide({ event: "merge_group" }).action, "needs_human");
     assert.strictEqual(decide({ event: "merge_group", conclusion: "success" }).action, "none");
@@ -89,4 +111,16 @@ test("repair: gates, merge queue, stale heads, green runs, labels and the kill s
     assert.strictEqual(decide({ labels: ["needs-human"] }).action, "none");
     assert.strictEqual(decide({ enabled: false }).action, "none");
     assert.strictEqual(decide({ conclusion: "cancelled" }).action, "none");
+});
+
+test("agent run completion: no PR from a port, or no push from a repair, goes to a person", () => {
+    const d = (over) => r.agentRunDecision({ enabled: true, title: "Port it #12", conclusion: "failure", pr: null, marker: null, ...over });
+    assert.deepStrictEqual(d(), { action: "needs_human", reason: "v2-port failure without opening a PR", issue: 12, unit: "it" });
+    assert.strictEqual(d({ conclusion: "success", pr: { number: 30, head_sha: "h1" } }).action, "none");
+    const m = { event: "repair", pr: 30, head: "h1", attempt: 2 };
+    assert.strictEqual(d({ title: "Repair it #12 attempt 2", pr: { number: 30, head_sha: "h1" }, marker: m }).action, "needs_human");
+    assert.strictEqual(d({ title: "Repair it #12 attempt 2", conclusion: "success", pr: { number: 30, head_sha: "h2" }, marker: m }).action, "none");
+    assert.strictEqual(d({ title: "Repair it #12 attempt 2", pr: null, marker: m }).action, "none", "PR gone (merged or closed)");
+    assert.strictEqual(d({ title: "Implement it/x #12 attempt 1" }).action, "none");
+    assert.strictEqual(d({ enabled: false }).action, "none");
 });

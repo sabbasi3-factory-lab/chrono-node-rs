@@ -126,7 +126,7 @@ steps:
       [[ "$CONTRACT_SHA" =~ ^[0-9a-f]{40}$ && "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::contract_sha and head_sha must be full 40-hex SHAs"; exit 1; }
       [[ "$SIGNATURE" =~ ^(step|job):[a-z0-9_-]{1,100}$ ]] || { echo "::error::invalid failure signature"; exit 1; }
       [ -z "$AW_CONTEXT" ] || { echo "::error::aw_context must be empty for factory dispatches"; exit 1; }
-      git show origin/main:.github/factory/v2.yaml | yq -e ".languages | contains([\"${UNIT}\"])" > /dev/null || { echo "::error::${UNIT} is not in main's .github/factory/v2.yaml languages"; exit 1; }
+      [ "$(git show origin/main:.github/factory/v2.yaml | yq -N -r '.languages[]' | grep -cxF -- "$UNIT")" = "1" ] || { echo "::error::${UNIT} is not in main's .github/factory/v2.yaml languages"; exit 1; }
       last=$(git log -1 --format=%H origin/main -- "contracts/${UNIT}/")
       [ -n "$last" ] || { echo "::error::no contracts/${UNIT}/ on main"; exit 1; }
       [ "$last" = "$CONTRACT_SHA" ] || { echo "::error::stale: contracts/${UNIT}/ is at ${last}, dispatched with ${CONTRACT_SHA}"; exit 1; }

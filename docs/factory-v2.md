@@ -50,8 +50,9 @@ test lock wasn't enforced. v2 aims for that speed with the lock.
 - **Kill switch.** `FACTORY_ENABLED` must be `"true"` for the router to act and for `v2-port` and `v2-repair` to start.
 - **Audit trail.** gh-aw logs and Outcomes for every agent run; the router comments each decision (start, repair,
   stop) and its reason on the language's issue.
-- **Repair at most 2, then `needs-human`.** The router counts its repairs and compares failure signatures. A `gates`
-  failure, a merge-queue removal or a spent budget goes straight to `needs-human`.
+- **Repair at most 2, then `needs-human`.** The router counts its repairs and compares failure signatures, and
+  repairs only after `gates` passed on the head. A `gates` failure, a merge-queue removal, a spent budget, or an
+  agent run that opened no PR or pushed no fix goes straight to `needs-human`.
 
 ## Central Agentic Ops (CAO)
 
@@ -77,7 +78,7 @@ budget gate once the admission gate is available.
 1. A PR adding `contracts/<lang>/` (onboarding generator output) merges. The router (on `push` to main) opens the
    language's issue and dispatches `v2-port`.
 2. `v2-port` ports every contract in dependency order, runs the checks offline and opens one PR with auto-merge on.
-3. `ci` and `gates` run. A failure triggers the router (`workflow_run`), which dispatches `v2-repair` or stops.
+3. `ci` and `gates` run. Their completion triggers the router (`workflow_run`), which dispatches `v2-repair` or stops.
 4. When the required checks pass, GitHub queues and merges the PR, and the issue closes.
 
 ## Files

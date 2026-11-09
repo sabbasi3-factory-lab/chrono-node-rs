@@ -10,10 +10,13 @@
 //                                      factory-v2:ready by a person: open the language's issue if needed,
 //                                      check the kill switch, tiers, budget and that v1 leaves the
 //                                      language alone, then dispatch v2-port.
-//   node v2/router.js repair           ci completed on a factory-v2 PR (or its merge group): dispatch
-//                                      v2-repair, or hand the PR to a person (needs-human) when gates
-//                                      failed, the queue failed, repairs are used up, the same failure
-//                                      repeats, or the budget is spent.
+//   node v2/router.js repair           ci or gates completed on a factory-v2 PR (or ci on its merge
+//                                      group): once gates passed, dispatch v2-repair for a ci failure, or
+//                                      hand the PR to a person (needs-human) when gates failed, the queue
+//                                      failed, repairs are used up, the same failure repeats, or the
+//                                      budget is spent.
+//   node v2/router.js completed        a v2-port or v2-repair run completed: hand off if it opened no PR
+//                                      or pushed no fix.
 //
 // Env: GH_TOKEN (the workflow's GITHUB_TOKEN), GITHUB_REPOSITORY, GITHUB_EVENT_NAME, GITHUB_EVENT_PATH,
 // FACTORY_ENABLED, V2_CONFIG (.github/factory/v2.yaml as JSON), V2_EXTERNAL (external_locales of the
@@ -81,19 +84,42 @@ function failureSignature(job) {
     return `step:${slug || "unnamed"}`;
 }
 
-/** Sum of `ai_credits_this_response` over token_usage.jsonl texts; null if there are none (no usage recorded). */
-function usageTotal(texts) {
-    if (!texts || texts.length === 0) return null;
-    let sum = 0;
-    for (const t of texts) {
-        for (const line of t.split("\n")) {
-            if (!line.trim()) continue;
-            const v = JSON.parse(line).ai_credits_this_response;
-            if (typeof v !== "number" || !Number.isFinite(v) || v < 0) throw new Error("malformed token_usage.jsonl record");
-            sum += v;
+/**
+ * AIC of one completed run from its usage files ({job: token_usage.jsonl text}), given the jobs that
+ * made model calls (`inferred`, from the Actions jobs API). Every inferred job needs a non-empty file,
+ * else the run's usage is incomplete: returns null (the caller counts the run at its caps). A
+ * malformed record, or a cumulative `ai_credits_total` above the responses' sum (records missing),
+ * throws: unknown spend fails closed.
+ */
+function runUsage(files, inferred) {
+    let aic = 0;
+    let complete = true;
+    for (const job of new Set([...inferred, ...Object.keys(files)])) {
+        const text = files[job];
+        if (text === undefined) {
+            complete = false;
+            continue;
         }
+        let sum = 0;
+        let total = 0;
+        let records = 0;
+        for (const line of text.split("\n")) {
+            if (!line.trim()) continue;
+            const rec = JSON.parse(line);
+            const v = rec.ai_credits_this_response;
+            if (typeof v !== "number" || !Number.isFinite(v) || v < 0) throw new Error(`${job}: malformed token_usage.jsonl record`);
+            if (rec.ai_credits_total !== undefined) {
+                if (typeof rec.ai_credits_total !== "number" || !Number.isFinite(rec.ai_credits_total)) throw new Error(`${job}: invalid ai_credits_total`);
+                total = Math.max(total, rec.ai_credits_total);
+            }
+            sum += v;
+            records++;
+        }
+        if (total > sum + Math.max(0.001, sum * 1e-6)) throw new Error(`${job}: ai_credits_total ${total} exceeds its responses' ${sum}: records are missing`);
+        if (records === 0 && inferred.includes(job)) complete = false;
+        aic += sum;
     }
-    return sum;
+    return complete ? aic : null;
 }
 
 /** Every AI job of one run at its cap: the agent, threat detection, and (v2-port only) evals. */
@@ -101,12 +127,13 @@ const reserveFor = (kind, caps) => (kind === "repair" ? caps.repair : caps.port 
 
 /**
  * Spend of all v2 runs: a completed run counts every job's recorded usage (agent, threat detection,
- * evals); one that made model calls but has no usage counts at its caps (reserveFor), as does a run
- * in progress.
- *   logs: `gh aw logs --json` output; usageOf(run) => number | null; active: [{id, path}] queued or in
- *   progress (from the Actions API); caps: v2.yaml caps. Returns {spent, runs: [{run_id, aic, how}]}.
+ * evals); one whose usage is incomplete counts at its caps (reserveFor, or what it recorded if more),
+ * as does a run in progress.
+ *   logs: `gh aw logs --json` output; filesOf(run) => {job: text}; inferredOf(run) => [job] (jobs that
+ *   made model calls); active: [{id, path}] queued or in progress; caps: v2.yaml caps.
+ *   Returns {spent, runs: [{run_id, aic, how}]}.
  */
-function spendOf({ logs, usageOf, active, caps }) {
+function spendOf({ logs, filesOf, inferredOf, active, caps }) {
     const bound = (p) => reserveFor(/v2-repair/.test(p || "") ? "repair" : "port", caps);
     const runs = [];
     const seen = new Set();
@@ -116,10 +143,11 @@ function spendOf({ logs, usageOf, active, caps }) {
             runs.push({ run_id: r.run_id, aic: bound(r.workflow_path), how: "in progress: at caps" });
             continue;
         }
-        const used = usageOf(r);
+        const files = filesOf(r);
+        const used = runUsage(files, inferredOf(r));
         if (used === null) {
-            const inferred = Number(r.aic) > 0 || Number(r.token_usage) > 0 || Number(r.turns) > 0;
-            runs.push({ run_id: r.run_id, aic: inferred ? bound(r.workflow_path) : 0, how: inferred ? "usage missing: at caps" : "no inference" });
+            const partial = runUsage(files, []);
+            runs.push({ run_id: r.run_id, aic: Math.max(bound(r.workflow_path), partial), how: "usage incomplete: at caps" });
         } else runs.push({ run_id: r.run_id, aic: used, how: "measured" });
     }
     for (const a of active || []) {
@@ -147,7 +175,9 @@ function startDecision({ enabled, unit, config, external, contracts, issue, open
 }
 
 /**
- * What to do when `ci` completes on a v2 PR (or its merge group).
+ * What to do when `ci` or `gates` completes on a v2 PR head (or ci on its merge group). `conclusion` is
+ * the newest ci run's on the head (null if not finished), `gates` the newest gates run's (null if not
+ * finished): gates must pass before any repair.
  * @returns {{action: "none" | "needs_human" | "repair", reason: string, attempt?: number}}
  */
 function repairDecision({ enabled, event, conclusion, headIsCurrent, gates, signature, past, labels, config, spent }) {
@@ -159,8 +189,10 @@ function repairDecision({ enabled, event, conclusion, headIsCurrent, gates, sign
             : { action: "none", reason: `merge group ci ${conclusion}` };
     }
     if (!headIsCurrent) return { action: "none", reason: "stale: the PR head moved since this run" };
-    if (gates === "failure") return { action: "needs_human", reason: "gates failed (scope, contracts or policy), which a repair may not change" };
-    if (conclusion !== "failure") return { action: "none", reason: `ci ${conclusion}` };
+    if (gates && gates !== "success") return { action: "needs_human", reason: `gates ${gates} (scope, contracts or policy), which a repair may not change` };
+    if (conclusion !== "failure") return { action: "none", reason: `ci ${conclusion || "not finished"}` };
+    // A repair only after the policy checks pass; the router runs again when gates completes.
+    if (!gates) return { action: "none", reason: "ci failed; waiting for gates on this head" };
     const repairs = (past || []).filter((h) => h.event === "repair");
     if (repairs.length >= config.max_repairs) return { action: "needs_human", reason: `ci failed (${signature}) after ${repairs.length} repairs (max_repairs ${config.max_repairs})` };
     const last = repairs[repairs.length - 1];
@@ -168,6 +200,28 @@ function repairDecision({ enabled, event, conclusion, headIsCurrent, gates, sign
     const need = reserveFor("repair", config.caps);
     if (spent + need > config.budget_aic) return { action: "needs_human", reason: `budget: ${spent} AIC spent + ${need} reserved for a repair > ${config.budget_aic}` };
     return { action: "repair", reason: `ci failed (${signature})`, attempt: repairs.length + 2 };
+}
+
+/**
+ * When a v2-port or v2-repair run completes: hand off to a person if it produced nothing. `title` is the
+ * run's display title (the workflows' run-name), `pr` the open v2 PR for the language (null if none),
+ * `marker` the router's repair marker for this attempt (its `head` is the head it was dispatched on).
+ * @returns {{action: "none" | "needs_human", reason: string, issue?: number, unit?: string}}
+ */
+function agentRunDecision({ enabled, title, conclusion, pr, marker: m }) {
+    const port = /^Port ([a-z]{2}(?:-[a-z]+)?) #([1-9][0-9]{0,8})$/.exec(title || "");
+    const fix = /^Repair ([a-z]{2}(?:-[a-z]+)?) #([1-9][0-9]{0,8}) attempt ([2-9])$/.exec(title || "");
+    if (!port && !fix) return { action: "none", reason: `not a v2 run title: ${title}` };
+    const unit = (port || fix)[1];
+    const issue = Number((port || fix)[2]);
+    if (!enabled) return { action: "none", reason: 'kill switch: FACTORY_ENABLED is not "true"', issue, unit };
+    if (port) {
+        return pr ? { action: "none", reason: `v2-port ${conclusion}: PR #${pr.number} is open`, issue, unit } : { action: "needs_human", reason: `v2-port ${conclusion} without opening a PR`, issue, unit };
+    }
+    if (!m || !pr || m.pr !== pr.number) return { action: "none", reason: "no matching repair dispatch for an open PR", issue, unit };
+    return pr.head_sha !== m.head
+        ? { action: "none", reason: `v2-repair attempt ${fix[3]} ${conclusion}: pushed ${pr.head_sha}`, issue, unit }
+        : { action: "needs_human", reason: `v2-repair attempt ${fix[3]} ${conclusion} without pushing a fix`, issue, unit };
 }
 
 // ------------------------------------------------------------------ GitHub I/O
@@ -205,19 +259,39 @@ async function comment(issue, text, mark) {
     await api("POST", `/repos/${REPO}/issues/${issue}/comments`, { body: `${text}\n\n${marker(mark)}` });
 }
 
+/** Every page of a list endpoint (at most 10 pages of 100). */
+async function all(p) {
+    const out = [];
+    for (let page = 1; page <= 10; page++) {
+        const batch = await api("GET", `${p}${p.includes("?") ? "&" : "?"}per_page=100&page=${page}`);
+        out.push(...batch);
+        if (batch.length < 100) break;
+    }
+    return out;
+}
+
+const AI_JOBS = ["agent", "detection", "evals"];
+
 async function spend(logsFile) {
     const caps = loadConfig().caps;
     const logs = JSON.parse(fs.readFileSync(logsFile, "utf8"));
-    const usageOf = (r) => {
+    const filesOf = (r) => {
         const dir = r.logs_path && path.join(r.logs_path, "usage");
-        if (!dir || !fs.existsSync(dir)) return null;
-        const texts = fs
-            .readdirSync(dir)
-            .map((job) => path.join(dir, job, "token_usage.jsonl"))
-            .filter((f) => fs.existsSync(f))
-            .map((f) => fs.readFileSync(f, "utf8"));
-        return usageTotal(texts);
+        const files = {};
+        if (!dir || !fs.existsSync(dir)) return files;
+        for (const job of fs.readdirSync(dir)) {
+            const f = path.join(dir, job, "token_usage.jsonl");
+            if (fs.existsSync(f)) files[job] = fs.readFileSync(f, "utf8");
+        }
+        return files;
     };
+    // Jobs that made model calls: the AI jobs that started and weren't skipped (runner metadata).
+    const inferred = new Map();
+    for (const r of logs.runs || []) {
+        if (r.status !== "completed") continue;
+        const jobs = (await api("GET", `/repos/${REPO}/actions/runs/${r.run_id}/jobs?per_page=100`)).jobs || [];
+        inferred.set(r.run_id, jobs.filter((j) => AI_JOBS.includes(j.name) && j.started_at && j.conclusion !== "skipped").map((j) => j.name));
+    }
     const active = [];
     for (const w of Object.values(WORKFLOWS)) {
         for (const status of ["queued", "in_progress", "waiting", "pending"]) {
@@ -225,7 +299,7 @@ async function spend(logsFile) {
             active.push(...(r.workflow_runs || []).map((x) => ({ id: x.id, path: x.path })));
         }
     }
-    const s = spendOf({ logs, usageOf, active, caps });
+    const s = spendOf({ logs, filesOf, inferredOf: (r) => inferred.get(r.run_id) || AI_JOBS, active, caps });
     for (const r of s.runs) console.error(`run ${r.run_id}: ${r.aic} AIC (${r.how})`);
     console.log(JSON.stringify({ spent: s.spent, runs: s.runs.length }));
 }
@@ -234,12 +308,7 @@ async function start() {
     const { config, spent, enabled, event } = common();
     const external = json("V2_EXTERNAL") || [];
     const contracts = json("V2_CONTRACTS") || {};
-    const issues = [];
-    for (let page = 1; page <= 10; page++) {
-        const batch = await api("GET", `/repos/${REPO}/issues?labels=${encodeURIComponent(LABEL)}&state=all&per_page=100&page=${page}`);
-        issues.push(...batch.filter((i) => !i.pull_request && i.user && i.user.login === ROUTER_LOGIN && unitOfIssue(i)));
-        if (batch.length < 100) break;
-    }
+    const issues = (await all(`/repos/${REPO}/issues?labels=${encodeURIComponent(LABEL)}&state=all`)).filter((i) => !i.pull_request && i.user && i.user.login === ROUTER_LOGIN && unitOfIssue(i));
     let units = config.languages;
     let labelled = null;
     if (process.env.GITHUB_EVENT_NAME === "issues") {
@@ -250,7 +319,7 @@ async function start() {
         if (!["admin", "maintain", "write"].includes(perm.permission)) return console.log(`${event.sender.login} can't restart a port (${perm.permission})`);
         units = [unitOfIssue(labelled)];
     }
-    const open = await api("GET", `/repos/${REPO}/pulls?state=open&per_page=100`);
+    const open = await all(`/repos/${REPO}/pulls?state=open`);
     for (const unit of units) {
         const issue = labelled || issues.find((i) => unitOfIssue(i) === unit) || null;
         if (issue && !labelled) {
@@ -283,6 +352,27 @@ async function start() {
     }
 }
 
+/** The newest run of a workflow on a PR head (or null), from runner metadata. */
+async function newestRun(workflow, event, pr) {
+    const runs = (await api("GET", `/repos/${REPO}/actions/workflows/${workflow}/runs?event=${event}&head_sha=${pr.head.sha}&per_page=50`)).workflow_runs || [];
+    return runs.filter((r) => (r.pull_requests || []).some((x) => x.number === pr.number)).sort((x, y) => y.id - x.id)[0] || null;
+}
+
+async function v2Pr(prNumber, config) {
+    const pr = await api("GET", `/repos/${REPO}/pulls/${prNumber}`);
+    const unit = trailer(pr.body, "Factory-Unit");
+    const issueNumber = closesIssue(pr.body);
+    if (pr.state !== "open" || !pr.user || pr.user.login !== AGENT_LOGIN || !(pr.head.ref || "").startsWith(BRANCH_PREFIX) || !config.languages.includes(unit) || !issueNumber) return null;
+    const issue = await api("GET", `/repos/${REPO}/issues/${issueNumber}`);
+    if (unitOfIssue(issue) !== unit || !issue.user || issue.user.login !== ROUTER_LOGIN) return null;
+    return { pr, unit, issue, issueNumber };
+}
+
+async function handOff(issueNumber, prNumber, reason, extra) {
+    for (const n of [prNumber, issueNumber].filter(Boolean)) await api("POST", `/repos/${REPO}/issues/${n}/labels`, { labels: [LABEL_NEEDS_HUMAN] });
+    await comment(issueNumber, `Stopped and handed to a person${prNumber ? ` (PR #${prNumber} is \`needs-human\`)` : ""}: ${reason}.`, { event: "needs_human", pr: prNumber || null, reason, ...extra });
+}
+
 async function repair() {
     const { config, spent, enabled, event } = common();
     const run = event.workflow_run;
@@ -290,38 +380,38 @@ async function repair() {
     if (run.event === "merge_group") {
         const m = /^gh-readonly-queue\/main\/pr-(\d+)-[0-9a-f]+$/.exec(run.head_branch || "");
         prNumber = m ? Number(m[1]) : null;
-    } else if (run.event === "pull_request" && (run.head_branch || "").startsWith(BRANCH_PREFIX)) {
+    } else if ((run.event === "pull_request" || run.event === "pull_request_target") && (run.head_branch || "").startsWith(BRANCH_PREFIX)) {
         prNumber = run.pull_requests && run.pull_requests[0] ? run.pull_requests[0].number : null;
     }
-    if (!prNumber) return console.log(`ci run ${run.id} (${run.event}, ${run.head_branch}) is not a factory-v2 PR's`);
-    const pr = await api("GET", `/repos/${REPO}/pulls/${prNumber}`);
-    const unit = trailer(pr.body, "Factory-Unit");
-    const issueNumber = closesIssue(pr.body);
-    if (pr.state !== "open" || !pr.user || pr.user.login !== AGENT_LOGIN || !(pr.head.ref || "").startsWith(BRANCH_PREFIX) || !config.languages.includes(unit) || !issueNumber) {
-        return console.log(`PR #${prNumber} is not an open factory-v2 PR (author, branch, Factory-Unit or Closes line): nothing to do`);
-    }
-    const issue = await api("GET", `/repos/${REPO}/issues/${issueNumber}`);
-    if (unitOfIssue(issue) !== unit || !issue.user || issue.user.login !== ROUTER_LOGIN) return console.log(`#${issueNumber} is not ${unit}'s factory-v2 issue`);
-    const past = history(await api("GET", `/repos/${REPO}/issues/${issueNumber}/comments?per_page=100`)).filter((h) => h.pr === prNumber);
-    if (past.some((h) => h.run_id === run.id)) return console.log(`ci run ${run.id} was already handled`);
+    if (!prNumber) return console.log(`${run.name} run ${run.id} (${run.event}, ${run.head_branch}) is not a factory-v2 PR's`);
+    const v = await v2Pr(prNumber, config);
+    if (!v) return console.log(`PR #${prNumber} is not an open factory-v2 PR (author, branch, Factory-Unit, Closes line or issue): nothing to do`);
+    const { pr, unit, issue, issueNumber } = v;
+    const past = history(await all(`/repos/${REPO}/issues/${issueNumber}/comments`)).filter((h) => h.pr === prNumber);
 
+    // The newest ci and gates runs on the current head decide, whichever event woke us.
+    let ci = null;
     let gates = null;
     let signature = null;
-    if (run.event === "pull_request") {
-        const checks = await api("GET", `/repos/${REPO}/commits/${pr.head.sha}/check-runs?check_name=gates&per_page=100`);
-        const latest = (checks.check_runs || []).sort((a, b) => b.id - a.id)[0];
-        gates = latest ? latest.conclusion : null;
-        if (run.conclusion === "failure") {
-            const jobs = await api("GET", `/repos/${REPO}/actions/runs/${run.id}/jobs`);
+    let headIsCurrent = true;
+    let conclusion = run.conclusion;
+    if (run.event !== "merge_group") {
+        headIsCurrent = run.head_sha === pr.head.sha;
+        ci = await newestRun("ci.yml", "pull_request", pr);
+        const g = await newestRun("gates.yml", "pull_request_target", pr);
+        gates = g && g.status === "completed" ? g.conclusion : null;
+        conclusion = ci && ci.status === "completed" ? ci.conclusion : null;
+        if (ci && past.some((h) => h.event === "repair" && h.run_id === ci.id)) return console.log(`ci run ${ci.id} was already handled`);
+        if (conclusion === "failure") {
+            const jobs = await api("GET", `/repos/${REPO}/actions/runs/${ci.id}/jobs`);
             signature = failureSignature((jobs.jobs || []).find((j) => j.name === "checks"));
         }
     }
     const labels = [...(pr.labels || []), ...(issue.labels || [])].map((l) => l.name);
-    const d = repairDecision({ enabled, event: run.event, conclusion: run.conclusion, headIsCurrent: run.head_sha === pr.head.sha, gates, signature, past, labels, config, spent });
-    console.log(`PR #${prNumber} (${unit}), ci run ${run.id} ${run.conclusion}: ${d.action}: ${d.reason}`);
+    const d = repairDecision({ enabled, event: run.event, conclusion, headIsCurrent, gates, signature, past, labels, config, spent });
+    console.log(`PR #${prNumber} (${unit}), woken by ${run.name} run ${run.id}: ci ${conclusion}, gates ${gates}: ${d.action}: ${d.reason}`);
     if (d.action === "needs_human") {
-        for (const n of [prNumber, issueNumber]) await api("POST", `/repos/${REPO}/issues/${n}/labels`, { labels: [LABEL_NEEDS_HUMAN] });
-        await comment(issueNumber, `Stopped and handed to a person (PR #${prNumber} is \`needs-human\`): ${d.reason}. Ci run: ${run.html_url}`, { event: "needs_human", pr: prNumber, run_id: run.id, reason: d.reason });
+        await handOff(issueNumber, prNumber, `${d.reason}. Run: ${run.html_url}`, { run_id: run.id });
     } else if (d.action === "repair") {
         await api("POST", `/repos/${REPO}/actions/workflows/${WORKFLOWS.repair}/dispatches`, {
             ref: "main",
@@ -333,24 +423,44 @@ async function repair() {
                 contract_sha: trailer(pr.body, "Contract-SHA") || "",
                 head_sha: pr.head.sha,
                 failure_signature: signature,
-                run_id: String(run.id),
+                run_id: String(ci.id),
             },
         });
         await comment(
             issueNumber,
-            `Repair ${d.attempt - 1} of ${config.max_repairs}: dispatched \`v2-repair\` for PR #${prNumber} after ${d.reason}. Ci run: ${run.html_url} (v2 spend so far: ${spent} of ${config.budget_aic} AIC).`,
-            { event: "repair", pr: prNumber, run_id: run.id, head: pr.head.sha, signature, attempt: d.attempt, spent }
+            `Repair ${d.attempt - 1} of ${config.max_repairs}: dispatched \`v2-repair\` for PR #${prNumber} after ${d.reason}. Ci run: ${ci.html_url} (v2 spend so far: ${spent} of ${config.budget_aic} AIC).`,
+            { event: "repair", pr: prNumber, run_id: ci.id, head: pr.head.sha, signature, attempt: d.attempt, spent }
         );
     }
 }
 
-module.exports = { reserveFor, trailer, closesIssue, history, failureSignature, usageTotal, spendOf, startDecision, repairDecision, marker, issueMarker, unitOfIssue };
+/** A v2-port or v2-repair run completed: hand off if it produced no PR or no fix. */
+async function completed() {
+    const { config, enabled, event } = common();
+    const run = event.workflow_run;
+    if (run.event !== "workflow_dispatch" || run.head_branch !== "main") return console.log(`run ${run.id} is not a router dispatch`);
+    const title = run.display_title;
+    const parsed = agentRunDecision({ enabled: false, title });
+    if (!parsed.issue) return console.log(parsed.reason);
+    const issue = await api("GET", `/repos/${REPO}/issues/${parsed.issue}`);
+    if (unitOfIssue(issue) !== parsed.unit || !issue.user || issue.user.login !== ROUTER_LOGIN || !config.languages.includes(parsed.unit)) return console.log(`#${parsed.issue} is not ${parsed.unit}'s factory-v2 issue`);
+    if ((issue.labels || []).some((l) => l.name === LABEL_NEEDS_HUMAN) || issue.state !== "open") return console.log(`#${parsed.issue} is closed or already needs-human`);
+    const open = await all(`/repos/${REPO}/pulls?state=open`);
+    const p = open.find((x) => x.user && x.user.login === AGENT_LOGIN && (x.head.ref || "").startsWith(BRANCH_PREFIX) && trailer(x.body, "Factory-Unit") === parsed.unit && closesIssue(x.body) === parsed.issue);
+    const attempt = /attempt ([2-9])$/.exec(title);
+    const m = attempt ? history(await all(`/repos/${REPO}/issues/${parsed.issue}/comments`)).filter((h) => h.event === "repair" && h.attempt === Number(attempt[1])).pop() : null;
+    const d = agentRunDecision({ enabled, title, conclusion: run.conclusion, pr: p && { number: p.number, head_sha: p.head.sha }, marker: m });
+    console.log(`${title} (run ${run.id}) ${run.conclusion}: ${d.action}: ${d.reason}`);
+    if (d.action === "needs_human") await handOff(parsed.issue, p && p.number, `${d.reason}. Run: ${run.html_url}`, { run_id: run.id });
+}
+
+module.exports = { reserveFor, trailer, closesIssue, history, failureSignature, runUsage, spendOf, startDecision, repairDecision, agentRunDecision, marker, issueMarker, unitOfIssue };
 
 if (require.main === module) {
     const [mode, arg] = process.argv.slice(2);
-    const fn = { spend: () => spend(arg), start, repair }[mode];
+    const fn = { spend: () => spend(arg), start, repair, completed }[mode];
     if (!fn) {
-        console.error("usage: router.js spend LOGS.json | start | repair");
+        console.error("usage: router.js spend LOGS.json | start | repair | completed");
         process.exit(2);
     }
     fn().catch((e) => {

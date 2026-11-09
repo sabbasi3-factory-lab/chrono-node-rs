@@ -2,8 +2,10 @@
 # - push to main touching contracts/ or v2.yaml, or a manual run: start each v2 language whose contracts
 #   are on main and which has no issue yet (open the issue, dispatch v2-port).
 # - an issue labelled factory-v2:ready by a person with write access: restart that language.
-# - ci completed on a factory-v2/* PR branch or a merge group: dispatch v2-repair, or hand the PR to a
-#   person (needs-human). Merging is GitHub's: auto-merge and the merge queue.
+# - ci or gates completed on a factory-v2/* PR branch, or ci failed on a merge group: once gates passed,
+#   dispatch v2-repair for a ci failure, or hand the PR to a person (needs-human).
+# - a v2-port or v2-repair run completed: hand off if it opened no PR or pushed no fix.
+# Merging is GitHub's: auto-merge and the merge queue.
 # Never checks out or runs PR code: it checks out main and runs harness/v2/router.js from there. It
 # uses only this workflow's GITHUB_TOKEN (not the controller App, so no App quota is shared).
 # Human tier: changes need the owner's review.
@@ -16,7 +18,7 @@ on:
   issues:
     types: [labeled]
   workflow_run:
-    workflows: [ci]
+    workflows: [ci, gates, "Port one language (factory v2)", "Repair one factory v2 PR"]
     types: [completed]
   workflow_dispatch:
 
@@ -24,7 +26,7 @@ permissions: {}
 
 # Decisions read the history the previous one wrote (issue comments), so each kind runs one at a time.
 concurrency:
-  group: v2-router-${{ github.event_name == 'workflow_run' && 'repair' || 'start' }}
+  group: v2-router-${{ github.event_name == 'workflow_run' && 'run' || 'start' }}
   cancel-in-progress: false
 
 jobs:
@@ -34,8 +36,9 @@ jobs:
         github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||
         (github.event_name == 'issues' && github.event.label.name == 'factory-v2:ready') ||
         (github.event_name == 'workflow_run' && (
-          (github.event.workflow_run.event == 'pull_request' && startsWith(github.event.workflow_run.head_branch, 'factory-v2/')) ||
-          (github.event.workflow_run.event == 'merge_group' && github.event.workflow_run.conclusion == 'failure'))))
+          ((github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'pull_request_target') && startsWith(github.event.workflow_run.head_branch, 'factory-v2/')) ||
+          (github.event.workflow_run.event == 'merge_group' && github.event.workflow_run.conclusion == 'failure') ||
+          github.event.workflow_run.event == 'workflow_dispatch')))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -78,7 +81,7 @@ jobs:
             [[ "$lang" =~ ^[a-z]{2}(-[a-z]+)?$ ]] || { echo "::error::bad language ${lang} in v2.yaml"; exit 1; }
             compgen -G "contracts/${lang}/*.yaml" > /dev/null || continue
             sha=$(git log -1 --format=%H -- "contracts/${lang}/")
-            tiers=$(yq -o=json -I=0 '.tier' contracts/"$lang"/*.yaml | jq -sc .)
+            tiers=$(yq -N -o=json -I=0 '.tier' contracts/"$lang"/*.yaml | jq -sc .)
             contracts=$(jq -c --arg l "$lang" --arg s "$sha" --argjson t "$tiers" '. + {($l): {sha: $s, tiers: $t}}' <<<"$contracts")
           done
           { echo "V2_CONFIG=${config}"; echo "V2_EXTERNAL=${external}"; echo "V2_CONTRACTS=${contracts}"; } >> "$GITHUB_ENV"
@@ -97,5 +100,5 @@ jobs:
 
       - name: Route
         env:
-          MODE: ${{ github.event_name == 'workflow_run' && 'repair' || 'start' }}
+          MODE: ${{ github.event_name != 'workflow_run' && 'start' || (github.event.workflow_run.event == 'workflow_dispatch' && 'completed' || 'repair') }}
         run: node harness/v2/router.js "$MODE"

@@ -99,11 +99,12 @@ steps:
       [[ "$UNIT" =~ ^[a-z]{2}(-[a-z]+)?$ ]] || { echo "::error::invalid unit"; exit 1; }
       [[ "$ISSUE" =~ ^[1-9][0-9]{0,8}$ ]] || { echo "::error::invalid issue"; exit 1; }
       [[ "$CONTRACT_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::contract_sha must be a full 40-hex commit SHA"; exit 1; }
-      yq -e ".languages | contains([\"${UNIT}\"])" .github/factory/v2.yaml > /dev/null || { echo "::error::${UNIT} is not in .github/factory/v2.yaml languages"; exit 1; }
+      # Exact match (yq's `contains` matches substrings of strings).
+      [ "$(yq -N -r '.languages[]' .github/factory/v2.yaml | grep -cxF -- "$UNIT")" = "1" ] || { echo "::error::${UNIT} is not in .github/factory/v2.yaml languages"; exit 1; }
       ls contracts/"$UNIT"/*.yaml > /dev/null || { echo "::error::no contracts/${UNIT}/"; exit 1; }
       last=$(git log -1 --format=%H -- "contracts/${UNIT}/")
       [ "$last" = "$CONTRACT_SHA" ] || { echo "::error::stale dispatch: contracts/${UNIT}/ is at ${last}, dispatched with ${CONTRACT_SHA}"; exit 1; }
-      tiers=$(yq -r '.tier' contracts/"$UNIT"/*.yaml | sort -u)
+      tiers=$(yq -N -r '.tier' contracts/"$UNIT"/*.yaml | sort -u)
       [ "$tiers" = "auto" ] || { echo "::error::contracts/${UNIT}/ has tiers other than auto ($(echo $tiers)): auto-strict stays on v1"; exit 1; }
       echo "contracts/${UNIT}/ ($(ls contracts/"$UNIT"/*.yaml | wc -l | tr -d ' ') contracts) is at ${last} (matches dispatch)"
   - name: Rust toolchain (rust-toolchain.toml)
