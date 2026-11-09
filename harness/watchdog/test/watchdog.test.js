@@ -134,3 +134,13 @@ test("audit days: back to the earliest floor (a long stall keeps its key), at le
     assert.deepStrictEqual(W.auditDays([hoursAgo(80), hoursAgo(2)], NOW), ["2026/11/05", "2026/11/06", "2026/11/07", "2026/11/08"]);
     assert.strictEqual(W.auditDays([hoursAgo(24 * 90)], NOW).length, 30);
 });
+
+test("rate limit: only a run whose Findings step succeeded in the last 10 min counts; skipped runs don't", () => {
+    const run = (id, conclusion, mins) => ({ id, jobs: [{ steps: [{ name: "Rate limit (workflow_run only)", conclusion: "success", completed_at: minsAgo(mins) }, { name: "Findings (read-only)", conclusion, completed_at: conclusion === "skipped" ? null : minsAgo(mins) }] }] });
+    assert.strictEqual(W.recentlyEvaluated([run(1, "success", 5)], 9, NOW), true);
+    // A chain of successful-but-skipped runs never suppresses an evaluation (the #483 review finding).
+    assert.strictEqual(W.recentlyEvaluated([run(2, "skipped", 1), run(3, "skipped", 4), run(4, "skipped", 8)], 9, NOW), false);
+    assert.strictEqual(W.recentlyEvaluated([run(5, "success", 11)], 9, NOW), false);
+    assert.strictEqual(W.recentlyEvaluated([run(6, "failure", 2)], 9, NOW), false);
+    assert.strictEqual(W.recentlyEvaluated([run(9, "success", 2)], 9, NOW), false, "itself doesn't count");
+});

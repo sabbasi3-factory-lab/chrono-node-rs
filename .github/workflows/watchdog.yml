@@ -1,6 +1,8 @@
-# Factory watchdog (plain code, no AI): every 15 min, raise one factory:alert for a needs-human
-# waiting over 6 h, or a `ci` checks job over 60 min (its limit is 90). It runs from Actions, so a
-# stall is caught even when nobody is watching (harness/watchdog/watchdog.js has the rules).
+# Factory watchdog (plain code, no AI): raise one factory:alert per kind of stall (a needs-human over
+# 6 h, a `ci` checks job over 60 min, a green factory PR not merging, a task without progress). It runs
+# from Actions, so a stall is caught even when nobody is watching (harness/watchdog/watchdog.js).
+# Triggers: GitHub throttles this repo's cron to one run every few hours (the 15-min schedule had never
+# fired), so it also runs after each controller run, at most once per 10 min; the cron stays a fallback.
 # Kill switch: unless FACTORY_ENABLED is exactly "true", it only reports (nothing is written).
 # Human tier: changes need the owner's review.
 name: watchdog
@@ -8,6 +10,10 @@ name: watchdog
 on:
   schedule:
     - cron: "7,22,37,52 * * * *"
+  # The controller polls about every 13 min (its follow-up chain), so this follows it.
+  workflow_run:
+    workflows: ["controller"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -36,7 +42,21 @@ jobs:
         with:
           node-version: 24
 
+      # After a controller run: skip if a run *evaluated* (its Findings step succeeded) in the last
+      # 10 min. Skipped runs don't count, so they can't keep pushing the window forward.
+      - name: Rate limit (workflow_run only)
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          if [ "$EVENT" != "workflow_run" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if node harness/watchdog/watchdog.js recent --self "$RUN_ID"; then echo "an evaluation ran in the last 10 min: skipped"
+          else echo "go=true" >> "$GITHUB_OUTPUT"; fi
+
       - name: Findings (read-only)
+        if: steps.gate.outputs.go == 'true'
         id: plan
         shell: bash -eo pipefail {0}
         env:

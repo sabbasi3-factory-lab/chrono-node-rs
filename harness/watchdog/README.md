@@ -1,6 +1,6 @@
 # watchdog: stalls nobody is watching
 
-`watchdog.js` (plain code, no AI), run by `.github/workflows/watchdog.yml` every 15 min, raises a `factory:alert` issue for:
+`watchdog.js` (plain code, no AI), run by `.github/workflows/watchdog.yml` after each controller run (at most once per 10 min) and on a 15-min cron (GitHub throttles this repo's cron to every few hours, so the cron is only a fallback), raises a `factory:alert` issue for:
 
 | Finding | Rule | Why |
 |---|---|---|

@@ -296,6 +296,32 @@ async function auditEvents(now, floors) {
     return out;
 }
 
+const GATE_MINUTES = 10;
+const FINDINGS_STEP = "Findings (read-only)";
+
+/**
+ * Did another watchdog run evaluate (its Findings step succeeded) within GATE_MINUTES? Pure.
+ *   runs: [{id, jobs: [{steps: [{name, conclusion, completed_at}]}]}]
+ * Only an evaluation counts: a run that skipped (Findings `skipped`) must not move the window, or
+ * back-to-back skips would suppress evaluations forever.
+ */
+function recentlyEvaluated(runs, selfId, now) {
+    const since = now - GATE_MINUTES * 60_000;
+    return runs.some((r) => r.id !== selfId && (r.jobs || []).some((j) => (j.steps || []).some((s) => s.name === FINDINGS_STEP && s.conclusion === "success" && s.completed_at && Date.parse(s.completed_at) >= since)));
+}
+
+/** Exit 0 if a recent evaluation makes this run unnecessary, 1 otherwise (errors: 1, i.e. evaluate). */
+async function recent() {
+    const self = Number(opt("--self"));
+    const now = Date.now();
+    const d = await gh("GET", `/repos/${REPO}/actions/workflows/watchdog.yml/runs?per_page=20`);
+    const runs = [];
+    for (const r of (d.workflow_runs || []).filter((r) => r.id !== self && now - Date.parse(r.updated_at) <= GATE_MINUTES * 60_000)) {
+        runs.push({ id: r.id, jobs: (await gh("GET", `/repos/${REPO}/actions/runs/${r.id}/jobs`)).jobs || [] });
+    }
+    process.exitCode = recentlyEvaluated(runs, self, now) ? 0 : 1;
+}
+
 const KEY_RE = /^(needs-human:[0-9]+@[0-9]+|ci-run:[0-9]+|pr-green:[0-9]+@[0-9a-f]{7,40}|no-progress:[0-9]+@[0-9]+)$/;
 
 /** The planned findings, validated (the plan comes from another job's artifact). Pure. */
@@ -334,15 +360,16 @@ function opt(name) {
 }
 
 if (require.main === module) {
-    const cmd = { plan, raise }[process.argv[2]];
+    const cmd = { plan, raise, recent }[process.argv[2]];
     if (!cmd) {
-        console.error("usage: watchdog.js plan --out F | raise --plan F");
+        console.error("usage: watchdog.js plan --out F | raise --plan F | recent --self RUN_ID");
         process.exit(2);
     }
     cmd().catch((e) => {
         console.error(e.message);
+        // `recent` failing closed means "evaluate"; exit 1 here too.
         process.exitCode = 1;
     });
 }
 
-module.exports = { staleNeedsHuman, slowChecks, greenStalled, noProgress, taskOf, auditDays, PASSIVE_EVENTS, unraised, raisedKeys, candidateRuns, checkPlan, renderAlert, TITLES, MARKER, NEEDS_HUMAN_HOURS, CHECKS_WARN_MINUTES };
+module.exports = { recentlyEvaluated, staleNeedsHuman, slowChecks, greenStalled, noProgress, taskOf, auditDays, PASSIVE_EVENTS, unraised, raisedKeys, candidateRuns, checkPlan, renderAlert, TITLES, MARKER, NEEDS_HUMAN_HOURS, CHECKS_WARN_MINUTES };
