@@ -5,7 +5,12 @@
 //   - needs-human: an open issue or PR labelled `needs-human` more than 6 h ago (from its latest
 //     `labeled` event), so a waiting decision can't sit unnoticed (#457 waited ~40 h);
 //   - slow CI: a `ci` run's `checks` job running (or having run) more than 60 min, a warning before
-//     its 90-min time limit cancels it (#473's job was cancelled at 90 min).
+//     its 90-min time limit cancels it (#473's job was cancelled at 90 min);
+//   - unlabelled stalls (nothing says needs-human, yet nothing moves):
+//     - a factory PR whose `ci` passed on its head over 2 h ago, not in the merge queue or merged
+//       (#477: green, but the controller held it on a stale task_timeout; or its gates never ran);
+//     - a picked task issue with no controller progress event for over 6 h (from the audit branch:
+//       events naming the task, its issue or its PRs; measurements and advisory triage don't count).
 // Each finding is raised once: one factory:alert issue lists the new findings, and a finding already
 // listed in any watchdog alert (open or closed) is not raised again. The titles are not the
 // controller's spend-alert titles, so these alerts don't turn the spend bound off.
@@ -21,10 +26,16 @@ const NEEDS_HUMAN_HOURS = 6;
 const CHECKS_WARN_MINUTES = 60;
 const CI_LOOKBACK_HOURS = 4;
 const MARKER = "<!-- factory-watchdog -->";
-const ITEM_RE = /<!-- watchdog-item: ([a-z-]+:[0-9]+(?:@[0-9]+)?) -->/g;
+const ITEM_RE = /<!-- watchdog-item: ([a-z-]+:[0-9]+(?:@[0-9a-f]+)?) -->/g;
+const GREEN_STALL_HOURS = 2;
+const NO_PROGRESS_HOURS = 6;
+/** Audit event types that aren't progress: measurements, heartbeats, and advisory triage. */
+const PASSIVE_EVENTS = new Set(["heartbeat", "spend_snapshot", "run_spend", "triage_dispatched", "alert", "dispatch_state"]);
 const TITLES = {
     needs_human_stale: `Factory watchdog: needs-human waiting over ${NEEDS_HUMAN_HOURS} h`,
     ci_slow: `Factory watchdog: CI checks job over ${CHECKS_WARN_MINUTES} min`,
+    pr_green_stalled: `Factory watchdog: green factory PR not merging for over ${GREEN_STALL_HOURS} h`,
+    task_no_progress: `Factory watchdog: in-flight task with no controller progress for over ${NO_PROGRESS_HOURS} h`,
 };
 
 /**
@@ -69,6 +80,55 @@ function raisedKeys(alertBodies) {
     return seen;
 }
 
+/** `Factory-Task:` trailer of a PR body (the controller's link from a PR to its task), or null. Pure. */
+function taskOf(body) {
+    const m = /^Factory-Task:[ \t]*(\S+)[ \t]*$/m.exec(body || "");
+    return m ? m[1] : null;
+}
+
+/**
+ * Factory PRs green on their head for over GREEN_STALL_HOURS, yet not queued or merged. Pure.
+ *   prs: [{number, title, head_sha, in_merge_queue, labels, ci: {conclusion, completed_at} | null,
+ *          gates: string | null}]  (ci: the newest `pull_request` ci run on the head; gates: its conclusion)
+ * Needs-human PRs are left to the needs-human rule.
+ */
+function greenStalled(prs, now) {
+    const limit = GREEN_STALL_HOURS * 3600_000;
+    return prs
+        .filter((p) => !p.in_merge_queue && !p.labels.includes("needs-human") && p.ci && p.ci.conclusion === "success" && p.ci.completed_at && now - Date.parse(p.ci.completed_at) > limit)
+        .map((p) => ({
+            key: `pr-green:${p.number}@${p.head_sha.slice(0, 12)}`,
+            line: `- PR #${p.number} ${JSON.stringify(clean(p.title))}: ci green since ${p.ci.completed_at} (${Math.floor((now - Date.parse(p.ci.completed_at)) / 3600_000)} h), gates ${clean(p.gates || "never ran")}, not in the merge queue`,
+        }));
+}
+
+/**
+ * Picked task issues with no progress event for over NO_PROGRESS_HOURS. Pure.
+ *   issues: [{number, title, task, since}]  (since: the latest reopen or `factory:picked` label)
+ *   events: audit events [{type, timestamp, payload}]; prsByTask: Map task → [PR number]
+ * Progress: a non-passive event naming the task, the issue, or one of the task's PRs.
+ */
+function noProgress(issues, events, prsByTask, now) {
+    const limit = NO_PROGRESS_HOURS * 3600_000;
+    const out = [];
+    for (const i of issues) {
+        const prs = new Set(prsByTask.get(i.task) || []);
+        let last = i.since;
+        for (const e of events) {
+            if (PASSIVE_EVENTS.has(e.type)) continue;
+            const p = e.payload || {};
+            const named = p.task === i.task || p.issue === i.number || prs.has(p.pr) || (Array.isArray(p.prs) && p.prs.some((n) => prs.has(n)));
+            if (named && (!last || e.timestamp > last)) last = e.timestamp;
+        }
+        if (!last || now - Date.parse(last) <= limit) continue;
+        out.push({
+            key: `no-progress:${i.number}@${Math.floor(Date.parse(last) / 1000)}`,
+            line: `- issue #${i.number} ${JSON.stringify(clean(i.title))}: picked, last controller progress ${last} (${Math.floor((now - Date.parse(last)) / 3600_000)} h ago)`,
+        });
+    }
+    return out;
+}
+
 /** Findings not listed in any earlier watchdog alert body. Pure. */
 function unraised(findings, alertBodies) {
     const seen = raisedKeys(alertBodies);
@@ -91,9 +151,12 @@ function candidateRuns(runs, now, lookbackMs = CI_LOOKBACK_HOURS * 3600_000) {
 /** The alert issue for one kind of finding. Pure. */
 function renderAlert(kind, findings, runUrl) {
     const what =
-        kind === "needs_human_stale"
-            ? `These have waited for a person more than ${NEEDS_HUMAN_HOURS} h. Work behind them (often a whole language) is stalled until someone decides.`
-            : `A \`checks\` job past ${CHECKS_WARN_MINUTES} min is close to its 90-min limit; a cancelled run stalls its task (\`ci_cancelled\`). Look for what got slower (per-step times in the run).`;
+        {
+            needs_human_stale: `These have waited for a person more than ${NEEDS_HUMAN_HOURS} h. Work behind them (often a whole language) is stalled until someone decides.`,
+            ci_slow: `A \`checks\` job past ${CHECKS_WARN_MINUTES} min is close to its 90-min limit; a cancelled run stalls its task (\`ci_cancelled\`). Look for what got slower (per-step times in the run).`,
+            pr_green_stalled: `These factory PRs passed \`ci\` over ${GREEN_STALL_HOURS} h ago but aren't in the merge queue, and nothing labels them needs-human. Check the controller's decision for the task (its summary) and the PR's \`gates\` run.`,
+            task_no_progress: `These tasks are picked, but the controller recorded nothing for them for over ${NO_PROGRESS_HOURS} h, and nothing labels them needs-human. Check the controller's decision for each (its summary) and its implement run.`,
+        }[kind];
     const body = [
         MARKER,
         `**Factory watchdog** (plain code, no AI) · ${kind}`,
@@ -150,9 +213,17 @@ async function plan() {
         const js = await pages(`/repos/${REPO}/actions/runs/${r.id}/jobs`, (d) => d.jobs || []);
         for (const j of js) jobs.push({ run_id: r.id, name: j.name, status: j.status, started_at: j.started_at, completed_at: j.completed_at, html_url: j.html_url, head_branch: r.head_branch, event: r.event });
     }
+    const { prs, prsByTask } = await factoryPrs();
+    const picked = await pickedIssues();
+    const events = await auditEvents(now);
     const alerts = (await pages(`/repos/${REPO}/issues?state=all&labels=factory:alert`)).filter((i) => (i.body || "").startsWith(MARKER)).map((i) => i.body);
     const out = {};
-    for (const [kind, findings] of [["needs_human_stale", staleNeedsHuman(items, now)], ["ci_slow", slowChecks(jobs, now)]]) {
+    for (const [kind, findings] of [
+        ["needs_human_stale", staleNeedsHuman(items, now)],
+        ["ci_slow", slowChecks(jobs, now)],
+        ["pr_green_stalled", greenStalled(prs, now)],
+        ["task_no_progress", noProgress(picked, events, prsByTask, now)],
+    ]) {
         const fresh = unraised(findings, alerts);
         console.log(`${kind}: ${findings.length} finding(s), ${fresh.length} new`);
         for (const f of findings) console.log(`  ${f.line}${fresh.includes(f) ? " [new]" : ""}`);
@@ -161,7 +232,57 @@ async function plan() {
     fs.writeFileSync(opt("--out"), JSON.stringify(out, null, 1) + "\n");
 }
 
-const KEY_RE = /^(needs-human:[0-9]+@[0-9]+|ci-run:[0-9]+)$/;
+/** Open factory PRs (head `factory/…`) with their queue state, newest ci run on the head, and gates. */
+async function factoryPrs() {
+    const q = `query($o:String!,$n:String!){repository(owner:$o,name:$n){pullRequests(states:OPEN,first:100){nodes{number title body headRefName headRefOid isInMergeQueue labels(first:30){nodes{name}}}}}}`;
+    const [o, n] = REPO.split("/");
+    const d = await gh("POST", "/graphql", { query: q, variables: { o, n } });
+    if (d.errors) throw new Error(`graphql: ${JSON.stringify(d.errors).slice(0, 200)}`);
+    const nodes = d.data.repository.pullRequests.nodes.filter((p) => p.headRefName.startsWith("factory/"));
+    const gates = (await gh("GET", `/repos/${REPO}/actions/workflows/gates.yml/runs?event=pull_request_target&per_page=100`)).workflow_runs || [];
+    const prs = [];
+    const prsByTask = new Map();
+    for (const p of nodes) {
+        const task = taskOf(p.body);
+        if (task) prsByTask.set(task, [...(prsByTask.get(task) || []), p.number]);
+        const runs = ((await gh("GET", `/repos/${REPO}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${p.headRefOid}&per_page=20`)).workflow_runs || []).sort((a, b) => b.id - a.id);
+        const ci = runs[0] && runs[0].status === "completed" ? { conclusion: runs[0].conclusion, completed_at: runs[0].updated_at } : null;
+        const g = gates.filter((r) => (r.pull_requests || []).some((x) => x.number === p.number && x.head && x.head.sha === p.headRefOid)).sort((a, b) => b.id - a.id)[0];
+        prs.push({ number: p.number, title: p.title || "", head_sha: p.headRefOid, in_merge_queue: p.isInMergeQueue === true, labels: p.labels.nodes.map((l) => l.name), ci, gates: g ? g.conclusion || g.status : null });
+    }
+    return { prs, prsByTask };
+}
+
+/** Open task issues labelled factory:picked (and not needs-human), with their task and `since`. */
+async function pickedIssues() {
+    const out = [];
+    for (const i of await pages(`/repos/${REPO}/issues?state=open&labels=factory:task,factory:picked`)) {
+        if (i.pull_request || (i.labels || []).some((l) => l.name === "needs-human")) continue;
+        const m = /<!-- factory-task: ([a-z0-9/-]+) -->/.exec(i.body || "");
+        if (!m) continue;
+        const events = await pages(`/repos/${REPO}/issues/${i.number}/events`);
+        const marks = events.filter((e) => e.event === "reopened" || (e.event === "labeled" && e.label && e.label.name === "factory:picked")).map((e) => e.created_at);
+        out.push({ number: i.number, title: i.title || "", task: m[1], since: marks.sort().pop() || i.created_at });
+    }
+    return out;
+}
+
+/** The audit branch's events for today and the previous day (a 6 h window fits). A missing day file is empty. */
+async function auditEvents(now) {
+    const out = [];
+    for (const back of [1, 0]) {
+        const day = new Date(now - back * 86400_000).toISOString().slice(0, 10).replace(/-/g, "/");
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/audit/${day}.jsonl?ref=audit`, {
+            headers: { authorization: `Bearer ${process.env.GH_TOKEN}`, accept: "application/vnd.github.raw", "x-github-api-version": "2022-11-28", "user-agent": "factory-watchdog" },
+        });
+        if (res.status === 404) continue;
+        if (!res.ok) throw new Error(`audit ${day}: ${res.status}`);
+        for (const line of (await res.text()).split("\n")) if (line.trim()) out.push(JSON.parse(line));
+    }
+    return out;
+}
+
+const KEY_RE = /^(needs-human:[0-9]+@[0-9]+|ci-run:[0-9]+|pr-green:[0-9]+@[0-9a-f]{7,40}|no-progress:[0-9]+@[0-9]+)$/;
 
 /** The planned findings, validated (the plan comes from another job's artifact). Pure. */
 function checkPlan(p) {
@@ -210,4 +331,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { staleNeedsHuman, slowChecks, unraised, raisedKeys, candidateRuns, checkPlan, renderAlert, TITLES, MARKER, NEEDS_HUMAN_HOURS, CHECKS_WARN_MINUTES };
+module.exports = { staleNeedsHuman, slowChecks, greenStalled, noProgress, taskOf, PASSIVE_EVENTS, unraised, raisedKeys, candidateRuns, checkPlan, renderAlert, TITLES, MARKER, NEEDS_HUMAN_HOURS, CHECKS_WARN_MINUTES };

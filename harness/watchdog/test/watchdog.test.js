@@ -79,3 +79,51 @@ test("raise input: a plan from the artifact is validated; titles can't forge ite
     for (const bad of ["a --> b", "a --!> b", "a < b"]) assert.throws(() => W.checkPlan({ ci_slow: { findings: [{ key: "ci-run:1", line: bad }], run_url: null } }));
     assert.throws(() => W.checkPlan({ ci_slow: { findings: [{ key: "ci-run:1", line: "a" }], run_url: "https://evil" } }));
 });
+
+test("green stall: a factory PR whose ci passed over 2 h ago, not queued, not needs-human (#477)", () => {
+    const pr = (number, over) => ({ number, title: "[factory] ar/x", head_sha: "5e3a80b123c95d44aa", in_merge_queue: false, labels: [], ci: { conclusion: "success", completed_at: hoursAgo(2.5) }, gates: null, ...over });
+    const f = W.greenStalled(
+        [
+            pr(477, {}), // gates never ran
+            pr(478, { ci: { conclusion: "success", completed_at: hoursAgo(1) } }), // too recent
+            pr(479, { in_merge_queue: true }),
+            pr(480, { labels: ["needs-human"] }),
+            pr(481, { ci: { conclusion: "failure", completed_at: hoursAgo(5) } }),
+            pr(482, { ci: null }),
+            pr(483, { gates: "success" }),
+        ],
+        NOW,
+    );
+    assert.deepStrictEqual(f.map((x) => x.key), ["pr-green:477@5e3a80b123c9", "pr-green:483@5e3a80b123c9"]);
+    assert.match(f[0].line, /gates never ran/);
+    assert.match(f[1].line, /gates success/);
+});
+
+test("no progress: a picked task with no non-passive event naming it, its issue or its PRs for over 6 h", () => {
+    const ev = (type, h, payload) => ({ type, timestamp: hoursAgo(h), payload });
+    const issue = (number, task, sinceH) => ({ number, title: `${task}: Port`, task, since: hoursAgo(sinceH) });
+    const events = [
+        ev("dispatched", 20, { task: "ar/a", issue: 457 }),
+        ev("triage_dispatched", 1, { task: "ar/a", issue: 457, pr: 477 }), // advisory: not progress
+        ev("run_spend", 1, { task: "ar/a" }), // measurement: not progress
+        ev("check_result", 3, { prs: [490] }), // ar/b's PR
+        ev("queued", 2, { pr: 491 }), // ar/c's PR
+    ];
+    const prsByTask = new Map([["ar/a", [477]], ["ar/b", [490]], ["ar/c", [491]]]);
+    const f = W.noProgress([issue(457, "ar/a", 30), issue(458, "ar/b", 30), issue(459, "ar/c", 30), issue(460, "ar/d", 2), issue(461, "ar/e", 9)], events, prsByTask, NOW);
+    assert.deepStrictEqual(f.map((x) => x.key.split("@")[0]), ["no-progress:457", "no-progress:461"]);
+    // Keyed by the last progress time: the same stall is raised once; new progress then a new stall is new.
+    assert.strictEqual(f[0].key, `no-progress:457@${Math.floor(Date.parse(hoursAgo(20)) / 1000)}`);
+    assert.match(f[0].line, /last controller progress .* \(20 h ago\)/);
+});
+
+test("taskOf: the Factory-Task trailer; plans with the new keys validate", () => {
+    assert.strictEqual(W.taskOf("## Summary\nx\n\nFactory-Task: ar/abstract-parser\nContract-SHA: abc1234"), "ar/abstract-parser");
+    assert.strictEqual(W.taskOf("Factory-Task:"), null);
+    assert.strictEqual(W.taskOf(null), null);
+    for (const [kind, key] of [["pr_green_stalled", "pr-green:477@5e3a80b123c9"], ["task_no_progress", "no-progress:457@1762600000"]]) {
+        const p = { [kind]: { findings: [{ key, line: "- x" }], run_url: null } };
+        assert.strictEqual(W.checkPlan(p), p);
+        assert.deepStrictEqual([...W.raisedKeys([W.renderAlert(kind, p[kind].findings, null).body])], [key]);
+    }
+});
