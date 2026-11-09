@@ -1052,7 +1052,10 @@ export async function readReopenedAt(client: GitHubClient, repo: string, issue: 
 export const INFRA_INCIDENT_LABEL = 'factory:infra-incident';
 // `Infra incident: <ref> <prose>`: the ref (the fixing PR or incident issue: #303, owner/repo#12, or
 // a github.com URL) is what the audit log keeps (IDs only); the comment URL points at the prose.
-const INFRA_INCIDENT_REASON_RE = /^Infra incident:[ \t]*(#\d{1,9}|[A-Za-z0-9._-]{1,39}\/[A-Za-z0-9._-]{1,100}#\d{1,9}|https:\/\/github\.com\/[A-Za-z0-9._/-]{1,170}(?:#[A-Za-z0-9_-]{1,20})?)(?=\s|$)/i;
+// The ref may end a sentence (`Infra incident: #475. The attempt…`, #457's comment, which the old
+// `(?=\s|$)` rejected, so #457 left no record): one `.`, `,` or `:` then whitespace or the end. A URL
+// never ends in `.`, so the period stays out of the ref. Anything else after it (`#12;rm`) rejects.
+const INFRA_INCIDENT_REASON_RE = /^Infra incident:[ \t]*(#\d{1,9}|[A-Za-z0-9._-]{1,39}\/[A-Za-z0-9._-]{1,100}#\d{1,9}|https:\/\/github\.com\/[A-Za-z0-9._/-]{0,169}[A-Za-z0-9_/-](?:#[A-Za-z0-9_-]{1,20})?)(?=[.,:]?(?:\s|$))/i;
 
 /**
  * The infra-incident record of an issue carrying INFRA_INCIDENT_LABEL: the latest time a user (not a

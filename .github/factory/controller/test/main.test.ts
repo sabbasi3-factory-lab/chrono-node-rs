@@ -1175,6 +1175,22 @@ describe('reviewer checks and history', () => {
     ev(3, [{ event: 'labeled', label: L, actor: user('sabbasi3'), created_at: '2026-10-16T09:00:00Z' }]);
     cm(3, [c('sabbasi3', 'Infra incident: mkdir was missing', '2026-10-16T09:01:00Z'), c('sabbasi3', 'Infra incident: #12;rm', '2026-10-16T09:02:00Z')]);
     assert.equal(await readInfraIncident(gh, REPO, 3), null);
+    // The ref ending a sentence (#457: `Infra incident: #475. The attempt's PR …`) is a record; so are
+    // `,` / `:` after it and a URL ref followed by a period (the period isn't part of the ref).
+    const refOf = async (n: number, body: string) => {
+      ev(n, [{ event: 'labeled', label: L, actor: user('sabbasi3'), created_at: '2026-11-09T15:57:15Z' }]);
+      cm(n, [c('sabbasi3', body, '2026-11-09T15:57:17Z', n)]);
+      return (await readInfraIncident(gh, REPO, n))?.incident ?? null;
+    };
+    assert.equal(await refOf(10, "Infra incident: #475. The attempt's PR #473 matched upstream, but CI's `checks` job hit its 90-min limit"), '#475');
+    assert.equal(await refOf(11, 'Infra incident: #475, regex recompiled per parse'), '#475');
+    assert.equal(await refOf(12, 'Infra incident: #475:'), '#475');
+    assert.equal(await refOf(13, 'Infra incident: #475.'), '#475');
+    assert.equal(await refOf(14, `Infra incident: https://github.com/${REPO}/pull/475. Slow regex.`), `https://github.com/${REPO}/pull/475`);
+    assert.equal(await refOf(15, 'Infra incident: o/r#12. ok'), 'o/r#12');
+    for (const [n, body] of [[16, 'Infra incident: #475.rm'], [17, 'Infra incident: #475..'], [18, 'Infra incident: #475;rm'], [19, 'Infra incident: #475)']] as const) {
+      assert.equal(await refOf(n, body), null, body);
+    }
     // Unreadable → null.
     gh.addRoute('GET', new RegExp(`^/repos/${REPO}/issues/4/events$`), () => ({ status: 500, data: null }));
     assert.equal(await readInfraIncident(gh, REPO, 4), null);

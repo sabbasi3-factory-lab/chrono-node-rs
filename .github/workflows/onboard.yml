@@ -75,6 +75,7 @@ jobs:
       reason: ${{ steps.decision.outputs.reason }}
       pr: ${{ steps.decision.outputs.pr }}
       head: ${{ steps.decision.outputs.head }}
+      spend: ${{ steps.decision.outputs.spend }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -175,6 +176,8 @@ jobs:
           echo "reason=$(jq -r '.reason // ""' <<<"$decision")" >> "$GITHUB_OUTPUT"
           echo "pr=$(jq -r '.pr // ""' <<<"$decision")" >> "$GITHUB_OUTPUT"
           echo "head=$(jq -r '.head // ""' <<<"$decision")" >> "$GITHUB_OUTPUT"
+          # Measured (final run_spend) and reserved (runs not yet final, at their reservation) apart.
+          echo "spend=$(jq -r 'if (.measured | type) == "number" then "\(.spent) AIC = \(.measured) measured + \(.reserved) reserved (runs whose final cost isn'"'"'t in the audit log yet, at their in-flight reservation)" else "" end' <<<"$decision")" >> "$GITHUB_OUTPUT"
 
   generate:
     needs: decide
@@ -426,6 +429,7 @@ jobs:
     env:
       FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
       REASON: ${{ needs.decide.outputs.reason }}
+      SPEND: ${{ needs.decide.outputs.spend }}
       R: ${{ github.repository }}
     steps:
       - name: Mode
@@ -456,6 +460,7 @@ jobs:
           open=$(gh api "repos/$R/issues?labels=factory:alert&state=open&per_page=100" --jq "[.[] | select(.body | contains(\"$marker\"))] | length")
           [ "$open" = "0" ] || { echo "already raised"; exit 0; }
           body=$(printf '%s\n' "$marker" "**Language onboarding stopped** (plain code, no AI): \`${REASON}\`." "" \
+            ${SPEND:+"Spend counted: ${SPEND}. Reserved spend becomes measured once the controller records those runs' final cost (usually within a poll); a stop that rests on reserved spend can clear by itself."$'\n'} \
             "Onboarding opens no new language until this clears. The stop rules and the language list are in factory \`policies/onboarding.yaml\`; loosening them is the owner's decision." \
             "Close this issue once handled; it reopens as a new one if the rule fires again.")
           gh issue create --repo "$R" --title "Onboarding stopped: ${kind}" --label factory:alert --body "$body"

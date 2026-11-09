@@ -97,10 +97,14 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
    onboarding merges, contracts, runs, merged PRs, audit log) also waits, never reads as "none".
    The `onboard-stop-rules` fire drill checks this. (#317 onboarded `id` on 0 AIC and 0/0
    first-try because the data it read had none of `fi`'s runs yet.) `outcomes.json` stays for the
-   dashboard only.
+   dashboard only. The decision and a stop's alert show the spend as `measured` (runs with their
+   final `run_spend`) plus `reserved` (runs whose final cost isn't recorded yet, at their in-flight
+   reservation): the rule counts both. On 2026-11-09 the `it` decision logged 9,204 = 4,004 measured
+   + 5,200 reserved, two finished zh-hans runs whose final cost (79 in all) landed a minute later.
    **Infra incidents.** When a factory defect (not agent work) broke a task's attempts, a person
    adds `factory:infra-incident` to the task issue (open or closed) and comments `Infra incident:
-   <ref> <reason>`, where `<ref>` is the fixing PR or incident issue (`#303`). The controller records
+   <ref> <reason>`, where `<ref>` is the fixing PR or incident issue (`#303`; it may end a sentence:
+   `Infra incident: #475. The attempt…`). The controller records
    it in the audit log (`human_action`, `action: infra_incident`: issue, task, actor, time, ref and
    the comment's URL); a bot or App adding the label, or a comment without a ref, records nothing.
    For the first-try rate only, that task's implement attempts started before the record, other

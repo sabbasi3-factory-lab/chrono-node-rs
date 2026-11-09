@@ -503,8 +503,15 @@ function nextLanguage({ policy, onboarded, candidates, issues, openPRs, onboardP
     for (const m of merged) if (typeof m.zero_touch !== "boolean") behind.push(`merged:${m.task}`);
     if (behind.length > 0) return { action: "wait", reason: `records_behind:${behind.length}`, behind: behind.slice(0, 20) };
     const spent = covered.reduce((n, r) => n + costs.get(r.run_id).aic, 0);
+    // The rule counts both (unchanged); the log and the alert show them apart. Reserved: runs whose
+    // final run_spend isn't in the audit log yet, at their latest snapshot (an in-flight reservation:
+    // the 9,204 of 2026-11-09 was 4,004 measured + 2 × 2,600 reserved for two runs already finished).
+    const reserved = covered.reduce((n, r) => n + (costs.get(r.run_id).source === "run_spend" ? 0 : costs.get(r.run_id).aic), 0);
+    // Shown parts reconcile with the shown total (reserved = rounded total − rounded measured); the
+    // budget comparison below uses the unrounded total.
+    const split = { measured: Math.round(spent - reserved), reserved: Math.round(spent) - Math.round(spent - reserved) };
     if (!Number.isFinite(stop.budget_aic)) return { action: "stop", reason: "no_budget" };
-    if (spent >= stop.budget_aic) return { action: "stop", reason: `budget_spent:${Math.round(spent)}/${stop.budget_aic}` };
+    if (spent >= stop.budget_aic) return { action: "stop", reason: `budget_spent:${Math.round(spent)}/${stop.budget_aic}`, spent: Math.round(spent), ...split };
     // First try: one implement run (incident-excused attempts aside), no repair, PR merged zero-touch.
     const incidentAt = new Map();
     for (const i of incidents) {
@@ -524,12 +531,12 @@ function nextLanguage({ policy, onboarded, candidates, issues, openPRs, onboardP
     }
     const minSample = stop.min_sample ?? 5;
     const minRate = stop.min_first_try_merge_rate ?? 0.8;
-    if (byTask.size >= minSample && firstTry / byTask.size < minRate) return { action: "stop", reason: `first_try_rate:${firstTry}/${byTask.size}` };
+    if (byTask.size >= minSample && firstTry / byTask.size < minRate) return { action: "stop", reason: `first_try_rate:${firstTry}/${byTask.size}`, spent: Math.round(spent), ...split };
     const inFlight = new Set(open.map((i) => codeOf(i.id)));
     if (inFlight.size >= (policy.max_languages_in_flight ?? 1)) return { action: "wait", reason: `in_flight:${[...inFlight].sort().join(",")}` };
     const code = policy.languages.find((c) => candidates.includes(c) && !external.has(c));
     if (!code) return { action: "stop", reason: "all_onboarded" };
-    return { action: "onboard", code, spent: Math.round(spent), first_try: `${firstTry}/${byTask.size}` };
+    return { action: "onboard", code, spent: Math.round(spent), ...split, first_try: `${firstTry}/${byTask.size}` };
 }
 
 const LEDGER_TASK = /^(?:Implement|Repair|Triage) ([a-z0-9-]+\/[a-z0-9_-]+) /;
