@@ -40,11 +40,16 @@ jobs:
         id: plan
         shell: bash -eo pipefail {0}
         env:
+          FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           node harness/watchdog/watchdog.js plan --out "$RUNNER_TEMP/watchdog-plan.json" | tee -a "$GITHUB_STEP_SUMMARY"
-          if [ "$(jq 'length' "$RUNNER_TEMP/watchdog-plan.json")" != "0" ]; then echo "raise=true" >> "$GITHUB_OUTPUT"; fi
+          # The kill switch is exactly "true", case-sensitive (Actions `==` compares case-insensitively).
+          if [ "$(jq 'length' "$RUNNER_TEMP/watchdog-plan.json")" != "0" ]; then
+            if [ "$FACTORY_ENABLED" = "true" ]; then echo "raise=true" >> "$GITHUB_OUTPUT"
+            else echo "[dry-run] FACTORY_ENABLED isn't \"true\": nothing raised"; fi
+          fi
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: steps.plan.outputs.raise == 'true'
@@ -55,7 +60,7 @@ jobs:
 
   raise:
     needs: plan
-    if: needs.plan.outputs.raise == 'true' && vars.FACTORY_ENABLED == 'true'
+    if: needs.plan.outputs.raise == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: { contents: read }

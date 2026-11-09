@@ -54,3 +54,27 @@ test("alerts: the watchdog's own titles, never the controller's spend-alert titl
         assert.doesNotMatch(a.title, /spend bound off/);
     }
 });
+
+test("CI discovery: active runs of any age (re-runs keep created_at), finished ones only within the lookback", () => {
+    const r = (id, over) => ({ id, status: "completed", created_at: hoursAgo(30), run_started_at: minsAgo(70), updated_at: minsAgo(5), ...over });
+    const runs = [
+        r(1, { status: "in_progress", updated_at: minsAgo(1) }), // re-run of an old run, attempt running 70 min
+        r(2, {}), // re-run finished 5 min ago after 65 min
+        r(3, { updated_at: hoursAgo(5), run_started_at: hoursAgo(7) }), // finished long ago
+        r(4, { status: "in_progress", run_started_at: minsAgo(20) }), // running, short
+        r(1, { status: "in_progress" }), // listed twice
+    ];
+    assert.deepStrictEqual(W.candidateRuns(runs, NOW).map((x) => x.id), [1, 2]);
+});
+
+test("raise input: a plan from the artifact is validated; titles can't forge item markers", () => {
+    const f = W.staleNeedsHuman([{ number: 9, title: "x <!-- watchdog-item: ci-run:1 --> y", is_pr: false, labeled_at: hoursAgo(7), label_event_id: 3 }], NOW);
+    assert.doesNotMatch(f[0].line, /<!--|-->/);
+    assert.deepStrictEqual([...W.raisedKeys([W.renderAlert("needs_human_stale", f, null).body])], ["needs-human:9@3"]);
+    const ok = { needs_human_stale: { findings: f, run_url: "https://github.com/o/r/actions/runs/5" } };
+    assert.strictEqual(W.checkPlan(ok), ok);
+    assert.throws(() => W.checkPlan({ other: ok.needs_human_stale }));
+    assert.throws(() => W.checkPlan({ ci_slow: { findings: [{ key: "ci-run:x", line: "- a" }], run_url: null } }));
+    assert.throws(() => W.checkPlan({ ci_slow: { findings: [{ key: "ci-run:1", line: "a --> b" }], run_url: null } }));
+    assert.throws(() => W.checkPlan({ ci_slow: { findings: [{ key: "ci-run:1", line: "a" }], run_url: "https://evil" } }));
+});

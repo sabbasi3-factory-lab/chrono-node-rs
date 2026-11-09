@@ -32,13 +32,16 @@ const TITLES = {
  *   items: [{number, title, is_pr, labeled_at, label_event_id}] (labeled_at: the latest
  *          `labeled needs-human` event)
  */
+/** Untrusted text (titles) for one alert line: no HTML comment delimiters (they'd forge item markers). */
+const clean = (s) => String(s).replace(/<!--|-->/g, "").replace(/\s+/g, " ").slice(0, 90);
+
 function staleNeedsHuman(items, now) {
     const limit = NEEDS_HUMAN_HOURS * 3600_000;
     return items
         .filter((i) => i.labeled_at && now - Date.parse(i.labeled_at) > limit)
         .map((i) => ({
             key: `needs-human:${i.number}@${i.label_event_id || 0}`,
-            line: `- ${i.is_pr ? "PR" : "issue"} #${i.number} ${JSON.stringify(i.title.slice(0, 90))}: needs-human for ${Math.floor((now - Date.parse(i.labeled_at)) / 3600_000)} h (since ${i.labeled_at})`,
+            line: `- ${i.is_pr ? "PR" : "issue"} #${i.number} ${JSON.stringify(clean(i.title))}: needs-human for ${Math.floor((now - Date.parse(i.labeled_at)) / 3600_000)} h (since ${i.labeled_at})`,
         }));
 }
 
@@ -54,15 +57,34 @@ function slowChecks(jobs, now) {
         .filter((j) => j.ms > limit)
         .map((j) => ({
             key: `ci-run:${j.run_id}`,
-            line: `- run ${j.run_id} (${j.event} ${j.head_branch}): \`checks\` ${j.status === "completed" ? "took" : "running for"} ${Math.round(j.ms / 60_000)} min (limit 90): ${j.html_url}`,
+            line: `- run ${j.run_id} (${clean(j.event)} ${clean(j.head_branch)}): \`checks\` ${j.status === "completed" ? "took" : "running for"} ${Math.round(j.ms / 60_000)} min (limit 90): ${j.html_url}`,
         }));
+}
+
+/** Finding keys listed in watchdog alert bodies. Pure. */
+function raisedKeys(alertBodies) {
+    const seen = new Set();
+    for (const b of alertBodies) for (const m of (b || "").matchAll(ITEM_RE)) seen.add(m[1]);
+    return seen;
 }
 
 /** Findings not listed in any earlier watchdog alert body. Pure. */
 function unraised(findings, alertBodies) {
-    const seen = new Set();
-    for (const b of alertBodies) for (const m of (b || "").matchAll(ITEM_RE)) seen.add(m[1]);
+    const seen = raisedKeys(alertBodies);
     return findings.filter((f) => !seen.has(f.key));
+}
+
+/** CI runs worth a jobs call: active ones (any age: a re-run keeps its old created_at) and runs that
+ *  ended within the lookback, whose latest attempt ran longer than the limit. Pure. */
+function candidateRuns(runs, now, lookbackMs = CI_LOOKBACK_HOURS * 3600_000) {
+    const seen = new Set();
+    return runs.filter((r) => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        const active = r.status !== "completed";
+        if (!active && now - Date.parse(r.updated_at) > lookbackMs) return false;
+        return (active ? now : Date.parse(r.updated_at)) - Date.parse(r.run_started_at || r.created_at) > CHECKS_WARN_MINUTES * 60_000;
+    });
 }
 
 /** The alert issue for one kind of finding. Pure. */
@@ -115,12 +137,15 @@ async function plan() {
         const last = events.filter((e) => e.event === "labeled" && e.label && e.label.name === "needs-human").pop();
         items.push({ number: i.number, title: i.title || "", is_pr: Boolean(i.pull_request), labeled_at: last ? last.created_at : i.created_at, label_event_id: last ? last.id : 0 });
     }
-    const since = new Date(now - CI_LOOKBACK_HOURS * 3600_000).toISOString();
-    const runs = await pages(`/repos/${REPO}/actions/workflows/ci.yml/runs?created=%3E%3D${encodeURIComponent(since)}`, (d) => d.workflow_runs || []);
+    // Active runs of any age (a re-run keeps its original created_at), plus the newest finished ones
+    // (one page each; candidateRuns keeps those that ended within the lookback).
+    const runs = [];
+    for (const status of ["in_progress", "queued", "completed"]) {
+        const d = await gh("GET", `/repos/${REPO}/actions/workflows/ci.yml/runs?status=${status}&per_page=100`);
+        runs.push(...(d.workflow_runs || []));
+    }
     const jobs = [];
-    for (const r of runs) {
-        // A run shorter than the limit can't contain a slow job: skip its jobs call.
-        if ((r.status === "completed" ? Date.parse(r.updated_at) : now) - Date.parse(r.run_started_at || r.created_at) <= CHECKS_WARN_MINUTES * 60_000) continue;
+    for (const r of candidateRuns(runs, now)) {
         const js = await pages(`/repos/${REPO}/actions/runs/${r.id}/jobs`, (d) => d.jobs || []);
         for (const j of js) jobs.push({ run_id: r.id, name: j.name, status: j.status, started_at: j.started_at, completed_at: j.completed_at, html_url: j.html_url, head_branch: r.head_branch, event: r.event });
     }
@@ -130,18 +155,37 @@ async function plan() {
         const fresh = unraised(findings, alerts);
         console.log(`${kind}: ${findings.length} finding(s), ${fresh.length} new`);
         for (const f of findings) console.log(`  ${f.line}${fresh.includes(f) ? " [new]" : ""}`);
-        if (fresh.length > 0) out[kind] = renderAlert(kind, fresh, process.env.RUN_URL);
+        if (fresh.length > 0) out[kind] = { findings: fresh, run_url: process.env.RUN_URL || null };
     }
     fs.writeFileSync(opt("--out"), JSON.stringify(out, null, 1) + "\n");
 }
 
-/** Opens the planned alerts; checks every field against the shapes `renderAlert` produces. */
-async function raise() {
-    const p = JSON.parse(fs.readFileSync(opt("--plan"), "utf8"));
-    for (const [kind, a] of Object.entries(p)) {
-        if (!TITLES[kind] || a.title !== TITLES[kind] || typeof a.body !== "string" || !a.body.startsWith(MARKER) || a.body.length > 60000 || JSON.stringify(a.labels) !== '["factory:alert"]') {
-            throw new Error(`refusing a malformed ${kind} alert`);
+const KEY_RE = /^(needs-human:[0-9]+@[0-9]+|ci-run:[0-9]+)$/;
+
+/** The planned findings, validated (the plan comes from another job's artifact). Pure. */
+function checkPlan(p) {
+    for (const [kind, v] of Object.entries(p)) {
+        if (!TITLES[kind] || !Array.isArray(v.findings) || v.findings.length === 0) throw new Error(`refusing a malformed ${kind} plan`);
+        for (const f of v.findings) {
+            if (!KEY_RE.test(f.key || "") || typeof f.line !== "string" || f.line.length > 400 || /<!--|-->/.test(f.line)) throw new Error(`refusing a malformed ${kind} finding`);
         }
+        if (v.run_url !== null && !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/actions\/runs\/[0-9]+$/.test(v.run_url)) throw new Error("refusing a malformed run url");
+    }
+    return p;
+}
+
+/** Opens the planned alerts. Existing alerts are re-read first: a retried raise (one POST failed
+ *  after another succeeded) never raises a finding twice. */
+async function raise() {
+    const p = checkPlan(JSON.parse(fs.readFileSync(opt("--plan"), "utf8")));
+    for (const [kind, v] of Object.entries(p)) {
+        const alerts = (await pages(`/repos/${REPO}/issues?state=all&labels=factory:alert`)).filter((i) => (i.body || "").startsWith(MARKER)).map((i) => i.body);
+        const fresh = unraised(v.findings, alerts);
+        if (fresh.length === 0) {
+            console.log(`${kind}: already raised`);
+            continue;
+        }
+        const a = renderAlert(kind, fresh, v.run_url);
         const created = await gh("POST", `/repos/${REPO}/issues`, { title: a.title, body: a.body, labels: a.labels });
         console.log(`opened #${created.number} ${a.title}`);
     }
@@ -165,4 +209,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { staleNeedsHuman, slowChecks, unraised, renderAlert, TITLES, MARKER, NEEDS_HUMAN_HOURS, CHECKS_WARN_MINUTES };
+module.exports = { staleNeedsHuman, slowChecks, unraised, raisedKeys, candidateRuns, checkPlan, renderAlert, TITLES, MARKER, NEEDS_HUMAN_HOURS, CHECKS_WARN_MINUTES };
