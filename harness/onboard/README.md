@@ -57,8 +57,9 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
 ## The pipeline (`.github/workflows/onboard.yml`)
 
 1. **decide**: a dispatch with a code (someone with write access), or the policy's decision, run
-   when a factory task issue closes (the last task of a language starts the next one at once) and
-   hourly as a fallback. `onboard.js next` takes the next language from factory
+   when a factory task issue closes (the last task of a language starts the next one at once) or
+   opens (the next language follows as soon as the previous one's issues exist), and hourly as a
+   fallback. `onboard.js next` takes the next language from factory
    `policies/onboarding.yaml` (the owner's list), one at a time (no open onboarding PR, no generated
    locale in flight beyond `max_languages_in_flight`), and stops on the policy's stop rules: AI
    credits spent on generated locales' tasks reach `budget_aic`; first-try merge rate below
@@ -68,6 +69,18 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
    any of its contracts has no task issue (`task_issues_pending`): the issues jobs below haven't
    finished. Two hours after its onboarding PR merged (or with no record of that merge) that stops
    (`task_issues_missing`, an alert): the next language never starts on top of a half-issued one.
+   Several languages may be in flight (`max_languages_in_flight` 5 since the owner's decision of
+   2026-11-09): each decision onboards at most one, the next waits for its onboarding PR to merge
+   and its issues to exist, and the stop rules count across every generated locale. Generated
+   contracts are locale-local (area `<code>-…`, scope under the locale's own paths), so tasks of
+   different languages never hold each other's area lock.
+   **External locales.** The policy's `external_locales` (vi since the owner's decision of
+   2026-11-09: ported outside the factory, as an A/B against it) may be generated on main: their
+   oracle, golden cases and code, which CI checks like any locale (goldens, frontier, comparison).
+   The factory never runs them: no decision picks one (nor a dispatch: `candidates --policy`), no
+   task issue is created (`issues.js --policy`; an unreadable policy creates none), the controller
+   never dispatches or auto-readies one, and they're left out of the in-flight count and every stop
+   rule.
    **Data: current records, no collector.** Spend: each run's full cost (agent, threat detection,
    evals) from the controller's audit log: its `run_spend` event, written once the run has finished
    (`.github/factory/controller/spend.ts`); for runs from before those, its newest `spend_snapshot`

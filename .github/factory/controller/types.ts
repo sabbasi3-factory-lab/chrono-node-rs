@@ -86,11 +86,18 @@ export interface CadencePolicy {
   [key: string]: unknown;
 }
 
+/** onboarding.yaml, as far as the controller reads it. */
+export interface OnboardingPolicy {
+  /** Locales generated on main but run outside the factory (owner, 2026-11-09: vi): never dispatched or auto-readied. */
+  external_locales: string[];
+}
+
 export interface Policies {
   limits: LimitsPolicy;
   budgets: BudgetsPolicy;
   tiers: TiersPolicy;
   cadence: CadencePolicy;
+  onboarding: OnboardingPolicy;
 }
 
 // ---------------------------------------------------------------- snapshot

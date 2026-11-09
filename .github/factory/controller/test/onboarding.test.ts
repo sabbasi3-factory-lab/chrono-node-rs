@@ -113,7 +113,7 @@ describe('generated language-onboarding PRs (tiers.yaml onboarding)', () => {
 
   it('policy: tiers.yaml `onboarding` absent → null; malformed → the policy fails to load', async () => {
     const dir = new URL('./fixtures/policies/', import.meta.url);
-    const t = Object.fromEntries(await Promise.all(['limits', 'budgets', 'tiers', 'cadence'].map(async (n) => [n, await readFile(new URL(`${n}.yaml`, dir), 'utf8')])));
+    const t = Object.fromEntries(await Promise.all(['limits', 'budgets', 'tiers', 'cadence', 'onboarding'].map(async (n) => [n, await readFile(new URL(`${n}.yaml`, dir), 'utf8')])));
     const tiers = (extra: string) => ({ ...t, tiers: `${t.tiers}\n${extra}\n` }) as Parameters<typeof parsePolicies>[0];
     assert.equal(parsePolicies(t as Parameters<typeof parsePolicies>[0]).tiers.onboarding, null);
     assert.deepEqual(parsePolicies(tiers('onboarding: { auto_merge: true, max_per_day: 1 }')).tiers.onboarding, { auto_merge: true, max_per_day: 1 });

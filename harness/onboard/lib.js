@@ -427,7 +427,9 @@ const TASK_ISSUES_GRACE_HOURS = 2;
 
 /**
  * Which language to onboard next, or why not. Pure.
- *   policy:     factory policies/onboarding.yaml at the pinned version, or null
+ *   policy:     factory policies/onboarding.yaml at the pinned version, or null. Its
+ *               `external_locales` (vi) are never onboarded here and left out of everything below
+ *               (in flight, contracts without issues, spend, first try, needs-human)
  *   onboarded:  codes of the generated locales on main
  *   candidates: upstream codes not onboarded yet
  *   issues:     factory:task issues of every state [{id, state, labels}] (id from the marker; a missing
@@ -456,10 +458,14 @@ const TASK_ISSUES_GRACE_HOURS = 2;
  */
 function nextLanguage({ policy, onboarded, candidates, issues, openPRs, contracts, onboardMerges, ledger, costs, incidents = [], now }) {
     if (!policy || !Array.isArray(policy.languages) || policy.languages.length === 0) return { action: "stop", reason: "no_onboarding_policy" };
+    // External locales (generated on main, never factory-run: vi) are neither picked nor counted.
+    const ext = policy.external_locales ?? [];
+    if (!Array.isArray(ext) || !ext.every((c) => typeof c === "string" && /^[a-z]{2}(?:-[a-z]{4})?$/.test(c))) return { action: "stop", reason: "no_onboarding_policy" };
+    const external = new Set(ext);
     const stop = policy.stop || {};
     if (!Array.isArray(issues) || !Array.isArray(openPRs)) return { action: "wait", reason: `inputs_unreadable:${!Array.isArray(issues) ? "issues" : "prs"}` };
     if (openPRs.length > 0) return { action: "wait", reason: `onboarding_pr_open:${openPRs.join(",")}` };
-    const generated = new Set(onboarded);
+    const generated = new Set(onboarded.filter((c) => !external.has(c)));
     const codeOf = (task) => String(task).split("/")[0];
     const ours = issues.filter((i) => generated.has(codeOf(i.id)));
     const open = ours.filter((i) => i.state === undefined || i.state === "open");
@@ -511,7 +517,7 @@ function nextLanguage({ policy, onboarded, candidates, issues, openPRs, contract
     if (byTask.size >= minSample && firstTry / byTask.size < minRate) return { action: "stop", reason: `first_try_rate:${firstTry}/${byTask.size}` };
     const inFlight = new Set(open.map((i) => codeOf(i.id)));
     if (inFlight.size >= (policy.max_languages_in_flight ?? 1)) return { action: "wait", reason: `in_flight:${[...inFlight].sort().join(",")}` };
-    const code = policy.languages.find((c) => candidates.includes(c));
+    const code = policy.languages.find((c) => candidates.includes(c) && !external.has(c));
     if (!code) return { action: "stop", reason: "all_onboarded" };
     return { action: "onboard", code, spent: Math.round(spent), first_try: `${firstTry}/${byTask.size}` };
 }

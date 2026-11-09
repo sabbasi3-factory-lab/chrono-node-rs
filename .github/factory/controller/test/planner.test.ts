@@ -295,6 +295,29 @@ describe('planner: schedule', () => {
     assert.deepEqual(reasons(run(s)), ['area_locked', 'area_locked']);
   });
 
+  it('several languages in flight: generated locales never lock each other; within one, an area does', () => {
+    // Generated contracts are locale-local: area `<code>-…`, scope under src/locales/<module>/.
+    const gen = (id: string, area: string) => contract(id, { area, scope: [`src/locales/${id.split('/')[0]!.replace('-', '_')}/parsers/${id.split('/')[1]!.replace(/-/g, '_')}.rs`] });
+    const s = snapshot({
+      issues: [issue(1, 'ar/casual-date-parser', ['factory:picked']), issue(2, 'zh-hans/casual-date-parser'), issue(3, 'zh-hant/casual-date-parser'), issue(4, 'ar/casual-time-parser')],
+      contractList: [gen('ar/casual-date-parser', 'ar-casual'), gen('zh-hans/casual-date-parser', 'zh-hans-casual'), gen('zh-hant/casual-date-parser', 'zh-hant-casual'), gen('ar/casual-time-parser', 'ar-casual')],
+      history: pickedRecently(['ar/casual-date-parser']),
+    });
+    const ds = run(s);
+    assert.deepEqual(ds.filter((d) => d.reason === 'would_dispatch').map((d) => d.task).sort(), ['zh-hans/casual-date-parser', 'zh-hant/casual-date-parser']);
+    assert.deepEqual(ds.filter((d) => d.reason === 'area_locked').map((d) => d.task), ['ar/casual-time-parser']);
+  });
+
+  it('an external locale (onboarding.yaml external_locales: vi) is never dispatched, even with a ready issue', () => {
+    const s = snapshot({
+      issues: [issue(1, 'vi/casual-date-parser'), issue(2, 'ar/casual-date-parser')],
+      contractList: [contract('vi/casual-date-parser', { area: 'vi-casual' }), contract('ar/casual-date-parser', { area: 'ar-casual' })],
+    });
+    const ds = run(s);
+    assert.deepEqual(ds.filter((d) => d.reason === 'would_dispatch').map((d) => d.task), ['ar/casual-date-parser']);
+    assert.ok(!ds.some((d) => d.task === 'vi/casual-date-parser'), 'no decision at all for vi');
+  });
+
   it('stops admitting human-tier work when the human queue is full (human_queue_full)', () => {
     const waiting = [20, 21, 22, 23, 24, 25].map((n) => issue(n, null, ['needs-human']));
     const s = snapshot({
@@ -969,6 +992,10 @@ describe('auto-ready: unblocked autonomous tasks become ready, within the dispat
     const off: typeof policies = structuredClone(policies);
     off.limits.auto_ready = false;
     assert.deepEqual(kinds(plan(snapshot({ issues: [t(1, 'en/a')], contractList: [contract('en/a')] }), off, ON, NOW)), []);
+  });
+
+  it('an external locale (vi) is never auto-readied', () => {
+    assert.deepEqual(kinds(plan3(snapshot({ issues: [t(1, 'vi/a'), t(2, 'ar/a')], contractList: [contract('vi/a', { area: 'vi-x' }), contract('ar/a', { area: 'ar-x' })] }))), ['auto_ready/deps_merged#2']);
   });
 
   it('an unblocked auto-tier task → auto_ready/deps_merged (label:ready), keyed on the issue and contract', () => {

@@ -94,7 +94,7 @@ describe('needs-human pre-triage (triage.md)', () => {
 
   it('policies: `needs_human_triage: null` (or absent) loads as off; a value must be a positive cap', async () => {
     const dir = new URL('./fixtures/policies/', import.meta.url);
-    const t = Object.fromEntries(await Promise.all(['limits', 'budgets', 'tiers', 'cadence'].map(async (n) => [n, await readFile(new URL(`${n}.yaml`, dir), 'utf8')])));
+    const t = Object.fromEntries(await Promise.all(['limits', 'budgets', 'tiers', 'cadence', 'onboarding'].map(async (n) => [n, await readFile(new URL(`${n}.yaml`, dir), 'utf8')])));
     const withKey = (v: string) => ({ ...t, budgets: t.budgets!.replace(/^per_run:.*\n/m, (l: string) => `${l}  needs_human_triage: ${v}\n`) }) as Parameters<typeof parsePolicies>[0];
     assert.equal(parsePolicies(withKey('null')).budgets.per_run.needs_human_triage, null);
     assert.equal(parsePolicies(t as Parameters<typeof parsePolicies>[0]).budgets.per_run.needs_human_triage, null);

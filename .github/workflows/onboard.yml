@@ -30,9 +30,13 @@ name: onboard
 on:
   schedule:
     - cron: "41 * * * *"
-  # A task closing (the controller's task_done) may be its language's last: decide at once.
+  # A task closing (the controller's task_done) may be its language's last: decide at once. A task
+  # issue opening (the issues-create job, after an onboarding PR merged) ends that language's
+  # task_issues_pending wait: with several languages in flight the next one can onboard at once,
+  # instead of waiting for a task to close or for the hourly cron (throttled to every few hours here).
+  # The concurrency group keeps one decision running and one pending, so a burst of issues is 2 runs.
   issues:
-    types: [closed]
+    types: [closed, opened]
   workflow_dispatch:
     inputs:
       code:
@@ -129,7 +133,9 @@ jobs:
           d="$RUNNER_TEMP/onboard"
           if [ -n "$CODE" ]; then
             [[ "$CODE" =~ ^[a-z]{2}(-[a-z]{4})?$ ]] || { echo "::error::bad code"; exit 1; }
-            node onboard/onboard.js candidates | grep -qx "$CODE" || { echo "::error::$CODE is not an upstream locale waiting to be onboarded"; exit 1; }
+            # Not an external locale (policy external_locales: generated outside the factory); an
+            # unreadable policy fails here too.
+            node onboard/onboard.js candidates --policy "$d/policy.yaml" | grep -qx "$CODE" || { echo "::error::$CODE is not an upstream locale waiting to be onboarded (or it is external)"; exit 1; }
             if jq -e --arg b "factory/onboard/$CODE" 'any(.[]; .head.ref == $b)' "$d/prs.json" >/dev/null; then
               echo "::error::an onboarding PR for $CODE is already open"; exit 1
             fi
@@ -305,10 +311,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ids=$(node harness/onboard/issues.js pending)
+          set -o pipefail
+          # The pinned onboarding policy: its external locales (vi) get no task issues. Unreadable =
+          # this step fails and no issue is created (fail closed).
+          version=$(cat .github/factory/factory-version)
+          [[ "$version" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad factory-version"; exit 1; }
+          mkdir -p /tmp/factory-onboard-plan
+          curl -fsSL "https://raw.githubusercontent.com/sabbasi3-factory-lab/factory/${version}/policies/onboarding.yaml" -o /tmp/factory-onboard-plan/policy.yaml
+          ids=$(node harness/onboard/issues.js pending --policy /tmp/factory-onboard-plan/policy.yaml)
           echo "generated contracts without a task issue: ${ids:-none}"
           echo "ids=$ids" >> "$GITHUB_OUTPUT"
-          mkdir -p /tmp/factory-onboard-plan && echo '[]' > /tmp/factory-onboard-plan/plan.json
+          echo '[]' > /tmp/factory-onboard-plan/plan.json
           if [ -n "$ids" ]; then
             (cd scripts/seed-backlog && npm ci --ignore-scripts --no-audit --no-fund && node seed.js issues --plan --only "$ids" > /tmp/factory-onboard-plan/plan.json)
           fi
@@ -358,7 +371,8 @@ jobs:
       - name: Create the task issues
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: node harness/onboard/issues.js create --plan /tmp/factory-onboard-plan/plan.json
+        # The same policy file the plan used (uploaded with the plan); create re-checks every entry against it.
+        run: node harness/onboard/issues.js create --plan /tmp/factory-onboard-plan/plan.json --policy /tmp/factory-onboard-plan/policy.yaml
 
   # A stop rule fired: one factory:alert issue per kind of reason (the owner decides; loosening a
   # stop rule is a policy change).
