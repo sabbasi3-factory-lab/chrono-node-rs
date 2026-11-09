@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-09T14:09:12Z",
+  "generated_at": "2026-11-09T15:57:39Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
     {
@@ -74,18 +74,18 @@
         {
           "type": "add_comment",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/457#issuecomment-6704188819",
-          "outcome_status": "pending",
+          "outcome_status": "accepted",
           "zero_touch": null
         },
         {
           "type": "create_pull_request",
           "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/473",
-          "outcome_status": "pending",
+          "outcome_status": "rejected",
           "zero_touch": null
         }
       ],
       "eval_failed": false,
-      "evaluated_at": "2026-11-07T08:58:05Z",
+      "evaluated_at": "2026-11-09T15:57:39Z",
       "drill": false
     },
     {
@@ -2266,7 +2266,7 @@
         }
       ],
       "eval_failed": false,
-      "evaluated_at": "2026-11-04T23:58:15Z",
+      "evaluated_at": "2026-11-09T15:57:39Z",
       "drill": false
     },
     {
@@ -4867,6 +4867,18 @@
       "drill": false
     },
     {
+      "run_id": 42631324021,
+      "workflow": "triage",
+      "title": "Triage drill/activation-canary #1",
+      "created_at": "2026-11-09T14:05:50Z",
+      "aic": 4.92086,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-09T15:57:39Z",
+      "drill": true
+    },
+    {
       "run_id": 42478315688,
       "workflow": "triage",
       "title": "Triage drill/activation-canary #1",
@@ -5056,9 +5068,9 @@
     }
   ],
   "summary": {
-    "accepted": 178,
-    "pending": 160,
-    "rejected": 12,
+    "accepted": 179,
+    "pending": 158,
+    "rejected": 13,
     "unknown": 17
   }
 }
