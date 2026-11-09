@@ -808,6 +808,42 @@
       "cases": 15,
       "skipped": 0,
       "skipped_by_reason": {}
+    },
+    "zh_hant/ago": {
+      "source": "upstream/test/zh/hant/zh_hant_ago.test.ts",
+      "cases": 10,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "zh_hant/casual": {
+      "source": "upstream/test/zh/hant/zh_hant_casual.test.ts",
+      "cases": 19,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "zh_hant/date": {
+      "source": "upstream/test/zh/hant/zh_hant_date.test.ts",
+      "cases": 9,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "zh_hant/deadline": {
+      "source": "upstream/test/zh/hant/zh_hant_deadline.test.ts",
+      "cases": 16,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "zh_hant/time_exp": {
+      "source": "upstream/test/zh/hant/zh_hant_time_exp.test.ts",
+      "cases": 19,
+      "skipped": 0,
+      "skipped_by_reason": {}
+    },
+    "zh_hant/weekday": {
+      "source": "upstream/test/zh/hant/zh_hant_weekday.test.ts",
+      "cases": 9,
+      "skipped": 0,
+      "skipped_by_reason": {}
     }
   }
 }

@@ -1,0 +1,430 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/zh/hant/zh_hant_weekday.test.ts",
+  "cases": [
+    {
+      "id": "zh_hant/weekday#1",
+      "text": "星期四",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "星期四",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-09-01T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hant/weekday#2",
+      "text": "我週一要打遊戲",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "週一",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hant/weekday#3",
+      "text": "禮拜四 (forward dates only)",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ZHHantWeekdayParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "禮拜四",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 8,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-09-08T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hant/weekday#4",
+      "text": "禮拜日",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "禮拜日",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 4,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-09-04T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hant/weekday#5",
+      "text": "雞上個禮拜三全部都係雞",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantRelationWeekdayParser",
+          "ZHHantWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "上個禮拜三",
+          "start": {
+            "known": {
+              "day": 24,
+              "month": 8,
+              "weekday": 3,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-08-24T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hant/weekday#6",
+      "text": "雞下星期天全部都係雞",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantRelationWeekdayParser",
+          "ZHHantWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "下星期天",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 9,
+              "weekday": 0,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-09-04T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hant/weekday#7",
+      "text": "我這個星期一要打遊戲",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantRelationWeekdayParser",
+          "ZHHantWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "這個星期一",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 6,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - 'this' week"
+    },
+    {
+      "id": "zh_hant/weekday#8",
+      "text": "星期一",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "星期一",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - 'this' week"
+    },
+    {
+      "id": "zh_hant/weekday#9",
+      "text": "星期六-星期一",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-09-02T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ZHHantWeekdayParser"
+        ],
+        "refiners": [
+          "ZHHantMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "星期六-星期一",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 3,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-09-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 5,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 9,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-09-05T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    }
+  ]
+}
