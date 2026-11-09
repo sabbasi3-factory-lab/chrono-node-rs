@@ -469,7 +469,8 @@ function nextLanguage({ policy, onboarded, candidates, issues, openPRs, onboardP
         // landed after it was generated) would wait forever: regenerate it on current main when it's
         // still pure generator output; otherwise a person must look (stop, alert). Unreadable: wait.
         for (const pr of Array.isArray(onboardPRs) ? onboardPRs : []) {
-            if (pr.mergeable_state !== "dirty") continue;
+            // An external locale is never factory-run: its PR is never regenerated (nor force-pushed).
+            if (pr.mergeable_state !== "dirty" || external.has(pr.code)) continue;
             return pureGeneratorPr(pr) ? { action: "regenerate", code: pr.code, pr: pr.number, head: pr.head_sha, reason: "dirty" } : { action: "stop", reason: `onboarding_pr_conflict:${pr.code}` };
         }
         return { action: "wait", reason: `onboarding_pr_open:${openPRs.join(",")}` };

@@ -470,6 +470,9 @@ test("onboarding PR conflicting with main: regenerated when pure generator outpu
         assert.deepStrictEqual(lib.nextLanguage({ ...base, onboardPRs: [pr] }), { action: "stop", reason: "onboarding_pr_conflict:zh-hans" }, JSON.stringify(over));
     }
     assert.strictEqual(lib.pureGeneratorPr(genPr()), true);
+    // An external locale's PR is never regenerated, even pure and conflicting: it just waits.
+    const ext = { ...base, policy: { ...base.policy, external_locales: ["zh-hans"] }, onboardPRs: [genPr()] };
+    assert.deepStrictEqual(lib.nextLanguage(ext), { action: "wait", reason: "onboarding_pr_open:zh-hans" });
 });
 
 test("onboard.yml regenerates in place: same branch and PR (counted once), with a lease, never a second PR", () => {
@@ -480,6 +483,12 @@ test("onboard.yml regenerates in place: same branch and PR (counted once), with 
     assert.match(wf.jobs.generate.if, /action == 'regenerate'/);
     const decision = wf.jobs.decide.steps.find((s) => s.id === "decision").run;
     assert.match(decision, /--onboard-prs "\$d\/onboard-prs\.json"/);
+    // A PR whose detail can't be read is skipped with a warning, never failing the Inputs step.
+    const inputs = wf.jobs.decide.steps.find((s) => s.name === "Inputs (read-only)").run;
+    assert.match(inputs, /if ! rec=\$\(detail "\$n"\); then echo "::warning::[^"]*"; continue; fi/);
+    for (const call of inputs.slice(inputs.indexOf("detail() {"), inputs.indexOf("\n}\n")).split("\n").filter((l) => /gh api|jq -nc/.test(l))) {
+        if (!/\|\| return 1/.test(call) && !/\\$/.test(call)) assert.fail(`unguarded: ${call}`);
+    }
     assert.deepStrictEqual(Object.keys(wf.jobs.decide.outputs).sort(), ["action", "code", "head", "pr", "reason"]);
     const apply = wf.jobs.apply.steps.find((s) => s.name === "Open the onboarding PR").run;
     const regen = apply.slice(apply.indexOf('if [ "$ACTION" = "regenerate" ]'), apply.indexOf('git push origin "$branch"'));

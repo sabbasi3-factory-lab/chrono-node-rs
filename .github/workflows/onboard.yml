@@ -102,13 +102,20 @@ jobs:
           # output (lib.pureGeneratorPr: one commit by the controller App, generator paths only) is
           # regenerated on current main. `unknown` mergeability (GitHub computes it lazily) is read again
           # once; still unknown, it just waits.
-          for n in $(jq -r '.[] | select(.head.ref | startswith("factory/onboard/")) | .number' "$d/prs.json"); do
-            p=$(gh api "repos/$R/pulls/$n")
-            if [ "$(jq -r .mergeable_state <<<"$p")" = "unknown" ]; then sleep 10; p=$(gh api "repos/$R/pulls/$n"); fi
-            commits=$(gh api "repos/$R/pulls/$n/commits?per_page=100" --jq '[.[] | {sha, author_login: .author.login, committer_login: .committer.login, message: .commit.message, parents: (.parents | length)}]')
-            files=$(gh api --paginate "repos/$R/pulls/$n/files?per_page=100" --jq '.[].filename' | jq -R . | jq -s .)
+          # Optional detail: a PR whose detail can't be read is left out (it stays in prs.json, so the
+          # decision just waits on it); the step never fails over it.
+          detail() {
+            local n=$1 p commits files
+            p=$(gh api "repos/$R/pulls/$n") || return 1
+            if [ "$(jq -r .mergeable_state <<<"$p")" = "unknown" ]; then sleep 10; p=$(gh api "repos/$R/pulls/$n") || return 1; fi
+            commits=$(gh api "repos/$R/pulls/$n/commits?per_page=100" --jq '[.[] | {sha, author_login: .author.login, committer_login: .committer.login, message: .commit.message, parents: (.parents | length)}]') || return 1
+            files=$(gh api --paginate "repos/$R/pulls/$n/files?per_page=100" --jq '.[].filename' | jq -R . | jq -s .) || return 1
             jq -nc --argjson p "$p" --argjson c "$commits" --argjson f "$files" \
-              '{number: $p.number, code: ($p.head.ref | ltrimstr("factory/onboard/")), head_sha: $p.head.sha, author: $p.user.login, mergeable_state: $p.mergeable_state, commits: $c, files: $f}'
+              '{number: $p.number, code: ($p.head.ref | ltrimstr("factory/onboard/")), head_sha: $p.head.sha, author: $p.user.login, mergeable_state: $p.mergeable_state, commits: $c, files: $f}' || return 1
+          }
+          for n in $(jq -r '.[] | select(.head.ref | startswith("factory/onboard/")) | .number' "$d/prs.json"); do
+            if ! rec=$(detail "$n"); then echo "::warning::onboarding PR #$n: detail unreadable, it just waits"; continue; fi
+            echo "$rec"
           done | jq -s . > "$d/onboard-prs.json"
           # Closed PRs: merged onboarding PRs (the task-issue grace period).
           gh api --paginate "repos/$R/pulls?state=closed&per_page=100" \
