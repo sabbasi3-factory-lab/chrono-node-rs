@@ -1,6 +1,6 @@
 name: outcomes
 
-# gh-aw Outcomes for every agent run (implement, repair, review, triage), published as outcomes.json on the
+# gh-aw Outcomes for every agent run (implement, repair, review, triage, and factory v2's v2-port and v2-repair), published as outcomes.json on the
 # `outcomes` branch for the dashboard. Plain code, no AI. Two jobs so no write token sits next to a
 # downloaded binary: `evaluate` runs gh-aw with a read-only token; `publish` only commits the file.
 # Never checks out or runs PR code. See .github/factory/controller/README.md, "Outcomes".
@@ -16,7 +16,7 @@ on:
     types: [closed] # merge-queue merges fire it too
     branches: [main]
   workflow_run:
-    workflows: ["Implement one factory task", "Repair one factory PR", "Review one factory PR", "Pre-triage one needs-human factory task"]
+    workflows: ["Implement one factory task", "Repair one factory PR", "Review one factory PR", "Pre-triage one needs-human factory task", "Port one language (factory v2)", "Repair one factory v2 PR"]
     types: [completed]
     branches: [main]
   # Picks up work events left behind (GitHub runs this late on the Free plan; that's fine here).
@@ -79,7 +79,7 @@ jobs:
           # whole call, so one bad run must not block the rest. A failed or unstarted call keeps that
           # run's previous record; a run gh-aw doesn't list (no artifacts,
           # e.g. cancelled early) is skipped, as before.
-          for w in implement repair review triage; do
+          for w in implement repair review triage v2-port v2-repair; do
             gh api "repos/$R/actions/workflows/$w.lock.yml/runs?status=completed&created=>=2026-10-01&per_page=100" --paginate \
               -q '.workflow_runs[] | {run_id: .id, workflow: "'"$w"'", title: .display_title, created_at}'
           done | jq -s . > listed.json
@@ -96,7 +96,7 @@ jobs:
             : > "$2/r/$3.started"
             out="$2/r/$3.json"
             for try in 1 2; do  # one retry: parallel calls occasionally fail transiently
-              timeout 300 "$0" logs implement repair review triage --repo "$1" --json -c 1 --start-date 2026-10-01 \
+              timeout 300 "$0" logs implement repair review triage v2-port v2-repair --repo "$1" --json -c 1 --start-date 2026-10-01 \
                 --after-run-id $(($3 - 1)) --before-run-id $(($3 + 1)) --outcomes -o "$2/logs/$3-$try" > "$out" 2>/dev/null &&
               jq -e --argjson id "$3" "(.runs // []) as \$r | (\$r | length == 0) or (\$r | length == 1 and .[0].run_id == \$id)" "$out" > /dev/null &&
               exit 0

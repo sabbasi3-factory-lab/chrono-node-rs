@@ -1,0 +1,21 @@
+# Factory v2 (docs/factory-v2.md): one agent run and one PR per language, on platform features. Plain code
+# reads this file (v2-router.yml, harness/gates, v2-port, v2-repair); nothing here is AI-decided.
+# Human tier: changes need the owner's review.
+version: 1
+# Languages v2 ports. Each must also be in factory policies/onboarding.yaml `external_locales` at the
+# pinned factory version (the router checks), so v1 never works on it. Pilot: Italian.
+languages: [it]
+# AI Credits for all v2 agent runs since `since` (every job: agent, threat detection, evals; from
+# gh aw logs). The router starts a run only if the spend so far plus that run's agent cap fits.
+budget_aic: 1000
+since: "2026-11-09"
+# The agent job's gh-aw max-ai-credits per workflow (keep in step with the workflows' frontmatter;
+# factory policies/budgets.yaml per_run.implement and per_run.repair). A run still in progress counts
+# at its cap plus threat_detection.
+caps:
+  port: 500
+  repair: 300
+  threat_detection: 400
+# Repairs after the first run (factory policies/limits.yaml task.max_repairs); the same failure
+# signature twice in a row also stops (stop_on_repeated_signature). Then needs-human.
+max_repairs: 2
