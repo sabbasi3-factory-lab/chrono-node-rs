@@ -384,6 +384,7 @@ export type ReasonCode =
   | 'missing_heldout_seed'
   | 'repair_unavailable'
   | 'ci_not_repairable'
+  | 'ci_cancelled'
   | 'task_budget_unknown'
   | 'auto_merge_ready'
   | 'review_needed'
@@ -436,7 +437,8 @@ export type ReasonCode =
   | 'review_pending'
   | 'gates_pending'
   | 'check_runs_incomplete'
-  | 'heldout_seed_pending';
+  | 'heldout_seed_pending'
+  | 'ci_cancelled_grace';
 
 export type Effect =
   | 'dispatch_workflow:implement'

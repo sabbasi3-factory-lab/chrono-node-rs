@@ -103,6 +103,12 @@ export const REVIEW_TIMEOUT_MINUTES = 60;
 export const SEED_EXPECTED_CONCLUSIONS = new Set(['success', 'failure']);
 /** How long a completed ci run's unreadable seed is waited for before a person looks (missing_heldout_seed). */
 export const HELDOUT_PENDING_MINUTES = 30;
+/**
+ * A cancelled `ci` run on the PR head (the `checks` job hit its time limit, a runner was lost, or
+ * someone cancelled it) is final once nothing newer has started for that head within this grace:
+ * a person decides at once, instead of the task waiting for `task_timeout` (#457 waited ~24 h).
+ */
+export const CI_CANCELLED_GRACE_MINUTES = 15;
 
 /** CI conclusions treated as a failure that needs a repair. */
 export const FAILED_CONCLUSIONS = new Set(['failure', 'timed_out', 'startup_failure']);
@@ -867,6 +873,15 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
         }
       }
       merges.push(merge);
+      continue;
+    }
+    if (run?.conclusion === 'cancelled') {
+      const source_ids = [`${run.run_id}/attempts/${run.run_attempt}`, pr.node_id];
+      if (nowMs - Date.parse(run.updated_at) < CI_CANCELLED_GRACE_MINUTES * 60_000) {
+        out.push(decide({ ...base, type: 'wait', reason: 'ci_cancelled_grace', run_id: run.run_id, source_ids }));
+      } else {
+        escalate(decide({ ...base, type: 'needs_human', reason: 'ci_cancelled', effect: 'label:needs-human', run_id: run.run_id, contract_sha: c.last_commit_sha, source_ids }));
+      }
       continue;
     }
     if (!run || !run.conclusion || !FAILED_CONCLUSIONS.has(run.conclusion)) continue;

@@ -1,0 +1,96 @@
+# Factory watchdog (plain code, no AI): every 15 min, raise one factory:alert for a needs-human
+# waiting over 6 h, or a `ci` checks job over 60 min (its limit is 90). It runs from Actions, so a
+# stall is caught even when nobody is watching (harness/watchdog/watchdog.js has the rules).
+# Kill switch: unless FACTORY_ENABLED is exactly "true", it only reports (nothing is written).
+# Human tier: changes need the owner's review.
+name: watchdog
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-watchdog
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read, issues: read, pull-requests: read, actions: read }
+    outputs:
+      raise: ${{ steps.plan.outputs.raise }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: harness/watchdog
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Findings (read-only)
+        id: plan
+        shell: bash -eo pipefail {0}
+        env:
+          FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node harness/watchdog/watchdog.js plan --out "$RUNNER_TEMP/watchdog-plan.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          # The kill switch is exactly "true", case-sensitive (Actions `==` compares case-insensitively).
+          if [ "$(jq 'length' "$RUNNER_TEMP/watchdog-plan.json")" != "0" ]; then
+            if [ "$FACTORY_ENABLED" = "true" ]; then echo "raise=true" >> "$GITHUB_OUTPUT"
+            else echo "[dry-run] FACTORY_ENABLED isn't \"true\": nothing raised"; fi
+          fi
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.plan.outputs.raise == 'true'
+        with:
+          name: watchdog-plan
+          path: ${{ runner.temp }}/watchdog-plan.json
+          retention-days: 7
+
+  raise:
+    needs: plan
+    if: needs.plan.outputs.raise == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: harness/watchdog
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: watchdog-plan
+          path: ${{ runner.temp }}/plan
+
+      - name: Create controller App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.FACTORY_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.FACTORY_CONTROLLER_PRIVATE_KEY }}
+          owner: sabbasi3-factory-lab
+          repositories: chrono-node-rs
+          permission-issues: write
+
+      - name: Raise the alert(s)
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: node harness/watchdog/watchdog.js raise --plan "$RUNNER_TEMP/plan/watchdog-plan.json"

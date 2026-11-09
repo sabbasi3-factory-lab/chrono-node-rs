@@ -35,6 +35,7 @@ const REASON_CLASS = {
     duplicate_task: "factory",
     contract_missing: "factory",
     ci_not_repairable: "factory_or_platform",
+    ci_cancelled: "factory_or_platform",
     task_budget_exhausted: "policy",
     task_timeout: "policy",
     intake_fix_daily_cap: "policy",

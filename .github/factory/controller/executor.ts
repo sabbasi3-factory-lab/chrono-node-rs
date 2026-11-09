@@ -149,6 +149,7 @@ const REASON_TEXT: Partial<Record<ReasonCode, string>> = {
   repair_failed: 'The repair run failed without pushing a fix. A person decides.',
   pick_time_unknown: 'The issue is marked picked, but the audit log has no pick time for it.',
   ci_not_repairable: 'CI did not finish normally on this PR (timed out, or never started). That is not repaired automatically: a person decides.',
+  ci_cancelled: "CI on this PR's head was cancelled (usually the `checks` job hit its time limit) and nothing newer started. Not repaired automatically: a person decides (for a factory CI defect, fix it and re-drive the task as an infra incident).",
   task_budget_unknown: "CI failed, but this task's AI spend can't be read, so no repair is paid for.",
   repair_unavailable: 'CI failed. There is no repair workflow yet, so a person decides what to do.',
   full_regression_missing: "This auto-strict change has no successful full regression (the `checks` job's 10,000-phrase held-out step) on its head. A person decides.",
