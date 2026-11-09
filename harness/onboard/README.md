@@ -104,8 +104,21 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
    the comment's URL); a bot or App adding the label, or a comment without a ref, records nothing.
    For the first-try rate only, that task's implement attempts started before the record, other
    than the one whose PR merged, aren't counted. Spend counts every run, and the threshold is unchanged.
+   **A conflicting onboarding PR.** An open onboarding PR that conflicts with main (GitHub's
+   `mergeable_state: dirty`: another PR changed a shared golden index, `tests/golden/index.json` or
+   `configurations.json`, after it was generated; #494 and the external vi oracle #491, 2026-11-09)
+   would wait forever. The decision reads each open onboarding PR's commits and files
+   (`--onboard-prs`) and, when it's still pure generator output (`lib.pureGeneratorPr`: exactly one
+   commit, authored and committed by the controller App, with apply's message and one parent; only
+   generator paths; the head unchanged), decides `regenerate`: the generator runs on current main and
+   apply replaces the branch with a lease on the checked head, then refreshes the same PR's
+   description and comments. Same branch and PR, so `max_per_day` (merged onboarding PRs) counts it
+   once. Anything else on the PR (a person's commit, another file, a rebase) stops with
+   `onboarding_pr_conflict:<code>` and an alert: a person resolves it. Mergeability not yet computed
+   (`unknown`) or the details unreadable: wait, as before.
 2. **generate**: the generator on main with a read-only token, then the exact file set is checked.
-3. **apply** (live): the controller App opens `factory/onboard/<code>`. Human tier.
+3. **apply** (live): the controller App opens `factory/onboard/<code>` (or, for `regenerate`,
+   force-pushes it with a lease and updates the existing PR). Human tier.
 4. **issues** (live, after merge): task issues with "blocked by" links (`issues.js`, no third-party
    code next to the write token). The controller's auto-ready dispatches unblocked auto-tier tasks.
 5. **alert** (live): a stop opens one `factory:alert` issue per reason.
