@@ -28,6 +28,8 @@ const CI_LOOKBACK_HOURS = 4;
 const MARKER = "<!-- factory-watchdog -->";
 const ITEM_RE = /<!-- watchdog-item: ([a-z-]+:[0-9]+(?:@[0-9a-f]+)?) -->/g;
 const GREEN_STALL_HOURS = 2;
+/** The audit is read back at most this far (a stall older than this keeps its key from the floor). */
+const AUDIT_MAX_DAYS = 30;
 const NO_PROGRESS_HOURS = 6;
 /** Audit event types that aren't progress: measurements, heartbeats, and advisory triage. */
 const PASSIVE_EVENTS = new Set(["heartbeat", "spend_snapshot", "run_spend", "triage_dispatched", "alert", "dispatch_state"]);
@@ -215,7 +217,7 @@ async function plan() {
     }
     const { prs, prsByTask } = await factoryPrs();
     const picked = await pickedIssues();
-    const events = await auditEvents(now);
+    const events = await auditEvents(now, picked.map((i) => i.since));
     const alerts = (await pages(`/repos/${REPO}/issues?state=all&labels=factory:alert`)).filter((i) => (i.body || "").startsWith(MARKER)).map((i) => i.body);
     const out = {};
     for (const [kind, findings] of [
@@ -258,7 +260,7 @@ async function pickedIssues() {
     const out = [];
     for (const i of await pages(`/repos/${REPO}/issues?state=open&labels=factory:task,factory:picked`)) {
         if (i.pull_request || (i.labels || []).some((l) => l.name === "needs-human")) continue;
-        const m = /<!-- factory-task: ([a-z0-9/-]+) -->/.exec(i.body || "");
+        const m = /<!-- factory-task: ([a-z0-9_/-]+) -->/.exec(i.body || "");
         if (!m) continue;
         const events = await pages(`/repos/${REPO}/issues/${i.number}/events`);
         const marks = events.filter((e) => e.event === "reopened" || (e.event === "labeled" && e.label && e.label.name === "factory:picked")).map((e) => e.created_at);
@@ -267,11 +269,23 @@ async function pickedIssues() {
     return out;
 }
 
-/** The audit branch's events for today and the previous day (a 6 h window fits). A missing day file is empty. */
-async function auditEvents(now) {
+/** Audit day files to read: from the earliest floor's day through today (at most AUDIT_MAX_DAYS). Pure. */
+function auditDays(floors, now) {
+    const today = Date.parse(new Date(now).toISOString().slice(0, 10));
+    const first = Math.min(today - 86400_000, ...floors.map((f) => Date.parse(f.slice(0, 10))).filter(Number.isFinite));
+    const days = [];
+    for (let t = Math.max(first, today - (AUDIT_MAX_DAYS - 1) * 86400_000); t <= today; t += 86400_000) days.push(new Date(t).toISOString().slice(0, 10).replace(/-/g, "/"));
+    return days;
+}
+
+/**
+ * The audit branch's events back to the earliest picked task's floor (its latest reopen or pick), so a
+ * task's last progress is found however long it has been stalled: an aging-out day file must not move
+ * a stall's key and raise it again. A missing day file is empty.
+ */
+async function auditEvents(now, floors) {
     const out = [];
-    for (const back of [1, 0]) {
-        const day = new Date(now - back * 86400_000).toISOString().slice(0, 10).replace(/-/g, "/");
+    for (const day of auditDays(floors, now)) {
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/audit/${day}.jsonl?ref=audit`, {
             headers: { authorization: `Bearer ${process.env.GH_TOKEN}`, accept: "application/vnd.github.raw", "x-github-api-version": "2022-11-28", "user-agent": "factory-watchdog" },
         });
@@ -331,4 +345,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { staleNeedsHuman, slowChecks, greenStalled, noProgress, taskOf, PASSIVE_EVENTS, unraised, raisedKeys, candidateRuns, checkPlan, renderAlert, TITLES, MARKER, NEEDS_HUMAN_HOURS, CHECKS_WARN_MINUTES };
+module.exports = { staleNeedsHuman, slowChecks, greenStalled, noProgress, taskOf, auditDays, PASSIVE_EVENTS, unraised, raisedKeys, candidateRuns, checkPlan, renderAlert, TITLES, MARKER, NEEDS_HUMAN_HOURS, CHECKS_WARN_MINUTES };

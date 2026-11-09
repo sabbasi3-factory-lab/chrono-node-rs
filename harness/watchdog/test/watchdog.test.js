@@ -120,10 +120,17 @@ test("no progress: a picked task with no non-passive event naming it, its issue 
 test("taskOf: the Factory-Task trailer; plans with the new keys validate", () => {
     assert.strictEqual(W.taskOf("## Summary\nx\n\nFactory-Task: ar/abstract-parser\nContract-SHA: abc1234"), "ar/abstract-parser");
     assert.strictEqual(W.taskOf("Factory-Task:"), null);
+    assert.strictEqual(W.taskOf("Factory-Task: ar/my_parser"), "ar/my_parser"); // task ids may contain _ (controller tasks.ts)
     assert.strictEqual(W.taskOf(null), null);
     for (const [kind, key] of [["pr_green_stalled", "pr-green:477@5e3a80b123c9"], ["task_no_progress", "no-progress:457@1762600000"]]) {
         const p = { [kind]: { findings: [{ key, line: "- x" }], run_url: null } };
         assert.strictEqual(W.checkPlan(p), p);
         assert.deepStrictEqual([...W.raisedKeys([W.renderAlert(kind, p[kind].findings, null).body])], [key]);
     }
+});
+
+test("audit days: back to the earliest floor (a long stall keeps its key), at least yesterday, at most 30 days", () => {
+    assert.deepStrictEqual(W.auditDays([], NOW), ["2026/11/07", "2026/11/08"]);
+    assert.deepStrictEqual(W.auditDays([hoursAgo(80), hoursAgo(2)], NOW), ["2026/11/05", "2026/11/06", "2026/11/07", "2026/11/08"]);
+    assert.strictEqual(W.auditDays([hoursAgo(24 * 90)], NOW).length, 30);
 });
