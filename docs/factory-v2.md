@@ -53,6 +53,25 @@ test lock wasn't enforced. v2 aims for that speed with the lock.
 - **Repair at most 2, then `needs-human`.** The router counts its repairs and compares failure signatures. A `gates`
   failure, a merge-queue removal or a spent budget goes straight to `needs-human`.
 
+## Central Agentic Ops (CAO)
+
+[gh-cao](https://github.com/githubnext/gh-cao) (GitHub Next research prototype) collects gh-aw run, cost and outcome
+evidence into a dashboard, and runs explicitly integrated workflows under a control repository's reviewed policy
+(review/live modes, emergency stop, an optional OIDC admission gate for AI Credits). Not installed here; the owner is
+trying it separately.
+
+| v2 piece | CAO could replace it? |
+|---|---|
+| Audit and dashboards (`outcomes.yml`, the factory dashboard, the pilot's measurements) | **Yes.** CAO Activity and its dashboard show runs, AIC and outcomes across repos, read-only, and mark missing evidence as unavailable, not zero |
+| The router's budget gate (`gh aw logs` sum in `v2-router.yml`) | **Partly, later.** The admission gate refuses a gh-aw run at start from policy and fresh accounting, but needs a hosted CAO server (PostgreSQL), a trusted accounting publisher and a gh-aw build with its admission protocol, which pinned v1.0.1 may not speak. It's a cooperative start check, not a reservation |
+| Kill switch | **No** (alongside): CAO's emergency stop covers CAO-governed workflows; `FACTORY_ENABLED` stays |
+| The test lock (`gates`, rulesets), per-contract `ci` checks, auto-merge and merge queue | **No.** These are repository checks on each PR; CAO doesn't run or replace them |
+| Starting a port and the repair/stop rules (`v2-router.yml`) | **No.** CAO dispatches campaign workers across repos; it doesn't react to one PR's `ci`/`gates` results |
+| Agent sandbox and identity (gh-aw, agent App) | **No.** Unchanged; CAO runs gh-aw workflows as they are |
+
+So v2 keeps no custom dashboard of its own: if CAO is adopted, it replaces the audit/dashboard parts first, and the
+budget gate once the admission gate is available.
+
 ## Flow
 
 1. A PR adding `contracts/<lang>/` (onboarding generator output) merges. The router (on `push` to main) opens the
