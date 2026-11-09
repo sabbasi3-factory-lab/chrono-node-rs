@@ -486,12 +486,18 @@ async function cli(): Promise<void> {
       return;
     }
   }
-  const result = await run(deps);
-  if (before) {
-    const after = await quota();
-    if (after) {
-      const cost = after.reset === before.reset ? `${before.remaining - after.remaining}` : 'n/a (the window reset during the poll)';
-      log(`rate: this poll used ${cost} API calls; ${after.remaining} of ${after.limit} left (used ${after.used} this window)`);
+  // The cost is logged in `finally`: a failed poll (e.g. a spent quota) is measured too, and its
+  // error still propagates (fail closed).
+  let result: Awaited<ReturnType<typeof run>>;
+  try {
+    result = await run(deps);
+  } finally {
+    if (before) {
+      const after = await quota();
+      if (after) {
+        const cost = after.reset === before.reset ? `${before.remaining - after.remaining}` : 'n/a (the window reset during the poll)';
+        log(`rate: this poll used ${cost} API calls; ${after.remaining} of ${after.limit} left (used ${after.used} this window)`);
+      }
     }
   }
   if (args.print) {

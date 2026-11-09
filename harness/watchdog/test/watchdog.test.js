@@ -145,24 +145,34 @@ test("rate limit: only a run whose Findings step succeeded in the last 10 min co
     assert.strictEqual(W.recentlyEvaluated([run(9, "success", 2)], 9, NOW), false, "itself doesn't count");
 });
 
-test("controller failing: 5+ failed runs in a row, one finding per streak (keyed by its first failure)", () => {
+test("controller failing: 5+ failed runs in a row, one finding per streak (keyed by the poll before it)", () => {
     const run = (id, conclusion, extra = {}) => ({ id, conclusion, created_at: hoursAgo(id / 100), ...extra });
-    // Newest first: 4 failures, a cancelled run and a relevance-skipped success in between, then a real poll.
-    const runs = [run(1, "failure"), run(2, "cancelled"), run(3, "failure"), run(4, "success", { polled: false }), run(5, "failure"), run(6, "failure"), run(7, "success"), run(8, "failure")];
+    // Newest first: 4 failures, a cancelled run and a non-polling success in between, then a real poll (7).
+    const runs = [run(1, "failure"), run(2, "cancelled"), run(3, "failure"), run(4, "success", { polled: false }), run(5, "failure"), run(6, "failure"), run(7, "success", { polled: true }), run(8, "failure")];
     assert.deepStrictEqual(W.controllerFailStreak(runs), [], "4 in a row: not yet");
     const five = [run(0, "failure"), ...runs];
     const f = W.controllerFailStreak(five);
-    assert.deepStrictEqual(f.map((x) => x.key), ["controller-fail:6"]);
+    assert.deepStrictEqual(f.map((x) => x.key), ["controller-fail:7"]);
     assert.match(f[0].line, /^- 5 controller runs failed in a row since .* \(newest .*, run 0\)$/);
     // The streak grows: same key, so the existing alert covers it (raised once).
     const longer = [run(-1, "failure"), ...five];
-    assert.deepStrictEqual(W.controllerFailStreak(longer).map((x) => x.key), ["controller-fail:6"]);
+    assert.deepStrictEqual(W.controllerFailStreak(longer).map((x) => x.key), ["controller-fail:7"]);
     assert.deepStrictEqual(W.unraised(W.controllerFailStreak(longer), [W.renderAlert("controller_failing", f, null).body]), []);
-    // A real poll (success that polled, or unknown) ends it; timed_out and startup_failure count.
-    assert.deepStrictEqual(W.controllerFailStreak([run(1, "timed_out"), run(2, "startup_failure"), run(3, "failure"), run(4, "failure"), run(5, "failure"), run(6, "success")]).map((x) => x.key), ["controller-fail:5"]);
+    // The read didn't reach a real poll (long outage, history capped): a stable key 0, raised once
+    // however the oldest failures age out of the window.
+    const capped = Array.from({ length: 30 }, (_, i) => run(i, i % 3 ? "failure" : "cancelled"));
+    const fc = W.controllerFailStreak(capped);
+    assert.deepStrictEqual(fc.map((x) => x.key), ["controller-fail:0"]);
+    assert.match(fc[0].line, /^- 20\+ controller runs failed/);
+    assert.deepStrictEqual(W.controllerFailStreak(capped.slice(0, 20)).map((x) => x.key), ["controller-fail:0"]);
+    // timed_out and startup_failure count; a success that polled (or unknown) ends it.
+    assert.deepStrictEqual(W.controllerFailStreak([run(1, "timed_out"), run(2, "startup_failure"), run(3, "failure"), run(4, "failure"), run(5, "failure"), run(6, "success")]).map((x) => x.key), ["controller-fail:6"]);
     assert.deepStrictEqual(W.controllerFailStreak([run(1, "failure"), run(2, "success", { polled: true }), run(3, "failure"), run(4, "failure"), run(5, "failure"), run(6, "failure")]), []);
+    // An issues-event success whose controller job was skipped (no factory:task) doesn't break it.
+    assert.deepStrictEqual(W.controllerFailStreak([run(1, "failure"), run(2, "failure"), run(3, "success", { polled: false }), run(4, "failure"), run(5, "failure"), run(6, "failure"), run(9, "success", { polled: true })]).map((x) => x.key), ["controller-fail:9"]);
     // The plan validates; its title is the watchdog's own.
     const p = { controller_failing: { findings: f, run_url: null } };
     assert.strictEqual(W.checkPlan(p), p);
+    assert.strictEqual(W.checkPlan({ controller_failing: { findings: fc, run_url: null } }).controller_failing.findings[0].key, "controller-fail:0");
     assert.match(W.TITLES.controller_failing, /^Factory watchdog: 5 or more controller runs failed in a row$/);
 });

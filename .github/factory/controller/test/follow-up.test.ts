@@ -131,9 +131,11 @@ describe('follow-up poll (cron runs every 2–8 h here)', () => {
     const yml = await readFile(new URL('../../../workflows/controller.yml', import.meta.url), 'utf8');
     const rel = yml.slice(yml.indexOf('\n  relevance:'), yml.indexOf('\n  # A follow-up poll'));
     assert.match(rel, /github\.event_name == 'pull_request_target' \|\| github\.event_name == 'workflow_run'/);
-    assert.match(rel, /permissions: \{ contents: read \}/);
+    assert.match(rel, /permissions: \{ contents: read, pull-requests: read \}/);
+    assert.match(rel, /GH_TOKEN: \$\{\{ github\.token \}\}/);
     assert.match(rel, /node \.github\/factory\/controller\/relevance\.ts "\$GITHUB_EVENT_NAME" "\$GITHUB_EVENT_PATH"/);
-    assert.doesNotMatch(rel, /concurrency|secrets|token/i);
+    // Only the read-only workflow token: no App token, no secrets, outside the group.
+    assert.doesNotMatch(rel, /concurrency|secrets|app-token|create-github-app-token/i);
     const ctrl = yml.slice(yml.indexOf('\n  controller:'));
     assert.match(ctrl, /needs\.relevance\.outputs\.poll != 'false'/);
     const space = ctrl.slice(ctrl.indexOf('Space polls (5 min)'));

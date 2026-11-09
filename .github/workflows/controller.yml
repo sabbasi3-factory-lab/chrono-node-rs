@@ -55,7 +55,8 @@ jobs:
     if: github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && (github.event_name == 'pull_request_target' || github.event_name == 'workflow_run')
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { contents: read }
+    # pull-requests: read: a workflow_run's PR author (the run's actor is who pushed, not who opened it).
+    permissions: { contents: read, pull-requests: read }
     outputs:
       poll: ${{ steps.r.outputs.poll }}
     steps:
@@ -69,6 +70,8 @@ jobs:
         with:
           node-version: "24"
       - id: r
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: node .github/factory/controller/relevance.ts "$GITHUB_EVENT_NAME" "$GITHUB_EVENT_PATH"
 
   # A follow-up poll the controller dispatched (cron here runs every 2–8 h, follow-up.ts) starts about
@@ -98,6 +101,8 @@ jobs:
         working-directory: .github/factory/controller
     steps:
       - name: Poll start
+        # Before checkout: the job's default directory doesn't exist yet.
+        working-directory: .
         run: echo "POLL_START=$(date +%s)" >> "$GITHUB_ENV"
 
       - name: Check out main (never PR code)

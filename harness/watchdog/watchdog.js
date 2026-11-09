@@ -157,20 +157,27 @@ function candidateRuns(runs, now, lookbackMs = CI_LOOKBACK_HOURS * 3600_000) {
 
 /**
  * The controller's current failure streak, newest first. Pure.
- *   runs: [{id, conclusion, created_at, html_url, polled}] newest first (completed runs only);
- *   polled: false for a `success` run whose controller job didn't run (relevance skipped the event).
+ *   runs: [{id, conclusion, created_at, polled}] newest first (completed runs), read back to the last
+ *   real poll (or as far as the reader got); polled: false for a `success` run whose controller job
+ *   didn't run (relevance skipped the event, or an issue without factory:task).
  * Cancelled and skipped runs, and runs that didn't poll, neither count nor break it. One finding per
- * streak, keyed by its first failed run (it stays the same while the streak grows: raised once).
+ * streak, keyed by the real poll that preceded it (`controller-fail:<that run>`; 0 when the history
+ * read doesn't reach one): the key doesn't change while the streak grows or as runs age out of a
+ * page, so it's raised once.
  */
 function controllerFailStreak(runs) {
     const failed = [];
+    let before = 0;
     for (const r of runs) {
         if (r.conclusion === "failure" || r.conclusion === "timed_out" || r.conclusion === "startup_failure") failed.push(r);
-        else if (r.conclusion === "success" && r.polled !== false) break;
+        else if (r.conclusion === "success" && r.polled !== false) {
+            before = r.id;
+            break;
+        }
     }
     if (failed.length < CONTROLLER_FAIL_STREAK) return [];
     const first = failed[failed.length - 1];
-    return [{ key: `controller-fail:${first.id}`, line: `- ${failed.length} controller runs failed in a row since ${first.created_at} (newest ${failed[0].created_at}, run ${failed[0].id})` }];
+    return [{ key: `controller-fail:${before}`, line: `- ${failed.length}${before ? "" : "+"} controller runs failed in a row since ${first.created_at} (newest ${failed[0].created_at}, run ${failed[0].id})` }];
 }
 
 /** The alert issue for one kind of finding. Pure. */
@@ -260,20 +267,24 @@ async function plan() {
     fs.writeFileSync(opt("--out"), JSON.stringify(out, null, 1) + "\n");
 }
 
-/** The controller's newest completed runs, newest first. A `success` from a PR-driven event may be a
- *  run whose controller job relevance skipped: its jobs are read (until the first real poll) so it
- *  isn't mistaken for one. */
+/** The controller's completed runs, newest first, read back to the last real poll (at most
+ *  CONTROLLER_PAGES pages). Every `success` before it has its jobs read: a run whose controller job
+ *  didn't succeed (relevance skipped it, or an issue without factory:task) isn't a poll. */
+const CONTROLLER_PAGES = 10;
 async function controllerRunsNewestFirst() {
-    const d = await gh("GET", `/repos/${REPO}/actions/workflows/controller.yml/runs?status=completed&per_page=50`);
-    const runs = (d.workflow_runs || []).map((r) => ({ id: r.id, conclusion: r.conclusion, created_at: r.created_at, event: r.event }));
-    runs.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
-    for (const r of runs) {
-        if (r.conclusion !== "success") continue;
-        if (r.event === "pull_request_target" || r.event === "workflow_run") {
+    const runs = [];
+    for (let page = 1; page <= CONTROLLER_PAGES; page++) {
+        const d = await gh("GET", `/repos/${REPO}/actions/workflows/controller.yml/runs?status=completed&per_page=100&page=${page}`);
+        const batch = (d.workflow_runs || []).map((r) => ({ id: r.id, conclusion: r.conclusion, created_at: r.created_at }));
+        batch.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+        for (const r of batch) {
+            runs.push(r);
+            if (r.conclusion !== "success") continue;
             const jobs = (await gh("GET", `/repos/${REPO}/actions/runs/${r.id}/jobs`)).jobs || [];
             r.polled = jobs.some((j) => j.name === "controller" && j.conclusion === "success");
+            if (r.polled) return runs;
         }
-        if (r.polled !== false) break;
+        if (batch.length < 100) break;
     }
     return runs;
 }

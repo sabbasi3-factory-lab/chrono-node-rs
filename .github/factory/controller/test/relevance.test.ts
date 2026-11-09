@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { createClient, rateReserveSkip, RATE_RESERVE, readRateLimit, type FetchFn } from '../github.ts';
-import { FACTORY_BOT_LOGINS, FACTORY_BRANCH_PREFIXES, relevance } from '../relevance.ts';
+import { FACTORY_BOT_LOGINS, FACTORY_BRANCH_PREFIXES, prAuthorsOf, relevance, runPrNumbers } from '../relevance.ts';
 
 const prEvent = (ref: string, login = 'sabbasi3') => ({ pull_request: { head: { ref }, user: { login } } });
 const runEvent = (event: string, head_branch: string | null, login = 'sabbasi3') => ({ workflow_run: { event, head_branch, actor: { login } } });
@@ -16,10 +16,35 @@ describe('controller relevance: PR-driven events poll only for factory-owned bra
     }
   });
 
-  it("a sabbasi/* PR doesn't poll, nor do ci/gates runs on it", () => {
+  it("a sabbasi/* PR doesn't poll, nor do ci/gates runs on it (its author resolved: a person)", () => {
     assert.deepEqual(relevance('pull_request_target', prEvent('sabbasi/vi-dates')), { poll: false, reason: 'pr on sabbasi/vi-dates: no factory automation owns it' });
-    assert.equal(relevance('workflow_run', runEvent('pull_request', 'sabbasi/vi-dates')).poll, false);
-    assert.equal(relevance('workflow_run', runEvent('pull_request_target', 'sabbasi/controller-rate')).poll, false);
+    assert.equal(relevance('workflow_run', runEvent('pull_request', 'sabbasi/vi-dates'), ['sabbasi3']).poll, false);
+    assert.equal(relevance('workflow_run', runEvent('pull_request_target', 'sabbasi/controller-rate'), ['sabbasi3']).poll, false);
+  });
+
+  it("a run's actor isn't the PR's author: a person pushing to a factory App's unprefixed PR still polls; unknown author polls", () => {
+    const run = runEvent('pull_request', 'drill-gate-perf-617e6fbeb48a2034', 'sabbasi3');
+    assert.equal(relevance('workflow_run', run, ['sabbasi3-factory-agent[bot]']).poll, true);
+    assert.equal(relevance('workflow_run', run, ['sabbasi3']).poll, false);
+    for (const unknown of [null, []]) assert.equal(relevance('workflow_run', run, unknown).poll, true, String(unknown));
+    // A person-triggered run on a factory branch polls whatever the author lookup says.
+    assert.equal(relevance('workflow_run', runEvent('pull_request', 'factory/onboard/it', 'sabbasi3'), ['sabbasi3']).poll, true);
+  });
+
+  it('PR authors: from the run payload\'s PR numbers; any failure reads as unknown (poll)', async () => {
+    assert.deepEqual(runPrNumbers({ workflow_run: { pull_requests: [{ number: 512 }, { number: 'x' }, {}] } }), [512]);
+    assert.deepEqual(runPrNumbers({}), []);
+    const seen: string[] = [];
+    const ok = (async (url: string) => { seen.push(url); return new Response(JSON.stringify({ user: { login: 'sabbasi3-factory-agent[bot]' } }), { status: 200 }); }) as typeof fetch;
+    assert.deepEqual(await prAuthorsOf([512], 'o/r', 't', ok), ['sabbasi3-factory-agent[bot]']);
+    assert.deepEqual(seen, ['https://api.github.com/repos/o/r/pulls/512']);
+    const fail = (async () => new Response('{}', { status: 403 })) as typeof fetch;
+    const boom = (async () => { throw new Error('offline'); }) as typeof fetch;
+    const noUser = (async () => new Response('{}', { status: 200 })) as typeof fetch;
+    for (const f of [fail, boom, noUser]) assert.equal(await prAuthorsOf([512], 'o/r', 't', f), null);
+    assert.equal(await prAuthorsOf([], 'o/r', 't', ok), null);
+    assert.equal(await prAuthorsOf([1], 'o/r', '', ok), null);
+    assert.equal(await prAuthorsOf([1], 'bad repo', 't', ok), null);
   });
 
   it('every factory branch prefix polls: task, repair, onboarding, intake, deps, upstream, revert, merge queue', () => {
@@ -41,7 +66,7 @@ describe('controller relevance: PR-driven events poll only for factory-owned bra
   it("the factory's Apps own their PRs whatever the branch (older agent PRs and drills were unprefixed)", () => {
     for (const login of FACTORY_BOT_LOGINS) {
       assert.equal(relevance('pull_request_target', prEvent('drill-gate-perf-617e6fbeb48a2034', login)).poll, true, login);
-      assert.equal(relevance('workflow_run', runEvent('pull_request', 'queue-probe/r2-2a77ccc1179cfeeb', login)).poll, true, login);
+      assert.equal(relevance('workflow_run', runEvent('pull_request', 'queue-probe/r2-2a77ccc1179cfeeb', 'sabbasi3'), [login]).poll, true, login);
     }
   });
 
