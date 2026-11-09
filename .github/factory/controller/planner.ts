@@ -445,6 +445,8 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
   const issueByTask = new Map<string, IssueSnap>();
   for (const i of openIssues) if (i.task_id && !issueByTask.has(i.task_id)) issueByTask.set(i.task_id, i);
   const history = (task: string): TaskHistory => s.history[task] ?? EMPTY_HISTORY;
+  const externalLocales = new Set(p.onboarding.external_locales);
+  const external = (task: string): boolean => externalLocales.has(task.split('/')[0] ?? '');
 
   // ---- budget (factory per day)
   const max = p.budgets.factory_per_day.max_aic;
@@ -960,6 +962,8 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
     }
     seenTasks.add(task);
     if (inFlight.has(task)) continue;
+    // An external locale (onboarding.yaml external_locales) is never factory-run.
+    if (external(task)) continue;
     if (mergedTasks.has(task)) {
       out.push(decide({ ...base, type: 'wait', reason: 'already_merged', source_ids: [issue.node_id] }));
       continue;
@@ -1115,7 +1119,7 @@ export function plan(s: Snapshot, p: Policies, env: PlannerEnv, now: Date): Deci
       if (seen.has(task)) continue; // duplicates are the admission's to report
       seen.add(task);
       if (i.labels.includes(LABEL_READY) || i.labels.includes(LABEL_PICKED) || AUTO_READY_HOLDS.some((l) => i.labels.includes(l))) continue;
-      if (inFlight.has(task) || mergedTasks.has(task)) continue;
+      if (inFlight.has(task) || mergedTasks.has(task) || external(task)) continue;
       const c = contractOf(s, task);
       if (!c || !c.valid || !autonomousTier(c, p)) continue;
       if (!c.depends_on.every((d) => mergedTasks.has(d))) continue;

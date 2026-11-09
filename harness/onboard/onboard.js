@@ -7,7 +7,8 @@
 //   node onboard/onboard.js check        re-render every generated locale's files; fail on any difference
 //                                        (or a contract scope file without its directory)
 //   node onboard/onboard.js check --write   write them instead (after a generator change), then check
-//   node onboard/onboard.js candidates   upstream locales not onboarded yet, one per line
+//   node onboard/onboard.js candidates [--policy P]   upstream locales not onboarded yet, one per line
+//                                        (with the onboarding policy: its external locales left out)
 //   node onboard/onboard.js drill [code...]   onboard each (default: every candidate) in a throwaway copy;
 //                                        fail if a contract scope file's directory isn't generated
 //   node onboard/onboard.js next ...     the scheduled pipeline's decision (see next() and lib.nextLanguage)
@@ -521,7 +522,12 @@ function main() {
     const [cmd, arg] = process.argv.slice(2);
     if (cmd === "add" && arg) return add(arg);
     if (cmd === "check") return check(arg === "--write");
-    if (cmd === "candidates") return console.log(candidates().join("\n"));
+    if (cmd === "candidates") {
+        // --policy: leave out its external locales (a dispatch must not onboard vi); unreadable: an error.
+        const i = process.argv.indexOf("--policy");
+        const skip = i > 0 ? new Set(require("../lib/external").readExternal(process.argv[i + 1])) : new Set();
+        return console.log(candidates().filter((c) => !skip.has(c)).join("\n"));
+    }
     if (cmd === "next") return next();
     if (cmd === "drill") return drill(process.argv.slice(3));
     if (cmd === "hints-check") return hintsCheck();

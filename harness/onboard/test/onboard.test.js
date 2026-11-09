@@ -363,3 +363,63 @@ test("next language: a recorded infra incident excuses the failed attempts befor
     assert.strictEqual(lib.nextLanguage({ ...repaired, incidents }).reason, "first_try_rate:1/2");
     assert.strictEqual(lib.nextLanguage({ ...base, costs: costsOf(spend(20, 10), spend(21, 995), spend(22, 10)), incidents }).reason, "budget_spent:1015/1000");
 });
+
+// ---- external locales (factory onboarding.yaml external_locales, owner 2026-11-09: vi)
+
+const fs = require("node:fs");
+const path = require("node:path");
+const os = require("node:os");
+const EXT = require("../../lib/external");
+
+test("external locales: parsed strictly from the policy text; anything unreadable throws (no issues)", () => {
+    assert.deepStrictEqual(EXT.parseExternal("version: 1\nlanguages: [fi]\n# comment\nexternal_locales: [vi]\n"), ["vi"]);
+    assert.deepStrictEqual(EXT.parseExternal("version: 1\nexternal_locales: [vi, zh-hant] # two\n"), ["vi", "zh-hant"]);
+    assert.deepStrictEqual(EXT.parseExternal("version: 1\nexternal_locales: []\n"), []);
+    assert.deepStrictEqual(EXT.parseExternal("version: 1\nlanguages: [fi]\n"), []);
+    for (const bad of ["", "languages: [fi]\n", "version: 1\nexternal_locales:\n  - vi\n", "version: 1\nexternal_locales: [VI]\n", "version: 1\nexternal_locales: [vi]\nexternal_locales: []\n", "version: 1\nexternal_locales: vi\n"]) {
+        assert.throws(() => EXT.parseExternal(bad), /onboarding policy/, JSON.stringify(bad));
+    }
+    assert.throws(() => EXT.readExternal(null), /missing/);
+    assert.throws(() => EXT.readExternal(path.join(os.tmpdir(), "no-such-policy.yaml")), /missing/);
+});
+
+test("issues: with vi generated on main and external, no vi task issue is planned (others are)", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "ext-issues-"));
+    const gen = (code) => {
+        fs.mkdirSync(path.join(root, "src/locales", code), { recursive: true });
+        fs.writeFileSync(path.join(root, "src/locales", code, "locale.json"), JSON.stringify({ generator: "harness/onboard/onboard.js", code, module: code, upstream: `locales/${code}`, tests: `test/${code}`, configs: { [`${code}.casual`]: "casual", [`${code}.strict`]: "strict" } }));
+        fs.mkdirSync(path.join(root, "contracts", code), { recursive: true });
+        for (const t of ["constants", "weekday-parser", "fix-0123abcd"]) fs.writeFileSync(path.join(root, "contracts", code, `${t}.yaml`), "id: x\n");
+    };
+    gen("ar");
+    gen("vi");
+    const { generatedIds } = require("../issues");
+    const policy = fs.readFileSync(path.join(__dirname, "fixtures", "onboarding-external.yaml"), "utf8");
+    assert.deepStrictEqual(generatedIds(root, new Set(EXT.parseExternal(policy))), ["ar/constants", "ar/weekday-parser"]);
+    // Without the exclusion vi would be planned: the policy is what keeps it out.
+    assert.deepStrictEqual(generatedIds(root, new Set()).filter((id) => id.startsWith("vi/")), ["vi/constants", "vi/weekday-parser"]);
+    fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("next language: an external locale is never returned, and never counted in flight or in the stop rules", () => {
+    const ext = { ...policy, languages: ["fi", "vi", "id"], max_languages_in_flight: 1, external_locales: ["vi"] };
+    const done = fiDone();
+    // vi listed before id and not onboarded: skipped, id onboards.
+    assert.strictEqual(lib.nextLanguage({ ...done, policy: ext, candidates: ["vi", "id"] }).code, "id");
+    // Only vi left: never onboarded.
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, policy: ext, candidates: ["vi"] }), { action: "stop", reason: "all_onboarded" });
+    // vi generated on main: its open issues, contracts without issues, runs, merges and needs-human count for nothing.
+    const viOnMain = {
+        ...done,
+        policy: ext,
+        onboarded: ["fi", "vi"],
+        candidates: ["id"],
+        issues: [...done.issues, { id: "vi/a", state: "open", labels: ["needs-human"] }, { id: "vi/b", state: "open", labels: ["needs-human"] }],
+        contracts: [...done.contracts, "vi/a", "vi/b", "vi/c"],
+        ledger: { runs: [...done.ledger.runs, L(40, "Implement vi/a #9 attempt 1", "2026-11-05T10:00:00Z"), L(41, "Repair vi/a #9 attempt 2", "2026-11-05T11:00:00Z")], merged: [...done.ledger.merged, M("vi/a", 50, "2026-11-05T12:00:00Z", false)] },
+        costs: costsOf(spend(20, 10), spend(21, 10), spend(40, 5000), spend(41, 5000)),
+    };
+    assert.deepStrictEqual(lib.nextLanguage(viOnMain), { action: "onboard", code: "id", spent: 20, first_try: "2/2" });
+    // Malformed external_locales: fail closed.
+    assert.deepStrictEqual(lib.nextLanguage({ ...done, policy: { ...ext, external_locales: "vi" } }), { action: "stop", reason: "no_onboarding_policy" });
+});

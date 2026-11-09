@@ -74,6 +74,13 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
    and its issues to exist, and the stop rules count across every generated locale. Generated
    contracts are locale-local (area `<code>-…`, scope under the locale's own paths), so tasks of
    different languages never hold each other's area lock.
+   **External locales.** The policy's `external_locales` (vi since the owner's decision of
+   2026-11-09: ported outside the factory, as an A/B against it) may be generated on main: their
+   oracle, golden cases and code, which CI checks like any locale (goldens, frontier, comparison).
+   The factory never runs them: no decision picks one (nor a dispatch: `candidates --policy`), no
+   task issue is created (`issues.js --policy`; an unreadable policy creates none), the controller
+   never dispatches or auto-readies one, and they're left out of the in-flight count and every stop
+   rule.
    **Data: current records, no collector.** Spend: each run's full cost (agent, threat detection,
    evals) from the controller's audit log: its `run_spend` event, written once the run has finished
    (`.github/factory/controller/spend.ts`); for runs from before those, its newest `spend_snapshot`

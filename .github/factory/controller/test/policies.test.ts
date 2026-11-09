@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { FACTORY_REPO, loadPolicies, parseFactoryVersion, parsePolicies, policyUrl, POLICY_NAMES, readFactoryVersion, type PolicyTexts } from '../policies.ts';
 
-const SHA = '7f2086f0329ab867a7ee90b595515e20f6567b68';
+const SHA = '1c5786e79e5284316d627d32a0346e0df38af232';
 const dir = new URL('./fixtures/policies/', import.meta.url);
 
 async function texts(): Promise<PolicyTexts> {
@@ -63,6 +63,10 @@ describe('policies', () => {
     assert.throws(() => parsePolicies({ ...t, tiers: 'version: 2\n' }), /unsupported version/);
     assert.throws(() => parsePolicies({ ...t, limits: t.limits.replace('fail_closed: true', 'fail_closed: false') }), /fail_closed/);
     assert.throws(() => parsePolicies({ ...t, cadence: '' }), /not a mapping/);
+    assert.throws(() => parsePolicies({ ...t, onboarding: t.onboarding.replace('external_locales: [vi]', 'external_locales: vi') }), /external_locales/);
+    assert.throws(() => parsePolicies({ ...t, onboarding: t.onboarding.replace('external_locales: [vi]', 'external_locales: [VI]') }), /external_locales/);
+    assert.deepEqual(parsePolicies({ ...t, onboarding: t.onboarding.replace('external_locales: [vi]\n', '') }).onboarding.external_locales, []);
+    assert.deepEqual(parsePolicies(t).onboarding.external_locales, ['vi']);
   });
 
   it('fails closed when a policy cannot be fetched', async () => {

@@ -3,10 +3,10 @@
 
 import { readFile } from 'node:fs/promises';
 import { parse } from 'yaml';
-import type { BudgetsPolicy, CadencePolicy, LimitsPolicy, Overshoot, Policies, TiersPolicy } from './types.ts';
+import type { BudgetsPolicy, CadencePolicy, LimitsPolicy, OnboardingPolicy, Overshoot, Policies, TiersPolicy } from './types.ts';
 
 export const FACTORY_REPO = 'sabbasi3-factory-lab/factory';
-export const POLICY_NAMES = ['limits', 'budgets', 'tiers', 'cadence'] as const;
+export const POLICY_NAMES = ['limits', 'budgets', 'tiers', 'cadence', 'onboarding'] as const;
 export type PolicyName = (typeof POLICY_NAMES)[number];
 export type PolicyTexts = Record<PolicyName, string>;
 
@@ -204,7 +204,16 @@ export function parsePolicies(texts: PolicyTexts): Policies {
   if (get(c, 'heartbeat') !== 'hourly') throw new Error('policy cadence: controller v1 supports heartbeat: hourly only');
   const cadence = c as CadencePolicy;
 
-  return { limits, budgets, tiers, cadence };
+  // onboarding.yaml: the controller reads only `external_locales` (generated on main, never
+  // factory-run: no dispatch, no auto-ready). Required like every policy (a missing file fails the run).
+  const o = doc('onboarding');
+  const ext = get(o, 'external_locales');
+  if (ext !== undefined && (!Array.isArray(ext) || !ext.every((x) => typeof x === 'string' && /^[a-z]{2}(?:-[a-z]{4})?$/.test(x)))) {
+    throw new Error('policy onboarding: external_locales must be a list of locale codes');
+  }
+  const onboarding: OnboardingPolicy = { external_locales: (ext as string[] | undefined) ?? [] };
+
+  return { limits, budgets, tiers, cadence, onboarding };
 }
 
 /** tiers.yaml `<name>: {auto_merge, max_per_day 0-max}`. Absent → null; malformed → an error (fail closed). */
