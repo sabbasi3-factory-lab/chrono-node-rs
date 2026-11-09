@@ -1,7 +1,82 @@
 {
-  "generated_at": "2026-11-09T20:22:44Z",
+  "generated_at": "2026-11-09T20:40:24Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 42691394058,
+      "workflow": "implement",
+      "title": "Implement ar/time-unit-later-format-parser #468 attempt 1",
+      "created_at": "2026-11-09T20:16:32Z",
+      "aic": 0,
+      "task": "ar/time-unit-later-format-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/468#issuecomment-6750527527",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/486",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-09T20:40:24Z",
+      "drill": false
+    },
+    {
+      "run_id": 42691376783,
+      "workflow": "implement",
+      "title": "Implement ar/casual-date-parser #458 attempt 1",
+      "created_at": "2026-11-09T20:16:26Z",
+      "aic": 22.63208,
+      "task": "ar/casual-date-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/458#issuecomment-6750513958",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/485",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-09T20:40:24Z",
+      "drill": false
+    },
+    {
+      "run_id": 42690842002,
+      "workflow": "implement",
+      "title": "Implement ar/weekday-parser #470 attempt 1",
+      "created_at": "2026-11-09T20:13:13Z",
+      "aic": 21.06741,
+      "task": "ar/weekday-parser",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/470#issuecomment-6750471457",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/484",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-09T20:40:24Z",
+      "drill": false
+    },
     {
       "run_id": 42678039461,
       "workflow": "implement",
@@ -5367,8 +5442,8 @@
     }
   ],
   "summary": {
-    "accepted": 183,
-    "pending": 162,
+    "accepted": 186,
+    "pending": 165,
     "rejected": 13,
     "unknown": 18
   }
