@@ -1,0 +1,11 @@
+{
+  "generator": "harness/onboard/onboard.js",
+  "code": "zh-hant",
+  "module": "zh_hant",
+  "upstream": "locales/zh/hant",
+  "tests": "test/zh/hant",
+  "configs": {
+    "zh.hant.casual": "casual",
+    "zh.hant.strict": "strict"
+  }
+}

@@ -2950,6 +2950,146 @@
           }
         }
       ]
+    },
+    "zh.hant.casual": {
+      "parsers": [
+        {
+          "name": "ZHHantCasualDateParser",
+          "flags": {}
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantDateParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantRelationWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantTimeExpressionParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantDeadlineFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantAgoFormatParser",
+          "flags": {}
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": false
+          }
+        }
+      ]
+    },
+    "zh.hant.strict": {
+      "parsers": [
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantDateParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantRelationWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantTimeExpressionParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantDeadlineFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantAgoFormatParser",
+          "flags": {}
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ZHHantMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": false
+          }
+        }
+      ]
     }
   }
 }

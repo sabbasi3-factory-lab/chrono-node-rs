@@ -1,0 +1,431 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/zh/hant/zh_hant_ago.test.ts",
+  "cases": [
+    {
+      "id": "zh_hant/ago#01",
+      "text": "1小時前",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1小時前",
+          "start": {
+            "known": {
+              "hour": 11,
+              "minute": 14,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T11:14:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Traditional Chinese Ago Expression"
+    },
+    {
+      "id": "zh_hant/ago#02",
+      "text": "1小時之前出門了",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1小時之前",
+          "start": {
+            "known": {
+              "hour": 11,
+              "minute": 14,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T11:14:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Traditional Chinese Ago Expression"
+    },
+    {
+      "id": "zh_hant/ago#03",
+      "text": "五分鐘前",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "五分鐘前",
+          "start": {
+            "known": {
+              "hour": 12,
+              "minute": 9,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:09:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Traditional Chinese Ago Expression"
+    },
+    {
+      "id": "zh_hant/ago#04",
+      "text": "3天前",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "3天前",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Traditional Chinese Ago Expression"
+    },
+    {
+      "id": "zh_hant/ago#05",
+      "text": "2禮拜前",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2禮拜前",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-07-27T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Traditional Chinese Ago Expression"
+    },
+    {
+      "id": "zh_hant/ago#06",
+      "text": "半小時前",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "半小時前",
+          "start": {
+            "known": {
+              "hour": 11,
+              "minute": 44,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T11:44:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Traditional Chinese Ago Expression"
+    },
+    {
+      "id": "zh_hant/ago#07",
+      "text": "十五天前",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "十五天前",
+          "start": {
+            "known": {
+              "day": 26,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-07-26T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ago expression at the beginning of the text"
+    },
+    {
+      "id": "zh_hant/ago#08",
+      "text": "二十天前",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "二十天前",
+          "start": {
+            "known": {
+              "day": 21,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-07-21T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ago expression at the beginning of the text"
+    },
+    {
+      "id": "zh_hant/ago#09",
+      "text": "三十分鐘前",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "三十分鐘前",
+          "start": {
+            "known": {
+              "hour": 11,
+              "minute": 44,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T11:44:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ago expression at the beginning of the text"
+    },
+    {
+      "id": "zh_hant/ago#10",
+      "text": "十天前",
+      "config": "zh.hant.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHantAgoFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "十天前",
+          "start": {
+            "known": {
+              "day": 31,
+              "month": 7,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-07-31T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Ago expression at the beginning of the text"
+    }
+  ]
+}
