@@ -1392,7 +1392,19 @@ describe('a reopened task starts afresh (the D8d re-run needed a manual dispatch
     }
   });
 
-  it('an open factory PR still holds the task, whatever the reopen', () => {
+  it('the new attempt\'s own PR (opened after the reopen) keeps the reset: the time limit counts from the new pick (#477)', () => {
+    const NEW_PICK = '2026-10-16T09:05:00Z';
+    const newPr = pull(22, { task_id: T, created_at: '2026-10-16T09:20:00Z' });
+    const s = after(world({ picks: [PICK, NEW_PICK], pulls: [closedPr, newPr] }));
+    assert.equal(s.history[T]!.picked_at, NEW_PICK);
+    assert.ok(s.issues[0]!.labels.includes('factory:picked'));
+    // Even with the old pick far past the limit, no task_timeout: the new attempt is within its own.
+    const old = after(world({ picks: ['2026-10-10T00:00:00Z', NEW_PICK], pulls: [closedPr, newPr] }));
+    assert.equal(old.history[T]!.picked_at, NEW_PICK);
+    assert.ok(!run(old).some((d) => d.reason === 'task_timeout' || d.reason === 'would_dispatch'));
+  });
+
+  it('an open factory PR from before the reopen still holds the task, whatever the reopen', () => {
     const s0 = world({ prOpen: true });
     assert.deepEqual(applyReopens(s0), [], 'no reset: pick and label stay');
     assert.equal(s0.history[T]!.picked_at, PICK);
