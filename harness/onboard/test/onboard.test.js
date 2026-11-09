@@ -423,3 +423,70 @@ test("next language: an external locale is never returned, and never counted in 
     // Malformed external_locales: fail closed.
     assert.deepStrictEqual(lib.nextLanguage({ ...done, policy: { ...ext, external_locales: "vi" } }), { action: "stop", reason: "no_onboarding_policy" });
 });
+
+// A conflicting onboarding PR (#494: generated before the external vi oracle changed the shared golden
+// indexes) is regenerated when it's still pure generator output; anything else is a person's to resolve.
+const BOT = "sabbasi3-factory-controller[bot]";
+const SHA = "0888a104".padEnd(40, "0");
+const genPr = (over = {}) => ({
+    number: 494,
+    code: "zh-hans",
+    head_sha: SHA,
+    author: BOT,
+    mergeable_state: "dirty",
+    commits: [{ sha: SHA, author_login: BOT, committer_login: BOT, message: "onboard: zh-hans (generated)", parents: 1 }],
+    files: ["src/locales/zh_hans/locale.json", "src/locales/zh_hans/parsers/.gitkeep", "tests/golden/zh_hans/casual.json", "tests/golden/index.json", "tests/golden/configurations.json", "harness/golden/coverage/zh_hans.json", "scripts/seed-backlog/taskmap.d/zh_hans.yaml", "contracts/zh-hans/zh-hans-casual-date-parser.yaml"],
+    ...over,
+});
+
+test("onboarding PR conflicting with main: regenerated when pure generator output (same PR), else stop", () => {
+    const base = { ...fiDone(), candidates: ["id", "zh-hans"], openPRs: ["zh-hans"] };
+    assert.deepStrictEqual(lib.nextLanguage({ ...base, onboardPRs: [genPr()] }), { action: "regenerate", code: "zh-hans", pr: 494, head: SHA, reason: "dirty" });
+    // Not conflicting (clean, blocked on checks, or GitHub hasn't computed it yet): wait as before.
+    for (const state of ["clean", "blocked", "unknown", "behind", undefined]) {
+        assert.deepStrictEqual(lib.nextLanguage({ ...base, onboardPRs: [genPr({ mergeable_state: state })] }), { action: "wait", reason: "onboarding_pr_open:zh-hans" }, String(state));
+    }
+    // The details unreadable or absent (no --onboard-prs): never regenerated, wait.
+    for (const onboardPRs of [null, undefined, []]) assert.strictEqual(lib.nextLanguage({ ...base, onboardPRs }).reason, "onboarding_pr_open:zh-hans");
+    // Hand work on the PR: a person resolves the conflict (stop raises one alert).
+    const commit = genPr().commits[0];
+    const handEdited = [
+        { commits: [commit, { ...commit, sha: "f".repeat(40), author_login: "sabbasi3", committer_login: "sabbasi3", message: "fix conflict" }], head_sha: "f".repeat(40) },
+        { commits: [{ ...commit, author_login: "sabbasi3" }] },
+        { commits: [{ ...commit, committer_login: "web-flow" }] },
+        { commits: [{ ...commit, message: "onboard: zh-hans (generated) + tweak" }] },
+        { commits: [{ ...commit, parents: 2 }] },
+        { commits: [{ ...commit, sha: "e".repeat(40) }] },
+        { files: [...genPr().files, "src/locales/mod.rs"] },
+        { files: [...genPr().files, "src/locales/zh_hans/parsers/casual.rs"] },
+        { files: ["contracts/zh-hant/x.yaml"] },
+        { files: [] },
+        { author: "sabbasi3" },
+        { head_sha: "not-a-sha" },
+    ];
+    for (const over of handEdited) {
+        const pr = genPr(over);
+        assert.strictEqual(lib.pureGeneratorPr(pr), false, JSON.stringify(over));
+        assert.deepStrictEqual(lib.nextLanguage({ ...base, onboardPRs: [pr] }), { action: "stop", reason: "onboarding_pr_conflict:zh-hans" }, JSON.stringify(over));
+    }
+    assert.strictEqual(lib.pureGeneratorPr(genPr()), true);
+});
+
+test("onboard.yml regenerates in place: same branch and PR (counted once), with a lease, never a second PR", () => {
+    const fs = require("fs");
+    const path = require("path");
+    const YAML = require("yaml");
+    const wf = YAML.parse(fs.readFileSync(path.join(__dirname, "../../../.github/workflows/onboard.yml"), "utf8"));
+    assert.match(wf.jobs.generate.if, /action == 'regenerate'/);
+    const decision = wf.jobs.decide.steps.find((s) => s.id === "decision").run;
+    assert.match(decision, /--onboard-prs "\$d\/onboard-prs\.json"/);
+    assert.deepStrictEqual(Object.keys(wf.jobs.decide.outputs).sort(), ["action", "code", "head", "pr", "reason"]);
+    const apply = wf.jobs.apply.steps.find((s) => s.name === "Open the onboarding PR").run;
+    const regen = apply.slice(apply.indexOf('if [ "$ACTION" = "regenerate" ]'), apply.indexOf('git push origin "$branch"'));
+    assert.match(regen, /git push --force-with-lease="refs\/heads\/\$\{branch\}:\$\{PR_HEAD\}" origin "\$branch"/);
+    assert.match(regen, /"OPEN \$branch \$PR_HEAD"/);
+    assert.match(regen, /gh pr edit "\$PR"/);
+    assert.match(regen, /exit 0\n\s*fi\n$/);
+    assert.doesNotMatch(regen, /gh pr create/);
+    assert.ok(apply.indexOf("gh pr create") > apply.indexOf('git push origin "$branch"'));
+});

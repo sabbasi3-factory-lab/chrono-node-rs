@@ -417,7 +417,9 @@ function drill(codes) {
  * --merged (merged agent PRs, GraphQL nodes: [{number, title, createdAt, comments, reviews, commits}])
  * and --audit (the controller's audit events, jsonl: run_spend, spend_snapshot and infra-incident
  * records). The task contracts come from this checkout. Every input is required: one missing or
- * unreadable makes the decision wait. Prints one JSON line.
+ * unreadable makes the decision wait. Optional: --onboard-prs (each open onboarding PR's
+ * mergeable_state, commits and files; lib.pureGeneratorPr): without it a conflicting onboarding PR
+ * just waits, never regenerated. Prints one JSON line.
  */
 function next() {
     const opt = (name) => {
@@ -437,6 +439,7 @@ function next() {
     const onboardMerges = list("--onboard-merges")
         ?.map((p) => ({ code: (/^factory\/onboard\/([a-z]{2}(?:-[a-z]{4})?)$/.exec(p.head?.ref || "") || [])[1], merged_at: p.merged_at }))
         .filter((m) => m.code && m.merged_at) ?? null;
+    const onboardPRs = list("--onboard-prs");
     const ledgerRuns = list("--runs");
     const merged = list("--merged")
         ?.map((p) => ({ task: (/^\[factory\] ([a-z0-9-]+\/[a-z0-9_-]+):/.exec(p.title || "") || [])[1], number: p.number, created_at: p.createdAt, zero_touch: lib.zeroTouch(p) }))
@@ -453,6 +456,7 @@ function next() {
         candidates: candidates(),
         issues,
         openPRs,
+        onboardPRs,
         contracts: generatedContractIds(),
         onboardMerges,
         ledger,
@@ -531,7 +535,7 @@ function main() {
     if (cmd === "next") return next();
     if (cmd === "drill") return drill(process.argv.slice(3));
     if (cmd === "hints-check") return hintsCheck();
-    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --issues F --prs F --onboard-merges F --runs F --merged F --audit F | hints-check [--hints F]");
+    console.error("usage: onboard.js add <code> | check [--write] | candidates | drill [code...] | next --policy F --issues F --prs F --onboard-merges F --runs F --merged F --audit F [--onboard-prs F] | hints-check [--hints F]");
     process.exit(2);
 }
 

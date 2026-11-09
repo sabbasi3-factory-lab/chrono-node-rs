@@ -15,6 +15,10 @@
 #             a task issue closes (the last one of a language starts the next at once) and hourly as a
 #             fallback. A language is in flight while it has open task issues, or a contract without
 #             one (past a grace period that stops and alerts: its issues were never created).
+#             An open onboarding PR that conflicts with main (another PR changed a shared golden
+#             index after it was generated) is regenerated on current main, on the same branch and PR,
+#             when it's still pure generator output (one commit by the controller App, generator paths
+#             only); one with anything else in it stops and alerts (a person resolves it).
 # - generate: runs the generator on main (read-only token) and checks the exact file set.
 # - apply:    (live) the controller App opens the PR on factory/onboard/<code>. Human tier: CI
 #             regenerates every file byte for byte (golden:check, onboard.js check, seed.js
@@ -69,6 +73,8 @@ jobs:
       action: ${{ steps.decision.outputs.action }}
       code: ${{ steps.decision.outputs.code }}
       reason: ${{ steps.decision.outputs.reason }}
+      pr: ${{ steps.decision.outputs.pr }}
+      head: ${{ steps.decision.outputs.head }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -91,7 +97,19 @@ jobs:
           curl -fsSL "https://raw.githubusercontent.com/sabbasi3-factory-lab/factory/${version}/policies/onboarding.yaml" -o "$d/policy.yaml" || : > "$d/policy.yaml"
           # Task issues of every state (in flight: open ones; done: every contract has one).
           gh api --paginate "repos/$R/issues?labels=factory:task&state=all&per_page=100" --jq '[.[] | select(.pull_request == null) | {body, state, labels: [.labels[].name]}]' | jq -s 'add // []' > "$d/issues.json"
-          gh api --paginate "repos/$R/pulls?state=open&per_page=100" --jq '[.[] | {head: {ref: .head.ref}}]' | jq -s 'add // []' > "$d/prs.json"
+          gh api --paginate "repos/$R/pulls?state=open&per_page=100" --jq '[.[] | {number, head: {ref: .head.ref}}]' | jq -s 'add // []' > "$d/prs.json"
+          # Each open onboarding PR in detail: one that conflicts with main and is still pure generator
+          # output (lib.pureGeneratorPr: one commit by the controller App, generator paths only) is
+          # regenerated on current main. `unknown` mergeability (GitHub computes it lazily) is read again
+          # once; still unknown, it just waits.
+          for n in $(jq -r '.[] | select(.head.ref | startswith("factory/onboard/")) | .number' "$d/prs.json"); do
+            p=$(gh api "repos/$R/pulls/$n")
+            if [ "$(jq -r .mergeable_state <<<"$p")" = "unknown" ]; then sleep 10; p=$(gh api "repos/$R/pulls/$n"); fi
+            commits=$(gh api "repos/$R/pulls/$n/commits?per_page=100" --jq '[.[] | {sha, author_login: .author.login, committer_login: .committer.login, message: .commit.message, parents: (.parents | length)}]')
+            files=$(gh api --paginate "repos/$R/pulls/$n/files?per_page=100" --jq '.[].filename' | jq -R . | jq -s .)
+            jq -nc --argjson p "$p" --argjson c "$commits" --argjson f "$files" \
+              '{number: $p.number, code: ($p.head.ref | ltrimstr("factory/onboard/")), head_sha: $p.head.sha, author: $p.user.login, mergeable_state: $p.mergeable_state, commits: $c, files: $f}'
+          done | jq -s . > "$d/onboard-prs.json"
           # Closed PRs: merged onboarding PRs (the task-issue grace period).
           gh api --paginate "repos/$R/pulls?state=closed&per_page=100" \
             --jq '[.[] | select(.merged_at != null and (.head.ref | startswith("factory/onboard/"))) | {head: {ref: .head.ref}, merged_at}]' | jq -s 'add // []' > "$d/onboard-merges.json"
@@ -141,17 +159,19 @@ jobs:
             fi
             decision=$(jq -nc --arg c "$CODE" '{action: "onboard", code: $c, reason: "dispatched"}')
           else
-            decision=$(node onboard/onboard.js next --policy "$d/policy.yaml" --issues "$d/issues.json" --prs "$d/prs.json" --onboard-merges "$d/onboard-merges.json" --runs "$d/runs.json" --merged "$d/merged.json" --audit "$d/audit.jsonl")
+            decision=$(node onboard/onboard.js next --policy "$d/policy.yaml" --issues "$d/issues.json" --prs "$d/prs.json" --onboard-merges "$d/onboard-merges.json" --runs "$d/runs.json" --merged "$d/merged.json" --audit "$d/audit.jsonl" --onboard-prs "$d/onboard-prs.json")
           fi
           echo "$decision"
           echo "decision: \`$decision\`" >> "$GITHUB_STEP_SUMMARY"
           echo "action=$(jq -r .action <<<"$decision")" >> "$GITHUB_OUTPUT"
           echo "code=$(jq -r '.code // ""' <<<"$decision")" >> "$GITHUB_OUTPUT"
           echo "reason=$(jq -r '.reason // ""' <<<"$decision")" >> "$GITHUB_OUTPUT"
+          echo "pr=$(jq -r '.pr // ""' <<<"$decision")" >> "$GITHUB_OUTPUT"
+          echo "head=$(jq -r '.head // ""' <<<"$decision")" >> "$GITHUB_OUTPUT"
 
   generate:
     needs: decide
-    if: needs.decide.outputs.action == 'onboard'
+    if: needs.decide.outputs.action == 'onboard' || needs.decide.outputs.action == 'regenerate'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions: { contents: read }
@@ -213,13 +233,16 @@ jobs:
     env:
       FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
       CODE: ${{ needs.decide.outputs.code }}
+      ACTION: ${{ needs.decide.outputs.action }}
+      PR: ${{ needs.decide.outputs.pr }}
+      PR_HEAD: ${{ needs.decide.outputs.head }}
       OUT: /tmp/factory-onboard
     steps:
       - name: Mode
         id: mode
         run: |
           if [ "$FACTORY_ENABLED" = "true" ]; then echo "live=true" >> "$GITHUB_OUTPUT"
-          else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would open the onboarding PR for $CODE"; fi
+          else echo "live=false" >> "$GITHUB_OUTPUT"; echo "[dry-run] would $([ "$ACTION" = regenerate ] && echo "regenerate onboarding PR #$PR" || echo "open the onboarding PR") for $CODE"; fi
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: steps.mode.outputs.live == 'true'
@@ -280,6 +303,18 @@ jobs:
           git switch -c "$branch"
           git add -- $listed
           git commit -q -m "onboard: ${CODE} (generated)"
+          if [ "$ACTION" = "regenerate" ]; then
+            # The same PR on the same branch (counts once toward max_per_day: only merges count), its
+            # conflicting generation replaced by one on current main. The lease fails if anything was
+            # pushed since the decision checked the PR was pure generator output.
+            [[ "$PR" =~ ^[0-9]+$ && "$PR_HEAD" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad regenerate inputs"; exit 1; }
+            [ "$(gh pr view "$PR" --json state,headRefName,headRefOid --jq '"\(.state) \(.headRefName) \(.headRefOid)"')" = "OPEN $branch $PR_HEAD" ] || { echo "::error::#$PR changed since the decision"; exit 1; }
+            git push --force-with-lease="refs/heads/${branch}:${PR_HEAD}" origin "$branch"
+            head -c 60000 "$OUT/body.md" > "$RUNNER_TEMP/body.md"
+            gh pr edit "$PR" --body-file "$RUNNER_TEMP/body.md"
+            gh pr comment "$PR" --body "Regenerated on main $(git rev-parse --short HEAD~1) (plain code, no AI): the previous generation (${PR_HEAD:0:7}) conflicted with main, most likely a shared golden index (\`tests/golden/index.json\`, \`configurations.json\`) another PR changed. It was still pure generator output, so it was replaced; CI checks the new one byte for byte."
+            exit 0
+          fi
           git push origin "$branch"
           head -c 60000 "$OUT/body.md" > "$RUNNER_TEMP/body.md"
           gh pr create --base main --head "$branch" --title "onboard: ${CODE} (generated scaffold, golden cases and contracts)" --body-file "$RUNNER_TEMP/body.md"

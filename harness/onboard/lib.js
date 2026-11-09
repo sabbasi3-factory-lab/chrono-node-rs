@@ -456,7 +456,7 @@ const TASK_ISSUES_GRACE_HOURS = 2;
  * issues, and also while any of its contracts has no task issue yet; past the grace period that
  * stops (alert): the issues jobs failed, and the next language must not start on top of it.
  */
-function nextLanguage({ policy, onboarded, candidates, issues, openPRs, contracts, onboardMerges, ledger, costs, incidents = [], now }) {
+function nextLanguage({ policy, onboarded, candidates, issues, openPRs, onboardPRs = null, contracts, onboardMerges, ledger, costs, incidents = [], now }) {
     if (!policy || !Array.isArray(policy.languages) || policy.languages.length === 0) return { action: "stop", reason: "no_onboarding_policy" };
     // External locales (generated on main, never factory-run: vi) are neither picked nor counted.
     const ext = policy.external_locales ?? [];
@@ -464,7 +464,16 @@ function nextLanguage({ policy, onboarded, candidates, issues, openPRs, contract
     const external = new Set(ext);
     const stop = policy.stop || {};
     if (!Array.isArray(issues) || !Array.isArray(openPRs)) return { action: "wait", reason: `inputs_unreadable:${!Array.isArray(issues) ? "issues" : "prs"}` };
-    if (openPRs.length > 0) return { action: "wait", reason: `onboarding_pr_open:${openPRs.join(",")}` };
+    if (openPRs.length > 0) {
+        // An open onboarding PR that conflicts with main (another change to the shared golden indexes
+        // landed after it was generated) would wait forever: regenerate it on current main when it's
+        // still pure generator output; otherwise a person must look (stop, alert). Unreadable: wait.
+        for (const pr of Array.isArray(onboardPRs) ? onboardPRs : []) {
+            if (pr.mergeable_state !== "dirty") continue;
+            return pureGeneratorPr(pr) ? { action: "regenerate", code: pr.code, pr: pr.number, head: pr.head_sha, reason: "dirty" } : { action: "stop", reason: `onboarding_pr_conflict:${pr.code}` };
+        }
+        return { action: "wait", reason: `onboarding_pr_open:${openPRs.join(",")}` };
+    }
     const generated = new Set(onboarded.filter((c) => !external.has(c)));
     const codeOf = (task) => String(task).split("/")[0];
     const ours = issues.filter((i) => generated.has(codeOf(i.id)));
@@ -590,7 +599,37 @@ function zeroTouch(pr) {
     return comments.every((c) => isBot(c && c.author)) && reviews.every((r) => isBot(r && r.author)) && commits.every(botCommit);
 }
 
+const CONTROLLER_BOT = "sabbasi3-factory-controller[bot]";
+
+/** Every path the generator may write for `code` (the same set onboard.yml's apply job allows). */
+function generatorFileRe(code) {
+    if (!/^[a-z]{2}(-[a-z]{4})?$/.test(code)) return null;
+    const m = code.replace("-", "_");
+    return new RegExp(
+        `^(src/locales/${m}/(locale\\.json|mod\\.rs|configuration\\.rs|[a-z0-9_]+(/[a-z0-9_]+)*/\\.gitkeep)|tests/golden/${m}/[a-z0-9_]+\\.json|tests/golden/(configurations|index)\\.json|harness/golden/coverage/${m}\\.json|scripts/seed-backlog/taskmap\\.d/${m}\\.yaml|contracts/${code}/[a-z0-9-]+\\.yaml)$`,
+    );
+}
+
+/**
+ * Is this open onboarding PR still exactly what onboard.yml's apply job pushed? Pure.
+ *   pr: {number, code, head_sha, author, mergeable_state, commits: [{sha, author_login, committer_login,
+ *        message, parents}], files: [path]}
+ * One commit, by the controller App (author and committer), with apply's message, one parent, and
+ * only generator paths. Anything else (a person's commit, a rebase, another file) is hand work: not
+ * regenerated over.
+ */
+function pureGeneratorPr(pr) {
+    const re = generatorFileRe(String(pr.code || ""));
+    if (!re || !Number.isInteger(pr.number) || !/^[0-9a-f]{40}$/.test(String(pr.head_sha || "")) || pr.author !== CONTROLLER_BOT) return false;
+    const c = Array.isArray(pr.commits) && pr.commits.length === 1 ? pr.commits[0] : null;
+    if (!c || c.sha !== pr.head_sha || c.author_login !== CONTROLLER_BOT || c.committer_login !== CONTROLLER_BOT || c.parents !== 1) return false;
+    if (String(c.message || "").trim() !== `onboard: ${pr.code} (generated)`) return false;
+    return Array.isArray(pr.files) && pr.files.length > 0 && pr.files.every((f) => typeof f === "string" && re.test(f));
+}
+
 module.exports.nextLanguage = nextLanguage;
+module.exports.pureGeneratorPr = pureGeneratorPr;
+module.exports.generatorFileRe = generatorFileRe;
 module.exports.coveredRuns = coveredRuns;
 module.exports.runCosts = runCosts;
 module.exports.zeroTouch = zeroTouch;
