@@ -1,0 +1,893 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/zh/hans/zh_hans_deadline.test.ts",
+  "cases": [
+    {
+      "id": "zh_hans/deadline#01",
+      "text": "五日内我要通关游戏",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "五日内",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#02",
+      "text": "5日之内我要通关游戏",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5日之内",
+          "start": {
+            "known": {
+              "day": 15,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-15T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#03",
+      "text": "十日内我要通关游戏",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "十日内",
+          "start": {
+            "known": {
+              "day": 20,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-20T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#04",
+      "text": "五分钟后",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "五分钟后",
+          "start": {
+            "known": {
+              "hour": 12,
+              "minute": 19,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:19:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#05",
+      "text": "一个钟之内",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "一个钟之内",
+          "start": {
+            "known": {
+              "hour": 13,
+              "minute": 14,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:14:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#06",
+      "text": "5分钟之后出门",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5分钟之后",
+          "start": {
+            "known": {
+              "hour": 12,
+              "minute": 19,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:19:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#07",
+      "text": "我要5秒之后出门",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "5秒之后",
+          "start": {
+            "known": {
+              "hour": 12,
+              "minute": 14,
+              "second": 5
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:14:05.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#08",
+      "text": "半小时之内",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "半小时之内",
+          "start": {
+            "known": {
+              "hour": 12,
+              "minute": 44,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:44:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#09",
+      "text": "两个礼拜内答复我",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "两个礼拜内",
+          "start": {
+            "known": {
+              "day": 24,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-24T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#10",
+      "text": "1个月之内答复我",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1个月之内",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#11",
+      "text": "几个月之内答复我",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "几个月之内",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 11,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-11-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#12",
+      "text": "一年内答复我",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "一年内",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#13",
+      "text": "1年之内答复我",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1年之内",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2013
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2013-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/deadline#14",
+      "text": "5秒钟后",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5秒钟后",
+          "start": {
+            "known": {
+              "hour": 12,
+              "minute": 14,
+              "second": 5
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:14:05.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Untested units"
+    },
+    {
+      "id": "zh_hans/deadline#15",
+      "text": "2小时后",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2小时后",
+          "start": {
+            "known": {
+              "hour": 14,
+              "minute": 14,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T14:14:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Untested units"
+    },
+    {
+      "id": "zh_hans/deadline#16",
+      "text": "3天后",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "3天后",
+          "start": {
+            "known": {
+              "day": 13,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Untested units"
+    },
+    {
+      "id": "zh_hans/deadline#17",
+      "text": "2星期后",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2星期后",
+          "start": {
+            "known": {
+              "day": 24,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-24T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Untested units"
+    },
+    {
+      "id": "zh_hans/deadline#18",
+      "text": "5分钟过后",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5分钟过后",
+          "start": {
+            "known": {
+              "hour": 12,
+              "minute": 19,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:19:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Untested suffix"
+    },
+    {
+      "id": "zh_hans/deadline#19",
+      "text": "十五天后",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "十五天后",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-25T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Deadline expression at the beginning of the text"
+    },
+    {
+      "id": "zh_hans/deadline#20",
+      "text": "二十天后",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "二十天后",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-30T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Deadline expression at the beginning of the text"
+    },
+    {
+      "id": "zh_hans/deadline#21",
+      "text": "十天后",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDeadlineFormatParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "十天后",
+          "start": {
+            "known": {
+              "day": 20,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-20T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Deadline expression at the beginning of the text"
+    }
+  ]
+}
