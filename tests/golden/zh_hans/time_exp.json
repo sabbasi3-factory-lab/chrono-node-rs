@@ -1,0 +1,2517 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/zh/hans/zh_hans_time_exp.test.ts",
+  "cases": [
+    {
+      "id": "zh_hans/time_exp#01",
+      "text": "我上午6点13分打游戏",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "上午6点13分",
+          "start": {
+            "known": {
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 13
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:13:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/time_exp#02",
+      "text": "我后天凌晨打游戏",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "后天凌晨",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-12T00:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/time_exp#03",
+      "text": "我大前天凌晨打游戏",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "大前天凌晨",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-07T00:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/time_exp#04",
+      "text": "我明天上午8点要打游戏",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "明天上午8点",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 8,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T08:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/time_exp#05",
+      "text": "早上8点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "早上8点",
+          "start": {
+            "known": {
+              "hour": 8,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "zh_hans/time_exp#06",
+      "text": "我从今早八点十分至下午11点32分打游戏",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "从今早八点十分至下午11点32分",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 8,
+              "meridiem": 0,
+              "minute": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T08:10:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 32
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T23:32:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "zh_hans/time_exp#07",
+      "text": "6点30pm-11点pm",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "6点30pm-11点pm",
+          "start": {
+            "known": {
+              "hour": 18,
+              "meridiem": 1,
+              "minute": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T18:30:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T23:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "zh_hans/time_exp#08",
+      "text": "我二零一八年十一月二十六日下午三点半五十九秒打游戏",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "ZHHansMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "二零一八年十一月二十六日下午三点半五十九秒",
+          "start": {
+            "known": {
+              "day": 26,
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 30,
+              "month": 11,
+              "second": 59,
+              "year": 2018
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "2018-11-26T15:30:59.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date + Time Expression"
+    },
+    {
+      "id": "zh_hans/time_exp#09",
+      "text": "1点pm到3点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1点pm到3点",
+          "start": {
+            "known": {
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 3,
+              "minute": 0
+            },
+            "implied": {
+              "day": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-08-11T03:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Time Expression's Meridiem imply"
+    },
+    {
+      "id": "zh_hans/time_exp#10",
+      "text": "1点pm到3点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-31T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1点pm到3点",
+          "start": {
+            "known": {
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 31,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-31T13:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 3,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 9,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-09-01T03:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Time Expression's Meridiem imply"
+    },
+    {
+      "id": "zh_hans/time_exp#11",
+      "text": "2014年, 3月5日早上 6 点至 7 点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "ZHHansMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2014年, 3月5日早上 6 点至 7 点",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 3,
+              "year": 2014
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-03-05T06:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 5,
+              "hour": 7,
+              "minute": 0,
+              "month": 3,
+              "year": 2014
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2014-03-05T07:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#12",
+      "text": "下星期六凌晨1点30分二十九秒",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansRelationWeekdayParser",
+          "ZHHansTimeExpressionParser",
+          "ZHHansWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "ZHHansMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "下星期六凌晨1点30分二十九秒",
+          "start": {
+            "known": {
+              "day": 18,
+              "hour": 1,
+              "meridiem": 0,
+              "minute": 30,
+              "month": 8,
+              "second": 29,
+              "weekday": 6,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0
+            },
+            "date": "2012-08-18T01:30:29.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#13",
+      "text": "昨天早上六点正",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "昨天早上六点正",
+          "start": {
+            "known": {
+              "day": 9,
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T06:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#14",
+      "text": "六月四日3:00am",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "ZHHansMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "六月四日3:00am",
+          "start": {
+            "known": {
+              "day": 4,
+              "hour": 3,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 6
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-06-04T03:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#15",
+      "text": "上个礼拜五16时",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansRelationWeekdayParser",
+          "ZHHansTimeExpressionParser",
+          "ZHHansWeekdayParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner",
+          "ZHHansMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "上个礼拜五16时",
+          "start": {
+            "known": {
+              "day": 3,
+              "hour": 16,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "weekday": 5,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-03T16:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#16",
+      "text": "3月17日 20点15",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "ZHHansMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "3月17日 20点15",
+          "start": {
+            "known": {
+              "day": 17,
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 15,
+              "month": 3
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-03-17T20:15:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#17",
+      "text": "10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10点",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T10:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#18",
+      "text": "中午12点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "中午12点",
+          "start": {
+            "known": {
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#19",
+      "text": "今晚10时",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10时",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#20",
+      "text": "昨晚8点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "昨晚8点",
+          "start": {
+            "known": {
+              "day": 9,
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T20:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#21",
+      "text": "前天下午三点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "前天下午三点",
+          "start": {
+            "known": {
+              "day": 8,
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-08T15:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#22",
+      "text": "大后天晚上9点30分",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "大后天晚上9点30分",
+          "start": {
+            "known": {
+              "day": 13,
+              "hour": 21,
+              "meridiem": 1,
+              "minute": 30,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-13T21:30:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#23",
+      "text": "三点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T01:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "三点",
+          "start": {
+            "known": {
+              "hour": 3,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T03:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#24",
+      "text": "晚上11点 ~ 凌晨2点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "晚上11点 ~ 凌晨2点",
+          "start": {
+            "known": {
+              "hour": 23,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T23:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 2,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 11,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-08-11T02:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "zh_hans/time_exp#25",
+      "text": "2023-10-26 10:30:00",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ISOFormatParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "ZHHansMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "2023-10-26 10:30:00",
+          "start": {
+            "known": {
+              "day": 26,
+              "hour": 10,
+              "minute": 30,
+              "month": 10,
+              "second": 0,
+              "year": 2023
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0
+            },
+            "date": "2023-10-26T10:30:00.000Z",
+            "tags": [
+              "parser/ISOFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - YYYY-MM-DD HH:mm:ss format"
+    },
+    {
+      "id": "zh_hans/time_exp#26",
+      "text": "今晚10点 - 明天早上6点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 明天早上6点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 11,
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T06:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with days"
+    },
+    {
+      "id": "zh_hans/time_exp#27",
+      "text": "今天早上9点 - 后天凌晨3点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今天早上9点 - 后天凌晨3点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 9,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T09:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "hour": 3,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-12T03:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with days"
+    },
+    {
+      "id": "zh_hans/time_exp#28",
+      "text": "今晚10点 - 明早6点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 明早6点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 11,
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T06:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with days"
+    },
+    {
+      "id": "zh_hans/time_exp#29",
+      "text": "9:00:00 - 9:00:30",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "9:00:00 - 9:00:30",
+          "start": {
+            "known": {
+              "hour": 9,
+              "minute": 0,
+              "second": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T09:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 9,
+              "minute": 0,
+              "second": 30
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "date": "2012-08-10T09:00:30.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with seconds"
+    },
+    {
+      "id": "zh_hans/time_exp#30",
+      "text": "下午2点 - 晚上8点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "下午2点 - 晚上8点",
+          "start": {
+            "known": {
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T14:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T20:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with AM/PM variations"
+    },
+    {
+      "id": "zh_hans/time_exp#31",
+      "text": "3点 - 5点PM",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "3点 - 5点PM",
+          "start": {
+            "known": {
+              "hour": 15,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T17:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with AM/PM variations"
+    },
+    {
+      "id": "zh_hans/time_exp#32",
+      "text": "今晚10点 - 昨晚10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 昨晚10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 9,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T22:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with days variations"
+    },
+    {
+      "id": "zh_hans/time_exp#33",
+      "text": "今晚10点 - 前天晚上10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 前天晚上10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 8,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-08T22:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with days variations"
+    },
+    {
+      "id": "zh_hans/time_exp#34",
+      "text": "今晚10点 - 大前天晚上10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 大前天晚上10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-07T22:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with days variations"
+    },
+    {
+      "id": "zh_hans/time_exp#35",
+      "text": "今晚10点 - 后天晚上10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 后天晚上10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-12T22:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with days variations"
+    },
+    {
+      "id": "zh_hans/time_exp#36",
+      "text": "今晚10点 - 大后天晚上10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 大后天晚上10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 13,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-13T22:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with days variations"
+    },
+    {
+      "id": "zh_hans/time_exp#37",
+      "text": "明天10点到明天11点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "明天10点到明天11点",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 10,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T10:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 11,
+              "hour": 11,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T11:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with days variations"
+    },
+    {
+      "id": "zh_hans/time_exp#38",
+      "text": "今早10点 - 明早10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今早10点 - 明早10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T10:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 11,
+              "hour": 10,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T10:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with specific AM/PM variations"
+    },
+    {
+      "id": "zh_hans/time_exp#39",
+      "text": "今早10点 - 明天上午10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今早10点 - 明天上午10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T10:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 11,
+              "hour": 10,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T10:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with specific AM/PM variations"
+    },
+    {
+      "id": "zh_hans/time_exp#40",
+      "text": "今早10点 - 明天凌晨2点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今早10点 - 明天凌晨2点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T10:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 11,
+              "hour": 2,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T02:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with specific AM/PM variations"
+    },
+    {
+      "id": "zh_hans/time_exp#41",
+      "text": "下午2点 - 明天下午3点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "下午2点 - 明天下午3点",
+          "start": {
+            "known": {
+              "hour": 14,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T14:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 11,
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T15:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with specific AM/PM variations"
+    },
+    {
+      "id": "zh_hans/time_exp#42",
+      "text": "晚上10点 - 2点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "晚上10点 - 2点",
+          "start": {
+            "known": {
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "hour": 2,
+              "minute": 0
+            },
+            "implied": {
+              "day": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-08-11T02:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with specific AM/PM variations"
+    },
+    {
+      "id": "zh_hans/time_exp#43",
+      "text": "今晚10点 - 前晚10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 前晚10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 8,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-08T22:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with short day-time variations"
+    },
+    {
+      "id": "zh_hans/time_exp#44",
+      "text": "今晚10点 - 大前晚10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 大前晚10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 7,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-07T22:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with short day-time variations"
+    },
+    {
+      "id": "zh_hans/time_exp#45",
+      "text": "今晚10点 - 后早10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 后早10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "hour": 10,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-12T10:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with short day-time variations"
+    },
+    {
+      "id": "zh_hans/time_exp#46",
+      "text": "今晚10点 - 大后早10点",
+      "config": "zh.hans.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ZHHansCasualDateParser",
+          "ZHHansTimeExpressionParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "今晚10点 - 大后早10点",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 22,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "day": 13,
+              "hour": 10,
+              "meridiem": 0,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-13T10:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression with short day-time variations"
+    }
+  ]
+}

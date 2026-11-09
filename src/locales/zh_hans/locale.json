@@ -1,0 +1,11 @@
+{
+  "generator": "harness/onboard/onboard.js",
+  "code": "zh-hans",
+  "module": "zh_hans",
+  "upstream": "locales/zh/hans",
+  "tests": "test/zh/hans",
+  "configs": {
+    "zh.hans.casual": "casual",
+    "zh.hans.strict": "strict"
+  }
+}
