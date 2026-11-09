@@ -412,8 +412,10 @@ export function applyReopens(s: Snapshot): string[] {
     // A reopen at or after this poll's own time waits a poll: this poll's records carry that time, so
     // a re-dispatch made now must come strictly after the reopen it follows.
     if (at >= s.fetched_at) continue;
-    // An open factory PR still holds the task, whatever the reopen.
-    if (s.pulls.some((pr) => pr.task_id === task && pr.state === 'open')) continue;
+    // An open factory PR from before the reopen still holds the task, whatever the reopen. One opened
+    // after it is the new attempt's own PR: the reset still applies, or the new attempt would inherit
+    // the old pick (and its time limit) once it opens a PR (#457/#477: task_timeout, never merged).
+    if (s.pulls.some((pr) => pr.task_id === task && pr.state === 'open' && pr.created_at <= at)) continue;
     const h = s.history[task];
     if (!h?.picked_at || h.picked_at > at) continue;
     const before = (h.picks ?? [h.picked_at]).filter((t) => t <= at).sort();
