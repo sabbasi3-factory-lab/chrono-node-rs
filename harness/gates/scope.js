@@ -41,6 +41,8 @@ function trailer(body, key) {
 }
 
 const TASK_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
+// Factory v2 (docs/factory-v2.md): a unit is one language, e.g. `it` or `zh-hans`.
+const UNIT_ID = /^[a-z]{2}(?:-[a-z]+)?$/;
 
 /**
  * Decide the gate outcome.
@@ -50,15 +52,19 @@ const TASK_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
  *   changed       - changed paths
  *   protectedGlobs- tiers.yaml protected_from_agents
  *   loadContract  - (taskId) => {scope: string[], acceptance: [...] , lastCommit: string} | null
+ *   loadUnit      - (unit) => {enabled: boolean, contracts: [{id, scope, acceptance, ...}], lastCommit: string} | null
+ *                   (factory v2: the language's contracts, and the last commit to contracts/<unit>/)
  *   readFile      - (path) => the candidate's text of a changed file, or null (needed for `unit`)
- * @returns {{ok: boolean, kind: "human"|"factory", reasons: string[], task?: string, goldenAreas: string[],
- *            goldenStep?: string|null, differential?: {seed: number, phrases: number}|null}}
+ * @returns {{ok: boolean, kind: "human"|"factory", reasons: string[], task?: string, unit?: string, goldenAreas: string[],
+ *            goldenStep?: string|null, unitGolden?: {step: string, areas: string[]}[], differential?: {seed: number, phrases: number}|null}}
  */
-function evaluate({ isAgent, body, changed, protectedGlobs, loadContract, readFile }) {
+function evaluate({ isAgent, body, changed, protectedGlobs, loadContract, loadUnit, readFile }) {
     const task = trailer(body, "Factory-Task");
-    if (!task && !isAgent) {
+    const unit = trailer(body, "Factory-Unit");
+    if (!task && !unit && !isAgent) {
         return { ok: true, kind: "human", reasons: [], goldenAreas: [], goldenStep: null, differential: null };
     }
+    if (unit) return evaluateUnit({ task, unit, body, changed, protectedGlobs, loadUnit, readFile });
     // Factory or agent PR from here on. Fail closed and report EVERY violation: protected paths
     // are checked first and independently of the task id and the contract, so a PR is never
     // rejected for one reason while another (worse) violation goes unreported.
@@ -84,9 +90,63 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract, readFi
         if (!matchesAny(path, protectedGlobs) && !matchesAny(path, scope)) reasons.push(`out of contract scope: ${path}`);
     }
 
-    // acceptance: - golden: { step: ENWeekdayParser, areas: [en/weekday, ...] }
-    //             (fix contracts: { step: en/fix-0123abcd, areas: [fixes/en-fix-0123abcd] })
-    //             - differential: { phrases: 2000, seed: 42, match: chrono-node@<sha> }
+    const { goldenAreas, goldenStep, differential } = acceptanceOf(contract, reasons);
+    reasons.push(...unitReasons({ contract, changed, scope, readFile }));
+    return { ok: reasons.length === 0, kind: "factory", task, reasons, goldenAreas, goldenStep, differential };
+}
+
+/**
+ * Factory v2 (docs/factory-v2.md): one PR ports a whole language. The same checks as a task PR, over
+ * the union of the language's contracts: protected paths, every changed path inside some contract's
+ * scope, `Contract-SHA:` = the last commit to contracts/<unit>/, and every contract's acceptance
+ * (each golden step is required separately in ci, each unit test must exist). Only for languages in
+ * .github/factory/v2.yaml on the trusted tip. Fails closed and reports every violation.
+ */
+function evaluateUnit({ task, unit, body, changed, protectedGlobs, loadUnit, readFile }) {
+    const reasons = [];
+    for (const path of changed) {
+        if (matchesAny(path, protectedGlobs)) reasons.push(`protected path changed: ${path}`);
+    }
+    if (changed.length === 0) reasons.push("no changed files");
+    const fail = (extra) => ({ ok: false, kind: "factory", unit, reasons: [...reasons, ...extra], goldenAreas: [], unitGolden: [] });
+    if (task) return fail(["a PR declares either Factory-Task or Factory-Unit, not both"]);
+    if (!UNIT_ID.test(unit)) return fail([`invalid Factory-Unit ${JSON.stringify(unit)}`]);
+    const u = typeof loadUnit === "function" ? loadUnit(unit) : null;
+    if (!u || !Array.isArray(u.contracts) || u.contracts.length === 0) return fail([`no contracts under contracts/${unit}/ on the base branch`]);
+    if (!u.enabled) return fail([`${unit} is not a factory v2 language (.github/factory/v2.yaml)`]);
+
+    const declared = trailer(body, "Contract-SHA");
+    if (!declared) reasons.push("missing Contract-SHA trailer");
+    else if (!/^[0-9a-f]{7,40}$/.test(declared) || !String(u.lastCommit || "").startsWith(declared)) {
+        reasons.push(`stale contracts: PR declares ${declared}, contracts/${unit}/ is at ${u.lastCommit}`);
+    }
+
+    const scopes = u.contracts.map((c) => (Array.isArray(c.scope) ? c.scope : []));
+    const all = scopes.flat();
+    for (const path of changed) {
+        if (!matchesAny(path, protectedGlobs) && !matchesAny(path, all)) reasons.push(`out of the scope of every ${unit} contract: ${path}`);
+    }
+
+    const unitGolden = [];
+    let differential = null;
+    u.contracts.forEach((contract, i) => {
+        const own = [];
+        const a = acceptanceOf(contract, own);
+        own.push(...unitReasons({ contract, changed, scope: scopes[i], readFile }));
+        reasons.push(...own.map((r) => `${contract.id || `contract ${i + 1}`}: ${r}`));
+        if (a.goldenStep) unitGolden.push({ step: a.goldenStep, areas: a.goldenAreas });
+        if (a.differential && (!differential || a.differential.phrases > differential.phrases)) differential = a.differential;
+    });
+    return { ok: reasons.length === 0, kind: "factory", unit, reasons, goldenAreas: [], goldenStep: null, unitGolden, differential };
+}
+
+/**
+ * A contract's acceptance (reasons for unsupported entries are pushed to `reasons`):
+ *   - golden: { step: ENWeekdayParser, areas: [en/weekday, ...] }
+ *     (fix contracts: { step: en/fix-0123abcd, areas: [fixes/en-fix-0123abcd] })
+ *   - differential: { phrases: 2000, seed: 42, match: chrono-node@<sha> }
+ */
+function acceptanceOf(contract, reasons) {
     const goldenAreas = [];
     let goldenStep = null;
     let differential = null;
@@ -115,8 +175,7 @@ function evaluate({ isAgent, body, changed, protectedGlobs, loadContract, readFi
             }
         }
     }
-    reasons.push(...unitReasons({ contract, changed, scope, readFile }));
-    return { ok: reasons.length === 0, kind: "factory", task, reasons, goldenAreas, goldenStep, differential };
+    return { goldenAreas, goldenStep, differential };
 }
 
 /**

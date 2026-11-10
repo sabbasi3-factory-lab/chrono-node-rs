@@ -26,6 +26,8 @@
     { "name": "dependency:approved", "color": "0E8A16", "description": "The owner accepts a borderline dependency request" },
     { "name": "dependency:rejected", "color": "B60205", "description": "The dependency steward rejected the request" },
     { "name": "dependency:pr-open", "color": "C2E0C6", "description": "The dependency steward opened the PR" },
-    { "name": "factory-review", "color": "5319E7", "description": "The factory review (Loop 4) report: proposals for the owner" }
+    { "name": "factory-review", "color": "5319E7", "description": "The factory review (Loop 4) report: proposals for the owner" },
+    { "name": "factory-v2", "color": "0E8A16", "description": "Factory v2: one language's port (docs/factory-v2.md)" },
+    { "name": "factory-v2:ready", "color": "1D76DB", "description": "Factory v2: start (or restart) this language's port" }
   ]
 }

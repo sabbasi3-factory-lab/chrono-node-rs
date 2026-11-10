@@ -85,7 +85,7 @@ jobs:
           curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
           echo "746d0b41d5fb87e2c010b8ac23a464436bb745ff89fbd19a3456431942c37652  $RUNNER_TEMP/gh-aw" | sha256sum -c -
           chmod 0755 "$RUNNER_TEMP/gh-aw"
-          env -u GH_TOKEN -u GITHUB_TOKEN "$RUNNER_TEMP/gh-aw" compile implement repair review triage improve
+          env -u GH_TOKEN -u GITHUB_TOKEN "$RUNNER_TEMP/gh-aw" compile implement repair review triage improve v2-port v2-repair
           git diff --exit-code --stat -- .github/workflows .github/aw \
             || { echo "::error::a .lock.yml is stale: run 'gh aw compile <name>' with gh-aw v1.0.1 and commit the result"; exit 1; }
           [ -z "$(git status --porcelain --untracked-files=all -- .github)" ] || { git status --short -- .github; echo "::error::gh aw compile wrote unexpected files"; exit 1; }
@@ -128,6 +128,24 @@ jobs:
           GOLDEN_AREAS: ${{ steps.scope.outputs.golden_areas }}
           GOLDEN_REQUIRE_STEP: ${{ steps.scope.outputs.golden_step }}
         run: cargo test --locked --test golden -- --nocapture
+
+      # Factory v2 (docs/factory-v2.md): a `Factory-Unit:` PR ports a whole language, so the contract
+      # step above runs once per contract in it (each step must be registered and exercised).
+      - name: Unit contract golden cases (each contract of a factory v2 language)
+        if: steps.scope.outputs.unit_golden != ''
+        env:
+          UNIT_GOLDEN: ${{ steps.scope.outputs.unit_golden }}
+        run: |
+          n=0
+          for item in $UNIT_GOLDEN; do
+            step="${item%%:*}"; areas="${item#*:}"
+            [[ "$step" =~ ^[A-Za-z0-9]+$ && "$areas" =~ ^[a-z0-9_/,]+$ ]] || { echo "::error::malformed unit_golden entry"; exit 1; }
+            echo "::group::${step} (${areas})"
+            GOLDEN_AREAS="$areas" GOLDEN_REQUIRE_STEP="$step" cargo test --locked --test golden -q -- --nocapture
+            echo "::endgroup::"
+            n=$((n + 1))
+          done
+          echo "${n} contract golden step(s) checked"
 
       - name: Doc tests
         run: cargo test --locked --doc
@@ -208,6 +226,15 @@ jobs:
       # log text) and won't enqueue an auto-strict PR unless it succeeded. Keep the name exact.
       - name: Full regression (auto-strict) - held-out comparison, 10000 phrases
         if: steps.scope.outputs.strict == 'true'
+        working-directory: harness
+        run: |
+          seed=$(cat "$RUNNER_TEMP/factory-heldout/seed")
+          node compare/compare.js --seed "$seed" --phrases 10000 --rust ../target/debug/chrono-rs-json
+
+      # Factory v2: a whole language merges in one PR, so it gets the 10,000-phrase held-out comparison
+      # (the strict step above runs it already for auto-strict changes).
+      - name: Factory v2 language - held-out comparison, 10000 phrases
+        if: steps.scope.outputs.unit != '' && steps.scope.outputs.strict != 'true'
         working-directory: harness
         run: |
           seed=$(cat "$RUNNER_TEMP/factory-heldout/seed")

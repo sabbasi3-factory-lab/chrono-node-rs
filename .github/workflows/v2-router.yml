@@ -1,0 +1,104 @@
+# Factory v2 router (docs/factory-v2.md). Plain code, no AI, events only (no schedule, no polling).
+# - push to main touching contracts/ or v2.yaml, or a manual run: start each v2 language whose contracts
+#   are on main and which has no issue yet (open the issue, dispatch v2-port).
+# - an issue labelled factory-v2:ready by a person with write access: restart that language.
+# - ci or gates completed on a factory-v2/* PR branch, or ci failed on a merge group: once gates passed,
+#   dispatch v2-repair for a ci failure, or hand the PR to a person (needs-human).
+# - a v2-port or v2-repair run completed: hand off if it opened no PR or pushed no fix.
+# Merging is GitHub's: auto-merge and the merge queue.
+# Never checks out or runs PR code: it checks out main and runs harness/v2/router.js from there. It
+# uses only this workflow's GITHUB_TOKEN (not the controller App, so no App quota is shared).
+# Human tier: changes need the owner's review.
+name: v2-router
+
+on:
+  push:
+    branches: [main]
+    paths: ["contracts/**", ".github/factory/v2.yaml"]
+  issues:
+    types: [labeled]
+  workflow_run:
+    workflows: [ci, gates, "Port one language (factory v2)", "Repair one factory v2 PR"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions: {}
+
+# Decisions read the history the previous one wrote (issue comments), so each kind runs one at a time.
+concurrency:
+  group: v2-router-${{ github.event_name == 'workflow_run' && 'run' || 'start' }}
+  cancel-in-progress: false
+
+jobs:
+  route:
+    if: >-
+      github.repository == 'sabbasi3-factory-lab/chrono-node-rs' && (
+        github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'issues' && github.event.label.name == 'factory-v2:ready') ||
+        (github.event_name == 'workflow_run' && (
+          ((github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'pull_request_target') && startsWith(github.event.workflow_run.head_branch, 'factory-v2/')) ||
+          (github.event.workflow_run.event == 'merge_group' && github.event.workflow_run.conclusion == 'failure') ||
+          github.event.workflow_run.event == 'workflow_dispatch')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: write        # dispatch v2-port / v2-repair; read runs for the spend
+      contents: read
+      issues: write         # the language's issue: create, comment, label
+      pull-requests: write  # needs-human on the PR
+    env:
+      GH_TOKEN: ${{ github.token }}
+      R: ${{ github.repository }}
+      FACTORY_ENABLED: ${{ vars.FACTORY_ENABLED }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Install gh-aw v1.0.1 (checksum pinned)
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
+          echo "746d0b41d5fb87e2c010b8ac23a464436bb745ff89fbd19a3456431942c37652  $RUNNER_TEMP/gh-aw" | sha256sum -c -
+          chmod 0755 "$RUNNER_TEMP/gh-aw"
+
+      # v2.yaml, the pinned factory policy's external_locales (v1 leaves those alone), and each v2
+      # language's contracts commit and tiers, all from main.
+      - name: Inputs from main and the pinned factory policy
+        run: |
+          set -euo pipefail
+          config=$(yq -o=json -I=0 .github/factory/v2.yaml)
+          pin=$(cat .github/factory/factory-version)
+          [[ "$pin" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad .github/factory/factory-version"; exit 1; }
+          external=$(curl -fsSL --retry 3 "https://raw.githubusercontent.com/sabbasi3-factory-lab/factory/${pin}/policies/onboarding.yaml" | yq -o=json -I=0 '.external_locales // []')
+          contracts='{}'
+          for lang in $(jq -r '.languages[]' <<<"$config"); do
+            [[ "$lang" =~ ^[a-z]{2}(-[a-z]+)?$ ]] || { echo "::error::bad language ${lang} in v2.yaml"; exit 1; }
+            compgen -G "contracts/${lang}/*.yaml" > /dev/null || continue
+            sha=$(git log -1 --format=%H -- "contracts/${lang}/")
+            tiers=$(yq -N -o=json -I=0 '.tier' contracts/"$lang"/*.yaml | jq -sc .)
+            contracts=$(jq -c --arg l "$lang" --arg s "$sha" --argjson t "$tiers" '. + {($l): {sha: $s, tiers: $t}}' <<<"$contracts")
+          done
+          { echo "V2_CONFIG=${config}"; echo "V2_EXTERNAL=${external}"; echo "V2_CONTRACTS=${contracts}"; } >> "$GITHUB_ENV"
+          echo "external_locales at ${pin}: ${external}; contracts: ${contracts}"
+
+      # Every v2 agent run since v2.yaml `since`, with each job's usage (gh aw logs), plus runs still
+      # queued or in progress at their caps. Any error fails closed: nothing is started without a budget.
+      - name: v2 spend (gh aw logs)
+        run: |
+          set -euo pipefail
+          since=$(yq -r '.since' .github/factory/v2.yaml)
+          "$RUNNER_TEMP/gh-aw" logs v2-port v2-repair --repo "$R" --json -c 500 --start-date "$since" -o "$RUNNER_TEMP/aw-logs" > "$RUNNER_TEMP/aw-logs.json"
+          spend=$(node harness/v2/router.js spend "$RUNNER_TEMP/aw-logs.json")
+          echo "V2_SPEND=${spend}" >> "$GITHUB_ENV"
+          echo "v2 spend: ${spend}"
+
+      - name: Route
+        env:
+          MODE: ${{ github.event_name != 'workflow_run' && 'start' || (github.event.workflow_run.event == 'workflow_dispatch' && 'completed' || 'repair') }}
+        run: node harness/v2/router.js "$MODE"

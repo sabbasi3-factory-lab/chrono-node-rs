@@ -18,7 +18,9 @@
 //   fail.
 // - merge_group (enforce): an agent PR with an auto-strict change also needs the reviewer App's
 //   passing `factory-review` on its head, unless a person enqueued it (scope.js reviewGate).
-// Writes kind, golden_areas, golden_step, differential_seed, differential_phrases, strict (the
+// - Factory v2 PRs (`Factory-Unit: <lang>`, docs/factory-v2.md): the same checks over the union of the
+//   language's contracts on the trusted tip, for languages in its .github/factory/v2.yaml only.
+// Writes kind, golden_areas, golden_step, unit, unit_golden, differential_seed, differential_phrases, strict (the
 // change needs the auto-strict full regression) and intake (a bug-intake fix PR) to $GITHUB_OUTPUT.
 const fs = require("fs");
 const path = require("path");
@@ -132,6 +134,33 @@ async function context() {
     throw new Error(`unsupported event ${name}`);
 }
 
+/**
+ * Factory v2 (docs/factory-v2.md): a language's contracts at `base`, whether it's a v2 language there
+ * (.github/factory/v2.yaml `languages`; a missing or unreadable file means none), and the last commit to
+ * contracts/<unit>/. Null if the language has no contracts.
+ */
+function loadUnitAt(base) {
+    return (unit) => {
+        let files;
+        try {
+            files = git("ls-tree", "--name-only", `${base}:contracts/${unit}`).split("\n").filter((f) => f.endsWith(".yaml"));
+        } catch {
+            return null;
+        }
+        if (files.length === 0) return null;
+        let enabled = false;
+        try {
+            const v2 = YAML.parse(git("show", `${base}:.github/factory/v2.yaml`));
+            enabled = Boolean(v2 && Array.isArray(v2.languages) && v2.languages.includes(unit));
+        } catch {
+            enabled = false;
+        }
+        const contracts = files.map((f) => YAML.parse(git("show", `${base}:contracts/${unit}/${f}`)));
+        const lastCommit = git("log", "-1", "--format=%H", base, "--", `contracts/${unit}/`);
+        return { enabled, contracts, lastCommit };
+    };
+}
+
 function loadContractAt(base) {
     return (task) => {
         const file = `contracts/${task}.yaml`;
@@ -161,7 +190,8 @@ async function main() {
             return null;
         }
     };
-    const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract, readFile });
+    const loadUnit = loadUnitAt(contractBase);
+    const result = evaluate({ isAgent, body: pr.body, changed: changedPaths, protectedGlobs, loadContract, loadUnit, readFile });
     // The dependency steward's PRs (controller App, factory/deps/*) have no task, but they merge
     // without a person: the strict gates must be enforced on them exactly as on factory PRs.
     const steward = isStewardPr(pr);
@@ -177,6 +207,18 @@ async function main() {
         }
         strict = contract
             ? needsFullRegression({ changed: changedPaths, autoStrictGlobs, contractTier: contract.tier || null, contractScope: contract.scope })
+            : true;
+    } else if (result.unit) {
+        // A v2 unit: any of its contracts' tiers or scope paths. Unreadable contracts fail closed.
+        let u = null;
+        try {
+            u = loadUnit(result.unit);
+        } catch {
+            u = null;
+        }
+        strict = u
+            ? u.contracts.some((c) => c.tier === "auto-strict") ||
+              needsFullRegression({ changed: changedPaths, autoStrictGlobs, contractTier: null, contractScope: u.contracts.flatMap((c) => c.scope || []) })
             : true;
     } else if (process.env.GITHUB_EVENT_NAME === "push") {
         // Post-merge check on main: the merged PR's task and contract aren't known here, so run the
@@ -196,7 +238,7 @@ async function main() {
     }
 
     console.log(`mode ${MODE}; factory policies at ${version}; candidate ${head}; contracts from ${contractBase}`);
-    console.log(`PR #${pr.number} by ${pr.user && pr.user.login}: ${result.kind}${result.task ? ` task ${result.task}` : ""}`);
+    console.log(`PR #${pr.number} by ${pr.user && pr.user.login}: ${result.kind}${result.task ? ` task ${result.task}` : ""}${result.unit ? ` unit ${result.unit}` : ""}`);
     console.log(`full regression (auto-strict): ${strict ? "yes" : "no"}`);
     console.log(`changed paths (${changedPaths.length}):`);
     for (const p of changedPaths) console.log(`  ${p}`);
@@ -208,6 +250,9 @@ async function main() {
                 `kind=${steward ? "factory" : result.kind}`,
                 `golden_areas=${result.goldenAreas.join(",")}`,
                 `golden_step=${result.goldenStep || ""}`,
+                // Factory v2: one `<step>:<area>,<area>` per contract with golden acceptance, space-separated.
+                `unit=${result.unit || ""}`,
+                `unit_golden=${(result.unitGolden || []).map((g) => `${g.step}:${g.areas.join(",")}`).join(" ")}`,
                 `differential_seed=${d.seed}`,
                 `differential_phrases=${d.phrases}`,
                 `strict=${strict ? "true" : "false"}`,
