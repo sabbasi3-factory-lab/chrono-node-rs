@@ -21,6 +21,10 @@ engine:
   model: claude-sonnet-5.5
 
 timeout-minutes: 15
+# Temporary (v1.2.2 probe): gh-aw's work-queue loggers print only counts and flags; this shows
+# which delivery check fails. Remove after the probe.
+env:
+  DEBUG: "work-queue:*"
 max-ai-credits: 50
 
 network:
