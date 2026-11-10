@@ -127,9 +127,9 @@ steps:
         n=$((n + 1))
         if echo "$id" | "$RUNNER_TEMP/gh-aw-cli/gh-aw" logs --stdin -r "$GH_REPO" --outcomes --json -o "$RUNNER_TEMP/aw-outcomes" > "$RUNNER_TEMP/outcome.tmp"; then
           jq -c --argjson id "$id" --arg wf "$wf" '{run_id: $id, workflow: $wf, outcome: ([.outcomes[]? | select(.run_id == $id)][0])}' "$RUNNER_TEMP/outcome.tmp" > "$dir/$id.json" \
-            || none "$id" "$wf" "not evaluated: unreadable gh aw logs output"
+            || none "$id" "$wf" "not evaluated: unreadable Outcomes output"
         else
-          none "$id" "$wf" "not evaluated: gh aw logs --outcomes failed for this run"
+          none "$id" "$wf" "not evaluated: the Outcomes call failed for this run"
         fi
       done 3< "$RUNNER_TEMP/outcome-runs.txt"
       echo "Outcomes: $(ls "$dir" | wc -l) runs in the window, ${n} evaluated"
