@@ -1,7 +1,19 @@
 {
-  "generated_at": "2026-11-10T00:49:53Z",
+  "generated_at": "2026-11-10T01:08:19Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 42730031586,
+      "workflow": "implement",
+      "title": "Implement drill/activation-canary #1 attempt 1",
+      "created_at": "2026-11-10T00:40:03Z",
+      "aic": 10.79394,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-10T01:08:19Z",
+      "drill": true
+    },
     {
       "run_id": 42728371373,
       "workflow": "implement",
@@ -4826,6 +4838,18 @@
       "drill": false
     },
     {
+      "run_id": 42730031360,
+      "workflow": "repair",
+      "title": "Repair drill/activation-canary #1 attempt 2",
+      "created_at": "2026-11-10T00:40:03Z",
+      "aic": 10.98803,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-10T01:08:19Z",
+      "drill": true
+    },
+    {
       "run_id": 42631324368,
       "workflow": "repair",
       "title": "Repair drill/activation-canary #1 attempt 2",
@@ -5114,6 +5138,18 @@
       "items": [],
       "eval_failed": false,
       "evaluated_at": "2026-11-04T18:46:45Z",
+      "drill": true
+    },
+    {
+      "run_id": 42730031476,
+      "workflow": "review",
+      "title": "Review drill/activation-canary PR #1",
+      "created_at": "2026-11-10T00:40:03Z",
+      "aic": 7.23103,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-10T01:08:19Z",
       "drill": true
     },
     {
