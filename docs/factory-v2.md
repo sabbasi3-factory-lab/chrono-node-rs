@@ -110,3 +110,38 @@ repairs, CI failures, Copilot findings, AIC; human touches; custom lines of code
 fallback is one run per area (the contracts' `area` field). Auto-strict units stay on v1 until v2 dispatches the
 reviewer. v2's budget is separate from v1's wave budget (`onboarding.yaml` `stop.budget_aic`), which counts only v1
 runs; whether v2 spend should count towards it is an owner decision.
+
+## Pilot results (`it`, 2026-11-10)
+
+Done: all 183 `it` golden cases pass (0 pending, 0 failed), the frontier is complete, and a 10,000-phrase comparison
+per language (seed 20261110, 170,000 phrases) has 0 mismatches. Merged as #553.
+
+| Stage (UTC) | Attempt 1 | Attempt 2 |
+|---|---|---|
+| Start → `v2-port` dispatched | 00:46:50 → 00:47:08 (oracle #536 merged) | 01:33:15 → 01:33:38 (`factory-v2:ready` label) |
+| Agent run → PR opened | 17 min (#545, 01:04:20) | 19 min (#553, 01:52:28) |
+| PR → checks green → queued | gates failed: 4 missing unit tests → `needs-human` | 16 min (auto-merge queued it at 02:08:28) |
+| Merge queue → merged | | 14 min (02:22:06) |
+
+- **Total:** 1 h 35 min from the oracle merge to the merge, including the 28 min stop and the fix (#548). Attempt 2
+  alone took 49 min.
+- **Agent runs:** 2 `v2-port` runs and 0 repairs. First try: 0/1. **CI failures:** 0. **Gates failures:** 1 (attempt
+  1). **Copilot findings on agent PRs:** none; Copilot doesn't review bot-authored PRs here, the same as for v1.
+- **AIC:** 384.3 in total (attempt 1 193.7, attempt 2 190.5; each about 179 agent + 11.5 detection + 1.2 evals). That's
+  about 18 per contract, or 9 for the clean attempt, against v1's measured 35–55 per task (about 840 for 21 tasks).
+- **Human touches:** none on the agent PR. The coordinator merged the human-tier PRs (#528, #529, #536, #548) and
+  decided the attempt-1 stop: prevent (#548), restart, and keep "gates are never repaired". The restart (closing
+  #545, labelling #540) was done at the coordinator's direction.
+- **Custom code:** v2 is about 575 lines of plain code (router, offline check, router workflow, `v2.yaml`) plus about
+  600 lines of agent prompts adapted from v1, 148 changed lines in shared gates/CI, and 243 lines of tests. v1's
+  controller and its watchdogs are 6,743 lines plus 6,817 lines of tests, so v2 is about 1/12 of the plain code.
+- **Compared with v1 and vi:** v1 took 2.1 h for nl and 5.7 h for uk; vi's goal-agent run took 1 h 19 min, but with
+  the test lock unenforced. v2's clean attempt took 49 min with every v1 guarantee enforced.
+
+**Finding:** one large run can miss a contract's non-golden acceptance (here, unit tests for a step no input reaches),
+and gates failures are never repaired. **Lesson:** the agent now runs the gate's own check offline before opening a
+PR (`harness/v2/check.js`, #548); attempt 2 passed gates first time.
+
+**Recommendation: migrate, in stages (hybrid for now).** Port the remaining auto-tier languages with v2. Keep v1's
+controller for auto-strict and core work, intake fixes and dependency PRs until v2 dispatches the reviewer. Retire
+v1's polling dispatch and merge once one more language merges first time on v2.
