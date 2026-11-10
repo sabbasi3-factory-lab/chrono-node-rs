@@ -1,0 +1,154 @@
+{
+  "generator": "harness/onboard/onboard.js",
+  "module": "it",
+  "requests": [
+    {
+      "step": "ITExtractYearSuffixRefiner",
+      "text": "» Sarà il 25/12 1234567890 «",
+      "config": "it.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2010-09-23T10:15:30.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "ITExtractYearSuffixRefiner",
+      "text": "café 5 maggio 12:00 2012-08-00 😀",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2010-05-07T06:01:34.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "ITExtractYearSuffixRefiner",
+      "text": "» 5 maggio alle 12:00 1234567890 «",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-06-24T15:04:37.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "ITMergeRelativeAfterDateRefiner",
+      "text": "13/02/2020 +2 settimane",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-03-06T12:00:00.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "ITMergeRelativeAfterDateRefiner",
+      "text": "martedì prossimo +10 giorni",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-03-06T12:00:00.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "ITMergeRelativeAfterDateRefiner",
+      "text": "15 marzo 2021 -3 giorni",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-03-06T12:00:00.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "ITMergeRelativeFollowByDateRefiner",
+      "text": "5 minuti dopo ieri sera",
+      "config": "it.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2010-07-14T18:26:34.000Z",
+        "timezone_input": "IST"
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      }
+    },
+    {
+      "step": "ITMergeRelativeFollowByDateRefiner",
+      "text": "5 minuti dopo 2012/8/10 - 2012/8/15\n",
+      "config": "it.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2011-03-09T07:00:49.000Z",
+        "timezone_input": "EST"
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "ITMergeRelativeFollowByDateRefiner",
+      "text": "5 minuti dopo 5 minuti dopo",
+      "config": "it.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2007-03-01T11:16:17.347Z",
+        "timezone_input": "PT"
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      }
+    },
+    {
+      "step": "ITTimeUnitCasualRelativeFormatParser",
+      "text": "- La scadenza è oggi - 5 giorni e 12 ore fa -",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-08-12T10:02:24.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "ITTimeUnitCasualRelativeFormatParser",
+      "text": "- entro 5 giorni faremo qualcosa - 3 settimane e 2 giorni fa -",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2010-12-21T02:29:41.000Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    },
+    {
+      "step": "ITTimeUnitCasualRelativeFormatParser",
+      "text": "- 5 giorni e 12 ore fa-entro 15 minuti -",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2008-11-18T17:55:02.680Z",
+        "timezone_input": null
+      },
+      "system_timezone": "UTC",
+      "options": {}
+    }
+  ]
+}

@@ -1,0 +1,266 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/it/it_timezone_exp.test.ts",
+  "cases": [
+    {
+      "id": "it/timezone_exp#1",
+      "text": "10 agosto 2012 10:00 CET",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner",
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 agosto 2012 10:00 CET",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "minute": 0,
+              "month": 8,
+              "timezoneOffset": 120,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T08:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone abbreviation"
+    },
+    {
+      "id": "it/timezone_exp#2",
+      "text": "10 agosto 2012 10:00 CEST",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneAbbrRefiner",
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 agosto 2012 10:00 CEST",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "minute": 0,
+              "month": 8,
+              "timezoneOffset": 120,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T08:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone abbreviation"
+    },
+    {
+      "id": "it/timezone_exp#3",
+      "text": "10 agosto 2012 10:00 +0100",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneOffsetRefiner",
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 agosto 2012 10:00 +0100",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "minute": 0,
+              "month": 8,
+              "timezoneOffset": 60,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T09:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone offset"
+    },
+    {
+      "id": "it/timezone_exp#4",
+      "text": "10 agosto 2012 10:00 +01:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneOffsetRefiner",
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 agosto 2012 10:00 +01:00",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "minute": 0,
+              "month": 8,
+              "timezoneOffset": 60,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T09:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone offset"
+    },
+    {
+      "id": "it/timezone_exp#5",
+      "text": "10 agosto 2012 10:00 +02:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ExtractTimezoneOffsetRefiner",
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "10 agosto 2012 10:00 +02:00",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 10,
+              "minute": 0,
+              "month": 8,
+              "timezoneOffset": 120,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T08:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Timezone offset"
+    }
+  ]
+}

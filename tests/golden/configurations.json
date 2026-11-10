@@ -1615,6 +1615,276 @@
         }
       ]
     },
+    "it.casual": {
+      "parsers": [
+        {
+          "name": "ITYearMonthDayParser",
+          "flags": {
+            "strictMonthDateOrder": false
+          }
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "ITTimeUnitWithinFormatParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "ITMonthNameLittleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "ITMonthNameMiddleEndianParser",
+          "flags": {
+            "shouldSkipYearLikeDate": true
+          }
+        },
+        {
+          "name": "ITWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "ITSlashMonthFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ITTimeExpressionParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "ITTimeUnitAgoFormatParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "ITTimeUnitLaterFormatParser",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "ITCasualDateParser",
+          "flags": {}
+        },
+        {
+          "name": "ITCasualTimeParser",
+          "flags": {}
+        },
+        {
+          "name": "ITMonthNameParser",
+          "flags": {}
+        },
+        {
+          "name": "ITRelativeDateFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ITTimeUnitCasualRelativeFormatParser",
+          "flags": {
+            "allowAbbreviations": true
+          }
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITMergeRelativeAfterDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITMergeRelativeFollowByDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": false
+          }
+        },
+        {
+          "name": "ITMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITExtractYearSuffixRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITMergeDateRangeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITUnlikelyFormatFilter",
+          "flags": {}
+        }
+      ]
+    },
+    "it.strict": {
+      "parsers": [
+        {
+          "name": "ITYearMonthDayParser",
+          "flags": {
+            "strictMonthDateOrder": true
+          }
+        },
+        {
+          "name": "ISOFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "SlashDateFormatParser",
+          "flags": {
+            "littleEndian": true
+          }
+        },
+        {
+          "name": "ITTimeUnitWithinFormatParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "ITMonthNameLittleEndianParser",
+          "flags": {}
+        },
+        {
+          "name": "ITMonthNameMiddleEndianParser",
+          "flags": {
+            "shouldSkipYearLikeDate": true
+          }
+        },
+        {
+          "name": "ITWeekdayParser",
+          "flags": {}
+        },
+        {
+          "name": "ITSlashMonthFormatParser",
+          "flags": {}
+        },
+        {
+          "name": "ITTimeExpressionParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "ITTimeUnitAgoFormatParser",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "ITTimeUnitLaterFormatParser",
+          "flags": {
+            "strictMode": true
+          }
+        }
+      ],
+      "refiners": [
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITMergeRelativeAfterDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITMergeRelativeFollowByDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneOffsetRefiner",
+          "flags": {}
+        },
+        {
+          "name": "MergeWeekdayComponentRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ExtractTimezoneAbbrRefiner",
+          "flags": {}
+        },
+        {
+          "name": "OverlapRemovalRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ForwardDateRefiner",
+          "flags": {}
+        },
+        {
+          "name": "UnlikelyFormatFilter",
+          "flags": {
+            "strictMode": true
+          }
+        },
+        {
+          "name": "ITMergeDateTimeRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITExtractYearSuffixRefiner",
+          "flags": {}
+        },
+        {
+          "name": "ITMergeDateRangeRefiner",
+          "flags": {}
+        }
+      ]
+    },
     "ja.casual": {
       "parsers": [
         {

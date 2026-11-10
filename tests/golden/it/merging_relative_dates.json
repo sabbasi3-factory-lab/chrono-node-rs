@@ -1,0 +1,210 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/it/it_merging_relative_dates.test.ts",
+  "cases": [
+    {
+      "id": "it/merging_relative_dates#1",
+      "text": "domani alle 13:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "domani alle 13:00",
+          "start": {
+            "known": {
+              "day": 11,
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T13:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ITCasualDateParser",
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Merging dates with time"
+    },
+    {
+      "id": "it/merging_relative_dates#2",
+      "text": "ieri alle 10:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "ieri alle 10:00",
+          "start": {
+            "known": {
+              "day": 9,
+              "hour": 10,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T10:00:00.000Z",
+            "tags": [
+              "casualReference/yesterday",
+              "parser/ITCasualDateParser",
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Merging dates with time"
+    },
+    {
+      "id": "it/merging_relative_dates#3",
+      "text": "venerdì prossimo alle 18:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser",
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "venerdì prossimo alle 18:00",
+          "start": {
+            "known": {
+              "hour": 18,
+              "meridiem": 1,
+              "minute": 0,
+              "weekday": 5
+            },
+            "implied": {
+              "day": 17,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-17T18:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Merging dates with time"
+    },
+    {
+      "id": "it/merging_relative_dates#4",
+      "text": "24: 23 luglio 2026 alle 15:30",
+      "config": "it.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2026-07-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner",
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [
+        {
+          "index": 4,
+          "text": "23 luglio 2026 alle 15:30",
+          "start": {
+            "known": {
+              "day": 23,
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 30,
+              "month": 7,
+              "year": 2026
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2026-07-23T15:30:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - A bare number followed by a colon should not merge backwards over the date that follows"
+    }
+  ]
+}

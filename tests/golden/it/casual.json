@@ -1,0 +1,1444 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/it/it_casual.test.ts",
+  "cases": [
+    {
+      "id": "it/casual#01",
+      "text": "La scadenza è adesso",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:10.011Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 14,
+          "text": "adesso",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 8,
+              "meridiem": 0,
+              "millisecond": 11,
+              "minute": 9,
+              "month": 8,
+              "second": 10,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T08:09:10.011Z",
+            "tags": [
+              "casualReference/now",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#02",
+      "text": "La scadenza è oggi",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:12:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 14,
+          "text": "oggi",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 14,
+              "millisecond": 0,
+              "minute": 12,
+              "second": 0
+            },
+            "date": "2012-08-10T14:12:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#03",
+      "text": "La scadenza è domani",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T17:10:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 14,
+          "text": "domani",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "millisecond": 0,
+              "minute": 10,
+              "second": 0
+            },
+            "date": "2012-08-11T17:10:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#04",
+      "text": "La scadenza è domani",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T01:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 14,
+          "text": "domani",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T01:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#05",
+      "text": "La scadenza era ieri",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "ieri",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": [
+              "casualReference/yesterday",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#06",
+      "text": "La scadenza era ieri sera ",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "ieri sera",
+          "start": {
+            "known": {
+              "day": 9,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-09T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "casualReference/yesterday",
+              "parser/ITCasualDateParser",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#07",
+      "text": "La scadenza era stamattina ",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "stamattina",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#08",
+      "text": "La scadenza era questo pomeriggio ",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 23,
+          "text": "pomeriggio",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 10,
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#09",
+      "text": "La scadenza era stasera ",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "stasera",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T22:00:00.000Z",
+            "tags": [
+              "casualReference/tonight",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#10",
+      "text": "La scadenza è mezzanotte ",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 14,
+          "text": "mezzanotte",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 11,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "weekday": 6,
+              "year": 2012
+            },
+            "date": "2012-08-11T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#11",
+      "text": "La scadenza era mezzanotte ",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T01:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "mezzanotte",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#12",
+      "text": "La scadenza era mezzanotte ",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T01:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ITCasualTimeParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "mezzanotte",
+          "start": {
+            "known": {
+              "hour": 0
+            },
+            "implied": {
+              "day": 11,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-11T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/casual#13",
+      "text": "La scadenza è oggi alle 17",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 14,
+          "text": "oggi alle 17",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 17,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T17:00:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ITCasualDateParser",
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "it/casual#14",
+      "text": "Domani a mezzogiorno",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T14:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser"
+        ],
+        "refiners": [
+          "ITMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Domani a mezzogiorno",
+          "start": {
+            "known": {
+              "day": 11,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-11T12:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 12
+            },
+            "implied": {
+              "day": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-11T12:00:00.000Z",
+            "tags": [
+              "casualReference/noon",
+              "parser/ITCasualTimeParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Combined Expression"
+    },
+    {
+      "id": "it/casual#15",
+      "text": "L'evento è oggi - venerdì prossimo",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "ITMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 11,
+          "text": "oggi - venerdì prossimo",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-04T12:00:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual date range"
+    },
+    {
+      "id": "it/casual#16",
+      "text": "L'evento è oggi - venerdì prossimo",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "ITMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 11,
+          "text": "oggi - venerdì prossimo",
+          "start": {
+            "known": {
+              "day": 10,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 17,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-17T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual date range"
+    },
+    {
+      "id": "it/casual#17",
+      "text": "ferie da stamattina a domani",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser"
+        ],
+        "refiners": [
+          "ITMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "stamattina a domani",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 5,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-05T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 5,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-05T12:00:00.000Z",
+            "tags": [
+              "casualReference/tomorrow",
+              "parser/ITCasualDateParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual time implication"
+    },
+    {
+      "id": "it/casual#18",
+      "text": "ferie da oggi a domani pomeriggio",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-04T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser"
+        ],
+        "refiners": [
+          "ITMergeDateRangeRefiner",
+          "ITMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "oggi a domani pomeriggio",
+          "start": {
+            "known": {
+              "day": 4,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-04T12:00:00.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 5,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-08-05T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon",
+              "casualReference/tomorrow",
+              "parser/ITCasualDateParser",
+              "parser/ITCasualTimeParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Casual time implication"
+    },
+    {
+      "id": "it/casual#19",
+      "text": "stasera",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "stasera",
+          "start": {
+            "known": {
+              "day": 1,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T22:00:00.000Z",
+            "tags": [
+              "casualReference/tonight",
+              "parser/ITCasualDateParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "it/casual#20",
+      "text": "stasera alle 20",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "stasera alle 20",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 20,
+              "meridiem": 1,
+              "minute": 0,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T20:00:00.000Z",
+            "tags": [
+              "casualReference/tonight",
+              "parser/ITCasualDateParser",
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "it/casual#21",
+      "text": "stasera alle 8",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-01-01T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "stasera alle 8",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 20,
+              "minute": 0,
+              "month": 1,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-01-01T20:00:00.000Z",
+            "tags": [
+              "casualReference/tonight",
+              "parser/ITCasualDateParser",
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "it/casual#22",
+      "text": "gio",
+      "config": "it.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "gio",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 9,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "it/casual#23",
+      "text": "questa sera",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualTimeParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "questa sera",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 1,
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T20:00:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "it/casual#24",
+      "text": "ieri pomeriggio",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "ieri pomeriggio",
+          "start": {
+            "known": {
+              "day": 30,
+              "month": 9,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 15,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-09-30T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon",
+              "casualReference/yesterday",
+              "parser/ITCasualDateParser",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "it/casual#25",
+      "text": "domani mattina",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "domani mattina",
+          "start": {
+            "known": {
+              "day": 2,
+              "month": 10,
+              "year": 2016
+            },
+            "implied": {
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2016-10-02T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "casualReference/tomorrow",
+              "parser/ITCasualDateParser",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "it/casual#26",
+      "text": "questo pomeriggio alle 3",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2016-10-01T08:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualTimeParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "pomeriggio alle 3",
+          "start": {
+            "known": {
+              "hour": 15,
+              "minute": 0
+            },
+            "implied": {
+              "day": 1,
+              "meridiem": 1,
+              "millisecond": 0,
+              "month": 10,
+              "second": 0,
+              "year": 2016
+            },
+            "date": "2016-10-01T15:00:00.000Z",
+            "tags": [
+              "casualReference/afternoon",
+              "parser/ITCasualTimeParser",
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "it/casual#27",
+      "text": "a mezzanotte il 12 agosto",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T15:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualTimeParser",
+          "ITMonthNameLittleEndianParser",
+          "ITMonthNameParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "mezzanotte il 12 agosto",
+          "start": {
+            "known": {
+              "day": 12,
+              "hour": 0,
+              "minute": 0,
+              "month": 8
+            },
+            "implied": {
+              "millisecond": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-12T00:00:00.000Z",
+            "tags": [
+              "casualReference/midnight",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random text"
+    },
+    {
+      "id": "it/casual#28",
+      "text": "nonoggi",
+      "config": "it.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "it/casual#29",
+      "text": "xieri",
+      "config": "it.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    },
+    {
+      "id": "it/casual#30",
+      "text": "domaniX",
+      "config": "it.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Random negative text"
+    }
+  ]
+}

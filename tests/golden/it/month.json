@@ -1,0 +1,277 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/it/it_month.test.ts",
+  "cases": [
+    {
+      "id": "it/month#1",
+      "text": "settembre 2012",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "settembre 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ITMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month Expressions"
+    },
+    {
+      "id": "it/month#2",
+      "text": "set 2012",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "set 2012",
+          "start": {
+            "known": {
+              "month": 9,
+              "year": 2012
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ITMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month Expressions"
+    },
+    {
+      "id": "it/month#3",
+      "text": "Sarà a settembre",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 7,
+          "text": "settembre",
+          "start": {
+            "known": {
+              "month": 9
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-09-01T12:00:00.000Z",
+            "tags": [
+              "parser/ITMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month Expressions"
+    },
+    {
+      "id": "it/month#4",
+      "text": "gennaio 2019",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "gennaio 2019",
+          "start": {
+            "known": {
+              "month": 1,
+              "year": 2019
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2019-01-01T12:00:00.000Z",
+            "tags": [
+              "parser/ITMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month Expressions with Year"
+    },
+    {
+      "id": "it/month#5",
+      "text": "dicembre 2018",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "dicembre 2018",
+          "start": {
+            "known": {
+              "month": 12,
+              "year": 2018
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2018-12-01T12:00:00.000Z",
+            "tags": [
+              "parser/ITMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month Expressions with Year"
+    },
+    {
+      "id": "it/month#6",
+      "text": "febbraio",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ITMonthNameParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "febbraio",
+          "start": {
+            "known": {
+              "month": 2
+            },
+            "implied": {
+              "day": 1,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2019
+            },
+            "date": "2019-02-01T12:00:00.000Z",
+            "tags": [
+              "parser/ITMonthNameParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Month Forward Dates"
+    }
+  ]
+}
