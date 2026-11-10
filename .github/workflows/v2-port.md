@@ -231,6 +231,7 @@ You are porting **a whole chrono-node locale** (a natural-language date parser i
   - `cargo fmt` and `cargo clippy --all-targets -- -D warnings`
   - `cargo test`
   - `cargo build --bin chrono-rs-json`, then in `harness/`: `node golden/frontier.js --rust ../target/debug/chrono-rs-json --complete` (every step's own output matches chrono-node on every case, and no case is left pending) and `node compare/compare.js --seed 42 --phrases 10000 --rust ../target/debug/chrono-rs-json` (no mismatch).
+  - in `harness/`: `node v2/check.js ${{ github.event.inputs.unit }}` must print `ok`: the gate's own check that every contract's scope file exists and has each `#[test]` its unit acceptance names. A PR that fails it is handed to a person, never repaired.
   - Docs for the crate and its dependencies are in `target/doc/`.
 - If you need a crate that isn't already a dependency, don't add it: you can't edit `Cargo.toml`. File **one** dependency request with `create_issue` (title `<crate> <version>`; body headings `### Crate`, `### Version`, `### Kind`, `### Reason`, `### Task` with `${{ github.event.inputs.unit }}`), do what you can without it, and say so in your comment.
 

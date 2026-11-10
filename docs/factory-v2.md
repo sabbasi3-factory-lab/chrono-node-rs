@@ -77,7 +77,8 @@ budget gate once the admission gate is available.
 
 1. A PR adding `contracts/<lang>/` (onboarding generator output) merges. The router (on `push` to main) opens the
    language's issue and dispatches `v2-port`.
-2. `v2-port` ports every contract in dependency order, runs the checks offline and opens one PR with auto-merge on.
+2. `v2-port` ports every contract in dependency order, runs the checks offline (including the gate's own acceptance
+   check, `harness/v2/check.js`) and opens one PR with auto-merge on.
 3. `ci` and `gates` run. Their completion triggers the router (`workflow_run`), which dispatches `v2-repair` or stops.
 4. When the required checks pass, GitHub queues and merges the PR, and the issue closes.
 
