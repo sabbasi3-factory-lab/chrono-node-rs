@@ -64,7 +64,7 @@ tools:
     - "jq"
 
 # Outside the firewall, before any inference: gh-aw's own built-ins for the run data
-# (`gh aw logs`; Outcomes come from the outcomes workflow's branch), the audit log, then
+# (`gh aw logs --outcomes`: each run's gh-aw Outcomes verdict too), the audit log, then
 # plain-code aggregation (harness/review/gather.js, failures.js) into target/factory-review/:
 # including who caused each failure (agent, factory, platform) and gh-aw platform failures by kind.
 steps:
@@ -86,14 +86,17 @@ steps:
       curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw-cli/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
       echo "746d0b41d5fb87e2c010b8ac23a464436bb745ff89fbd19a3456431942c37652  $RUNNER_TEMP/gh-aw-cli/gh-aw" | sha256sum -c -
       chmod 0755 "$RUNNER_TEMP/gh-aw-cli/gh-aw"
-  - name: gh aw logs, last 7 days (implement, repair, review)
+  - name: gh aw logs and Outcomes, last 7 days (implement, repair, review)
     env:
       GH_TOKEN: ${{ github.token }}
     run: |
       mkdir -p "$RUNNER_TEMP/review-logs"
       for wf in implement repair review; do
-        # Kept only if the call succeeds; otherwise that workflow's runs are missing from the data.
-        if "$RUNNER_TEMP/gh-aw-cli/gh-aw" logs "$wf" --start-date -1w -c 200 --json -o "$RUNNER_TEMP/aw-logs" > "$RUNNER_TEMP/${wf}.tmp"; then
+        # With Outcomes (gh-aw's per-run verdicts; a run it can't evaluate gets an eval_error, not a
+        # failed call). If that call fails, the runs without Outcomes; if that fails too, the
+        # workflow's runs are missing from the data (advisory review: never a gate).
+        log() { "$RUNNER_TEMP/gh-aw-cli/gh-aw" logs "$wf" --start-date -1w -c 200 --json -o "$RUNNER_TEMP/aw-logs" "$@" > "$RUNNER_TEMP/${wf}.tmp"; }
+        if log --outcomes || { echo "::warning::gh aw logs --outcomes ${wf} failed: its runs without Outcomes"; log; }; then
           mv "$RUNNER_TEMP/${wf}.tmp" "$RUNNER_TEMP/review-logs/${wf}.json"
         else
           echo "::warning::gh aw logs ${wf} failed: its runs are missing from the data"
@@ -106,7 +109,7 @@ steps:
     run: |
       node harness/review/gather.js --out "$GITHUB_WORKSPACE/target/factory-review" --logs "$RUNNER_TEMP/review-logs"
       ls -l "$GITHUB_WORKSPACE/target/factory-review"
-  # The dashboard's platform-reliability counter (platform-reliability.json), with the rest of the data.
+  # The review data (summary, runs, Outcomes, failures, platform reliability), kept with the run.
   - name: Upload the review data
     uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
     with:
@@ -155,7 +158,7 @@ The data for a rolling 7-day window, computed by plain code, is in `target/facto
 - `areas.json`: the same eligibility table.
 - `audit-counts.json`: audit-log events by type and reason, merged tasks, first-try merges, repairs, `needs-human` reasons.
 - `runs.jsonl`: one line per AI run (`gh aw logs`): workflow, run id, model, conclusion, duration, AIC, tokens, turns.
-- `outcomes.json`: gh-aw Outcomes for runs in the window.
+- `outcomes.json`: gh-aw Outcomes for runs in the window (`gh aw logs --outcomes`).
 - `failures.json`: each needs-human event, **attributed** by plain code to `agent`, `factory`, `platform`, `policy`, `factory_or_platform` or `unclear`, with its `basis` and the signals behind it: a person's infra-incident record (`factory:infra-incident`, `Infra incident: #N`), where the failed run stopped (`run.kind`, e.g. `mcp_gateway_start`), the reason code, and the pre-triage verdict (`triage.class`, AI and advisory).
 - `platform-reliability.json`: every failed run of the gh-aw workflows in the window, classified; platform (gh-aw / GitHub Actions) failures by kind, with run links; `recurring` lists kinds seen 2 or more times.
 

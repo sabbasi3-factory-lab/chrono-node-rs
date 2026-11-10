@@ -87,7 +87,7 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
    (`.github/factory/controller/spend.ts`); for runs from before those, its newest `spend_snapshot`
    entry (an in-flight reservation, an overestimate). A run counted at its bound because a usage
    file was missing counts at the larger of its readable usage files and its agent's own figure
-   (what gh-aw Outcomes reports; never less than the rule read before), else at its bound. First
+   (the agent-only figure gh-aw reports in `gh aw logs`; never less than the rule read before), else at its bound. First
    try: one implement run, no repair, and the merged PR zero-touch by gh-aw's rule (no comment,
    review or commit by a person; GraphQL on the merged agent PRs). **Coverage.** The ledger of what
    ran and merged comes from the Actions API and GraphQL. The decision waits (`records_behind:N`)
@@ -96,8 +96,7 @@ hand: the task's golden cases fail, and the task goes to `needs-human` with the 
    every merged task's zero-touch verdict is known. A missing or unreadable input (issues, PRs,
    onboarding merges, contracts, runs, merged PRs, audit log) also waits, never reads as "none".
    The `onboard-stop-rules` fire drill checks this. (#317 onboarded `id` on 0 AIC and 0/0
-   first-try because the data it read had none of `fi`'s runs yet.) `outcomes.json` stays for the
-   dashboard only. The decision and a stop's alert show the spend as `measured` (runs with their
+   first-try because the data it read had none of `fi`'s runs yet.) The decision and a stop's alert show the spend as `measured` (runs with their
    final `run_spend`) plus `reserved` (runs whose final cost isn't recorded yet, at their in-flight
    reservation): the rule counts both. On 2026-11-09 the `it` decision logged 9,204 = 4,004 measured
    + 5,200 reserved, two finished zh-hans runs whose final cost (79 in all) landed a minute later.

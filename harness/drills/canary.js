@@ -14,7 +14,7 @@
 //
 //   node drills/canary.js run --out FILE    (GH_TOKEN: actions write + read; GITHUB_REPOSITORY)
 //
-// Runs whose task starts with `drill/` are excluded from outcomes' rates and the factory review.
+// Runs whose task starts with `drill/` are excluded from the first-try rates, the results page and the factory review.
 const fs = require("fs");
 
 const TASK = "drill/activation-canary";

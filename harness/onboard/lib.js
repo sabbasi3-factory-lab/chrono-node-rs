@@ -562,7 +562,7 @@ function coveredRuns(ledger, generated) {
  * `spend_snapshot` entry (a run still in flight at the day's last snapshot stays at its reservation:
  * an overestimate). Only real (dry_run: false) measurements. A run counted at its bound because a
  * usage file was missing (status `bounded`) counts at the larger of its readable usage files and its
- * agent artifact's own figure, which gh-aw Outcomes reports: never less than the figure this rule
+ * agent artifact's own figure, which `gh aw logs` reports: never less than the figure this rule
  * read before (#337). With neither, at its bound. Map run_id → {aic, status, source}.
  */
 function runCosts(events) {

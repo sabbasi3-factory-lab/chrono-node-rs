@@ -196,7 +196,7 @@ export function fakeWorld(opts: WorldOptions = {}): ProjectWorld {
 
 /**
  * Puts one real (non-dry-run) `spend_snapshot` event for the given time's UTC day
- * on the fake audit branch, as the outcomes collector would. Without it,
+ * on the fake audit branch, as the controller's spend reader would. Without it,
  * today's spend is unknown and the planner never dispatches (fail closed).
  */
 export async function seedSpendSnapshot(gh: FakeGitHub, at: string, aicToday = 0): Promise<void> {

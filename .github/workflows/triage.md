@@ -34,7 +34,7 @@ on:
         required: false
         type: string
 
-# The task and issue in the run name let the outcomes collector join triage runs to tasks. Keep the format.
+# The task and issue in the run name let the run ledger (onboarding stop rules, CAO, the factory review) join triage runs to tasks. Keep the format.
 run-name: "Triage ${{ github.event.inputs.task }} #${{ github.event.inputs.issue }}"
 
 permissions:

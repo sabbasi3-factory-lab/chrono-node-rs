@@ -25,7 +25,7 @@ on:
         required: true
         type: string
 
-# The task and PR in the run name let the outcomes collector join review runs to tasks. Keep the format.
+# The task and PR in the run name let the run ledger (onboarding stop rules, CAO, the factory review) join review runs to tasks. Keep the format.
 run-name: "Review ${{ github.event.inputs.task }} PR #${{ github.event.inputs.pr }}"
 
 permissions:

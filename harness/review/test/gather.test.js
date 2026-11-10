@@ -54,3 +54,23 @@ test("first tries see repairs from before the window; eligibility uses the merge
     const runs = [20, 100].map((aic, i) => ({ workflow: "implement", run_id: i, conclusion: "success", aic }));
     assert.match(summaryMd(auditCounts([]), runs, [], { runs: [], summary: {} }), /\| implement \| 2 \| 2 \| 120\.0 \| 60\.0 \|/);
 });
+
+test("outcomesOf: gh-aw's per-run verdicts from `gh aw logs --outcomes` (outcomes.yml retired)", () => {
+    const { outcomesOf, summaryMd, auditCounts } = require("../gather");
+    const logs = [
+        { runs: [], outcomes: [
+            { run_id: 1, workflow: "Implement en/a #1 attempt 1", items: [{ type: "create_pull_request", object_url: "https://github.com/o/r/pull/5", outcome_status: "accepted", zero_touch: true, extra: 1 }] },
+            { run_id: 2, workflow: "Implement drill/x #1 attempt 1", items: [], eval_error: "safe-output manifest unavailable; outcome coverage is unknown" },
+            { run_id: "bad", items: [] },
+        ] },
+        { runs: [], outcomes: [{ run_id: 3, items: [{ type: "create_pull_request", outcome_status: "rejected" }, { type: "add_comment", outcome_status: "accepted" }] }] },
+        { runs: [] },
+        null,
+    ];
+    const o = outcomesOf(logs);
+    assert.deepStrictEqual(o.summary, { accepted: 2, rejected: 1 });
+    assert.deepStrictEqual(o.runs.map((r) => r.run_id), [1, 2, 3]);
+    assert.deepStrictEqual(o.runs[0].items[0], { type: "create_pull_request", object_url: "https://github.com/o/r/pull/5", outcome_status: "accepted", zero_touch: true });
+    assert.strictEqual(o.runs[1].eval_error, "safe-output manifest unavailable; outcome coverage is unknown");
+    assert.match(summaryMd(auditCounts([]), [], [], o), /## Outcomes \(gh aw logs --outcomes\)\n\n- runs in the window: 3 \(1 not evaluable\); item statuses: \{"accepted":2,"rejected":1\}/);
+});
