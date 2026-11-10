@@ -1,0 +1,653 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/it/it_time_exp.test.ts",
+  "cases": [
+    {
+      "id": "it/time_exp#01",
+      "text": "Proviamo a incontrarci alle 6:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 23,
+          "text": "alle 6:00",
+          "start": {
+            "known": {
+              "hour": 6,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/time_exp#02",
+      "text": "Proviamo a incontrarci alle 6:00 PM",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 23,
+          "text": "alle 6:00 PM",
+          "start": {
+            "known": {
+              "hour": 18,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T18:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/time_exp#03",
+      "text": "Proviamo a incontrarci alle 6:00 AM",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T08:09:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 23,
+          "text": "alle 6:00 AM",
+          "start": {
+            "known": {
+              "hour": 6,
+              "meridiem": 0,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/time_exp#04",
+      "text": "8:00 - 12:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "8:00 - 12:00",
+          "start": {
+            "known": {
+              "hour": 8,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T08:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 12,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "it/time_exp#05",
+      "text": " dalle 6:00 alle 9:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 1,
+          "text": "dalle 6:00 alle 9:00",
+          "start": {
+            "known": {
+              "hour": 6,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 9,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T09:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "it/time_exp#06",
+      "text": "qualcosa alle 6:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 9,
+          "text": "alle 6:00",
+          "start": {
+            "known": {
+              "hour": 6,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T06:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Date + Time Expression"
+    },
+    {
+      "id": "it/time_exp#07",
+      "text": "1pm a 3",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "1pm a 3",
+          "start": {
+            "known": {
+              "hour": 13,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T13:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "hour": 15,
+              "meridiem": 1,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T15:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Time Expression's Meridiem imply"
+    },
+    {
+      "id": "it/time_exp#08",
+      "text": "sabato 30 aprile 2016, 10:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITMonthNameParser",
+          "ITTimeExpressionParser",
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "sabato 30 aprile 2016, 10:00",
+          "start": {
+            "known": {
+              "day": 30,
+              "hour": 10,
+              "minute": 0,
+              "month": 4,
+              "weekday": 6,
+              "year": 2016
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2016-04-30T10:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "it/time_exp#09",
+      "text": "sabato 30 aprile 2016 alle 10:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITMonthNameParser",
+          "ITTimeExpressionParser",
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner",
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "sabato 30 aprile 2016 alle 10:00",
+          "start": {
+            "known": {
+              "day": 30,
+              "hour": 10,
+              "minute": 0,
+              "month": 4,
+              "weekday": 6,
+              "year": 2016
+            },
+            "implied": {
+              "meridiem": 0,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2016-04-30T10:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Random date + time expression"
+    },
+    {
+      "id": "it/time_exp#10",
+      "text": "2020",
+      "config": "it.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "it/time_exp#11",
+      "text": "2020  ",
+      "config": "it.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "it/time_exp#12",
+      "text": "  2020",
+      "config": "it.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "it/time_exp#13",
+      "text": "1234567890",
+      "config": "it.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    },
+    {
+      "id": "it/time_exp#14",
+      "text": "alle 10:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "alle 10:00",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 0
+            },
+            "implied": {
+              "day": 10,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T10:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time relative to reference"
+    },
+    {
+      "id": "it/time_exp#15",
+      "text": "alle 10:00",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T12:14:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "alle 10:00",
+          "start": {
+            "known": {
+              "hour": 10,
+              "minute": 0
+            },
+            "implied": {
+              "day": 11,
+              "meridiem": 0,
+              "millisecond": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-11T10:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Time relative to reference"
+    }
+  ]
+}

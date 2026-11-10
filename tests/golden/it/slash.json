@@ -1,0 +1,235 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/it/it_slash.test.ts",
+  "cases": [
+    {
+      "id": "it/slash#1",
+      "text": "Sarà il 25/12/2012",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITSlashMonthFormatParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "25/12/2012",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 12,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-12-25T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/slash#2",
+      "text": "Sarà il 25/12/12",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "25/12/12",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 12,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-12-25T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/slash#3",
+      "text": "Sarà il 25/12",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 8,
+          "text": "25/12",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 12
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-12-25T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/slash#4",
+      "text": "dal 25/12/2012 al 30/12/2012",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-10T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITSlashMonthFormatParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ITMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 4,
+          "text": "25/12/2012 al 30/12/2012",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 12,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-12-25T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 30,
+              "month": 12,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2012-12-30T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "Test - Range Expression"
+    },
+    {
+      "id": "it/slash#5",
+      "text": "25/13/2012",
+      "config": "it.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    }
+  ]
+}

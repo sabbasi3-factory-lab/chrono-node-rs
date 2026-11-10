@@ -1,0 +1,735 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "harness/golden/coverage/it.json",
+  "cases": [
+    {
+      "id": "it/coverage#01",
+      "text": "» Sarà il 25/12 1234567890 «",
+      "config": "it.strict",
+      "reference": {
+        "kind": "date",
+        "instant": "2010-09-23T10:15:30.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ITExtractYearSuffixRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 10,
+          "text": "25/12 1234",
+          "start": {
+            "known": {
+              "day": 25,
+              "month": 12,
+              "year": 1234
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "1234-12-25T12:00:00.000Z",
+            "tags": [
+              "parser/SlashDateFormatParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "it/coverage#1 ITExtractYearSuffixRefiner"
+    },
+    {
+      "id": "it/coverage#02",
+      "text": "café 5 maggio 12:00 2012-08-00 😀",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2010-05-07T06:01:34.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ISOFormatParser",
+          "ITMonthNameLittleEndianParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ITExtractYearSuffixRefiner",
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner",
+          "UnlikelyFormatFilter"
+        ]
+      },
+      "results": [
+        {
+          "index": 5,
+          "text": "5 maggio 12:00 2012",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 12,
+              "minute": 0,
+              "month": 5,
+              "year": 2012
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "2012-05-05T12:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "it/coverage#2 ITExtractYearSuffixRefiner"
+    },
+    {
+      "id": "it/coverage#03",
+      "text": "» 5 maggio alle 12:00 1234567890 «",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2018-06-24T15:04:37.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITMonthNameParser",
+          "ITTimeExpressionParser"
+        ],
+        "refiners": [
+          "ITExtractYearSuffixRefiner",
+          "ITMergeDateTimeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "5 maggio alle 12:00 1234",
+          "start": {
+            "known": {
+              "day": 5,
+              "hour": 12,
+              "minute": 0,
+              "month": 5,
+              "year": 1234
+            },
+            "implied": {
+              "meridiem": 1,
+              "millisecond": 0,
+              "second": 0
+            },
+            "date": "1234-05-05T12:00:00.000Z",
+            "tags": [
+              "parser/ITTimeExpressionParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "it/coverage#3 ITExtractYearSuffixRefiner"
+    },
+    {
+      "id": "it/coverage#04",
+      "text": "13/02/2020 +2 settimane",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-03-06T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITSlashMonthFormatParser",
+          "ITTimeUnitCasualRelativeFormatParser",
+          "SlashDateFormatParser"
+        ],
+        "refiners": [
+          "ITMergeRelativeAfterDateRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "13/02/2020 +2 settimane",
+          "start": {
+            "known": {
+              "day": 27,
+              "month": 2,
+              "year": 2020
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0,
+              "weekday": 4
+            },
+            "date": "2020-02-27T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "it/coverage#4 ITMergeRelativeAfterDateRefiner"
+    },
+    {
+      "id": "it/coverage#05",
+      "text": "martedì prossimo +10 giorni",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-03-06T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser",
+          "ITTimeUnitCasualRelativeFormatParser",
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "ITMergeRelativeAfterDateRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "martedì prossimo +10 giorni",
+          "start": {
+            "known": {
+              "day": 22,
+              "month": 3,
+              "weekday": 5,
+              "year": 2024
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2024-03-22T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "it/coverage#5 ITMergeRelativeAfterDateRefiner"
+    },
+    {
+      "id": "it/coverage#06",
+      "text": "15 marzo 2021 -3 giorni",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-03-06T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITMonthNameParser",
+          "ITTimeExpressionParser",
+          "ITTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": [
+          "ITMergeRelativeAfterDateRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "15 marzo 2021 -3 giorni",
+          "start": {
+            "known": {
+              "day": 12,
+              "month": 3,
+              "weekday": 5,
+              "year": 2021
+            },
+            "implied": {
+              "hour": 12,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2021-03-12T12:00:00.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "it/coverage#6 ITMergeRelativeAfterDateRefiner"
+    },
+    {
+      "id": "it/coverage#07",
+      "text": "5 minuti dopo ieri sera",
+      "config": "it.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2010-07-14T18:26:34.000Z",
+        "timezone_input": "IST",
+        "timezone_offset": 330
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITCasualTimeParser",
+          "ITTimeUnitLaterFormatParser",
+          "ITTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner",
+          "ITMergeRelativeFollowByDateRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 minuti dopo ieri",
+          "start": {
+            "known": {
+              "day": 13,
+              "hour": 18,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 31,
+              "month": 7,
+              "second": 34,
+              "timezoneOffset": 0,
+              "year": 2010
+            },
+            "implied": {},
+            "date": "2010-07-13T18:31:34.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        },
+        {
+          "index": 19,
+          "text": "sera",
+          "start": {
+            "known": {},
+            "implied": {
+              "day": 15,
+              "hour": 20,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 7,
+              "second": 0,
+              "year": 2010
+            },
+            "date": "2010-07-15T14:30:00.000Z",
+            "tags": [
+              "casualReference/evening",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "it/coverage#7 ITMergeRelativeFollowByDateRefiner"
+    },
+    {
+      "id": "it/coverage#08",
+      "text": "5 minuti dopo 2012/8/10 - 2012/8/15\n",
+      "config": "it.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2011-03-09T07:00:49.000Z",
+        "timezone_input": "EST",
+        "timezone_offset": -300
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser",
+          "ITTimeUnitLaterFormatParser",
+          "ITYearMonthDayParser"
+        ],
+        "refiners": [
+          "ITMergeDateRangeRefiner",
+          "ITMergeRelativeFollowByDateRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 minuti dopo 2012/8/10 - 2012/8/15",
+          "start": {
+            "known": {
+              "day": 10,
+              "hour": 17,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 5,
+              "month": 8,
+              "second": 0,
+              "timezoneOffset": 0,
+              "year": 2012
+            },
+            "implied": {},
+            "date": "2012-08-10T17:05:00.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 15,
+              "month": 8,
+              "year": 2012
+            },
+            "implied": {
+              "hour": 17,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 5,
+              "second": 0,
+              "timezoneOffset": 0
+            },
+            "date": "2012-08-15T17:05:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "it/coverage#8 ITMergeRelativeFollowByDateRefiner"
+    },
+    {
+      "id": "it/coverage#09",
+      "text": "5 minuti dopo 5 minuti dopo",
+      "config": "it.casual",
+      "reference": {
+        "kind": "object",
+        "instant": "2007-03-01T11:16:17.347Z",
+        "timezone_input": "PT",
+        "timezone_offset": -480
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ITTimeUnitCasualRelativeFormatParser",
+          "ITTimeUnitLaterFormatParser",
+          "ITTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "ITMergeRelativeFollowByDateRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "5 minuti dopo 5 minuti dopo",
+          "start": {
+            "known": {
+              "day": 1,
+              "hour": 11,
+              "meridiem": 0,
+              "millisecond": 347,
+              "minute": 26,
+              "month": 3,
+              "second": 17,
+              "timezoneOffset": 0,
+              "year": 2007
+            },
+            "implied": {},
+            "date": "2007-03-01T11:26:17.347Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "it/coverage#9 ITMergeRelativeFollowByDateRefiner"
+    },
+    {
+      "id": "it/coverage#10",
+      "text": "- La scadenza è oggi - 5 giorni e 12 ore fa -",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2015-08-12T10:02:24.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualDateParser",
+          "ITTimeExpressionParser",
+          "ITTimeUnitAgoFormatParser",
+          "ITTimeUnitCasualRelativeFormatParser"
+        ],
+        "refiners": [
+          "ITMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 16,
+          "text": "oggi - 5 giorni e 12 ore fa",
+          "start": {
+            "known": {
+              "day": 6,
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 2,
+              "month": 8,
+              "second": 24,
+              "timezoneOffset": 0,
+              "year": 2015
+            },
+            "implied": {},
+            "date": "2015-08-06T22:02:24.000Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 12,
+              "month": 8,
+              "year": 2015
+            },
+            "implied": {
+              "hour": 22,
+              "meridiem": 1,
+              "millisecond": 0,
+              "minute": 2,
+              "second": 24,
+              "timezoneOffset": 0
+            },
+            "date": "2015-08-12T22:02:24.000Z",
+            "tags": [
+              "casualReference/today",
+              "parser/ITCasualDateParser"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "it/coverage#10 ITTimeUnitCasualRelativeFormatParser"
+    },
+    {
+      "id": "it/coverage#11",
+      "text": "- entro 5 giorni faremo qualcosa - 3 settimane e 2 giorni fa -",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2010-12-21T02:29:41.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeUnitAgoFormatParser",
+          "ITTimeUnitCasualRelativeFormatParser",
+          "ITTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "entro 5 giorni",
+          "start": {
+            "known": {
+              "day": 26,
+              "month": 12,
+              "weekday": 0,
+              "year": 2010
+            },
+            "implied": {
+              "hour": 2,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 29,
+              "second": 41,
+              "timezoneOffset": 0
+            },
+            "date": "2010-12-26T02:29:41.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        },
+        {
+          "index": 35,
+          "text": "3 settimane e 2 giorni fa",
+          "start": {
+            "known": {
+              "day": 28,
+              "month": 11,
+              "weekday": 0,
+              "year": 2010
+            },
+            "implied": {
+              "hour": 2,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 29,
+              "second": 41,
+              "timezoneOffset": 0
+            },
+            "date": "2010-11-28T02:29:41.000Z",
+            "tags": [
+              "result/relativeDate"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "it/coverage#11 ITTimeUnitCasualRelativeFormatParser"
+    },
+    {
+      "id": "it/coverage#12",
+      "text": "- 5 giorni e 12 ore fa-entro 15 minuti -",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2008-11-18T17:55:02.680Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITTimeExpressionParser",
+          "ITTimeUnitAgoFormatParser",
+          "ITTimeUnitCasualRelativeFormatParser",
+          "ITTimeUnitWithinFormatParser"
+        ],
+        "refiners": [
+          "ITMergeDateRangeRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 2,
+          "text": "5 giorni e 12 ore fa-entro 15 minuti",
+          "start": {
+            "known": {
+              "day": 13,
+              "hour": 5,
+              "meridiem": 0,
+              "millisecond": 680,
+              "minute": 55,
+              "month": 11,
+              "second": 2,
+              "timezoneOffset": 0,
+              "year": 2008
+            },
+            "implied": {},
+            "date": "2008-11-13T05:55:02.680Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          },
+          "end": {
+            "known": {
+              "day": 18,
+              "hour": 18,
+              "meridiem": 1,
+              "millisecond": 680,
+              "minute": 10,
+              "month": 11,
+              "second": 2,
+              "timezoneOffset": 0,
+              "year": 2008
+            },
+            "implied": {},
+            "date": "2008-11-18T18:10:02.680Z",
+            "tags": [
+              "result/relativeDate",
+              "result/relativeDateAndTime"
+            ]
+          }
+        }
+      ],
+      "upstream_test": "it/coverage#12 ITTimeUnitCasualRelativeFormatParser"
+    }
+  ]
+}

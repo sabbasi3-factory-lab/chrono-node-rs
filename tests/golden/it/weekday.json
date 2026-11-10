@@ -1,0 +1,888 @@
+{
+  "schema": 1,
+  "generator": "harness/golden/generate.js",
+  "upstream": {
+    "version": "2.10.3",
+    "commit": "d4fe7e39015c818b271d74789fb96f74777421d0"
+  },
+  "source": "upstream/test/it/it_weekday.test.ts",
+  "cases": [
+    {
+      "id": "it/weekday#01",
+      "text": "Lunedì",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Lunedì",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 6,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/weekday#02",
+      "text": "Lunedì (forward dates only)",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Lunedì",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 13,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-13T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/weekday#03",
+      "text": "giovedì",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "giovedì",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 9,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-09T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/weekday#04",
+      "text": "domenica",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "domenica",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 12,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-12T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/weekday#05",
+      "text": "La scadenza è venerdì prossimo...",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 14,
+          "text": "venerdì prossimo",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 17,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-17T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/weekday#06",
+      "text": "Andrò questo venerdì",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 6,
+          "text": "questo venerdì",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 10,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-10T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Single Expression"
+    },
+    {
+      "id": "it/weekday#07",
+      "text": "Lunedì mattina",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITCasualTimeParser",
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "ITMergeDateTimeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "Lunedì mattina",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 6,
+              "hour": 6,
+              "meridiem": 0,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-06T06:00:00.000Z",
+            "tags": [
+              "casualReference/morning",
+              "parser/ITCasualTimeParser"
+            ]
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday With Casual Time"
+    },
+    {
+      "id": "it/weekday#08",
+      "text": "domenica, 7 dicembre 2014",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITMonthNameLittleEndianParser",
+          "ITMonthNameParser",
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "MergeWeekdayComponentRefiner",
+          "OverlapRemovalRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "domenica, 7 dicembre 2014",
+          "start": {
+            "known": {
+              "day": 7,
+              "month": 12,
+              "weekday": 0,
+              "year": 2014
+            },
+            "implied": {
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "second": 0
+            },
+            "date": "2014-12-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday Overlap"
+    },
+    {
+      "id": "it/weekday#09",
+      "text": "questo sabato",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2021-08-14T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "questo sabato",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 14,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-08-14T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    },
+    {
+      "id": "it/weekday#10",
+      "text": "questo sabato",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2021-08-15T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "questo sabato",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 21,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-08-21T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    },
+    {
+      "id": "it/weekday#11",
+      "text": "sabato",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2021-08-15T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {
+        "forwardDate": true
+      },
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "ForwardDateRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "sabato",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 21,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2021
+            },
+            "date": "2021-08-21T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - forward dates only option"
+    },
+    {
+      "id": "it/weekday#12",
+      "text": "lunedì-venerdì",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2024-02-06T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": [
+          "ITMergeDateRangeRefiner"
+        ]
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "lunedì-venerdì",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 5,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 2,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-02-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 9,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 2,
+              "second": 0,
+              "year": 2024
+            },
+            "date": "2024-02-09T12:00:00.000Z",
+            "tags": []
+          }
+        }
+      ],
+      "upstream_test": "Test - Weekday range expression"
+    },
+    {
+      "id": "it/weekday#13",
+      "text": "lunedì scorso",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "lunedì scorso",
+          "start": {
+            "known": {
+              "weekday": 1
+            },
+            "implied": {
+              "day": 6,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-06T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with prefix and suffix"
+    },
+    {
+      "id": "it/weekday#14",
+      "text": "martedì scorso",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "martedì scorso",
+          "start": {
+            "known": {
+              "weekday": 2
+            },
+            "implied": {
+              "day": 7,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-07T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with prefix and suffix"
+    },
+    {
+      "id": "it/weekday#15",
+      "text": "mercoledì scorso",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "mercoledì scorso",
+          "start": {
+            "known": {
+              "weekday": 3
+            },
+            "implied": {
+              "day": 8,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-08T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with prefix and suffix"
+    },
+    {
+      "id": "it/weekday#16",
+      "text": "giovedì scorso",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "giovedì scorso",
+          "start": {
+            "known": {
+              "weekday": 4
+            },
+            "implied": {
+              "day": 2,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-02T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with prefix and suffix"
+    },
+    {
+      "id": "it/weekday#17",
+      "text": "venerdì scorso",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "venerdì scorso",
+          "start": {
+            "known": {
+              "weekday": 5
+            },
+            "implied": {
+              "day": 3,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-03T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with prefix and suffix"
+    },
+    {
+      "id": "it/weekday#18",
+      "text": "sabato scorso",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "sabato scorso",
+          "start": {
+            "known": {
+              "weekday": 6
+            },
+            "implied": {
+              "day": 4,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-04T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with prefix and suffix"
+    },
+    {
+      "id": "it/weekday#19",
+      "text": "domenica scorsa",
+      "config": "it.casual",
+      "reference": {
+        "kind": "date",
+        "instant": "2012-08-09T00:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [
+          "ITWeekdayParser"
+        ],
+        "refiners": []
+      },
+      "results": [
+        {
+          "index": 0,
+          "text": "domenica scorsa",
+          "start": {
+            "known": {
+              "weekday": 0
+            },
+            "implied": {
+              "day": 5,
+              "hour": 12,
+              "millisecond": 0,
+              "minute": 0,
+              "month": 8,
+              "second": 0,
+              "year": 2012
+            },
+            "date": "2012-08-05T12:00:00.000Z",
+            "tags": []
+          },
+          "end": null
+        }
+      ],
+      "upstream_test": "Test - Weekday with prefix and suffix"
+    },
+    {
+      "id": "it/weekday#20",
+      "text": "informazioni",
+      "config": "it.casual",
+      "reference": {
+        "kind": "none",
+        "instant": "2012-08-10T12:00:00.000Z",
+        "timezone_input": null,
+        "timezone_offset": null
+      },
+      "system_timezone": "UTC",
+      "options": {},
+      "requires": {
+        "parsers": [],
+        "refiners": []
+      },
+      "results": [],
+      "upstream_test": "Test - Negative cases"
+    }
+  ]
+}
