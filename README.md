@@ -12,15 +12,23 @@ It ports a pinned upstream release: chrono-node `v2.10.3` (commit `d4fe7e3`). Th
 
 ## Status
 
-As of 2026-11-04, 3 of chrono-node's 16 locales are ported, plus the shared code:
+As of 2026-11-10, all 16 of chrono-node's locales are ported, plus the shared code (`zh` as `zh.hans` and `zh.hant`):
 
-| Locales | State |
+| Locales | How they were ported |
 |---|---|
-| Common code, `en`, `de`, `fr` | Merged (contracts in [`contracts/`](contracts/), code in [`src/locales/`](src/locales/)) |
-| `sv`, `pt`, `es`, `ja` | Wave 1, in progress ([#208](https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/208), [#209](https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/209)) |
-| `ar`, `fi`, `id`, `it`, `nl`, `ru`, `uk`, `vi`, `zh` | Planned |
+| Common code, `en`, `de`, `fr`, `sv`, `pt`, `es`, `ja` | Factory v1, in waves |
+| `fi`, `id`, `nl`, `ru`, `uk`, `ar`, `zh.hans`, `zh.hant` | Factory v1 with generated onboarding: a generator records each language's golden cases and contracts from the pinned chrono-node, and the factory onboards the next language as soon as the previous one's tasks close |
+| `vi` | A/B experiment: a separate goal-driven agent session, outside the factory's task automation ([#491](https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/491), [#495](https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/495)–[#500](https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/500)) |
+| `it` | Factory v2 pilot: one agent run for the whole language ([#553](https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/553); results in [`docs/factory-v2.md`](docs/factory-v2.md#pilot-results-it-2026-11-10)) |
 
-These counts change as each wave lands. The crate isn't published to crates.io yet.
+Every locale passes the same checks on `main`, whichever way it was ported:
+
+- **Golden cases:** 2,675 of chrono-node's own test cases, 0 pending ([`tests/golden/`](tests/golden/)).
+- **Golden frontier:** each ported parser and refiner is checked on its own against chrono-node's output, on every case. The check also confirms that every language has every step ported, with no case left pending ([`harness/golden/frontier.js`](harness/golden/frontier.js); the run at completion: [ci #42744564299](https://github.com/sabbasi3-factory-lab/chrono-node-rs/actions/runs/42744564299)).
+- **Random-phrase comparison:** generated phrases run through both chrono-node and this crate, with the same answers required ([comparison harness](harness/README.md#comparison-harness)). At the v2 pilot, 10,000 phrases per language (170,000 in all, seed 20261110) had 0 mismatches.
+- **Nightly monitor:** fresh random phrases in every language, every night ([monitor runs](https://github.com/sabbasi3-factory-lab/chrono-node-rs/actions/workflows/monitor.yml)).
+
+The crate isn't published to crates.io yet. 0.1.0 is the first planned release.
 
 ## Usage
 
