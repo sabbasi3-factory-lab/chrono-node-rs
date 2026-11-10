@@ -1,7 +1,44 @@
 {
-  "generated_at": "2026-11-10T02:55:35Z",
+  "generated_at": "2026-11-10T06:11:10Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 42766435676,
+      "workflow": "implement",
+      "title": "Implement drill/activation-canary #1 attempt 1",
+      "created_at": "2026-11-10T06:07:50Z",
+      "aic": 10.78686,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-10T06:11:10Z",
+      "drill": true
+    },
+    {
+      "run_id": 42741282554,
+      "workflow": "implement",
+      "title": "Implement zh-hant/merge-date-range-refiner #522 attempt 1",
+      "created_at": "2026-11-10T02:13:45Z",
+      "aic": 19.24504,
+      "task": "zh-hant/merge-date-range-refiner",
+      "items": [
+        {
+          "type": "add_comment",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/issues/522#issuecomment-6757119772",
+          "outcome_status": "pending",
+          "zero_touch": null
+        },
+        {
+          "type": "create_pull_request",
+          "object_url": "https://github.com/sabbasi3-factory-lab/chrono-node-rs/pull/554",
+          "outcome_status": "accepted",
+          "zero_touch": true
+        }
+      ],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-10T06:11:10Z",
+      "drill": false
+    },
     {
       "run_id": 42737132770,
       "workflow": "implement",
@@ -5075,6 +5112,18 @@
       "drill": false
     },
     {
+      "run_id": 42766435696,
+      "workflow": "repair",
+      "title": "Repair drill/activation-canary #1 attempt 2",
+      "created_at": "2026-11-10T06:07:50Z",
+      "aic": 10.98173,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-10T06:11:10Z",
+      "drill": true
+    },
+    {
       "run_id": 42736545495,
       "workflow": "repair",
       "title": "Repair drill/activation-canary #1 attempt 2",
@@ -6188,8 +6237,8 @@
     }
   ],
   "summary": {
-    "accepted": 211,
-    "pending": 191,
+    "accepted": 212,
+    "pending": 192,
     "rejected": 14,
     "unknown": 18
   }
