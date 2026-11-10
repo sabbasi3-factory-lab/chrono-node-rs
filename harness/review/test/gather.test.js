@@ -55,22 +55,49 @@ test("first tries see repairs from before the window; eligibility uses the merge
     assert.match(summaryMd(auditCounts([]), runs, [], { runs: [], summary: {} }), /\| implement \| 2 \| 2 \| 120\.0 \| 60\.0 \|/);
 });
 
-test("outcomesOf: gh-aw's per-run verdicts from `gh aw logs --outcomes` (outcomes.yml retired)", () => {
+test("outcomesOf: one record per run from `gh aw logs --outcomes`, missing verdicts kept with an eval_error", () => {
     const { outcomesOf, summaryMd, auditCounts } = require("../gather");
-    const logs = [
-        { runs: [], outcomes: [
-            { run_id: 1, workflow: "Implement en/a #1 attempt 1", items: [{ type: "create_pull_request", object_url: "https://github.com/o/r/pull/5", outcome_status: "accepted", zero_touch: true, extra: 1 }] },
-            { run_id: 2, workflow: "Implement drill/x #1 attempt 1", items: [], eval_error: "safe-output manifest unavailable; outcome coverage is unknown" },
-            { run_id: "bad", items: [] },
-        ] },
-        { runs: [], outcomes: [{ run_id: 3, items: [{ type: "create_pull_request", outcome_status: "rejected" }, { type: "add_comment", outcome_status: "accepted" }] }] },
-        { runs: [] },
+    const records = [
+        { run_id: 1, workflow: "implement", outcome: { run_id: 1, workflow: "Implement en/a #1 attempt 1", items: [{ type: "create_pull_request", object_url: "https://github.com/o/r/pull/5", outcome_status: "accepted", zero_touch: true, extra: 1 }] } },
+        { run_id: 2, workflow: "implement", outcome: { run_id: 2, items: [], eval_error: "safe-output manifest unavailable; outcome coverage is unknown" } },
+        { run_id: "bad", outcome: { items: [] } },
+        { run_id: 3, workflow: "v2-port", outcome: { run_id: 3, items: [{ type: "create_pull_request", outcome_status: "rejected" }, { type: "add_comment", outcome_status: "accepted" }] } },
+        // gh aw logs succeeded but its output has no entry for the run: kept, not dropped.
+        { run_id: 4, workflow: "triage", outcome: null },
+        { run_id: 5, workflow: "repair", eval_error: "not evaluated: over the 30-run cap" },
+        { run_id: 6, workflow: "repair", eval_error: "not evaluated: 120 API requests left (reserve 400)" },
         null,
     ];
-    const o = outcomesOf(logs);
+    const o = outcomesOf(records);
     assert.deepStrictEqual(o.summary, { accepted: 2, rejected: 1 });
-    assert.deepStrictEqual(o.runs.map((r) => r.run_id), [1, 2, 3]);
-    assert.deepStrictEqual(o.runs[0].items[0], { type: "create_pull_request", object_url: "https://github.com/o/r/pull/5", outcome_status: "accepted", zero_touch: true });
-    assert.strictEqual(o.runs[1].eval_error, "safe-output manifest unavailable; outcome coverage is unknown");
-    assert.match(summaryMd(auditCounts([]), [], [], o), /## Outcomes \(gh aw logs --outcomes\)\n\n- runs in the window: 3 \(1 not evaluable\); item statuses: \{"accepted":2,"rejected":1\}/);
+    assert.deepStrictEqual(o.runs.map((r) => r.run_id), [6, 5, 4, 3, 2, 1]);
+    assert.deepStrictEqual(o.runs.find((r) => r.run_id === 1).items[0], { type: "create_pull_request", object_url: "https://github.com/o/r/pull/5", outcome_status: "accepted", zero_touch: true });
+    assert.strictEqual(o.runs.find((r) => r.run_id === 1).workflow, "implement");
+    assert.strictEqual(o.runs.find((r) => r.run_id === 1).eval_error, undefined);
+    assert.strictEqual(o.runs.find((r) => r.run_id === 4).eval_error, "no Outcomes in the gh aw logs output");
+    assert.deepStrictEqual(o.not_evaluated, {
+        "safe-output manifest unavailable; outcome coverage is unknown": 1,
+        "no Outcomes in the gh aw logs output": 1,
+        "not evaluated: over the 30-run cap": 1,
+        "not evaluated: N API requests left (reserve 400)": 1,
+    });
+    const md = summaryMd(auditCounts([]), [], [], o);
+    assert.match(md, /## Outcomes \(gh aw logs --outcomes\)\n\n- runs in the window: 6 \(4 without a verdict\); item statuses: \{"accepted":2,"rejected":1\}/);
+    assert.match(md, /- without a verdict, by reason: \{"safe-output manifest/);
+});
+
+test("readOutcomeRecords: one file per run; an unreadable file becomes an eval_error, a missing dir an empty list", () => {
+    const fs = require("fs");
+    const os = require("os");
+    const path = require("path");
+    const { readOutcomeRecords, outcomesOf } = require("../gather");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "outcomes-"));
+    fs.writeFileSync(path.join(dir, "11.json"), JSON.stringify({ run_id: 11, workflow: "review", outcome: { items: [] } }));
+    fs.writeFileSync(path.join(dir, "12.json"), "{not json");
+    fs.writeFileSync(path.join(dir, "notes.txt"), "ignored");
+    const o = outcomesOf(readOutcomeRecords(dir));
+    assert.deepStrictEqual(o.runs.map((r) => [r.run_id, r.eval_error || null]), [[12, o.runs[0].eval_error], [11, null]]);
+    assert.match(o.runs[0].eval_error, /^unreadable Outcomes file/);
+    assert.deepStrictEqual(readOutcomeRecords(path.join(dir, "missing")), []);
+    fs.rmSync(dir, { recursive: true });
 });

@@ -64,9 +64,10 @@ tools:
     - "jq"
 
 # Outside the firewall, before any inference: gh-aw's own built-ins for the run data
-# (`gh aw logs --outcomes`: each run's gh-aw Outcomes verdict too), the audit log, then
-# plain-code aggregation (harness/review/gather.js, failures.js) into target/factory-review/:
-# including who caused each failure (agent, factory, platform) and gh-aw platform failures by kind.
+# (`gh aw logs`, and `gh aw logs --outcomes` one run at a time for each run's gh-aw Outcomes verdict),
+# the audit log, then plain-code aggregation (harness/review/gather.js, failures.js) into
+# target/factory-review/: including who caused each failure (agent, factory, platform) and gh-aw
+# platform failures by kind.
 steps:
   - name: Kill switch
     env:
@@ -86,28 +87,58 @@ steps:
       curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw-cli/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
       echo "746d0b41d5fb87e2c010b8ac23a464436bb745ff89fbd19a3456431942c37652  $RUNNER_TEMP/gh-aw-cli/gh-aw" | sha256sum -c -
       chmod 0755 "$RUNNER_TEMP/gh-aw-cli/gh-aw"
-  - name: gh aw logs and Outcomes, last 7 days (implement, repair, review)
+  - name: gh aw logs, last 7 days (implement, repair, review)
     env:
       GH_TOKEN: ${{ github.token }}
     run: |
       mkdir -p "$RUNNER_TEMP/review-logs"
       for wf in implement repair review; do
-        # With Outcomes (gh-aw's per-run verdicts; a run it can't evaluate gets an eval_error, not a
-        # failed call). If that call fails, the runs without Outcomes; if that fails too, the
-        # workflow's runs are missing from the data (advisory review: never a gate).
-        log() { "$RUNNER_TEMP/gh-aw-cli/gh-aw" logs "$wf" --start-date -1w -c 200 --json -o "$RUNNER_TEMP/aw-logs" "$@" > "$RUNNER_TEMP/${wf}.tmp"; }
-        if log --outcomes || { echo "::warning::gh aw logs --outcomes ${wf} failed: its runs without Outcomes"; log; }; then
+        # If the call fails, that workflow's runs are missing from the data (advisory review: never a gate).
+        if "$RUNNER_TEMP/gh-aw-cli/gh-aw" logs "$wf" --start-date -1w -c 200 --json -o "$RUNNER_TEMP/aw-logs" > "$RUNNER_TEMP/${wf}.tmp"; then
           mv "$RUNNER_TEMP/${wf}.tmp" "$RUNNER_TEMP/review-logs/${wf}.json"
         else
           echo "::warning::gh aw logs ${wf} failed: its runs are missing from the data"
         fi
       done
+  # gh-aw Outcomes for every AI workflow whose safe outputs the retired collector evaluated. One run
+  # per call, so one bad manifest can't drop other runs' verdicts; newest first, at most 30 runs
+  # (~9-15 API requests each) and never below 400 requests left on the shared token quota. Every
+  # completed run in the window gets a file: its verdict, or the eval_error saying why it has none.
+  - name: gh aw Outcomes, last 7 days (one run per call, capped)
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      CAP: "30"
+      RESERVE: "400"
+    run: |
+      dir="$RUNNER_TEMP/review-outcomes"
+      mkdir -p "$dir"
+      since=$(date -u -d '-7 days' +%Y-%m-%dT%H:%M:%SZ)
+      for wf in implement repair review triage v2-port v2-repair; do
+        gh run list -w "${wf}.lock.yml" --status completed --created ">=${since}" -L 200 --json databaseId --jq ".[] | \"\(.databaseId) ${wf}\"" \
+          || echo "::warning::gh run list ${wf} failed: its runs are missing from the Outcomes data"
+      done | sort -k1,1nr > "$RUNNER_TEMP/outcome-runs.txt"
+      none() { jq -nc --argjson id "$1" --arg wf "$2" --arg e "$3" '{run_id: $id, workflow: $wf, eval_error: $e}' > "$dir/$1.json"; }
+      n=0
+      while read -r id wf <&3; do
+        if [ "$n" -ge "$CAP" ]; then none "$id" "$wf" "not evaluated: over the ${CAP}-run cap"; continue; fi
+        left=$(gh api rate_limit --jq .resources.core.remaining < /dev/null || echo 0)
+        if [ "$left" -lt "$RESERVE" ]; then none "$id" "$wf" "not evaluated: ${left} API requests left (reserve ${RESERVE})"; continue; fi
+        n=$((n + 1))
+        if echo "$id" | "$RUNNER_TEMP/gh-aw-cli/gh-aw" logs --stdin -r "$GH_REPO" --outcomes --json -o "$RUNNER_TEMP/aw-outcomes" > "$RUNNER_TEMP/outcome.tmp"; then
+          jq -c --argjson id "$id" --arg wf "$wf" '{run_id: $id, workflow: $wf, outcome: ([.outcomes[]? | select(.run_id == $id)][0])}' "$RUNNER_TEMP/outcome.tmp" > "$dir/$id.json" \
+            || none "$id" "$wf" "not evaluated: unreadable gh aw logs output"
+        else
+          none "$id" "$wf" "not evaluated: gh aw logs --outcomes failed for this run"
+        fi
+      done 3< "$RUNNER_TEMP/outcome-runs.txt"
+      echo "Outcomes: $(ls "$dir" | wc -l) runs in the window, ${n} evaluated"
   - name: Aggregate the window (plain code)
     env:
       GH_TOKEN: ${{ github.token }}
       GITHUB_REPOSITORY: ${{ github.repository }}
     run: |
-      node harness/review/gather.js --out "$GITHUB_WORKSPACE/target/factory-review" --logs "$RUNNER_TEMP/review-logs"
+      node harness/review/gather.js --out "$GITHUB_WORKSPACE/target/factory-review" --logs "$RUNNER_TEMP/review-logs" --outcomes "$RUNNER_TEMP/review-outcomes"
       ls -l "$GITHUB_WORKSPACE/target/factory-review"
   # The review data (summary, runs, Outcomes, failures, platform reliability), kept with the run.
   - name: Upload the review data
