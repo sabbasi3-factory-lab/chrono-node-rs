@@ -150,6 +150,13 @@ jobs:
       - name: Doc tests
         run: cargo test --locked --doc
 
+      # docs.rs is the crate's first page: a broken intra-doc link (e.g. regex text like `[bis]` in a
+      # doc comment) fails here instead of rendering as a dead link.
+      - name: Docs build without warnings (docs.rs)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --locked --no-deps
+
       - name: Golden data matches upstream/ and harness/
         working-directory: harness
         run: npm run golden:check

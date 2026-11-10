@@ -1,6 +1,6 @@
 //! upstream `locales/ar/refiners/ARMergeDateRangeRefiner.ts`.
 //!
-//! Merges "from" and "to" results into a range: "من 15 يناير [إلى] 20 يناير", "من الأحد [وحتى] الخميس".
+//! Merges "from" and "to" results into a range: "من 15 يناير \[إلى\] 20 يناير", "من الأحد \[وحتى\] الخميس".
 
 use crate::common::abstract_refiners::Merging;
 use crate::common::merge_date_range::{MergeDateRange, MergeDateRangePattern};

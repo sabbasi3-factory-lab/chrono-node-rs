@@ -1,6 +1,6 @@
 //! upstream `locales/ar/refiners/ARMergeDateTimeRefiner.ts`.
 //!
-//! Merges a date-only result and a time-only result: "غداً [في تمام] 6:00", "اليوم [,] 8:00".
+//! Merges a date-only result and a time-only result: "غداً \[في تمام\] 6:00", "اليوم \[,\] 8:00".
 
 use crate::common::abstract_refiners::Merging;
 use crate::common::merge_date_time::{MergeDateTime, MergeDateTimePattern};

@@ -1,6 +1,6 @@
 //! upstream `locales/ar/parsers/AbstractParserWithWordBoundaryChecking.ts`.
 //!
-//! A step implements [`WordBoundaryParser`] with `inner_pattern` calling
+//! A step implements [`WordBoundaryParser`](crate::common::word_boundary::WordBoundaryParser) with `inner_pattern` calling
 //! [`left_boundary_inner_pattern`] (upstream `AbstractParserWithLeftBoundaryChecking`) or
 //! [`left_right_boundary_inner_pattern`] (`AbstractParserWithLeftRightBoundaryChecking`), and
 //! `pattern_left_boundary` returning [`pattern_left_boundary`].

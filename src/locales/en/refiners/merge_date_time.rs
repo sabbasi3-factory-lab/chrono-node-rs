@@ -1,6 +1,6 @@
 //! upstream `locales/en/refiners/ENMergeDateTimeRefiner.ts`.
 //!
-//! Merges a date-only result and a time-only result: "2020-02-13 [at] 6pm", "Tomorrow [after] 7am".
+//! Merges a date-only result and a time-only result: "2020-02-13 \[at\] 6pm", "Tomorrow \[after\] 7am".
 
 use crate::common::abstract_refiners::Merging;
 use crate::common::merge_date_time::{MergeDateTime, MergeDateTimePattern};
