@@ -311,6 +311,7 @@ safe-outputs:
   - `cargo test`
   - for the step that failed: `GOLDEN_AREAS=<its contract's golden areas> GOLDEN_REQUIRE_STEP=<its upstream_class> cargo test --test golden -- --nocapture`
   - `cargo build --bin chrono-rs-json`, then in `harness/`: `node golden/frontier.js --rust ../target/debug/chrono-rs-json --complete` and `node compare/compare.js --seed 42 --phrases 10000 --rust ../target/debug/chrono-rs-json`
+  - in `harness/`: `node v2/check.js ${{ github.event.inputs.unit }}` must print `ok` (the gate's unit-test and scope-file check)
 - If you need a crate that isn't already a dependency, don't add it: file **one** dependency request with `create_issue` (title `<crate> <version>`; body headings `### Crate`, `### Version`, `### Kind`, `### Reason`, `### Task` with `${{ github.event.inputs.unit }}`), and say so in your comment.
 - If the failure isn't in a scope file, or you can't fix it within the scope, don't push anything: add one comment to issue #${{ github.event.inputs.issue }} saying why. The router then hands the PR to a person.
 
