@@ -3,7 +3,7 @@ description: >
   Factory v2 (docs/factory-v2.md): port one whole chrono-node language to Rust in one run. Dispatched
   by v2-router.yml with the language, its issue and the pinned contracts commit. Opens at most one PR
   through the agent App, with auto-merge on.
-# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.0.1):
+# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.2.2):
 #   gh aw compile v2-port
 on:
   workflow_dispatch:

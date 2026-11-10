@@ -4,7 +4,7 @@ description: >
   read-only agent reads the evidence and posts one comment on the task issue: the failure signature,
   the likely cause and a recommended action, so the person's step is a decision, not an
   investigation. Dispatched by the controller only, inside the factory's spend controls.
-# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.0.1):
+# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.2.2):
 #   gh aw compile triage
 on:
   workflow_dispatch:

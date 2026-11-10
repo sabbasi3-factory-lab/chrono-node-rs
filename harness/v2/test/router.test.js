@@ -41,6 +41,12 @@ test("run usage: every job that made model calls needs a complete file; missing 
     assert.strictEqual(r.runUsage({ ...files, evals: "" }, ["agent", "detection", "evals"]), null, "an empty file is incomplete");
     assert.throws(() => r.runUsage({ agent: line(50, 900) }, ["agent"]), /records are missing/);
     assert.throws(() => r.runUsage({ agent: line(-1) }, ["agent"]), /malformed/);
+    // gh-aw v1.2's evals job (Decisions API): one record with `ai_credits`, absent without pricing.
+    const evals = JSON.stringify({ provider: "copilot", model: "gpt-6.1-sol", input_tokens: 13449, output_tokens: 72, ai_credits: 1.25, timestamp: "2026-11-10T01:04:59Z" });
+    assert.strictEqual(r.runUsage({ ...files, evals }, ["agent", "detection", "evals"]), 213.25);
+    assert.strictEqual(r.runUsage({ ...files, evals: JSON.stringify({ input_tokens: 10, output_tokens: 2 }) }, ["agent", "detection", "evals"]), null, "unpriced: incomplete, never 0");
+    assert.throws(() => r.runUsage({ evals: JSON.stringify({ ai_credits: -1 }) }, ["evals"]), /malformed/);
+    assert.throws(() => r.runUsage({ evals: "[1]" }, ["evals"]), /malformed/);
 });
 
 test("spend: measured usage of every job; incomplete usage and runs in progress at caps", () => {

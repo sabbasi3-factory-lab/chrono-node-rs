@@ -7,7 +7,7 @@
 // and frontmatter hash check, secrets, App token) must succeed; the workflow's own pre-inference
 // validation step must then refuse the dispatch (no contract on main, or the kill switch when
 // FACTORY_ENABLED is off), so the agent never runs. gh-aw's threat detection job still runs on the
-// empty output (`if: always()` in v1.0.1): about 10 AIC per run (run 41662949515: 10.6), so about
+// empty output (`if: always()` in v1.0.1 and v1.2.2): about 10 AIC per run (run 41662949515: 10.6), so about
 // 40 AIC a day for the four, counted by the spend collector like any run. Anything else (activation
 // failing, as on #393's review run 42171900921 with E009 CONFIG_HASH_MISMATCH) fails the canary,
 // before a real task needs that workflow.

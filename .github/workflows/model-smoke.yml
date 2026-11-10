@@ -1,6 +1,6 @@
 # Model smoke test (DESIGN §8, Stage 0): which models can this Copilot seat actually use?
 # Manual only. Lists the models the seat sees, then sends each candidate a one-word prompt with
-# the same Copilot CLI version gh-aw v1.0.1 pins (1.0.103). Costs one small request per model.
+# the same Copilot CLI version gh-aw v1.2.2 pins (1.0.103). Costs one small request per model.
 # Human tier: changes need the owner's review.
 name: model-smoke
 

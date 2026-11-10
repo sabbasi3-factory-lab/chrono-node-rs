@@ -87,9 +87,11 @@ function failureSignature(job) {
 /**
  * AIC of one completed run from its usage files ({job: token_usage.jsonl text}), given the jobs that
  * made model calls (`inferred`, from the Actions jobs API). Every inferred job needs a non-empty file,
- * else the run's usage is incomplete: returns null (the caller counts the run at its caps). A
- * malformed record, or a cumulative `ai_credits_total` above the responses' sum (records missing),
- * throws: unknown spend fails closed.
+ * else the run's usage is incomplete: returns null (the caller counts the run at its caps). A record
+ * is a proxy response (`ai_credits_this_response`) or, from gh-aw v1.2's evals job (Decisions API),
+ * one record with `ai_credits`; one with token counts but no AIC (no pricing for its model) is also
+ * incomplete. A malformed record, or a cumulative `ai_credits_total` above the responses' sum
+ * (records missing), throws: unknown spend fails closed.
  */
 function runUsage(files, inferred) {
     let aic = 0;
@@ -103,11 +105,19 @@ function runUsage(files, inferred) {
         let sum = 0;
         let total = 0;
         let records = 0;
+        const aicOk = (x) => typeof x === "number" && Number.isFinite(x) && x >= 0;
         for (const line of text.split("\n")) {
             if (!line.trim()) continue;
             const rec = JSON.parse(line);
-            const v = rec.ai_credits_this_response;
-            if (typeof v !== "number" || !Number.isFinite(v) || v < 0) throw new Error(`${job}: malformed token_usage.jsonl record`);
+            if (!rec || typeof rec !== "object" || Array.isArray(rec)) throw new Error(`${job}: malformed token_usage.jsonl record`);
+            let v = rec.ai_credits_this_response;
+            if (v === undefined && rec.ai_credits !== undefined) v = rec.ai_credits;
+            if (v === undefined && aicOk(rec.input_tokens) && aicOk(rec.output_tokens)) {
+                complete = false;
+                records++;
+                continue;
+            }
+            if (!aicOk(v)) throw new Error(`${job}: malformed token_usage.jsonl record`);
             if (rec.ai_credits_total !== undefined) {
                 if (typeof rec.ai_credits_total !== "number" || !Number.isFinite(rec.ai_credits_total)) throw new Error(`${job}: invalid ai_credits_total`);
                 total = Math.max(total, rec.ai_credits_total);

@@ -3,7 +3,7 @@ description: >
   Second-opinion review of one auto-strict factory PR, by a different model family than the
   implementer. Dispatched by the controller with the task, PR, head and pinned contract SHA.
   Its only output is one `factory-review` check run on the PR head, posted by the reviewer App.
-# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.0.1):
+# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.2.2):
 #   gh aw compile review
 on:
   workflow_dispatch:
@@ -62,7 +62,7 @@ network:
 # Read-only: the reviewer reads, it never edits, builds or runs anything from the PR. Native file
 # editing is off (`edit: false`), and no listed command can execute or modify files (no `find`:
 # its -exec/-delete actions could run or remove PR-supplied files; no `sort`: --compress-program
-# runs a program, -o writes a file; gh-aw v1.0.1 still adds its own default set, which includes
+# runs a program, -o writes a file; gh-aw (v1.0.1 to v1.2.2) still adds its own default set, which includes
 # `sort`, and can't be turned off: `bash: false` doesn't compile).
 tools:
   edit: false

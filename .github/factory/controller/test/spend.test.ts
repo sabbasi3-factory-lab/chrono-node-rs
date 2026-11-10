@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { crc32, deflateRawSync } from 'node:zlib';
 import { FakeGitHub } from '../fake.ts';
-import { attributedTask, jobInferred, readSpendToday, readZip, responseStats, runAIC, runSpendFields, runSpendSources, spendSnapshotFields, type DispatchRecord, type LockVerifier } from '../spend.ts';
+import { attributedTask, jobInferred, readSpendToday, readZip, responseStats, runAIC, runSpendFields, runSpendSources, spendSnapshotFields, UsageMissing, type DispatchRecord, type LockVerifier } from '../spend.ts';
 import { readFileSync } from 'node:fs';
 import { NOW, REPO } from './helpers.ts';
 
@@ -527,6 +527,11 @@ describe('spend collector: today\'s implement spend', () => {
       assert.equal(responseStats(f('{"ai_credits_this_response":1}\n')), null, 'no timestamp');
       assert.equal(responseStats(f('not json\n')), null);
       assert.equal(responseStats(new Map()), null);
+      // A gh-aw v1.2 evals record has no duration: it counts toward the largest response and the total, not concurrency.
+      const withEvals = new Map([['agent/token_usage.jsonl', timed([[0, 10, 1], [5, 10, 2]])], ['evals/token_usage.jsonl', '{"input_tokens":1,"output_tokens":1,"ai_credits":4,"timestamp":"2026-11-10T00:00:00Z"}\n']]);
+      assert.deepEqual(responseStats(withEvals, ['agent', 'evals']), { max_concurrency: 2, max_response_aic: 4, responses_aic: 7 });
+      assert.equal(responseStats(new Map([['evals/token_usage.jsonl', '{"input_tokens":1,"output_tokens":1,"ai_credits":4}\n']])), null, 'no timed record: concurrency unknown');
+      assert.equal(responseStats(new Map([...withEvals, ['evals/token_usage.jsonl', '{"input_tokens":1,"output_tokens":1}\n']])), null, 'unpriced');
     });
   });
 
@@ -623,6 +628,19 @@ describe('spend collector: parts', () => {
     assert.throws(() => runAIC(gap, ['detection']), /reports 25 AIC in total but its responses add up to 1: records are missing/);
     const consistent = new Map([['detection/token_usage.jsonl', '{"ai_credits_this_response":0.4,"ai_credits_total":0.4}\n{"ai_credits_this_response":0.3242,"ai_credits_total":0.7242}\n']]);
     assert.equal(runAIC(consistent, ['detection']), 0.7242, 'a matching cumulative total (with rounding) is fine');
+  });
+
+  it('runAIC: gh-aw v1.2 evals records (Decisions API: `ai_credits`, absent without pricing)', () => {
+    // run_evals.cjs (gh-aw-actions v1.2.2): one record per evals run, no ai_credits_this_response.
+    const evals = '{"provider":"copilot","model":"gpt-6.1-sol","input_tokens":13449,"output_tokens":72,"cache_read_tokens":7925,"cache_write_tokens":0,"reasoning_tokens":0,"input_tokens_include_cache":true,"ai_credits":1.25605,"cost_usd":0.0125605,"timestamp":"2026-11-10T01:04:59.919Z"}\n';
+    const files = new Map([['agent_usage.json', '{"ai_credits":2.5}'], ['evals/token_usage.jsonl', evals]]);
+    assert.equal(runAIC(files, ['agent', 'evals']), 3.75605);
+    // No pricing for the evals model: token counts, no AIC → missing usage (counted at the bound), never 0.
+    const unpriced = new Map([['agent_usage.json', '{"ai_credits":2.5}'], ['evals/token_usage.jsonl', '{"provider":"copilot","model":"new-model","input_tokens":10,"output_tokens":2}\n']]);
+    assert.throws(() => runAIC(unpriced, ['agent', 'evals']), (e: unknown) => e instanceof UsageMissing && e.code === 'usage_aic_unavailable' && e.readable_aic === 2.5);
+    assert.throws(() => runAIC(new Map([['evals/token_usage.jsonl', '{"ai_credits":-1,"input_tokens":1,"output_tokens":1}\n']]), ['evals']), /invalid ai_credits/);
+    assert.throws(() => runAIC(new Map([['evals/token_usage.jsonl', '{"ai_credits_this_response":"1"}\n']]), ['evals']), /invalid ai_credits_this_response/);
+    assert.throws(() => runAIC(new Map([['evals/token_usage.jsonl', '[1]\n']]), ['evals']), /not a usage record/);
   });
 
   it('a real gh-aw usage artifact (v0.92.x run of an agentic workflow) parses to the same totals as its per-response logs', () => {
