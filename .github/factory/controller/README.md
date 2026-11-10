@@ -568,25 +568,13 @@ and is redone next poll, but never fails the run.
 | `fake.ts` | in-memory GitHub fake (tests and `--fixture`) |
 | `main.ts` | entrypoint |
 
-## Outcomes
+## Outcomes (retired 2026-11-10)
 
-`.github/workflows/outcomes.yml` (plain code, no AI) records gh-aw's own verdict on every agent run (implement, repair, review) in `outcomes.json` on the `outcomes` branch, which the dashboard reads. The controller isn't involved.
+The Outcomes collector (`outcomes.yml`, which wrote gh-aw's per-run verdicts to `outcomes.json` on the `outcomes` branch for the factory dashboard) is retired. Nothing that gates work read it:
 
-- **When:** woken by an agent PR closing, an agent run completing, every 15 minutes (cron; late on the Free plan) and by hand. Within 14 minutes of the last evaluation (the file's `generated_at`) it stops after one request, and a later invocation picks the work up.
-- **Budget:** the repo's `GITHUB_TOKEN` allows 1,000 requests/h, shared with `ci`, `gates`, CodeQL and the gh-aw jobs, and one evaluation costs ~8-16 requests. So each invocation evaluates **at most 3 runs** (`.github/factory/outcomes/select.jq`, tested in `test/outcomes-select.test.ts`), in this order:
-  1. a run whose PR closed after the run was last evaluated (its verdict is due);
-  2. a new run;
-  3. a failed evaluation, or a pending/unknown item, under 14 days old and last evaluated over 24 h ago (once a day at most).
-  Oldest first within each; the rest waits. Worst case ≈ 4 × (8 + 3 × 16) ≈ 230 requests/h (it was ~5,000/h at peak on Nov 4, re-checking ~75 runs per invocation, ~9 invocations/h). By hand with `full` evaluates everything.
-- **What:** `gh aw logs … --outcomes --json` (pinned v1.0.1, checksum-verified; gh-aw v1 moved outcome evaluation into `logs` and removed the `outcomes` command), once per run, 4 at a time. One call per run because a malformed manifest aborts the whole call (gh-aw `collectLogsOutcomes`), and one bad run must not block the rest. No new call starts after 15 minutes. A run gh-aw doesn't list (no artifacts, e.g. cancelled early) is skipped.
+- **Agent operations** (runs, AI cost per run and workflow, failure streaks, firewall, MCP and model views, gh-aw version drift) are on CAO, GitHub Next's Central Agentic Ops, in monitoring-only mode: [dashboard](https://sabbasi3-factory-lab.github.io/cao-control/) (`sabbasi3-factory-lab/cao-control`).
+- **Onboarding's stop rules** read the controller's audit log (`run_spend`) and the Actions run ledger (#355), not Outcomes.
+- **The factory review** (`improve.md`) gets the same verdicts from `gh aw logs --outcomes` (`harness/review/gather.js`).
+- **Delivery results** (languages and tasks shipped, hands-off rate, reverts, time per language, total cost, drills) are on the factory's [results page](https://sabbasi3-factory-lab.github.io/factory/).
 
-  A failed evaluation (the call fails, `eval_error`, or an item with status `error`) keeps the previous result. Runs no longer listed by `gh aw logs` are kept as they were. The file is committed on every evaluation (its `generated_at` is the debounce clock).
-- **File contents, per run:** `run_id`, `workflow`, `title`, `created_at`, `aic`, `task`, `drill` and `evaluated_at`, plus `items` (`type`, `object_url`, `outcome_status`, `zero_touch`). Then a `summary`.
-  - `task` comes from the run title, else from the agent PR's title.
-  - `aic` is gh-aw's **agent-only** figure. Full cost (agent + threat detection) stays in `spend_snapshot`.
-- **Least privilege:**
-  - `evaluate` runs gh-aw with a read-only token.
-  - `publish` holds `contents: write`, runs no third-party code, and commits only when the file changed.
-  - PR code is never checked out.
-  - The `outcomes` branch is append-only: no delete and no force-push, with no bypass (ruleset 26097950). Anyone with write access could still push to it, but GitHub doesn't allow GitHub Actions as a ruleset bypass actor, and the data is display-only with trusted writers, so no extra secret or App key is added to this `pull_request_target` workflow.
-- **Drill:** close or merge an agent PR. An `outcomes` run starts within seconds; if the last evaluation was over 14 minutes ago it evaluates that PR's runs first, otherwise it stops after one request and the next invocation does.
+The `outcomes` branch is no longer written. Its last file stays as a record until the owner deletes the branch and its ruleset (26097950).

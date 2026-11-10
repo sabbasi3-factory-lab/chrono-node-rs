@@ -29,7 +29,7 @@ workflow's own validation must then refuse the task before the agent's inference
 detection still runs on the empty output (~10 AIC per run, ~40 AIC a day). It runs
 daily and on every main change to an agentic workflow or lock; a failure raises a `factory:alert`.
 It exists because #393's reviewer failed in activation (a stale lock, E009) the first time an
-auto-strict task needed it. `drill/` runs are excluded from outcomes' rates and the factory review.
+auto-strict task needed it. `drill/` runs are excluded from the first-try rates, the results page and the factory review.
 CI's `checks` job also recompiles the factory's agentic workflows with the pinned gh-aw and fails on
 any lock diff, so a stale lock can't merge.
 

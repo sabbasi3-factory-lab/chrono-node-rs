@@ -4,16 +4,17 @@
 // agent (outside its firewall) and writes small, precomputed files the agent reads, so the model
 // summarizes evidence instead of fetching or counting.
 //
-//   node review/gather.js --out DIR --logs DIR [--now ISO]
+//   node review/gather.js --out DIR --logs DIR --outcomes DIR [--now ISO]
 //
-// Inputs: `gh aw logs --json` output per AI workflow (--logs DIR, from the workflow step), the
-// `outcomes` branch's outcomes.json, the `audit` branch (last 7 days), the pinned factory policy
+// Inputs: `gh aw logs --json` output per prompt workflow (--logs DIR), one file per completed AI run
+// with its gh-aw Outcomes verdict from `gh aw logs --outcomes` or the eval_error saying why it has
+// none (--outcomes DIR, both from the workflow step; the retired outcomes.yml used to collect them), the
+// `audit` branch (last 7 days), the pinned factory policy
 // files' last change dates, and this repo's prompt files' last change dates.
 // Outputs (DIR): summary.md (tables + area eligibility + failures + platform reliability), runs.jsonl
 // (one compact line per run), outcomes.json (runs in the window), audit-counts.json, areas.json,
 // failures.json (each needs-human event attributed: agent, factory, platform or policy, failures.js)
-// and platform-reliability.json (failed gh-aw runs by kind; the dashboard reads it from the
-// `factory-review-data` artifact).
+// and platform-reliability.json (failed gh-aw runs by kind).
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
@@ -116,6 +117,50 @@ function areas(lastChange, events, now) {
     });
 }
 
+/**
+ * gh-aw Outcomes, one record per run: its items, or an eval_error (gh-aw's own, e.g. a missing
+ * manifest, or the workflow step's, e.g. over the cap), so missing evidence is never an empty
+ * result. Item statuses counted; unevaluated runs counted by reason. Pure.
+ *   records: [{run_id, workflow, outcome?: {workflow, items: [{type, object_url, outcome_status, zero_touch}], eval_error?}, eval_error?}]
+ */
+function outcomesOf(records) {
+    const runs = [];
+    const summary = {};
+    const not_evaluated = {};
+    for (const r of records) {
+        if (!r || !Number.isSafeInteger(r.run_id)) continue;
+        const o = r.outcome && typeof r.outcome === "object" ? r.outcome : null;
+        const items = (o && Array.isArray(o.items) ? o.items : []).map((i) => ({ type: i.type, object_url: i.object_url || null, outcome_status: i.outcome_status, zero_touch: i.zero_touch ?? null }));
+        const error = r.eval_error || (o ? o.eval_error : "no Outcomes in the gh aw logs output");
+        runs.push({ run_id: r.run_id, workflow: r.workflow || null, title: (o && o.workflow) || null, items, ...(error ? { eval_error: String(error) } : {}) });
+        for (const i of items) summary[i.outcome_status] = (summary[i.outcome_status] || 0) + 1;
+        if (error) {
+            const reason = String(error).replace(/\d+ API requests left/, "N API requests left");
+            not_evaluated[reason] = (not_evaluated[reason] || 0) + 1;
+        }
+    }
+    runs.sort((a, b) => b.run_id - a.run_id);
+    return { runs, summary, not_evaluated };
+}
+
+/** Read --outcomes DIR (one <run_id>.json per run); an unreadable file is kept as an eval_error. */
+function readOutcomeRecords(dir) {
+    if (!dir || !fs.existsSync(dir)) {
+        console.log("::warning::no Outcomes directory: every run's Outcomes are missing from the data");
+        return [];
+    }
+    return fs
+        .readdirSync(dir)
+        .filter((f) => /^\d+\.json$/.test(f))
+        .map((f) => {
+            try {
+                return JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
+            } catch (e) {
+                return { run_id: Number(f.replace(/\.json$/, "")), workflow: null, eval_error: `unreadable Outcomes file (${e.message})` };
+            }
+        });
+}
+
 function summaryMd(counts, runs, areaList, outcomes) {
     const lines = [`# Factory review data (${WINDOW_DAYS}-day window, computed by plain code)`, ""];
     lines.push("## Areas (a change may be proposed only where eligible: at least 15 tasks finished since the area last changed)", "", "| area | last change | tasks since | eligible |", "|---|---|---|---|");
@@ -131,7 +176,9 @@ function summaryMd(counts, runs, areaList, outcomes) {
         const median = aic.length === 0 ? 0 : aic.length % 2 ? aic[Math.floor(mid)] : (aic[mid - 1] + aic[mid]) / 2;
         lines.push(`| ${wf} | ${rs.length} | ${rs.filter((r) => r.conclusion === "success").length} | ${aic.reduce((a, b) => a + b, 0).toFixed(1)} | ${median.toFixed(1)} |`);
     }
-    lines.push("", "## Outcomes (gh aw outcomes, outcomes branch)", "", `- runs in the window: ${outcomes.runs.length}; item statuses: ${JSON.stringify(outcomes.summary)}`);
+    const unevaluated = outcomes.runs.filter((r) => r.eval_error).length;
+    lines.push("", "## Outcomes (gh aw logs --outcomes)", "", `- runs in the window: ${outcomes.runs.length} (${unevaluated} without a verdict); item statuses: ${JSON.stringify(outcomes.summary)}`);
+    if (unevaluated) lines.push(`- without a verdict, by reason: ${JSON.stringify(outcomes.not_evaluated)}`);
     return lines.join("\n") + "\n";
 }
 
@@ -149,23 +196,16 @@ async function main() {
     for (const wf of Object.keys(PROMPTS)) {
         const file = path.join(logsDir, `${wf}.json`);
         try {
-            if (fs.existsSync(file)) runs.push(...compactRuns(JSON.parse(fs.readFileSync(file, "utf8")), wf));
+            if (!fs.existsSync(file)) continue;
+            const l = JSON.parse(fs.readFileSync(file, "utf8"));
+            runs.push(...compactRuns(l, wf));
         } catch (e) {
             console.log(`::warning::${wf} logs unreadable (${e.message}): its runs are missing from the data`);
         }
     }
 
     const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString();
-    let outcomes = { runs: [], summary: {} };
-    try {
-        const all = JSON.parse(await gh(`/repos/${REPO}/contents/outcomes.json?ref=outcomes`, "application/vnd.github.raw"));
-        const recent = (all.runs || []).filter((r) => (r.created_at || "") >= since);
-        const summary = {};
-        for (const r of recent) for (const i of r.items || []) summary[i.outcome_status] = (summary[i.outcome_status] || 0) + 1;
-        outcomes = { runs: recent, summary };
-    } catch (e) {
-        console.log(`outcomes unavailable (${e.message})`);
-    }
+    const outcomes = outcomesOf(readOutcomeRecords(opt("--outcomes")));
 
     // Last change per area: prompts here; policies in the factory repo at the pinned version.
     const lastChange = {};
@@ -216,7 +256,7 @@ async function main() {
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `eligible=${eligible.length}\nplatform_failures=${reliability.platform_failures}\n`);
 }
 
-module.exports = { auditCounts, compactRuns, areas, summaryMd };
+module.exports = { auditCounts, compactRuns, areas, summaryMd, outcomesOf, readOutcomeRecords };
 
 if (require.main === module) {
     main().catch((e) => {

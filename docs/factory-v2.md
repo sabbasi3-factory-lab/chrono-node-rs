@@ -26,7 +26,7 @@ test lock wasn't enforced. v2 aims for that speed with the lock.
 | `ci` contract golden step | **Kept, extended**: runs once per contract in the unit | Per-class checks stay inside the PR |
 | Reviewer App and `factory-review` | **Kept where v1 needs it**: v2 refuses units with an auto-strict contract | v1 needs the reviewer only for auto-strict; `it` has none |
 | Controller's daily and per-task spend accounting | **Replaced** by gh-aw `max-ai-credits` / `max-daily-ai-credits`, plus the router's budget gate over `gh aw logs` | Platform caps per run and per day; one small total check |
-| Hash-chained `audit` branch | **Replaced** by gh-aw logs and Outcomes (`outcomes.yml` covers v2), the run history and the router's issue comments | Platform features; no custom chain for v2 |
+| Hash-chained `audit` branch | **Replaced** by gh-aw logs and Outcomes (`gh aw logs --outcomes`; CAO shows them), the run history and the router's issue comments | Platform features; no custom chain for v2 |
 | Watchdog, heartbeat, rate-limit spacing, dispatch state | **Dropped** for v2 | They keep a polling controller alive |
 
 ## Guarantees and how v2 enforces them
@@ -63,7 +63,7 @@ trying it separately.
 
 | v2 piece | CAO could replace it? |
 |---|---|
-| Audit and dashboards (`outcomes.yml`, the factory dashboard, the pilot's measurements) | **Yes.** CAO Activity and its dashboard show runs, AIC and outcomes across repos, read-only, and mark missing evidence as unavailable, not zero |
+| Audit and dashboards (the retired `outcomes.yml` and the factory dashboard's ops panels, the pilot's measurements) | **Yes.** CAO Activity and its dashboard show runs, AIC and outcomes across repos, read-only, and mark missing evidence as unavailable, not zero |
 | The router's budget gate (`gh aw logs` sum in `v2-router.yml`) | **Partly, later.** The admission gate refuses a gh-aw run at start from policy and fresh accounting, but needs a hosted CAO server (PostgreSQL), a trusted accounting publisher and a gh-aw build with its admission protocol, which pinned v1.0.1 may not speak. It's a cooperative start check, not a reservation |
 | Kill switch | **No** (alongside): CAO's emergency stop covers CAO-governed workflows; `FACTORY_ENABLED` stays |
 | The test lock (`gates`, rulesets), per-contract `ci` checks, auto-merge and merge queue | **No.** These are repository checks on each PR; CAO doesn't run or replace them |
@@ -91,7 +91,6 @@ budget gate once the admission gate is available.
 | `.github/workflows/v2-port.md`, `v2-repair.md` (+ `.lock.yml`) | The agent runs (gh-aw), compiled with the pinned gh-aw v1.0.1 |
 | `harness/gates/scope.js`, `scope-check.js` | `Factory-Unit:` checks (union of the language's contracts) |
 | `.github/workflows/ci.yml` | Each contract's golden step, and a 10,000-phrase held-out comparison, for a v2 PR |
-| `.github/workflows/outcomes.yml` | gh-aw Outcomes include the v2 runs |
 
 ## What's measured, and the pilot plan
 
