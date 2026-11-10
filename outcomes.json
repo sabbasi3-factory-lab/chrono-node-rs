@@ -1,7 +1,19 @@
 {
-  "generated_at": "2026-11-10T13:42:18Z",
+  "generated_at": "2026-11-10T15:32:57Z",
   "gh_aw_version": "v1.0.1",
   "runs": [
+    {
+      "run_id": 42826426575,
+      "workflow": "implement",
+      "title": "Implement drill/activation-canary #1 attempt 1",
+      "created_at": "2026-11-10T13:38:50Z",
+      "aic": 10.78462,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-10T15:32:57Z",
+      "drill": true
+    },
     {
       "run_id": 42766435676,
       "workflow": "implement",
@@ -5451,6 +5463,18 @@
       "drill": true
     },
     {
+      "run_id": 42826426408,
+      "workflow": "review",
+      "title": "Review drill/activation-canary PR #1",
+      "created_at": "2026-11-10T13:38:50Z",
+      "aic": 6.59215,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-10T15:32:57Z",
+      "drill": true
+    },
+    {
       "run_id": 42766435806,
       "workflow": "review",
       "title": "Review drill/activation-canary PR #1",
@@ -5804,6 +5828,18 @@
       "eval_failed": false,
       "evaluated_at": "2026-11-06T19:05:48Z",
       "drill": false
+    },
+    {
+      "run_id": 42826426719,
+      "workflow": "triage",
+      "title": "Triage drill/activation-canary #1",
+      "created_at": "2026-11-10T13:38:50Z",
+      "aic": 6.91463,
+      "task": "drill/activation-canary",
+      "items": [],
+      "eval_failed": false,
+      "evaluated_at": "2026-11-10T15:32:57Z",
+      "drill": true
     },
     {
       "run_id": 42766435576,
