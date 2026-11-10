@@ -1,6 +1,6 @@
 //! upstream `locales/de/refiners/DEMergeDateRangeRefiner.ts`.
 //!
-//! Merges "from" and "to" results into a range: "13.2. [bis] 15.2.", "Mittwoch [bis] Freitag".
+//! Merges "from" and "to" results into a range: "13.2. \[bis\] 15.2.", "Mittwoch \[bis\] Freitag".
 
 use crate::common::abstract_refiners::Merging;
 use crate::common::merge_date_range::{MergeDateRange, MergeDateRangePattern};

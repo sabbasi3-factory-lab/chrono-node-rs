@@ -1,6 +1,6 @@
 //! upstream `locales/uk/refiners/UKMergeDateTimeRefiner.ts`.
 //!
-//! Merges a date-only result and a time-only result: "2020-02-13 [в/у/о] 6:00", "Завтра [,] 7:00".
+//! Merges a date-only result and a time-only result: "2020-02-13 \[в/у/о\] 6:00", "Завтра \[,\] 7:00".
 
 use crate::common::abstract_refiners::Merging;
 use crate::common::merge_date_time::{MergeDateTime, MergeDateTimePattern};

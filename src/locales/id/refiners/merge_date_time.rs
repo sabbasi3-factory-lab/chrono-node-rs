@@ -1,6 +1,6 @@
 //! upstream `locales/id/refiners/IDMergeDateTimeRefiner.ts`.
 //!
-//! Merges a date-only result and a time-only result: "Besok [pukul] 10.00", "17 Agustus 1945 [,] 10.00".
+//! Merges a date-only result and a time-only result: "Besok \[pukul\] 10.00", "17 Agustus 1945 \[,\] 10.00".
 
 use crate::common::abstract_refiners::Merging;
 use crate::common::merge_date_time::{MergeDateTime, MergeDateTimePattern};

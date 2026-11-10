@@ -1,6 +1,6 @@
 //! upstream `locales/en/refiners/ENMergeDateRangeRefiner.ts`.
 //!
-//! Merges "from" and "to" results into a range: "2020-02-13 [to] 2020-02-15", "Wednesday [-] Friday".
+//! Merges "from" and "to" results into a range: "2020-02-13 \[to\] 2020-02-15", "Wednesday \[-\] Friday".
 
 use crate::common::abstract_refiners::Merging;
 use crate::common::merge_date_range::{MergeDateRange, MergeDateRangePattern};
