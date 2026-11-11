@@ -104,7 +104,7 @@ export interface BoundAlert {
   bound: number;
 }
 
-export type UsageMissingCode = 'no_usage_artifact' | 'usage_artifact_expired' | 'usage_file_missing' | 'usage_file_empty' | 'usage_aic_unavailable';
+export type UsageMissingCode = 'no_usage_artifact' | 'usage_artifact_expired' | 'usage_file_missing' | 'usage_file_empty';
 
 /** The run's usage is missing (not malformed): a completed run counts at its bound instead. */
 export class UsageMissing extends Error {
@@ -286,27 +286,6 @@ export function readZip(buf: Uint8Array, wanted: readonly string[], maxBytes = M
 
 const isAIC = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 
-/**
- * AIC of one usage record. The API proxy's per-response records (agent, detection; evals before
- * gh-aw v1.2) carry `ai_credits_this_response`. gh-aw v1.2's evals job calls the Decisions API
- * itself and writes one record with `ai_credits`, which it omits when the model has no pricing
- * entry ('unpriced': token counts but no AIC). Anything else, or an invalid value, is malformed.
- */
-export function recordAIC(rec: unknown): number | 'unpriced' {
-  const r = rec !== null && typeof rec === 'object' && !Array.isArray(rec) ? (rec as Record<string, unknown>) : null;
-  if (r === null) throw new Error('not a usage record');
-  if (r.ai_credits_this_response !== undefined) {
-    if (!isAIC(r.ai_credits_this_response)) throw new Error('invalid ai_credits_this_response');
-    return r.ai_credits_this_response;
-  }
-  if (r.ai_credits !== undefined) {
-    if (!isAIC(r.ai_credits)) throw new Error('invalid ai_credits');
-    return r.ai_credits;
-  }
-  if (isAIC(r.input_tokens) && isAIC(r.output_tokens)) return 'unpriced';
-  throw new Error('a record without ai_credits_this_response or ai_credits');
-}
-
 /** The usage-artifact file that accounts for a job's model calls. */
 export const usageFileFor = (job: string): string => (job === 'agent' ? 'agent_usage.json' : `${job}/token_usage.jsonl`);
 
@@ -334,18 +313,12 @@ export function runAIC(files: Map<string, string>, inferredJobs: readonly string
     let records = 0;
     let sum = 0;
     let reportedTotal = 0;
-    let unpriced = false;
     for (const line of text.split('\n')) {
       if (line.trim() === '') continue;
-      const rec = JSON.parse(line) as { ai_credits_total?: unknown } | null;
-      let credits: number | 'unpriced';
-      try {
-        credits = recordAIC(rec);
-      } catch (e) {
-        throw new Error(`${file}: ${(e as Error).message}`);
-      }
-      if (credits === 'unpriced') unpriced = true;
-      else sum += credits;
+      const rec = JSON.parse(line) as { ai_credits_this_response?: unknown; ai_credits_total?: unknown } | null;
+      const credits = rec?.ai_credits_this_response;
+      if (!isAIC(credits)) throw new Error(`${file} has a record without a valid ai_credits_this_response`);
+      sum += credits;
       if (rec?.ai_credits_total !== undefined) {
         if (!isAIC(rec.ai_credits_total)) throw new Error(`${file} has an invalid ai_credits_total`);
         reportedTotal = Math.max(reportedTotal, rec.ai_credits_total);
@@ -358,14 +331,6 @@ export function runAIC(files: Map<string, string>, inferredJobs: readonly string
     if (records === 0) {
       missing ??= `${job} made model calls but recorded no usage`;
       missingCode ??= 'usage_file_empty';
-      continue;
-    }
-    // Token counts without AIC (gh-aw had no pricing for the evals model): missing usage, counted
-    // at the bound like a missing file (unknown without one), never as 0.
-    if (unpriced) {
-      missing ??= `${job} recorded usage without AIC (no pricing for its model)`;
-      missingCode ??= 'usage_aic_unavailable';
-      aic += sum;
       continue;
     }
     // A cumulative total above the sum of the responses means records are missing: unknown,
@@ -398,17 +363,12 @@ export function responseStats(
       for (const line of text.split('\n')) {
         if (line.trim() === '') continue;
         const r = JSON.parse(line) as { timestamp?: unknown; duration_ms?: unknown; ai_credits_this_response?: unknown };
-        const credits = recordAIC(r);
-        if (credits === 'unpriced') return null;
-        if (r.ai_credits_this_response !== undefined) {
-          const end = typeof r.timestamp === 'string' ? Date.parse(r.timestamp) : NaN;
-          const ms = r.duration_ms;
-          if (!Number.isFinite(end) || typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0) return null;
-          edges.push([end - ms, 1], [end, -1]);
-        }
-        // A gh-aw v1.2 evals record (`ai_credits`) has no duration: its AIC counts, not its concurrency.
-        maxResponse = Math.max(maxResponse, credits);
-        total += credits;
+        const end = typeof r.timestamp === 'string' ? Date.parse(r.timestamp) : NaN;
+        const ms = r.duration_ms;
+        if (!Number.isFinite(end) || typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0 || !isAIC(r.ai_credits_this_response)) return null;
+        edges.push([end - ms, 1], [end, -1]);
+        maxResponse = Math.max(maxResponse, r.ai_credits_this_response);
+        total += r.ai_credits_this_response;
         perFile.set(name, perFile.get(name)! + 1);
         records++;
       }
@@ -416,7 +376,7 @@ export function responseStats(
   } catch {
     return null;
   }
-  if (records === 0 || edges.length === 0) return null;
+  if (records === 0) return null;
   // Every job that called the model must have left records of its own (an empty file proves nothing).
   if (requiredJobs.some((j) => (perFile.get(`${j}/token_usage.jsonl`) ?? 0) === 0)) return null;
   // Ends before starts at the same instant: back-to-back requests aren't concurrent.
