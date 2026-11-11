@@ -88,7 +88,7 @@ budget gate once the admission gate is available.
 |---|---|
 | `.github/factory/v2.yaml` | Languages, budget, caps, `max_repairs` |
 | `.github/workflows/v2-router.yml`, `harness/v2/router.js` | The router: start, repair or stop, on events; decisions as issue comments |
-| `.github/workflows/v2-port.md`, `v2-repair.md` (+ `.lock.yml`) | The agent runs (gh-aw), compiled with the pinned gh-aw v1.0.1 |
+| `.github/workflows/v2-port.md`, `v2-repair.md` (+ `.lock.yml`) | The agent runs (gh-aw), compiled with the pinned gh-aw v1.2.2 |
 | `harness/gates/scope.js`, `scope-check.js` | `Factory-Unit:` checks (union of the language's contracts) |
 | `.github/workflows/ci.yml` | Each contract's golden step, and a 10,000-phrase held-out comparison, for a v2 PR |
 

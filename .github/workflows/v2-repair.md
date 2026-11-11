@@ -3,7 +3,7 @@ description: >
   Factory v2 (docs/factory-v2.md): repair one language PR whose `ci` failed. Dispatched by
   v2-router.yml with the language, issue, PR, attempt, pinned contracts commit, the failed head and
   its trusted failure signature. Pushes at most one fix to the same PR branch through the agent App.
-# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.0.1):
+# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.2.2):
 #   gh aw compile v2-repair
 on:
   workflow_dispatch:

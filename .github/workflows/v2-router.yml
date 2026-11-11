@@ -61,10 +61,10 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install gh-aw v1.0.1 (checksum pinned)
+      - name: Install gh-aw v1.2.2 (checksum pinned)
         run: |
-          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
-          echo "746d0b41d5fb87e2c010b8ac23a464436bb745ff89fbd19a3456431942c37652  $RUNNER_TEMP/gh-aw" | sha256sum -c -
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v1.2.2/linux-amd64
+          echo "c2378d85466d29cdbdfebd0e513557b5cbec18d34f44e7cc00c2fa323687a153  $RUNNER_TEMP/gh-aw" | sha256sum -c -
           chmod 0755 "$RUNNER_TEMP/gh-aw"
 
       # v2.yaml, the pinned factory policy's external_locales (v1 leaves those alone), and each v2

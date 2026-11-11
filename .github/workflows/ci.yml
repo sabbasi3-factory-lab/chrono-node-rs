@@ -80,14 +80,14 @@ jobs:
       # (E009 CONFIG_HASH_MISMATCH): #393's reviewer failed that way. Recompile the factory's agentic
       # workflows with the pinned gh-aw (no token, no network beyond this download) and require no
       # change. (queue-probe/queue-dispatch are experiments compiled with another gh-aw build: #353.)
-      - name: Agentic workflow locks match their sources (gh aw compile, pinned v1.0.1)
+      - name: Agentic workflow locks match their sources (gh aw compile, pinned v1.2.2)
         run: |
-          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
-          echo "746d0b41d5fb87e2c010b8ac23a464436bb745ff89fbd19a3456431942c37652  $RUNNER_TEMP/gh-aw" | sha256sum -c -
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw" https://github.com/github/gh-aw/releases/download/v1.2.2/linux-amd64
+          echo "c2378d85466d29cdbdfebd0e513557b5cbec18d34f44e7cc00c2fa323687a153  $RUNNER_TEMP/gh-aw" | sha256sum -c -
           chmod 0755 "$RUNNER_TEMP/gh-aw"
           env -u GH_TOKEN -u GITHUB_TOKEN "$RUNNER_TEMP/gh-aw" compile implement repair review triage improve v2-port v2-repair
           git diff --exit-code --stat -- .github/workflows .github/aw \
-            || { echo "::error::a .lock.yml is stale: run 'gh aw compile <name>' with gh-aw v1.0.1 and commit the result"; exit 1; }
+            || { echo "::error::a .lock.yml is stale: run 'gh aw compile <name>' with gh-aw v1.2.2 and commit the result"; exit 1; }
           [ -z "$(git status --porcelain --untracked-files=all -- .github)" ] || { git status --short -- .github; echo "::error::gh aw compile wrote unexpected files"; exit 1; }
 
       - name: Gate and feedback tests (scope logic, monitor and intake)

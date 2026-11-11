@@ -14,7 +14,8 @@ budget_aic: 2800
 since: "2026-11-09"
 # gh-aw max-ai-credits of each AI job (keep in step with the workflows' frontmatter; factory
 # policies/budgets.yaml per_run.implement, per_run.repair, per_run.threat_detection). gh-aw v1.0.1's
-# evals job (v2-port only) inherits the agent's cap. A run still in progress counts at all of them.
+# evals job (v2-port only) inherits the agent's cap; v2-port has had no evals since gh-aw v1.2.2
+# (#564: uncapped), and its evals reservation stays (over-reserving only). A run still in progress counts at all of them.
 caps:
   port: 500
   repair: 300

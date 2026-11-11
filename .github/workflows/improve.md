@@ -5,7 +5,7 @@ description: >
   propose at most 3 evidence-backed changes in one report issue. It never changes anything itself:
   policy changes are exact YAML diffs for the factory repo, prompt changes are gh-aw `experiments:`
   blocks (measured, never applied directly), factory-code changes are described for a person.
-# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.0.1):
+# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.2.2):
 #   gh aw compile improve
 on:
   schedule:
@@ -80,12 +80,12 @@ steps:
     run: |
       git fetch --no-tags origin audit:refs/remotes/origin/audit
       (cd harness && npm ci --ignore-scripts --no-audit --no-fund && node review/budget-gate.js)
-  - name: Install gh-aw v1.0.1 (checksum pinned)
+  - name: Install gh-aw v1.2.2 (checksum pinned)
     run: |
       # Not $RUNNER_TEMP/gh-aw: the compiled agent job already uses that directory for its scripts.
       mkdir -p "$RUNNER_TEMP/gh-aw-cli"
-      curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw-cli/gh-aw" https://github.com/github/gh-aw/releases/download/v1.0.1/linux-amd64
-      echo "746d0b41d5fb87e2c010b8ac23a464436bb745ff89fbd19a3456431942c37652  $RUNNER_TEMP/gh-aw-cli/gh-aw" | sha256sum -c -
+      curl -fsSL --retry 3 -o "$RUNNER_TEMP/gh-aw-cli/gh-aw" https://github.com/github/gh-aw/releases/download/v1.2.2/linux-amd64
+      echo "c2378d85466d29cdbdfebd0e513557b5cbec18d34f44e7cc00c2fa323687a153  $RUNNER_TEMP/gh-aw-cli/gh-aw" | sha256sum -c -
       chmod 0755 "$RUNNER_TEMP/gh-aw-cli/gh-aw"
   - name: gh aw logs, last 7 days (implement, repair, review)
     env:

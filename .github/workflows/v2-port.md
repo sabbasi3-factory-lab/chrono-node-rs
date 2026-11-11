@@ -3,7 +3,7 @@ description: >
   Factory v2 (docs/factory-v2.md): port one whole chrono-node language to Rust in one run. Dispatched
   by v2-router.yml with the language, its issue and the pinned contracts commit. Opens at most one PR
   through the agent App, with auto-merge on.
-# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.0.1):
+# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.2.2):
 #   gh aw compile v2-port
 on:
   workflow_dispatch:
@@ -140,21 +140,8 @@ steps:
       done | jq -s . > "$out/contracts.json"
       jq -r '.[] | "\(.id)\t\(.scope | join(","))"' "$out/contracts.json"
 
-# Yes/no checks on every run, judged from the agent's output (its PR body), not from the diff;
-# the trusted gates job checks the diff itself. Advisory only: evals never gate merges.
-evals:
-  # A different family than the agent (claude-sonnet-5.5), as in implement.md.
-  model: gpt-6.1-sol
-  questions:
-    - id: upstream_cited
-      question: >-
-        Does the pull request body's "Upstream evidence" section cite an upstream file and line, or a
-        golden case id, for the behaviours it states?
-    - id: tests_not_weakened
-      question: >-
-        Does the pull request body's "Tests" section state that no test, assertion or golden case was
-        removed, skipped, ignored or loosened?
-
+# No `evals:`: gh-aw v1.2 runs them outside the firewall without an AIC cap, and every AI job must
+# be capped (controller caps.ts). They were advisory only (#564).
 safe-outputs:
   github-app:
     client-id: ${{ vars.FACTORY_AGENT_APP_ID }}

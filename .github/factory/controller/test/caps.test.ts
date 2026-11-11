@@ -84,19 +84,23 @@ describe('the spend bound is real: compiled caps equal the policy', () => {
   it('the evals job: implement (if present) must cap it at per_run.implement; any other workflow must not have one', async () => {
     const per = (await testPolicies()).budgets.per_run;
     const locks = await read();
-    const evalsStart = locks.implement.search(/^ {2}evals:\s*$/m);
-    assert.ok(evalsStart > 0, 'implement.lock.yml has an evals job');
-    const next = evalsStart + 1 + locks.implement.slice(evalsStart + 1).search(/^ {2}[a-z_][a-z0-9_-]*:\s*$/m);
-    const evalsJob = locks.implement.slice(evalsStart, next);
-    const withEvals = (cap: string) => locks.implement.slice(0, evalsStart) + evalsJob.replaceAll('GH_AW_MAX_AI_CREDITS="500"', `GH_AW_MAX_AI_CREDITS="${cap}"`) + locks.implement.slice(next);
+    // gh-aw v1.2 runs evals outside the firewall, without a cap: implement and v2-port no longer have
+    // evals (#564), and the committed implement lock verifies without one (it spends less than reserved).
+    assert.equal(/^ {2}evals:\s*$/m.test(locks.implement), false, 'implement.lock.yml has no evals job');
+    assert.equal(lockCapsMismatch(locks, per), null);
+    // A firewalled evals job (gh-aw v1.0.1's shape), modelled on implement's detection job.
+    const start = locks.implement.search(/^ {2}detection:\s*$/m);
+    assert.ok(start > 0, 'implement.lock.yml has a detection job');
+    const next = start + 1 + locks.implement.slice(start + 1).search(/^ {2}[a-z_][a-z0-9_-]*:\s*$/m);
+    const detection = locks.implement.slice(start, next);
+    const withEvals = (cap: string) => `${locks.implement}\n${detection.replace(/^ {2}detection:/, '  evals:').replaceAll(`GH_AW_MAX_AI_CREDITS="${per.threat_detection}"`, `GH_AW_MAX_AI_CREDITS="${cap}"`)}`;
+    assert.equal(lockCapsMismatch({ ...locks, implement: withEvals(String(per.implement)) }, per), null, 'evals capped at per_run.implement');
     const cases: [string, Record<CappedWorkflow, string | null>, RegExp][] = [
       ['evals cap 900 in implement', { ...locks, implement: withEvals('900') }, /implement\.lock\.yml evals cap 900(,900)* ≠ per_run\.implement 500/],
-      ['evals job without the firewall cap (later gh-aw)', { ...locks, implement: locks.implement.slice(0, evalsStart) + '  evals:\n    runs-on: ubuntu-latest\n' + locks.implement.slice(next) }, /implement\.lock\.yml evals cap missing/],
+      ['evals job without the firewall cap (gh-aw v1.2)', { ...locks, implement: `${locks.implement}\n  evals:\n    runs-on: ubuntu-latest\n` }, /implement\.lock\.yml evals cap missing/],
       ['an evals job in repair', { ...locks, repair: `${locks.repair}\n  evals:\n    runs-on: ubuntu-latest\n` }, /repair\.lock\.yml has an evals job the controller doesn't reserve/],
     ];
     for (const [what, l, re] of cases) assert.match(String(lockCapsMismatch(l, per)), re, what);
-    // Implement locks from before the evals job (runs re-run or bounded later) still verify: they spend less.
-    assert.equal(lockCapsMismatch({ ...locks, implement: locks.implement.slice(0, evalsStart) + locks.implement.slice(next) }, per), null);
   });
 });
 

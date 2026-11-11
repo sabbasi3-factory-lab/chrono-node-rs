@@ -2,7 +2,7 @@
 description: >
   Port one chrono-node step to Rust for one factory task. Dispatched by the controller with the
   task id, issue, attempt and pinned contract SHA. Opens at most one PR through the agent App.
-# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.0.1):
+# Human tier: changes need the owner's review. Compile with the pinned gh-aw (v1.2.2):
 #   gh aw compile implement
 on:
   workflow_dispatch:
@@ -131,31 +131,8 @@ steps:
     working-directory: harness
     run: npm ci --ignore-scripts --no-audit --no-fund && npm run build:upstream
 
-# Yes/no checks on every run, judged from the agent's output (its PR body), not from the diff;
-# the trusted gates job checks the diff itself. The Output section requires the sections they read.
-evals:
-  # One pinned judge model for all questions, from a different family than the agent (claude-sonnet-5.5)
-  # so it does not share its blind spots. Advisory only: evals never gate merges.
-  model: gpt-6.1-sol
-  questions:
-    - id: scope_only
-      question: >-
-        Does the pull request body's "Files changed" section list only the file it names as the
-        contract scope, and no other file?
-    - id: upstream_cited
-      question: >-
-        Does the pull request body's "Upstream evidence" section cite an upstream file and line, or a
-        golden case id, for every expected value or behaviour it states?
-    - id: tests_not_weakened
-      question: >-
-        Does the pull request body's "Tests" section state that no test, assertion or golden case was
-        removed, skipped, ignored or loosened?
-    - id: porting_followed
-      question: >-
-        Does the pull request body's "PORTING patterns" section name the PORTING.md patterns the port
-        follows (for example the wrapper for the upstream base class, JsRegex for regexes, js_clone
-        for upstream clone, UTF-16 lengths)?
-
+# No `evals:`: gh-aw v1.2 runs them outside the firewall without an AIC cap, and every AI job must
+# be capped (controller caps.ts). They were advisory only (#564).
 safe-outputs:
   github-app:
     client-id: ${{ vars.FACTORY_AGENT_APP_ID }}

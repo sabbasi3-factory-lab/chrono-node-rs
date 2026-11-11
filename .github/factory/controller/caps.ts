@@ -16,6 +16,8 @@ export type CappedWorkflow = keyof typeof CAPPED_WORKFLOWS;
 // and spend.ts reserves and bounds it on top of the agent and detection jobs. A lock of any other
 // workflow with an evals job (or an evals job without that cap, as in later gh-aw versions that run
 // evals outside the firewall) is a mismatch: the spend bound goes off until the controller counts it.
+// gh-aw v1.2 does exactly that (one uncapped Decisions API call), so implement and v2-port have no
+// evals since #564; implement's evals reservation stays (it only over-reserves) until it's revisited.
 export const EVALS_WORKFLOWS: readonly CappedWorkflow[] = ['implement'];
 
 // gh-aw v1 sets the cap in bash (`GH_AW_MAX_AI_CREDITS="N"`, env `GH_AW_MAX_AI_CREDITS: "N"`) and the
