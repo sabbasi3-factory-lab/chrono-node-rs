@@ -5,7 +5,7 @@
 # creates the labels that are missing. It never edits or deletes an existing label.
 # Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written (the plan is printed).
 # Human tier: changes need the owner's review.
-name: labels-sync
+name: "⚙️ Labels sync"
 
 on:
   push:

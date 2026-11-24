@@ -15,7 +15,7 @@
 # The candidate commit is fetched as git objects and only read (diff, show, grep). Nothing from it
 # is executed: no checkout of its tree, no npm install from it, no cargo build of it.
 # Human tier: changes need the owner's review.
-name: gates
+name: "⚙️ Gates"
 
 on:
   pull_request_target:

@@ -1,4 +1,5 @@
 ---
+name: "🤖 Agent: work-queue dispatch (probe)"
 description: >
   Work-queue dispatcher (step 3). A trusted step stages one dispatch_next request; the queue's
   scheduler picks the Work and launches its worker. The agent only reads and reports.

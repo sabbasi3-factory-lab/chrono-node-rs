@@ -1,4 +1,4 @@
-name: controller
+name: "⚙️ Controller (v1)"
 
 # Factory controller (DESIGN §7, §11): plain code, no AI.
 # Dry-run unless the repo variable FACTORY_ENABLED is exactly "true": it then plans, logs and
@@ -30,7 +30,10 @@ on:
   issues:
     types: [labeled, unlabeled, closed]
   workflow_run:
-    workflows: ["ci", "gates", "Review one factory PR"]
+    # The old names ("ci", "gates") match runs of PR branches cut before the rename (#569): a
+    # pull_request run takes its name from the PR's copy of the workflow.
+    # "Review one factory PR": review runs started (or re-run) from a revision before the rename.
+    workflows: ["⚙️ CI", "⚙️ Gates", "ci", "gates", "🤖 Agent: review PR (v1)", "Review one factory PR"]
     types: [completed]
   pull_request_target:
     types: [opened, reopened, closed, enqueued, dequeued, ready_for_review]

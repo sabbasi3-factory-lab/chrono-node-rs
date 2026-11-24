@@ -32,12 +32,24 @@ export const CI_WORKFLOW_NAME = 'ci';
 export const GATES_WORKFLOW_NAME = 'gates';
 /** Fire drills (drills.yml, dispatched by drill-schedule.yml): recorded as check_result only, so every drill result is in the audit log. The planner ignores them. */
 export const DRILLS_WORKFLOW_NAME = 'drills';
-/** Gate workflows recorded as check_result, and the events each one runs on. */
-const CHECK_WORKFLOWS: Record<string, readonly string[]> = {
-  [CI_WORKFLOW_NAME]: ['pull_request', 'merge_group', 'push'],
-  [GATES_WORKFLOW_NAME]: ['pull_request_target', 'merge_group'],
-  [DRILLS_WORKFLOW_NAME]: ['workflow_dispatch'],
+/**
+ * Gate workflows recorded as check_result: each one's file (a run's `path`) and the events it runs
+ * on. Matched by file, never by display name: a `pull_request` run takes its name from the PR's copy
+ * of the workflow, so a name changes with the branch (#569) and any workflow file can claim one.
+ * The ids (`ci`, `gates`, `drills`) are what the planner and the audit log use.
+ */
+const CHECK_WORKFLOWS: Record<string, { path: string; events: readonly string[] }> = {
+  [CI_WORKFLOW_NAME]: { path: '.github/workflows/ci.yml', events: ['pull_request', 'merge_group', 'push'] },
+  [GATES_WORKFLOW_NAME]: { path: '.github/workflows/gates.yml', events: ['pull_request_target', 'merge_group'] },
+  [DRILLS_WORKFLOW_NAME]: { path: '.github/workflows/drills.yml', events: ['workflow_dispatch'] },
 };
+
+/** The check workflow id of a run, from its workflow file (`path`); null for any other workflow. Pure. */
+export function checkWorkflowOf(run: Record<string, unknown>): string | null {
+  const p = typeof run.path === 'string' ? run.path : '';
+  for (const [id, w] of Object.entries(CHECK_WORKFLOWS)) if (p === w.path) return id;
+  return null;
+}
 export const CHECKS_JOB_NAME = 'checks';
 
 export class GitHubApiError extends Error {
@@ -823,8 +835,8 @@ export async function readCheckRuns(
   const windowStart = now.getTime() - windowHours * 3_600_000;
   const out: CheckRunSnap[] = [];
   for (const run of [...byId.values()].sort((a, b) => Number(a.id) - Number(b.id))) {
-    const name = typeof run.name === 'string' ? run.name : '';
-    const events = Object.hasOwn(CHECK_WORKFLOWS, name) ? CHECK_WORKFLOWS[name]! : null;
+    const name = checkWorkflowOf(run) ?? '';
+    const events = name ? CHECK_WORKFLOWS[name]!.events : null;
     const event = run.event;
     if (!events || typeof event !== 'string' || !events.includes(event)) continue;
     const prs = asArr(run.pull_requests).map(asRec);

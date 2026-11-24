@@ -1,4 +1,5 @@
 ---
+name: "🤖 Agent: repair PR (v1)"
 description: >
   Repair one factory PR whose `ci` failed (Evergreen, DESIGN §7). Dispatched by the controller with
   the task, issue, PR, attempt, pinned contract SHA, the failed head and its trusted failure
@@ -144,7 +145,7 @@ steps:
       head_ref=$(jq -r .head.ref <<<"$pr_json")
       [[ "$head_ref" =~ ^[A-Za-z0-9._/-]{1,200}$ && "$head_ref" != *..* ]] || { echo "::error::unexpected head branch name"; exit 1; }
       run_json=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}")
-      [ "$(jq -r .name <<<"$run_json")" = "ci" ] && [ "$(jq -r .head_sha <<<"$run_json")" = "$HEAD_SHA" ] && [ "$(jq -r .conclusion <<<"$run_json")" = "failure" ] || { echo "::error::run ${RUN_ID} is not a failed ci run on ${HEAD_SHA}"; exit 1; }
+      [ "$(jq -r .path <<<"$run_json")" = ".github/workflows/ci.yml" ] && [ "$(jq -r .head_sha <<<"$run_json")" = "$HEAD_SHA" ] && [ "$(jq -r .conclusion <<<"$run_json")" = "failure" ] || { echo "::error::run ${RUN_ID} is not a failed ci run on ${HEAD_SHA}"; exit 1; }
       # Check out exactly the failed head, on the PR's branch name, with origin/<branch> at that head.
       git fetch -q --no-tags origin "+refs/heads/${head_ref}:refs/remotes/origin/${head_ref}"
       [ "$(git rev-parse "refs/remotes/origin/${head_ref}")" = "$HEAD_SHA" ] || { echo "::error::branch ${head_ref} is not at ${HEAD_SHA}"; exit 1; }

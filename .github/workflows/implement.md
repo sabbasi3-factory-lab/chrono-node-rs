@@ -1,4 +1,5 @@
 ---
+name: "🤖 Agent: implement task (v1)"
 description: >
   Port one chrono-node step to Rust for one factory task. Dispatched by the controller with the
   task id, issue, attempt and pinned contract SHA. Opens at most one PR through the agent App.

@@ -29,7 +29,7 @@
 # - alert:    (live) a stop opens one factory:alert issue per reason.
 # Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written (the rest still runs).
 # Human tier: changes need the owner's review.
-name: onboard
+name: "⚙️ Onboard language"
 
 on:
   schedule:

@@ -3,7 +3,7 @@
 # times"). Plain code, no AI. It only dispatches `drills`; drill results are that workflow's runs
 # (recorded in the audit log by the controller), so a slot that doesn't drill leaves no result.
 # Human tier: changes need the owner's review.
-name: drill-schedule
+name: "⚙️ Drill schedule"
 
 on:
   schedule:

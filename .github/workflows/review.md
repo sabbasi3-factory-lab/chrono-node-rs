@@ -1,4 +1,5 @@
 ---
+name: "🤖 Agent: review PR (v1)"
 description: >
   Second-opinion review of one auto-strict factory PR, by a different model family than the
   implementer. Dispatched by the controller with the task, PR, head and pinned contract SHA.
