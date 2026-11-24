@@ -8,7 +8,7 @@
 #   anything else         → one `dependency-security` issue for a person
 # Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written.
 # Human tier: changes need the owner's review.
-name: security-alerts
+name: "⚙️ Security alerts"
 
 on:
   schedule:

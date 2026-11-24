@@ -14,7 +14,7 @@
 # factory:alert issue. Each run's result is in the audit log: the controller records `drills` runs
 # as check_result events. The per-drill detail is the run's summary and its `drill-results` artifact.
 # Human tier: changes need the owner's review.
-name: drills
+name: "⚙️ Drills"
 
 on:
   workflow_dispatch:

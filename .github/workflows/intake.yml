@@ -14,7 +14,7 @@
 # and the bug report points at it. The controller takes the task from there like any other.
 # Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written (the triage still runs).
 # Human tier: changes need the owner's review.
-name: intake
+name: "⚙️ Intake"
 
 # `labeled` only: an issue created with the label (the form, the monitor) also fires `labeled`, with
 # the creator as sender, so `opened` would triage every report twice.

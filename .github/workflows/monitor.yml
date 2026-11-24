@@ -5,7 +5,7 @@
 # `factory:bug` issue with a minimal repro (harness/feedback/monitor.js); the intake triages it.
 # Kill switch: unless FACTORY_ENABLED is exactly "true" it only reports what it would file.
 # Human tier: changes need the owner's review.
-name: monitor
+name: "⚙️ Monitor"
 
 on:
   schedule:

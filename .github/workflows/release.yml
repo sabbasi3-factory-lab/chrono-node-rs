@@ -17,7 +17,7 @@
 # (so nothing can publish by accident); the package is stamped with the release version on the
 # runner only. Major stays 0 while languages are incomplete (1.0 is an owner decision).
 # Human tier: changes need the owner's review.
-name: release
+name: "⚙️ Release"
 
 on:
   workflow_dispatch:

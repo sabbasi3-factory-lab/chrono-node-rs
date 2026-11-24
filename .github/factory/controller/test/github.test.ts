@@ -304,7 +304,7 @@ describe('review fix 3: main is resolved once to an immutable commit', () => {
 describe('review fix 4: run discovery without a creation cutoff', () => {
   const open = hex40('1');
   const run = (id: number, over: Record<string, unknown> = {}) => ({
-    id, run_attempt: 1, name: 'ci', event: 'pull_request', head_sha: hex40('9'), pull_requests: [], status: 'completed', conclusion: 'success',
+    id, run_attempt: 1, name: 'ci', path: '.github/workflows/ci.yml', event: 'pull_request', head_sha: hex40('9'), pull_requests: [], status: 'completed', conclusion: 'success',
     created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-16T11:00:00Z', ...over,
   });
   function world(): FakeGitHub {
@@ -504,10 +504,18 @@ describe('auto-revert inputs from GitHub', () => {
   it('a re-run of a post-merge ci run carries attempt 1\'s recorded signature', async () => {
     const gh = fakeWorld();
     const r = `/repos/${REPO}`;
-    gh.routes.unshift({ method: 'GET', path: new RegExp(`^${r}/actions/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 777, run_attempt: 2, name: 'ci', event: 'push', head_sha: hex40('f'), pull_requests: [], status: 'completed', conclusion: 'failure', created_at: '2026-10-16T11:00:00Z', updated_at: '2026-10-16T11:30:00Z' }] } }) });
+    gh.routes.unshift({ method: 'GET', path: new RegExp(`^${r}/actions/runs$`), handler: () => ({ data: { workflow_runs: [{ id: 777, run_attempt: 2, name: 'ci', path: '.github/workflows/ci.yml', event: 'push', head_sha: hex40('f'), pull_requests: [], status: 'completed', conclusion: 'failure', created_at: '2026-10-16T11:00:00Z', updated_at: '2026-10-16T11:30:00Z' }] } }) });
     const recorded = new Map<string, RecordedCheck>([['777/attempts/1', { heldout_seed: null, failure_signature: 'step:golden' }], ['777/attempts/2', { heldout_seed: null, failure_signature: 'step:golden' }]]);
     const runs = await readCheckRuns(gh, REPO, NOW, 24, recorded, new Set(), MAIN_SHA);
     const r777 = runs.find((x) => x.run_id === 777)!;
     assert.deepEqual([r777.event, r777.run_attempt, r777.failure_signature, r777.first_attempt_signature], ['push', 2, 'step:golden', 'step:golden']);
+  });
+
+  it('check workflows are matched by file, not display name (renamed "⚙️ CI", or another file named "ci")', async () => {
+    const gh = fakeWorld();
+    const run = (id: number, name: string, path: string) => ({ id, run_attempt: 1, name, path, event: 'push', head_sha: hex40('f'), pull_requests: [], status: 'completed', conclusion: 'success', created_at: '2026-10-16T11:00:00Z', updated_at: '2026-10-16T11:30:00Z' });
+    gh.routes.unshift({ method: 'GET', path: new RegExp(`^/repos/${REPO}/actions/runs$`), handler: () => ({ data: { workflow_runs: [run(801, '⚙️ CI', '.github/workflows/ci.yml'), run(802, 'ci', '.github/workflows/forged.yml'), run(803, 'gates', '.github/workflows/ci.yml@refs/heads/x')] } }) });
+    const runs = await readCheckRuns(gh, REPO, NOW, 24, new Map(), new Set(), MAIN_SHA);
+    assert.deepEqual(runs.filter((x) => x.run_id >= 801 && x.run_id <= 803).map((x) => [x.run_id, x.workflow]), [[801, 'ci']]);
   });
 });

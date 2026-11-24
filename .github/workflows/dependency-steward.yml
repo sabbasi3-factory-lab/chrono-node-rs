@@ -14,7 +14,7 @@
 #     regression) and `gates` pass on its head.
 # Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written.
 # Human tier: changes need the owner's review.
-name: dependency-steward
+name: "⚙️ Dependency steward"
 
 on:
   issues:
@@ -22,7 +22,8 @@ on:
   schedule:
     - cron: "37 * * * *"
   workflow_run:
-    workflows: ["ci"]
+    # "ci": runs of PR branches cut before the rename (#565).
+    workflows: ["⚙️ CI", "ci"]
     types: [completed]
 
 permissions:
@@ -235,7 +236,7 @@ jobs:
     if: >-
       github.repository == 'sabbasi3-factory-lab/chrono-node-rs' &&
       (github.event_name == 'schedule' ||
-       (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'ci' && startsWith(github.event.workflow_run.head_branch, 'factory/deps/')))
+       (github.event_name == 'workflow_run' && github.event.workflow_run.path == '.github/workflows/ci.yml' && startsWith(github.event.workflow_run.head_branch, 'factory/deps/')))
     concurrency:
       group: steward-enqueue
       cancel-in-progress: false

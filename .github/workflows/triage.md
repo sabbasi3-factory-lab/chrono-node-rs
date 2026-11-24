@@ -1,4 +1,5 @@
 ---
+name: "🤖 Agent: triage stuck task"
 description: >
   Needs-human pre-triage. When the controller hands a factory task to a person (needs-human), this
   read-only agent reads the evidence and posts one comment on the task issue: the failure signature,

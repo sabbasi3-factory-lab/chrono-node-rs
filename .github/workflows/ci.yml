@@ -3,7 +3,7 @@
 # (scope, contract SHA, cargo deny, identifiers) run from trusted base code in gates.yml.
 # Together: 2 jobs per PR (factory policies/limits.yaml ci.max_jobs_per_pr).
 # Human tier: changes need the owner's review.
-name: ci
+name: "⚙️ CI"
 
 on:
   pull_request:

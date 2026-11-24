@@ -9,7 +9,7 @@
 #                  regenerated, contracts re-seeded (new steps need task map entries: listed).
 # Kill switch: unless FACTORY_ENABLED is exactly "true", nothing is written.
 # Human tier: changes need the owner's review.
-name: upstream-sync
+name: "⚙️ Upstream sync"
 
 on:
   schedule:

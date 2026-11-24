@@ -1,4 +1,5 @@
 ---
+name: "🤖 Agent: factory review"
 description: >
   Factory review (Loop 4, DESIGN §15): every 3 days, read a rolling 7-day window of the factory's
   own data (gh aw logs, Outcomes, the audit log, failure attribution, platform reliability) and

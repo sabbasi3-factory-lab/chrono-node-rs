@@ -10,7 +10,7 @@
 # workflow or its lock. Live only (it dispatches): unless FACTORY_ENABLED is exactly "true", it
 # does nothing. A failure opens (or comments on) one factory:alert issue.
 # Human tier: changes need the owner's review.
-name: agentic-canary
+name: "⚙️ Agentic canary"
 
 on:
   schedule:

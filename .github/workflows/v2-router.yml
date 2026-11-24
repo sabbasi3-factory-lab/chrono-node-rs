@@ -9,7 +9,7 @@
 # Never checks out or runs PR code: it checks out main and runs harness/v2/router.js from there. It
 # uses only this workflow's GITHUB_TOKEN (not the controller App, so no App quota is shared).
 # Human tier: changes need the owner's review.
-name: v2-router
+name: "⚙️ Router (v2)"
 
 on:
   push:
@@ -18,7 +18,9 @@ on:
   issues:
     types: [labeled]
   workflow_run:
-    workflows: [ci, gates, "Port one language (factory v2)", "Repair one factory v2 PR"]
+    # The old names ("ci", "gates") match runs of PR branches cut before the rename (#565): a
+    # pull_request run takes its name from the PR's copy of the workflow.
+    workflows: ["⚙️ CI", "⚙️ Gates", ci, gates, "🤖 Agent: port language (v2)", "🤖 Agent: repair language PR (v2)"]
     types: [completed]
   workflow_dispatch:
 

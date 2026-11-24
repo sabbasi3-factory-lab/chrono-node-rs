@@ -1,4 +1,5 @@
 ---
+name: "🤖 Agent: work-queue probe"
 description: >
   Temporary work-queue probe (step 3, PR-delivery check). A queue worker that opens one PR through
   the agent App, to prove gh-aw records a verified Result for it. Removed after the check.
