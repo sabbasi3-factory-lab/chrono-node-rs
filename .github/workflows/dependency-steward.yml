@@ -22,7 +22,7 @@ on:
   schedule:
     - cron: "37 * * * *"
   workflow_run:
-    # "ci": runs of PR branches cut before the rename (#565).
+    # "ci": runs of PR branches cut before the rename (#569).
     workflows: ["⚙️ CI", "ci"]
     types: [completed]
 

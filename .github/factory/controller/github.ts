@@ -35,7 +35,7 @@ export const DRILLS_WORKFLOW_NAME = 'drills';
 /**
  * Gate workflows recorded as check_result: each one's file (a run's `path`) and the events it runs
  * on. Matched by file, never by display name: a `pull_request` run takes its name from the PR's copy
- * of the workflow, so a name changes with the branch (#565) and any workflow file can claim one.
+ * of the workflow, so a name changes with the branch (#569) and any workflow file can claim one.
  * The ids (`ci`, `gates`, `drills`) are what the planner and the audit log use.
  */
 const CHECK_WORKFLOWS: Record<string, { path: string; events: readonly string[] }> = {

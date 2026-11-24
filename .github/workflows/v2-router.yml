@@ -18,7 +18,7 @@ on:
   issues:
     types: [labeled]
   workflow_run:
-    # The old names ("ci", "gates") match runs of PR branches cut before the rename (#565): a
+    # The old names ("ci", "gates") match runs of PR branches cut before the rename (#569): a
     # pull_request run takes its name from the PR's copy of the workflow.
     workflows: ["⚙️ CI", "⚙️ Gates", ci, gates, "🤖 Agent: port language (v2)", "🤖 Agent: repair language PR (v2)"]
     types: [completed]
