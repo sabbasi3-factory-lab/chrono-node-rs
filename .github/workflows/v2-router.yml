@@ -20,7 +20,9 @@ on:
   workflow_run:
     # The old names ("ci", "gates") match runs of PR branches cut before the rename (#569): a
     # pull_request run takes its name from the PR's copy of the workflow.
-    workflows: ["⚙️ CI", "⚙️ Gates", ci, gates, "🤖 Agent: port language (v2)", "🤖 Agent: repair language PR (v2)"]
+    # The old v2 agent names: runs started (or re-run) from a revision before the rename; this router
+    # has no polling fallback, so it must still wake for them.
+    workflows: ["⚙️ CI", "⚙️ Gates", ci, gates, "🤖 Agent: port language (v2)", "🤖 Agent: repair language PR (v2)", "Port one language (factory v2)", "Repair one factory v2 PR"]
     types: [completed]
   workflow_dispatch:
 
