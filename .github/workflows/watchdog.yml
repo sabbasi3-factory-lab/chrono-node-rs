@@ -13,7 +13,8 @@ on:
     - cron: "7,22,37,52 * * * *"
   # The controller polls about every 13 min (its follow-up chain), so this follows it.
   workflow_run:
-    workflows: ["⚙️ Controller (v1)"]
+    # "controller": controller runs started (or re-run) from a revision before the rename (#569).
+    workflows: ["⚙️ Controller (v1)", "controller"]
     types: [completed]
   workflow_dispatch:
 

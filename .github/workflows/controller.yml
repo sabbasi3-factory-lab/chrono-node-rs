@@ -32,7 +32,8 @@ on:
   workflow_run:
     # The old names ("ci", "gates") match runs of PR branches cut before the rename (#569): a
     # pull_request run takes its name from the PR's copy of the workflow.
-    workflows: ["⚙️ CI", "⚙️ Gates", "ci", "gates", "🤖 Agent: review PR (v1)"]
+    # "Review one factory PR": review runs started (or re-run) from a revision before the rename.
+    workflows: ["⚙️ CI", "⚙️ Gates", "ci", "gates", "🤖 Agent: review PR (v1)", "Review one factory PR"]
     types: [completed]
   pull_request_target:
     types: [opened, reopened, closed, enqueued, dequeued, ready_for_review]
